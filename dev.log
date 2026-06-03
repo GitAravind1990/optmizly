@@ -1,0 +1,55 @@
+
+> semantictoolz@2.0.0 dev
+> next dev
+
+   ▲ Next.js 15.5.15
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.104:3000
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 3.6s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 2.7s (221 modules)
+ ○ Compiling /dashboard/performance-fixer ...
+ ✓ Compiled /dashboard/performance-fixer in 14.3s (1126 modules)
+
+[35m
+[Clerk]:[0m You are running in keyless mode.
+You can [35mclaim your keys[0m by visiting https://dashboard.clerk.com/apps/claim?token=0hg6kzsa8sei943k6u80l3tzpu55818evchvk2sn&return_url=http%3A%2F%2Flocalhost%3A3000%2F
+
+ GET /dashboard/performance-fixer 200 in 19333ms
+ ✓ Compiled in 14.6s (404 modules)
+ ✓ Compiled in 2.5s (404 modules)
+ ✓ Compiled in 621ms (404 modules)
+ ✓ Compiled in 295ms (404 modules)
+ ✓ Compiled in 680ms (404 modules)
+ ✓ Compiled in 1673ms (404 modules)
+ ✓ Compiled in 619ms (404 modules)
+ ✓ Compiled in 821ms (404 modules)
+ ✓ Compiled in 379ms (404 modules)
+ ✓ Compiled in 239ms (404 modules)
+ ✓ Compiled in 1763ms (404 modules)
+ ✓ Compiled in 555ms (404 modules)
+ ⨯ ./src/lib/export.ts
+Module parse failed: Identifier 'exportEEATCSV' has already been declared (2540:16)
+|     downloadPDF('SemanticToolz Content Ideas Report', html);
+| }
+> export function exportEEATCSV(data) {
+|     var _data_recommendations;
+|     const rows = [];
+
+Import trace for requested module:
+./src/lib/export.ts
+./src/app/dashboard/performance-fixer/page.tsx
+ ✓ Compiled in 2.4s (404 modules)
+ ✓ Compiled in 498ms (404 modules)
+ ✓ Compiled in 479ms (404 modules)
+ ✓ Compiled in 542ms (404 modules)
+ ✓ Compiled in 715ms (404 modules)
+ ✓ Compiled in 679ms (404 modules)
+ ✓ Compiled in 1616ms (404 modules)
+ ✓ Compiled in 426ms (404 modules)
+ ✓ Compiled in 1415ms (404 modules)
+ ✓ Compiled in 1661ms (404 modules)
+ ✓ Compiled in 1810ms (404 modules)
