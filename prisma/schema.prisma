@@ -1,0 +1,966 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+  AGENCY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+  PAUSED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscription         Subscription?
+  usage                Usage[]
+  performanceAudits    PerformanceFixerAudit[]
+  contentOptimizations ContentOptimization[]
+  clients              Client[]              @relation("AgencyClients")
+  reportTemplates      ReportTemplate[]      @relation("ReportTemplates")
+  contentIdeaProjects  ContentIdeaProject[]  @relation("ContentIdeaProjects")
+  competitorAnalyses   CompetitorAnalysis[]  @relation("CompetitorAnalyses")
+  competitorComparisons CompetitorComparison[] @relation("CompetitorComparisons")
+  onPageAnalyses       OnPageAnalysis[]      @relation("OnPageAnalyses")
+  rankTrackingProjects RankTrackingProject[] @relation("RankTrackingProjects")
+  localSEOAccounts     LocalSEOAccount[]     @relation("LocalSEOAccounts")
+  llmVisibilityAnalyses LLMVisibilityAnalysis[] @relation("LLMVisibilityAnalyses")
+  backlinkProjects     BacklinkProject[]     @relation("BacklinkProjects")
+  backlinkAnalyses     BacklinkDomainAnalysis[] @relation("BacklinkDomainAnalyses")
+  seoAudits            SeoAudit[]            @relation("SEOAudits")
+
+  @@index([clerkId])
+}
+
+model Client {
+  id       String @id @default(cuid())
+  agencyId String
+  agency   User   @relation("AgencyClients", fields: [agencyId], references: [id], onDelete: Cascade)
+
+  name     String
+  email    String
+  website  String
+  industry String?
+
+  reportTemplate String @default("standard")
+  brandColor     String @default("#6366f1")
+  logoUrl        String?
+
+  trackKeywords String @db.Text
+  competitors   String @db.Text
+
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  reports   ClientReport[]
+
+  @@index([agencyId])
+}
+
+model ClientReport {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  month Int
+  year  Int
+
+  keywordRankings String @db.Text
+  trafficChange   Int
+  backlinksAdded  Int
+  topPerformers   String @db.Text
+
+  domainAuthority Float @default(45)
+  pageAuthority   Float @default(52)
+  backlinksTotal  Int   @default(500)
+
+  reportHtml   String    @db.Text
+  reportPdfUrl String?
+
+  emailSent      Boolean   @default(false)
+  emailSentAt    DateTime?
+  clientViewed   Boolean   @default(false)
+  clientViewedAt DateTime?
+
+  generatedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([month])
+}
+
+model ReportTemplate {
+  id       String @id @default(cuid())
+  agencyId String
+  agency   User   @relation("ReportTemplates", fields: [agencyId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  sections    String  @db.Text
+  customText  String? @db.Text
+  footerText  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  dodoSubscriptionId   String             @unique
+  dodoCustomerId       String
+  dodoProductId        String
+  dodoPaymentId        String?
+  status               SubscriptionStatus @default(ACTIVE)
+  plan                 Plan
+  currentPeriodEnd     DateTime?
+  cancelledAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([dodoSubscriptionId])
+  @@index([userId])
+}
+
+model Usage {
+  id        String   @id @default(cuid())
+  userId    String
+  month     String   // "2025-06" format
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
+  @@index([userId, month])
+}
+
+model PerformanceFixerAudit {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  url        String
+  industry   String?
+  analyzedAt DateTime @default(now())
+
+  lcp  Float
+  fid  Float?
+  inp  Float?
+  cls  Float
+
+  lcpScore    Int
+  fidScore    Int?
+  clsScore    Int
+  overallScore   Int
+  projectedScore Int
+
+  revenueLoss      Float?
+  potentialRevenue Float?
+  fixTime          Int
+  fixCost          Float
+
+  fixes           String
+  totalFixes      Int
+  extendedMetrics String? @db.Text
+
+  industryAvg  Int?
+  industryRank Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  aiFixes AIFixGeneration[]
+
+  @@index([userId])
+}
+
+model AIFixGeneration {
+  id      String                @id @default(cuid())
+  auditId String
+  audit   PerformanceFixerAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  fixType         String
+  language        String
+  beforeCode      String
+  afterCode       String
+  description     String
+  estimatedImpact Int
+  applied         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@index([auditId])
+}
+
+model ContentOptimization {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content       String  @db.Text
+  targetKeyword String
+  contentUrl    String?
+
+  detectedIntent    String
+  intentMatchScore  Int
+  intentSuggestions String @db.Text
+
+  entities            String @db.Text
+  entityScore         Int
+  missingEntities     String @db.Text
+  entityRelationships String @db.Text
+
+  lsiKeywords String @db.Text
+  missingLsi  String @db.Text
+  lsiScore    Int
+
+  recommendedSchema String
+  schemaJsonLd      String @db.Text
+
+  mainTopic          String
+  subtopicsCovered   String @db.Text
+  subtopicsMissing   String @db.Text
+  topicCoverageScore Int
+
+  pillarSuggestion    String?
+  clusterSuggestions  String? @db.Text
+  internalLinkingOps  String? @db.Text
+
+  experienceScore Int
+  expertiseScore  Int
+  authorityScore  Int
+  trustScore      Int
+  eeatOverall     Int
+
+  overallScore       Int
+  rewriteSuggestions String @db.Text
+  improvements       String @db.Text
+
+  analyzedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  fixes ContentOptimizationFix[]
+
+  @@index([userId])
+}
+
+model BlogPost {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  title         String
+  description   String
+  content       String    @db.Text
+  contentType   String    @default("markdown") // "html" | "markdown"
+  category      String
+  tags          String    @default("") // comma-separated
+  featuredImage String?
+  readingTime   String    @default("5 min read")
+  published     Boolean   @default(false)
+  publishedAt   DateTime?
+  scheduledAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([published, publishedAt])
+}
+
+model ContentOptimizationFix {
+  id             String              @id @default(cuid())
+  optimizationId String
+  optimization   ContentOptimization @relation(fields: [optimizationId], references: [id], onDelete: Cascade)
+
+  category   String
+  priority   String
+  issue      String
+  suggestion String  @db.Text
+  beforeText String? @db.Text
+  afterText  String? @db.Text
+  applied    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([optimizationId])
+}
+
+model ContentIdeaProject {
+  id             String @id @default(cuid())
+  userId         String
+  user           User   @relation("ContentIdeaProjects", fields: [userId], references: [id], onDelete: Cascade)
+
+  name           String
+  industry       String
+  targetAudience String
+  seedKeywords   String @db.Text
+  competitors    String @db.Text
+
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  ideas     ContentIdea[]
+  calendar  ContentCalendar[]
+
+  @@index([userId])
+}
+
+model ContentIdea {
+  id        String             @id @default(cuid())
+  projectId String
+  project   ContentIdeaProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  title       String
+  slug        String
+  description String?
+
+  primaryKeyword  String
+  relatedKeywords String @db.Text
+  searchVolume    Int
+  difficulty      Int
+  cpc             Float?
+
+  contentType     String
+  estimatedLength Int
+  sections        String @db.Text
+
+  entitiesNeeded String @db.Text
+  lsiKeywords    String @db.Text
+  semanticGaps   String @db.Text
+
+  eeatScore        Int
+  competitorCount  Int
+  opportunityScore Int
+
+  status     String    @default("idea")
+  assignedTo String?
+  dueDate    DateTime?
+
+  aiOutline String? @db.Text
+  aiIntro   String? @db.Text
+
+  pinned Boolean @default(false)
+  notes  String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([difficulty])
+  @@index([opportunityScore])
+}
+
+model CompetitorAnalysis {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("CompetitorAnalyses", fields: [userId], references: [id], onDelete: Cascade)
+
+  domainUrl  String
+  domainName String
+
+  estimatedTraffic Int
+  domainAuthority  Float
+  pageAuthority    Float
+  backlinksTotal   Int
+  backlinksNew     Int
+
+  topKeywords  String @db.Text
+  keywordCount Int
+  brandKeywords String @db.Text
+
+  topPages         String @db.Text
+  contentCount     Int
+  avgContentLength Int
+
+  topBacklinks    String @db.Text
+  backlinksSource String @db.Text
+
+  gapKeywords     String @db.Text
+  missingEntities String @db.Text
+  contentOpps     String @db.Text
+
+  aiInsights  String? @db.Text
+
+  dataQuality    String   @default("high")
+  lastAnalyzedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([domainUrl])
+}
+
+model CompetitorComparison {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("CompetitorComparisons", fields: [userId], references: [id], onDelete: Cascade)
+
+  name       String
+  yourDomain String
+  competitors String @db.Text
+
+  comparisonData String @db.Text
+  keywordOverlap String @db.Text
+  uniqueToYou    String @db.Text
+  uniqueToThem   String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model OnPageAnalysis {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("OnPageAnalyses", fields: [userId], references: [id], onDelete: Cascade)
+
+  content        String  @db.Text
+  targetKeyword  String
+  pageUrl        String?
+  pageTitle      String?
+
+  overallScore   Int
+
+  keywordScore   Int
+  headerScore    Int
+  metaScore      Int
+  imageScore     Int
+  linkScore      Int
+  readabilityScore Int
+
+  keywordDensity   Float
+  keywordCount     Int
+  wordCount        Int
+  keywordData      String @db.Text
+
+  headers          String @db.Text
+  metaTags         String @db.Text
+  images           String @db.Text
+  links            String @db.Text
+  readabilityData  String @db.Text
+
+  fixes            String @db.Text
+  appliedFixes     String @db.Text
+
+  version          Int      @default(1)
+  previousScore    Int?
+
+  analyzedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([targetKeyword])
+}
+
+model ContentCalendar {
+  id        String             @id @default(cuid())
+  projectId String
+  project   ContentIdeaProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ideaId    String?
+
+  title       String
+  publishDate DateTime
+  status      String   @default("planned")
+  notes       String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([publishDate])
+}
+
+model RankTrackingProject {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation("RankTrackingProjects", fields: [userId], references: [id], onDelete: Cascade)
+
+  name           String
+  domain         String
+  targetLocation String    @default("US")
+  deviceType     String    @default("desktop")
+
+  trackKeywords  String    @db.Text
+  updateFrequency String   @default("daily")
+  lastUpdatedAt  DateTime?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  keywords       RankTrackingKeyword[]
+  history        RankHistory[]
+  alerts         RankAlert[]
+
+  @@index([userId])
+  @@index([domain])
+}
+
+model RankTrackingKeyword {
+  id        String              @id @default(cuid())
+  projectId String
+  project   RankTrackingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  keyword          String
+  searchVolume     Int?
+  difficulty       Int?
+
+  currentRank      Int?
+  currentUrl       String?
+
+  rankChange30d    Int?
+  rankChange7d     Int?
+  rankTrendPercent Float?
+
+  status      String    @default("tracking")
+  achievedRank Int?
+  notes        String?  @db.Text
+  lastRanked   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  history RankHistory[]
+
+  @@index([projectId])
+  @@index([currentRank])
+  @@unique([projectId, keyword])
+}
+
+model RankHistory {
+  id        String              @id @default(cuid())
+  projectId String
+  project   RankTrackingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  keywordId   String
+  keyword     RankTrackingKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  rank        Int?
+  url         String?
+  searchVolume Int?
+  checkedDate  DateTime @default(now())
+
+  @@index([projectId])
+  @@index([keywordId])
+  @@index([checkedDate])
+  @@unique([keywordId, checkedDate])
+}
+
+model RankAlert {
+  id        String              @id @default(cuid())
+  projectId String
+  project   RankTrackingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  keyword    String
+  alertType  String   // "position_drop", "position_gain", "first_page", "top_3", "lost_ranking"
+  threshold  Int?
+  oldRank    Int?
+  newRank    Int?
+  message    String   @db.Text
+  read       Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([read])
+}
+
+model LocalSEOAccount {
+  id          String @id @default(cuid())
+  userId      String
+  user        User   @relation("LocalSEOAccounts", fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  accountType String @default("multi-location")
+  gbpConnected Boolean @default(false)
+  gbpEmail    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  locations LocalSEOLocation[]
+  reviews   LocalReview[]
+  citations LocalCitation[]
+  tasks     LocalSEOTask[]
+
+  @@index([userId])
+}
+
+model LocalSEOLocation {
+  id        String          @id @default(cuid())
+  accountId String
+  account   LocalSEOAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  name    String
+  address String
+  city    String
+  state   String
+  zipCode String
+  phone   String
+  website String?
+
+  gbpId    String?
+  gmapsUrl String?
+
+  averageRating Float?
+  reviewCount   Int?
+
+  localKeywords String @db.Text
+
+  pageViews  Int?
+  calls      Int?
+  directions Int?
+
+  citationScore Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  keywords  LocalKeywordRank[]
+  reviews   LocalReview[]
+  citations LocalCitation[]
+
+  @@index([accountId])
+  @@index([city])
+  @@unique([accountId, gbpId])
+}
+
+model LocalKeywordRank {
+  id         String           @id @default(cuid())
+  locationId String
+  location   LocalSEOLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  keyword    String
+  searchType String @default("local")
+
+  currentRank  Int?
+  previousRank Int?
+
+  rankChange7d  Int?
+  rankChange30d Int?
+
+  searchVolume Int?
+  difficulty   Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  history LocalRankHistory[]
+
+  @@index([locationId])
+  @@index([currentRank])
+  @@unique([locationId, keyword, searchType])
+}
+
+model LocalRankHistory {
+  id        String           @id @default(cuid())
+  keywordId String
+  keyword   LocalKeywordRank @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  rank        Int?
+  checkedDate DateTime @default(now())
+
+  @@index([keywordId])
+  @@index([checkedDate])
+  @@unique([keywordId, checkedDate])
+}
+
+model LocalReview {
+  id        String          @id @default(cuid())
+  accountId String
+  account   LocalSEOAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  locationId String
+  location   LocalSEOLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  source    String
+  reviewText String @db.Text
+  rating    Int
+  author    String?
+
+  responded    Boolean @default(false)
+  responseText String? @db.Text
+
+  flaggedAsNegative Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  reviewedDate      DateTime?
+
+  @@index([accountId])
+  @@index([locationId])
+  @@index([rating])
+}
+
+model LocalCitation {
+  id        String          @id @default(cuid())
+  accountId String
+  account   LocalSEOAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  locationId String
+  location   LocalSEOLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  source          String
+  sourceUrl       String
+  businessName    String
+  businessPhone   String
+  businessAddress String
+
+  nameMatches    Boolean @default(true)
+  phoneMatches   Boolean @default(true)
+  addressMatches Boolean @default(true)
+
+  status           String  @default("verified")
+  issueDescription String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([locationId])
+  @@unique([accountId, locationId, source])
+}
+
+model LLMVisibilityAnalysis {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation("LLMVisibilityAnalyses", fields: [userId], references: [id], onDelete: Cascade)
+
+  websiteUrl      String
+  domain          String
+
+  llmVisibilityScore Int
+  semanticRelevance Int
+  retrievalLikelihood Int
+  contentStructure Int
+  answerability   Int
+  technicalAccess Int
+
+  pagesAnalyzed   Int
+  totalWords      Int
+
+  topicsFound     Int
+  entitiesFound   Int
+  faqSections     Int
+
+  criticalGaps    String    @db.Text
+  warnings        String    @db.Text
+  opportunities   String    @db.Text
+  recommendations String    @db.Text
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  pages           LLMVisibilityPage[]
+  queryTests      LLMQueryTest[]
+
+  @@index([userId])
+  @@index([llmVisibilityScore])
+}
+
+model LLMVisibilityPage {
+  id              String    @id @default(cuid())
+  analysisId      String
+  analysis        LLMVisibilityAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  url             String
+  title           String
+
+  pageScore       Int
+  semanticScore   Int
+  structureScore  Int
+  answerScore     Int
+
+  wordCount       Int
+  headingCount    Int
+  listCount       Int
+  faqCount        Int
+
+  mainTopic       String?
+  subtopics       String    @db.Text
+  entities        String    @db.Text
+
+  retrievable     Boolean
+  retrievalReason String?
+
+  issues          String    @db.Text
+
+  createdAt       DateTime  @default(now())
+
+  @@index([analysisId])
+  @@index([pageScore])
+}
+
+model LLMQueryTest {
+  id              String    @id @default(cuid())
+  analysisId      String
+  analysis        LLMVisibilityAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  query           String
+  queryType       String
+
+  retrieved       Boolean
+  retrievalScore  Float
+
+  topRetrievedPage String?
+  topRetrievedChunk String? @db.Text
+
+  answer          String?   @db.Text
+  answerQuality   Int?
+
+  missingContent  String    @db.Text
+
+  createdAt       DateTime  @default(now())
+
+  @@index([analysisId])
+  @@index([retrievalScore])
+}
+
+model BacklinkDomainAnalysis {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("BacklinkDomainAnalyses", fields: [userId], references: [id], onDelete: Cascade)
+
+  domain String
+
+  // Overview metrics
+  backlinksTotal      Int   @default(0)
+  dofollowLinks       Int   @default(0)
+  nofollowLinks       Int   @default(0)
+  referringDomains    Int   @default(0)
+  referringIPs        Int   @default(0)
+  spamScore           Int   @default(0)
+  brokenBacklinks     Int   @default(0)
+  newBacklinks14d     Int   @default(0)
+  lostBacklinks14d    Int   @default(0)
+  newReferringDomains14d Int @default(0)
+  lostReferringDomains14d Int @default(0)
+  domainRank          Int   @default(0)
+  oprScore            Float @default(0)
+
+  // Cached JSON arrays
+  topBacklinks        String @db.Text
+  topReferringDomains String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([domain])
+}
+
+model BacklinkProject {
+  id           String @id @default(cuid())
+  userId       String
+  user         User   @relation("BacklinkProjects", fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  domain       String
+  niche        String
+  targetKeywords String @db.Text
+  contentBrief   String @db.Text
+
+  totalOpportunities Int @default(0)
+  contactedCount     Int @default(0)
+  securedCount       Int @default(0)
+
+  aiSummary    String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  opportunities BacklinkOpportunity[]
+
+  @@index([userId])
+}
+
+model BacklinkOpportunity {
+  id        String         @id @default(cuid())
+  projectId String
+  project   BacklinkProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  siteName        String
+  siteUrl         String
+  domainAuthority String
+  linkType        String
+  angle           String  @db.Text
+  whyRelevant     String  @db.Text
+  contactApproach String  @db.Text
+  difficulty      String
+  impact          String
+
+  status  String @default("prospecting")
+  notes   String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model SeoAudit {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("SEOAudits", fields: [userId], references: [id], onDelete: Cascade)
+
+  url       String
+  pageTitle String?
+
+  overallScore Int
+  totalChecks  Int
+  passedChecks Int
+  failedChecks Int
+  warnChecks   Int
+
+  categoryScores String @db.Text // JSON: { [categoryKey]: number }
+  autoResults    String @db.Text // JSON: { [checkId]: { status, detail } }
+  aiResults      String @db.Text // JSON: { [categoryKey]: { score, issues, fixes } }
+  checklistState String @db.Text // JSON: { [checkId]: 'pass'|'fail'|'na' }
+  backlinkData   String? @db.Text // JSON: { oprScore, domainRank }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model LocalSEOTask {
+  id        String          @id @default(cuid())
+  accountId String
+  account   LocalSEOAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  locationId  String?
+  title       String
+  description String? @db.Text
+  category    String
+  priority    String
+  status      String  @default("open")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([status])
+}

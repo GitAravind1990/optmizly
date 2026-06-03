@@ -1,0 +1,40 @@
+{
+  "functions": {
+    "src/app/api/fixer/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/rewrite/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/topical/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/serp/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/tracker/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/local/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/analyse/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/eeat/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/backlinks/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/gap/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/citation/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/queries/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}

@@ -1,0 +1,362 @@
+﻿'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { UserButton, useUser } from '@clerk/nextjs'
+import { Card, Badge, Button, Spinner, ScoreBar } from '@/components/ui'
+
+type UsageData = {
+  plan: string; count: number; limit: number; remaining: number
+  subscription?: {
+    dodoSubscriptionId: string; status: string
+    currentPeriodEnd?: string; cancelledAt?: string; plan: string
+  } | null
+}
+
+const PLAN_META: Record<string, { label: string; color: 'blue'|'amber'|'gray'; price: string; limit: number; bg: string }> = {
+  FREE:   { label: 'Free',   color: 'gray',  price: '$0/mo',  limit: 3,   bg: 'from-slate-700 to-slate-600' },
+  PRO:    { label: 'Pro',    color: 'blue',  price: '$19/mo', limit: 50,  bg: 'from-blue-700 to-blue-500' },
+  AGENCY: { label: 'Agency', color: 'amber', price: '$49/mo', limit: 200, bg: 'from-amber-600 to-amber-500' },
+}
+
+const ALL_TOOLS = [
+  { label: 'Content Analyzer',  plans: ['FREE','PRO','AGENCY'] },
+  { label: 'Issues Audit',      plans: ['FREE','PRO','AGENCY'] },
+  { label: 'Content Optimizer', plans: ['PRO','AGENCY'] },
+  { label: 'More tools coming soon', plans: ['AGENCY'] },
+]
+
+type Tab = 'account' | 'plan' | 'billing'
+
+export default function SettingsPage() {
+  const { user } = useUser()
+  const [usage, setUsage] = useState<UsageData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [tab, setTab] = useState<Tab>('account')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/user').then(r => r.json()).then(d => { setUsage(d); setLoading(false) }).catch(() => setLoading(false))
+  }, [])
+
+  async function openPortal() {
+    setPortalLoading(true)
+    try {
+      const r = await fetch('/api/portal', { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error)
+      window.open(d.url, '_blank')
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Could not open billing portal')
+    } finally { setPortalLoading(false) }
+  }
+
+  function copyEmail() {
+    const email = user?.emailAddresses[0]?.emailAddress ?? ''
+    navigator.clipboard.writeText(email).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
+  }
+
+  const plan = usage?.plan ?? 'FREE'
+  const meta = PLAN_META[plan] ?? PLAN_META.FREE
+  const pct = usage ? Math.min(100, (usage.count / usage.limit) * 100) : 0
+  const sub = usage?.subscription
+  const isActive = sub?.status === 'ACTIVE'
+  const nextBilling = sub?.currentPeriodEnd
+    ? new Date(sub.currentPeriodEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    : null
+
+  const avatar = user?.firstName?.[0] ?? user?.emailAddresses[0]?.emailAddress?.[0]?.toUpperCase() ?? '?'
+
+  const TABS: { id: Tab; label: string }[] = [
+    { id: 'account', label: 'ðŸ‘¤ Account' },
+    { id: 'plan',    label: 'ðŸ“Š Plan & Usage' },
+    { id: 'billing', label: 'ðŸ’³ Billing' },
+  ]
+
+  return (
+    <div className="flex-1 overflow-y-auto px-6 py-6 bg-slate-50">
+      <div className="max-w-2xl mx-auto">
+
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6 bg-white rounded-2xl border border-slate-200 p-5">
+          <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${meta.bg} flex items-center justify-center text-white font-black text-lg flex-shrink-0`}>
+            {avatar}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-black text-slate-900 text-base truncate">{user?.fullName ?? 'Your Account'}</div>
+            <div className="text-xs text-slate-400 truncate">{user?.emailAddresses[0]?.emailAddress}</div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Badge variant={meta.color}>{meta.label}</Badge>
+            <UserButton afterSignOutUrl="/" />
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 mb-5 bg-white rounded-xl border border-slate-200 p-1">
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                tab === t.id
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              }`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {loading && (
+          <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        )}
+
+        {/* â”€â”€ ACCOUNT TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {!loading && tab === 'account' && (
+          <div className="space-y-4">
+
+            <Card>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Profile</div>
+              {[
+                { label: 'Full name',     value: user?.fullName ?? 'â€”',                         action: null },
+                { label: 'Email',         value: user?.emailAddresses[0]?.emailAddress ?? 'â€”', action: { label: copied ? 'âœ“ Copied' : 'Copy', fn: copyEmail } },
+                { label: 'Member since',  value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'â€”', action: null },
+                { label: 'Sign-in method',value: user?.externalAccounts[0]?.provider?.replace('_', ' ') ?? 'Email & password', action: null },
+              ].map(row => (
+                <div key={row.label} className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0">
+                  <div>
+                    <div className="text-xs text-slate-400 mb-0.5">{row.label}</div>
+                    <div className="text-sm font-medium capitalize">{row.value}</div>
+                  </div>
+                  {row.action && (
+                    <button onClick={row.action.fn} className="text-xs text-blue-600 hover:underline font-medium flex-shrink-0 ml-4">
+                      {row.action.label}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </Card>
+
+            <Card>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Security</div>
+              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                <div>
+                  <div className="text-sm font-medium">Password</div>
+                  <div className="text-xs text-slate-400">Managed via Clerk â€” click your avatar to update</div>
+                </div>
+                <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Protected</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <div className="text-sm font-medium">Two-factor authentication</div>
+                  <div className="text-xs text-slate-400">Extra security for your account</div>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-bold border ${
+                  user?.twoFactorEnabled
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                }`}>
+                  {user?.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+              </div>
+            </Card>
+
+            <Card className="border-red-100">
+              <div className="text-xs font-bold text-red-400 uppercase tracking-wider mb-3">Danger Zone</div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">Delete account</div>
+                  <div className="text-xs text-slate-400">Permanently remove your account and all data</div>
+                </div>
+                <a href="mailto:support@Optmizly.com?subject=Delete my account"
+                  className="text-xs text-red-500 hover:text-red-700 font-bold border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                  Request â†’
+                </a>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* â”€â”€ PLAN & USAGE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {!loading && tab === 'plan' && (
+          <div className="space-y-4">
+
+            {/* Plan hero */}
+            <div className={`rounded-2xl p-6 text-white bg-gradient-to-r ${meta.bg}`}>
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <div className="text-xs font-bold opacity-60 uppercase tracking-wider mb-1">Current Plan</div>
+                  <div className="text-4xl font-black">{meta.label}</div>
+                  <div className="text-sm opacity-75 mt-1">{meta.price} Â· {meta.limit} analyses / month</div>
+                </div>
+                {plan !== 'AGENCY' && (
+                  <Link href="/pricing"
+                    className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors whitespace-nowrap">
+                    Upgrade â†’
+                  </Link>
+                )}
+              </div>
+
+              {/* Usage */}
+              {usage && (
+                <div>
+                  <div className="flex justify-between text-xs mb-2">
+                    <span className="opacity-75">This month's usage</span>
+                    <span className="font-black">{usage.count} / {usage.limit}</span>
+                  </div>
+                  <div className="h-2.5 rounded-full bg-white/20 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${pct >= 90 ? 'bg-red-400' : 'bg-white'}`}
+                      style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="flex justify-between text-xs mt-2 opacity-60">
+                    <span>{usage.remaining} remaining</span>
+                    <span>Resets 1st of each month</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Tool access list */}
+            <Card>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Tools Included in Your Plan</div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                {ALL_TOOLS.map(t => {
+                  const included = t.plans.includes(plan)
+                  return (
+                    <div key={t.label} className="flex items-center gap-2">
+                      <span className={`text-xs font-black w-4 flex-shrink-0 ${included ? 'text-emerald-500' : 'text-slate-200'}`}>
+                        {included ? 'âœ“' : 'âœ—'}
+                      </span>
+                      <span className={`text-xs ${included ? 'text-slate-700' : 'text-slate-300'}`}>{t.label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </Card>
+
+            {/* Upgrade nudge */}
+            {plan !== 'AGENCY' && (
+              <div className={`rounded-2xl p-5 ${plan === 'FREE' ? 'bg-blue-600' : 'bg-amber-500'} text-white`}>
+                <div className="font-black text-base mb-1">
+                  {plan === 'FREE' ? 'Unlock Content Optimizer with Pro' : 'Get Agency â€” more capacity'}
+                </div>
+                <div className="text-sm opacity-80 mb-4">
+                  {plan === 'FREE'
+                    ? 'Auto-fix your content issues with AI â€” starting at $19/mo'
+                    : '200 analyses / month + priority support â€” $49/mo'}
+                </div>
+                <Link href="/pricing"
+                  className="inline-block bg-white text-sm font-black px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
+                  style={{ color: plan === 'FREE' ? '#2563eb' : '#d97706' }}>
+                  {plan === 'FREE' ? 'See Pro Plan â†’' : 'See Agency Plan â†’'}
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* â”€â”€ BILLING TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {!loading && tab === 'billing' && (
+          <div className="space-y-4">
+
+            {/* Subscription card */}
+            <Card>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Subscription</div>
+
+              {sub ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-slate-50 rounded-xl p-3.5">
+                      <div className="text-xs text-slate-400 mb-1">Plan</div>
+                      <div className="font-black text-sm">{meta.label}</div>
+                      <div className="text-xs text-slate-500">{meta.price}</div>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-3.5">
+                      <div className="text-xs text-slate-400 mb-1">Status</div>
+                      <Badge variant={isActive ? 'green' : sub.status === 'CANCELLED' ? 'amber' : 'red'}>
+                        {sub.status}
+                      </Badge>
+                    </div>
+                    {nextBilling && (
+                      <div className="bg-slate-50 rounded-xl p-3.5">
+                        <div className="text-xs text-slate-400 mb-1">
+                          {sub.status === 'CANCELLED' ? 'Access until' : 'Next billing'}
+                        </div>
+                        <div className="font-bold text-sm">{nextBilling}</div>
+                      </div>
+                    )}
+                    <div className="bg-slate-50 rounded-xl p-3.5">
+                      <div className="text-xs text-slate-400 mb-1">Subscription ID</div>
+                      <div className="font-mono text-xs text-slate-500 truncate">{sub.dodoSubscriptionId}</div>
+                    </div>
+                  </div>
+
+                  {/* Cancellation notice */}
+                  {sub.status === 'CANCELLED' && (
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
+                      <div className="text-xs font-bold text-amber-800 mb-1">Subscription cancelled</div>
+                      <p className="text-xs text-amber-700 mb-3">
+                        You retain access until {nextBilling ?? 'end of billing period'}. After that your account moves to the Free plan.
+                      </p>
+                      <Link href="/pricing" className="text-xs font-bold text-amber-800 underline">
+                        Reactivate â†’
+                      </Link>
+                    </div>
+                  )}
+
+                  {/* Portal button */}
+                  <div className="border-t border-slate-100 pt-4">
+                    <Button onClick={openPortal} loading={portalLoading} className="w-full justify-center mb-2">
+                      Open Billing Portal â†’
+                    </Button>
+                    <p className="text-xs text-slate-400 text-center">
+                      Update payment method Â· Download invoices Â· Cancel anytime
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl mx-auto mb-4">ðŸ’³</div>
+                  <p className="text-sm font-black text-slate-800 mb-1">No active subscription</p>
+                  <p className="text-xs text-slate-400 mb-6">You're on the Free plan Â· 3 analyses per month</p>
+                  <Link href="/pricing"
+                    className="inline-block rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
+                    Upgrade to Pro â€” $19/mo â†’
+                  </Link>
+                </div>
+              )}
+            </Card>
+
+            {/* Invoice history */}
+            {sub && (
+              <Card className="bg-slate-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-bold text-slate-700">Invoice history</div>
+                    <div className="text-xs text-slate-400 mt-0.5">All receipts available in the billing portal</div>
+                  </div>
+                  <button onClick={openPortal} disabled={portalLoading}
+                    className="text-xs text-blue-600 hover:underline font-bold disabled:opacity-40">
+                    {portalLoading ? 'Openingâ€¦' : 'View invoices â†’'}
+                  </button>
+                </div>
+              </Card>
+            )}
+
+            {/* Support */}
+            <Card className="bg-slate-50">
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Billing Support</div>
+              <p className="text-sm text-slate-600 mb-2">Questions about charges or your subscription?</p>
+              <a href="mailto:billing@Optmizly.com" className="text-sm font-bold text-blue-600 hover:underline">
+                billing@Optmizly.com
+              </a>
+              <p className="text-xs text-slate-400 mt-1">We respond within 24 hours</p>
+            </Card>
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
+

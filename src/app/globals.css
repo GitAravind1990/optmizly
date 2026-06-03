@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* TipTap editor styles */
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+.tiptap table td,
+.tiptap table th {
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.tiptap table th {
+  background: #f8fafc;
+  font-weight: 700;
+}
+.tiptap table .selectedCell {
+  background: #eff6ff;
+}
+.tiptap p.is-editor-empty:first-child::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+:root {
+  --brand: #2563eb;
+  --brand-dark: #1d4ed8;
+  --amber: #d97706;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  body { font-family: var(--font-sans), system-ui, sans-serif; }
+}
+
+@layer utilities {
+  .animate-spin-slow { animation: spin 1s linear infinite; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up { animation: fade-up 0.35s cubic-bezier(0.16,1,0.3,1) both; }
