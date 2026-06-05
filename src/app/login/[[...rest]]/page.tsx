@@ -1,6 +1,17 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { SignIn } from '@clerk/nextjs'
+
+const SignIn = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  ? require('@clerk/nextjs').SignIn
+  : function DevSignIn() {
+      return (
+        <div className="w-full max-w-md p-6 border border-slate-200 rounded-2xl bg-white">
+          <p className="text-center text-sm text-slate-600 mb-4">
+            Sign-in requires Clerk credentials. For development, use the <Link href="/dashboard" className="font-semibold text-blue-600">dashboard</Link> instead.
+          </p>
+        </div>
+      )
+    }
 
 export const metadata: Metadata = {
   title: 'Log In — Optmizly',
