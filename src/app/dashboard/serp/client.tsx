@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Card, Badge } from '@/components/ui'
+import { Button, Card, Badge, EmptyState } from '@/components/ui'
 import { exportSerpCSV, exportSerpPDF } from '@/lib/export'
 
 const SEV_COLORS: Record<string, 'red' | 'amber' | 'blue' | 'green'> = { critical: 'red', high: 'amber', medium: 'blue', low: 'green' }
