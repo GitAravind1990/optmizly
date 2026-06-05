@@ -1,14 +1,16 @@
 ﻿import type { Metadata } from 'next'
-import { ClerkProvider } from '@clerk/nextjs'
+import { ClerkProviderWrapper } from '@/components/clerk-provider'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
+export const dynamic = 'force-dynamic'
+
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://Optmizly.com'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://optmizly.com'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(APP_URL),
+  metadataBase: APP_URL ? new URL(APP_URL) : undefined,
   title: {
     default: 'Optmizly â€” AI Content Optimizer',
     template: '%s | Optmizly',
@@ -51,9 +53,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased bg-white text-slate-900`}>
-        <ClerkProvider>
+        <ClerkProviderWrapper>
           {children}
-        </ClerkProvider>
+        </ClerkProviderWrapper>
       </body>
     </html>
   )
