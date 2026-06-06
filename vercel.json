@@ -1,14 +1,14 @@
 {
   "redirects": [
     {
-      "source": "/(:path*)",
+      "source": "/:path(.*)",
       "has": [
         {
           "type": "host",
           "value": "www.optmizly.com"
         }
       ],
-      "destination": "https://optmizly.com/:path*",
+      "destination": "https://optmizly.com/:path",
       "permanent": true
     }
   ],
