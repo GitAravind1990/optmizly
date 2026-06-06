@@ -1,4 +1,17 @@
 {
+  "redirects": [
+    {
+      "source": "/(:path*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.optmizly.com"
+        }
+      ],
+      "destination": "https://optmizly.com/:path*",
+      "permanent": true
+    }
+  ],
   "functions": {
     "src/app/api/fixer/route.ts": {
       "maxDuration": 60
