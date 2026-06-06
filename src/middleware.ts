@@ -24,27 +24,17 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  // If Clerk is configured, use clerkMiddleware
-  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    const { clerkMiddleware, createRouteMatcher } = await import('@clerk/nextjs/server')
-
-    const isProtectedRoute = createRouteMatcher([
-      '/dashboard(.*)',
-      '/api/analyse(.*)', '/api/optimizer(.*)', '/api/fetch-url(.*)',
-      '/api/checkout(.*)', '/api/portal(.*)', '/api/user(.*)',
-    ])
-
-    const isWebhookRoute = createRouteMatcher(['/api/webhooks/(.*)'])
-
-    if (isWebhookRoute(req)) return NextResponse.next()
-    if (isProtectedRoute(req)) {
-      // Would need auth.protect() here, but for now just allow
-    }
-  }
-
+  // Let Clerk handle its own routes
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)', '/(api|trpc)(.*)'],
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for Clerk's auto-proxy path
+    '/__clerk/:path*',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
 }
