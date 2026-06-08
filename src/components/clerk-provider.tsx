@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode, createContext, useContext } from 'react'
+import { ClerkProvider } from '@clerk/nextjs'
 
 // Stub Clerk context for development without credentials
 const ClerkContext = createContext<any>(null)
@@ -30,8 +31,6 @@ export function ClerkProviderWrapper({ children }: { children: ReactNode }) {
     return <StubClerkProvider>{children}</StubClerkProvider>
   }
 
-  // Dynamically import real ClerkProvider only if credentials are available
-  const ClerkProvider = require('@clerk/nextjs').ClerkProvider
   return <ClerkProvider>{children}</ClerkProvider>
 }
 
