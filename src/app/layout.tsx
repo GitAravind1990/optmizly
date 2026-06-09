@@ -12,7 +12,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://optmizly.com'
 export const metadata: Metadata = {
   metadataBase: APP_URL ? new URL(APP_URL) : undefined,
   title: {
-    default: 'Optmizly â€” AI Content Optimizer',
+    default: 'Optmizly – AI Content Optimizer',
     template: '%s | Optmizly',
   },
   description: 'Rank higher on Google and get cited by ChatGPT, Perplexity, and every AI engine. 11 AI-powered SEO tools for content teams, SEOs, and agencies.',
@@ -26,13 +26,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'Optmizly',
-    title: 'Optmizly â€” AI Content Optimizer',
+    title: 'Optmizly – AI Content Optimizer',
     description: 'Rank higher on Google and get cited by ChatGPT & Perplexity. 11 AI-powered SEO tools.',
     url: '/',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Optmizly â€” AI Content Optimizer',
+    title: 'Optmizly – AI Content Optimizer',
     description: 'Rank higher on Google and get cited by ChatGPT & Perplexity. 11 AI-powered SEO tools.',
     creator: '@Optmizly',
   },
