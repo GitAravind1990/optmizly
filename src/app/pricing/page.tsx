@@ -32,7 +32,7 @@ const PLANS = [
     features: [
       '50 analyses / month',
       'Everything in Free',
-      'ðŸš€ Enhanced Content Optimizer (7 analyses)',
+      '🚀 Enhanced Content Optimizer (7 analyses)',
       'Schema Markup Generator',
       'Topic Cluster Mapping',
       'Entity & E-E-A-T signals',
@@ -50,7 +50,7 @@ const PLANS = [
     features: [
       '200 analyses / month',
       'Everything in Pro',
-      'âš¡ AI Performance Fixer (exclusive)',
+      '⚡ AI Performance Fixer (exclusive)',
       'Priority support',
       'Team collaboration (coming soon)',
       'Bulk analysis (coming soon)',
@@ -90,7 +90,7 @@ export default function PricingPage() {
       <div className="mx-auto max-w-5xl">
         <div className="text-center mb-12">
           <Link href="/" className="inline-flex items-center gap-2 mb-8 font-extrabold text-slate-900">
-            <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold">â—ˆ</span>
+            <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold">◈</span>
             Optmizly
           </Link>
           <h1 className="text-4xl font-black tracking-tight mb-4">Simple, transparent pricing</h1>
@@ -113,7 +113,7 @@ export default function PricingPage() {
               <div className="h-px bg-slate-100 mb-6" />
               {plan.features.map(f => (
                 <div key={f} className="flex items-start gap-2 text-sm mb-2.5">
-                  <span className="text-emerald-500 font-bold mt-0.5 flex-shrink-0">âœ“</span>
+                  <span className=”text-emerald-500 font-bold mt-0.5 flex-shrink-0”>✓</span>
                   <span>{f}</span>
                 </div>
               ))}
