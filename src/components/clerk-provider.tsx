@@ -31,47 +31,11 @@ export function ClerkProviderWrapper({ children }: { children: ReactNode }) {
     return <StubClerkProvider>{children}</StubClerkProvider>
   }
 
-  return <ClerkProvider>{children}</ClerkProvider>
+  return <ClerkProvider publishableKey={publishableKey}>{children}</ClerkProvider>
 }
 
-// Stub Clerk hooks
-export function useSession() {
-  const context = useContext(ClerkContext)
-  if (!context) {
-    return {
-      isLoaded: true,
-      session: null,
-      isSignedIn: false,
-    }
-  }
-  return context
-}
-
-export function useAuth() {
-  const context = useContext(ClerkContext)
-  if (!context) {
-    return {
-      isLoaded: true,
-      userId: null,
-      sessionId: null,
-      getToken: async () => null,
-      signOut: async () => {},
-    }
-  }
-  return context
-}
-
-export function useUser() {
-  const context = useContext(ClerkContext)
-  if (!context) {
-    return {
-      isLoaded: true,
-      user: null,
-      isSignedIn: false,
-    }
-  }
-  return context
-}
+// Note: Use hooks from @clerk/nextjs directly, e.g.:
+// import { useUser, useAuth, useSession } from '@clerk/nextjs'
 
 // Stub components for Clerk when credentials aren't available
 export function SignedOut({ children }: { children: ReactNode }) {

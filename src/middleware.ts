@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { clerkMiddleware } from '@clerk/nextjs/server'
 
 const rateLimitMap = new Map<string, { count: number; reset: number }>()
 
@@ -15,18 +16,18 @@ function rateLimit(ip: string): boolean {
   return true
 }
 
-export default async function middleware(req: NextRequest) {
+export default clerkMiddleware((auth, req) => {
   // Rate limiting for API routes
-  if (req.nextUrl.pathname.startsWith('/api/')) {
+  const pathname = new URL(req.url).pathname
+  if (pathname.startsWith('/api/')) {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1'
     if (!rateLimit(ip)) {
       return NextResponse.json({ error: 'Too many requests — slow down.' }, { status: 429, headers: { 'Retry-After': '60' } })
     }
   }
 
-  // Let Clerk handle its own routes
   return NextResponse.next()
-}
+})
 
 export const config = {
   matcher: [
