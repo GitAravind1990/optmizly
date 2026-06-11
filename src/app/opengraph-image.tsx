@@ -17,7 +17,12 @@ export default function OGImage() {
           fontFamily: 'system-ui, sans-serif',
         }}
       >
-        <div style={{ fontSize: 64, marginBottom: 16 }}>◈</div>
+        <div style={{
+          width: 72, height: 72, borderRadius: 16, background: 'rgba(255,255,255,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+        }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'white' }} />
+        </div>
         <div style={{ color: 'white', fontSize: 56, fontWeight: 900, letterSpacing: '-2px' }}>
           Optmizly
         </div>
