@@ -1,3 +1,4 @@
+import { clerkMiddleware } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -15,7 +16,7 @@ function rateLimit(ip: string): boolean {
   return true
 }
 
-export default async function middleware(req: NextRequest) {
+export default clerkMiddleware(async (auth, req: NextRequest) => {
   // Rate limiting for API routes
   if (req.nextUrl.pathname.startsWith('/api/')) {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1'
@@ -25,7 +26,7 @@ export default async function middleware(req: NextRequest) {
   }
 
   return NextResponse.next()
-}
+})
 
 export const config = {
   matcher: [
