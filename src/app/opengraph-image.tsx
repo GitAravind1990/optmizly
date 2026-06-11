@@ -1,7 +1,7 @@
 ﻿import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'Optmizly â€” AI Content Optimizer'
+export const alt = 'Optmizly – AI Content Optimizer'
 export const size = { width: 1200, height: 628 }
 export const contentType = 'image/png'
 
@@ -17,12 +17,12 @@ export default function OGImage() {
           fontFamily: 'system-ui, sans-serif',
         }}
       >
-        <div style={{ fontSize: 64, marginBottom: 16 }}>â—ˆ</div>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>◈</div>
         <div style={{ color: 'white', fontSize: 56, fontWeight: 900, letterSpacing: '-2px' }}>
           Optmizly
         </div>
         <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 26, marginTop: 12 }}>
-          AI Content Optimizer Â· Rank Higher Â· Get Cited by Every AI
+          AI Content Optimizer · Rank Higher · Get Cited by Every AI
         </div>
         <div style={{ display: 'flex', gap: 16, marginTop: 40 }}>
           {['11 Tools', '8 Score Dims', 'Free to start'].map(t => (

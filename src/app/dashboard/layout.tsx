@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -12,35 +12,35 @@ const TOOL_GROUPS = [
   {
     label: 'Free',
     tools: [
-      { id: 'scores', label: 'Content Analyzer', icon: 'ðŸ“Š', href: '/dashboard', minPlan: 'FREE' },
-      { id: 'onpage', label: 'On-Page SEO', icon: 'ðŸ”', href: '/dashboard/onpage', minPlan: 'FREE' },
+      { id: 'scores', label: 'Content Analyzer', icon: '📊', href: '/dashboard', minPlan: 'FREE' },
+      { id: 'onpage', label: 'On-Page SEO', icon: '🔍', href: '/dashboard/onpage', minPlan: 'FREE' },
     ],
   },
   {
     label: 'Pro',
     tools: [
-      { id: 'ideas',           label: 'Content Planner',   icon: 'ðŸ’¡', href: '/dashboard/ideas',            minPlan: 'PRO' },
-      { id: 'rank-tracker',    label: 'Rank Tracker',      icon: 'ðŸ“ˆ', href: '/dashboard/rank-tracker',      minPlan: 'PRO' },
-      { id: 'competitor-spy',  label: 'Competitor Spy',    icon: 'ðŸ”', href: '/dashboard/competitor-spy',    minPlan: 'PRO' },
-      { id: 'optimizer',       label: 'Content Optimizer', icon: 'âš¡', href: '/dashboard/optimizer',         minPlan: 'PRO' },
-      { id: 'eeat',      label: 'E-E-A-T Analysis',  icon: 'ðŸ†', href: '/dashboard/eeat',      minPlan: 'PRO' },
-      { id: 'gap',       label: 'Content Gap',       icon: 'ðŸ•³ï¸', href: '/dashboard/gap',       minPlan: 'PRO' },
-      { id: 'citation',      label: 'AI Visibility',     icon: 'ðŸ”­', href: '/dashboard/citation',                      minPlan: 'PRO' },
-      { id: 'llm-visibility', label: 'LLM Visibility',  icon: 'ðŸ¤–', href: '/dashboard/optimizer/llm-visibility',         minPlan: 'PRO' },
-      { id: 'backlinks',     label: 'Backlinks',         icon: 'ðŸ”—', href: '/dashboard/backlinks',                        minPlan: 'PRO' },
+      { id: 'ideas',           label: 'Content Planner',   icon: '💡', href: '/dashboard/ideas',            minPlan: 'PRO' },
+      { id: 'rank-tracker',    label: 'Rank Tracker',      icon: '📈', href: '/dashboard/rank-tracker',      minPlan: 'PRO' },
+      { id: 'competitor-spy',  label: 'Competitor Spy',    icon: '🔍', href: '/dashboard/competitor-spy',    minPlan: 'PRO' },
+      { id: 'optimizer',       label: 'Content Optimizer', icon: '⚡', href: '/dashboard/optimizer',         minPlan: 'PRO' },
+      { id: 'eeat',      label: 'E-E-A-T Analysis',  icon: '🏆', href: '/dashboard/eeat',      minPlan: 'PRO' },
+      { id: 'gap',       label: 'Content Gap',       icon: '🕳️', href: '/dashboard/gap',       minPlan: 'PRO' },
+      { id: 'citation',      label: 'AI Visibility',     icon: '🔭', href: '/dashboard/citation',                      minPlan: 'PRO' },
+      { id: 'llm-visibility', label: 'LLM Visibility',  icon: '🤖', href: '/dashboard/optimizer/llm-visibility',         minPlan: 'PRO' },
+      { id: 'backlinks',     label: 'Backlinks',         icon: '🔗', href: '/dashboard/backlinks',                        minPlan: 'PRO' },
     ],
   },
   {
     label: 'Agency',
     tools: [
-      { id: 'seo-audit',           label: 'SEO Audit',            icon: 'ðŸ©º', href: '/dashboard/seo-audit',           minPlan: 'AGENCY' },
-      { id: 'local-seo',           label: 'Local SEO Suite',      icon: 'ðŸ“', href: '/dashboard/local-seo',          minPlan: 'AGENCY' },
-      { id: 'serp',                label: 'SERP Audit',           icon: 'ðŸ“ˆ', href: '/dashboard/serp',                minPlan: 'AGENCY' },
-      { id: 'topical',             label: 'Topical Authority',    icon: 'ðŸ—ºï¸', href: '/dashboard/topical',             minPlan: 'AGENCY' },
-      { id: 'local',               label: 'Local SEO',            icon: 'ðŸ“', href: '/dashboard/local',               minPlan: 'AGENCY' },
-      { id: 'tracker',             label: 'Cite Tracker',         icon: 'ðŸŽ¯', href: '/dashboard/tracker',             minPlan: 'AGENCY' },
-      { id: 'performance-fixer',   label: 'AI Performance Fixer', icon: 'âš¡', href: '/dashboard/performance-fixer',   minPlan: 'AGENCY' },
-      { id: 'client-reports',      label: 'Client Reports',       icon: 'ðŸ“‹', href: '/dashboard/agency/clients',      minPlan: 'AGENCY' },
+      { id: 'seo-audit',           label: 'SEO Audit',            icon: '🩺', href: '/dashboard/seo-audit',           minPlan: 'AGENCY' },
+      { id: 'local-seo',           label: 'Local SEO Suite',      icon: '🔍', href: '/dashboard/local-seo',          minPlan: 'AGENCY' },
+      { id: 'serp',                label: 'SERP Audit',           icon: '📈', href: '/dashboard/serp',                minPlan: 'AGENCY' },
+      { id: 'topical',             label: 'Topical Authority',    icon: '🗺️', href: '/dashboard/topical',             minPlan: 'AGENCY' },
+      { id: 'local',               label: 'Local SEO',            icon: '🔍', href: '/dashboard/local',               minPlan: 'AGENCY' },
+      { id: 'tracker',             label: 'Cite Tracker',         icon: '🎯', href: '/dashboard/tracker',             minPlan: 'AGENCY' },
+      { id: 'performance-fixer',   label: 'AI Performance Fixer', icon: '⚡', href: '/dashboard/performance-fixer',   minPlan: 'AGENCY' },
+      { id: 'client-reports',      label: 'Client Reports',       icon: '📋', href: '/dashboard/agency/clients',      minPlan: 'AGENCY' },
     ],
   },
 ]
@@ -96,7 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Logo */}
           <div className="flex items-center gap-2 px-4 py-4 border-b border-slate-200">
             <Link href="/" className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-bold">â—ˆ</span>
+              <span className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-bold">◈</span>
               <span className="font-extrabold text-sm tracking-tight">Optmizly</span>
             </Link>
           </div>
@@ -105,7 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {usage && (
             <div className="px-4 py-3 border-b border-slate-200">
               <div className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold ${planColor}`}>
-                {plan} â€” {usage.count}/{usage.limit}
+                {plan} – {usage.count}/{usage.limit}
               </div>
               <div className="mt-2 h-1.5 rounded-full bg-slate-200 overflow-hidden">
                 <div
@@ -136,7 +136,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <span className="w-5 text-center text-base leading-none">{tool.icon}</span>
                       <span className="flex-1 text-xs font-medium">{tool.label}</span>
                       {!unlocked
-                        ? <span className="text-slate-300 text-xs">ðŸ”’</span>
+                        ? <span className="text-slate-300 text-xs">🔒</span>
                         : tool.minPlan !== 'FREE' && (
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${PLAN_BADGE[tool.minPlan] ?? ''}`}>
                             {tool.minPlan}
@@ -156,7 +156,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 pathname === '/dashboard/settings' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              <span className="w-5 text-center text-base leading-none">âš™ï¸</span>
+              <span className="w-5 text-center text-base leading-none">⚙️</span>
               <span className="text-xs font-medium">Settings</span>
             </Link>
           </nav>
@@ -165,12 +165,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="border-t border-slate-200 p-4 space-y-2">
             {plan === 'FREE' && (
               <Link href="/pricing" className="block w-full rounded-lg bg-blue-600 py-2 text-center text-xs font-bold text-white hover:bg-blue-700">
-                Upgrade to Pro â†’
+                Upgrade to Pro →
               </Link>
             )}
             {plan === 'PRO' && (
               <Link href="/pricing" className="block w-full rounded-lg bg-amber-500 py-2 text-center text-xs font-bold text-white hover:bg-amber-600">
-                Upgrade to Agency â†’
+                Upgrade to Agency →
               </Link>
             )}
             <div className="flex items-center gap-2">
@@ -190,4 +190,3 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </ContentProvider>
   )
 }
-
