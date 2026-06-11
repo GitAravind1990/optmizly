@@ -112,8 +112,8 @@ export default function PricingPage() {
               <div className="text-sm text-slate-400 mb-6">{plan.period}</div>
               <div className="h-px bg-slate-100 mb-6" />
               {plan.features.map(f => (
-                <div key={f} className="flex items-start gap-2 text-sm mb-2.5">
-                  <span className="text-emerald-500 font-bold mt-0.5 flex-shrink-0">âœ“</span>
+                <div key={f} className=”flex items-start gap-2 text-sm mb-2.5”>
+                  <span className=”text-emerald-500 font-bold mt-0.5 flex-shrink-0”>✓</span>
                   <span>{f}</span>
                 </div>
               ))}
