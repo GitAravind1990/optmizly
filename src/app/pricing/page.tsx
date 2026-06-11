@@ -32,7 +32,7 @@ const PLANS = [
     features: [
       '50 analyses / month',
       'Everything in Free',
-      'ðŸš€ Enhanced Content Optimizer (7 analyses)',
+      '🚀 Enhanced Content Optimizer (7 analyses)',
       'Schema Markup Generator',
       'Topic Cluster Mapping',
       'Entity & E-E-A-T signals',
@@ -50,7 +50,7 @@ const PLANS = [
     features: [
       '200 analyses / month',
       'Everything in Pro',
-      'âš¡ AI Performance Fixer (exclusive)',
+      '⚡ AI Performance Fixer (exclusive)',
       'Priority support',
       'Team collaboration (coming soon)',
       'Bulk analysis (coming soon)',
