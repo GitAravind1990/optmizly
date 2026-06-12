@@ -69,9 +69,9 @@ export default function SettingsPage() {
   const avatar = user?.firstName?.[0] ?? user?.emailAddresses[0]?.emailAddress?.[0]?.toUpperCase() ?? '?'
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: 'account', label: 'ðŸ‘¤ Account' },
-    { id: 'plan',    label: 'ðŸ“Š Plan & Usage' },
-    { id: 'billing', label: 'ðŸ’³ Billing' },
+    { id: ‘account’, label: ‘👤 Account’ },
+    { id: ‘plan’,    label: ‘📊 Plan & Usage’ },
+    { id: ‘billing’, label: ‘💳 Billing’ },
   ]
 
   return (
@@ -118,9 +118,9 @@ export default function SettingsPage() {
             <Card>
               <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Profile</div>
               {[
-                { label: 'Full name',     value: user?.fullName ?? 'â€”',                         action: null },
-                { label: 'Email',         value: user?.emailAddresses[0]?.emailAddress ?? 'â€”', action: { label: copied ? 'âœ“ Copied' : 'Copy', fn: copyEmail } },
-                { label: 'Member since',  value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'â€”', action: null },
+                { label: 'Full name',     value: user?.fullName ?? '—',                         action: null },
+                { label: 'Email',         value: user?.emailAddresses[0]?.emailAddress ?? '—', action: { label: copied ? '✔ Copied' : 'Copy', fn: copyEmail } },
+                { label: 'Member since',  value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—', action: null },
                 { label: 'Sign-in method',value: user?.externalAccounts[0]?.provider?.replace('_', ' ') ?? 'Email & password', action: null },
               ].map(row => (
                 <div key={row.label} className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0">
@@ -142,7 +142,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between py-2 border-b border-slate-100">
                 <div>
                   <div className="text-sm font-medium">Password</div>
-                  <div className="text-xs text-slate-400">Managed via Clerk â€” click your avatar to update</div>
+                  <div className=”text-xs text-slate-400”>Managed via Clerk — click your avatar to update</div>
                 </div>
                 <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Protected</span>
               </div>
@@ -170,7 +170,7 @@ export default function SettingsPage() {
                 </div>
                 <a href="mailto:support@Optmizly.com?subject=Delete my account"
                   className="text-xs text-red-500 hover:text-red-700 font-bold border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
-                  Request â†’
+                  Request →
                 </a>
               </div>
             </Card>
@@ -187,12 +187,12 @@ export default function SettingsPage() {
                 <div>
                   <div className="text-xs font-bold opacity-60 uppercase tracking-wider mb-1">Current Plan</div>
                   <div className="text-4xl font-black">{meta.label}</div>
-                  <div className="text-sm opacity-75 mt-1">{meta.price} Â· {meta.limit} analyses / month</div>
+                  <div className="text-sm opacity-75 mt-1">{meta.price} · {meta.limit} analyses / month</div>
                 </div>
                 {plan !== 'AGENCY' && (
                   <Link href="/pricing"
                     className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors whitespace-nowrap">
-                    Upgrade â†’
+                    Upgrade →
                   </Link>
                 )}
               </div>
@@ -225,7 +225,7 @@ export default function SettingsPage() {
                   return (
                     <div key={t.label} className="flex items-center gap-2">
                       <span className={`text-xs font-black w-4 flex-shrink-0 ${included ? 'text-emerald-500' : 'text-slate-200'}`}>
-                        {included ? 'âœ“' : 'âœ—'}
+                        {included ? '✔' : '✗'}
                       </span>
                       <span className={`text-xs ${included ? 'text-slate-700' : 'text-slate-300'}`}>{t.label}</span>
                     </div>
@@ -238,17 +238,17 @@ export default function SettingsPage() {
             {plan !== 'AGENCY' && (
               <div className={`rounded-2xl p-5 ${plan === 'FREE' ? 'bg-blue-600' : 'bg-amber-500'} text-white`}>
                 <div className="font-black text-base mb-1">
-                  {plan === 'FREE' ? 'Unlock Content Optimizer with Pro' : 'Get Agency â€” more capacity'}
+                  {plan === 'FREE' ? 'Unlock Content Optimizer with Pro' : 'Get Agency — more capacity'}
                 </div>
                 <div className="text-sm opacity-80 mb-4">
                   {plan === 'FREE'
-                    ? 'Auto-fix your content issues with AI â€” starting at $19/mo'
-                    : '200 analyses / month + priority support â€” $49/mo'}
+                    ? 'Auto-fix your content issues with AI — starting at $19/mo'
+                    : '200 analyses / month + priority support — $49/mo'}
                 </div>
                 <Link href="/pricing"
                   className="inline-block bg-white text-sm font-black px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
                   style={{ color: plan === 'FREE' ? '#2563eb' : '#d97706' }}>
-                  {plan === 'FREE' ? 'See Pro Plan â†’' : 'See Agency Plan â†’'}
+                  {plan === ‘FREE’ ? ‘See Pro Plan →’ : ‘See Agency Plan →’}
                 </Link>
               </div>
             )}
@@ -299,7 +299,7 @@ export default function SettingsPage() {
                         You retain access until {nextBilling ?? 'end of billing period'}. After that your account moves to the Free plan.
                       </p>
                       <Link href="/pricing" className="text-xs font-bold text-amber-800 underline">
-                        Reactivate â†’
+                        Reactivate →
                       </Link>
                     </div>
                   )}
@@ -307,21 +307,21 @@ export default function SettingsPage() {
                   {/* Portal button */}
                   <div className="border-t border-slate-100 pt-4">
                     <Button onClick={openPortal} loading={portalLoading} className="w-full justify-center mb-2">
-                      Open Billing Portal â†’
+                      Open Billing Portal →
                     </Button>
                     <p className="text-xs text-slate-400 text-center">
-                      Update payment method Â· Download invoices Â· Cancel anytime
+                      Update payment method · Download invoices · Cancel anytime
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-10">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl mx-auto mb-4">ðŸ’³</div>
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl mx-auto mb-4">💳</div>
                   <p className="text-sm font-black text-slate-800 mb-1">No active subscription</p>
-                  <p className="text-xs text-slate-400 mb-6">You're on the Free plan Â· 3 analyses per month</p>
+                  <p className="text-xs text-slate-400 mb-6">You're on the Free plan · 3 analyses per month</p>
                   <Link href="/pricing"
                     className="inline-block rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
-                    Upgrade to Pro â€” $19/mo â†’
+                    Upgrade to Pro — $19/mo →
                   </Link>
                 </div>
               )}
@@ -337,7 +337,7 @@ export default function SettingsPage() {
                   </div>
                   <button onClick={openPortal} disabled={portalLoading}
                     className="text-xs text-blue-600 hover:underline font-bold disabled:opacity-40">
-                    {portalLoading ? 'Openingâ€¦' : 'View invoices â†’'}
+                    {portalLoading ? ‘Opening…’ : ‘View invoices →’}
                   </button>
                 </div>
               </Card>
