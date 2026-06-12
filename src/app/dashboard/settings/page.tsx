@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -69,9 +69,9 @@ export default function SettingsPage() {
   const avatar = user?.firstName?.[0] ?? user?.emailAddresses[0]?.emailAddress?.[0]?.toUpperCase() ?? '?'
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: ‘account’, label: ‘👤 Account’ },
-    { id: ‘plan’,    label: ‘📊 Plan & Usage’ },
-    { id: ‘billing’, label: ‘💳 Billing’ },
+    { id: 'account', label: '👤 Account' },
+    { id: 'plan',    label: '📊 Plan & Usage' },
+    { id: 'billing', label: '💳 Billing' },
   ]
 
   return (
@@ -111,7 +111,7 @@ export default function SettingsPage() {
           <div className="flex justify-center py-20"><Spinner size="lg" /></div>
         )}
 
-        {/* â”€â”€ ACCOUNT TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* â"€â"€ ACCOUNT TAB â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
         {!loading && tab === 'account' && (
           <div className="space-y-4">
 
@@ -142,7 +142,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between py-2 border-b border-slate-100">
                 <div>
                   <div className="text-sm font-medium">Password</div>
-                  <div className=”text-xs text-slate-400”>Managed via Clerk — click your avatar to update</div>
+                  <div className="text-xs text-slate-400">Managed via Clerk — click your avatar to update</div>
                 </div>
                 <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Protected</span>
               </div>
@@ -177,7 +177,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* â”€â”€ PLAN & USAGE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* â"€â"€ PLAN & USAGE TAB â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
         {!loading && tab === 'plan' && (
           <div className="space-y-4">
 
@@ -248,14 +248,14 @@ export default function SettingsPage() {
                 <Link href="/pricing"
                   className="inline-block bg-white text-sm font-black px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
                   style={{ color: plan === 'FREE' ? '#2563eb' : '#d97706' }}>
-                  {plan === ‘FREE’ ? ‘See Pro Plan →’ : ‘See Agency Plan →’}
+                  {plan === 'FREE' ? 'See Pro Plan →' : 'See Agency Plan →'}
                 </Link>
               </div>
             )}
           </div>
         )}
 
-        {/* â”€â”€ BILLING TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* â"€â"€ BILLING TAB â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
         {!loading && tab === 'billing' && (
           <div className="space-y-4">
 
@@ -337,7 +337,7 @@ export default function SettingsPage() {
                   </div>
                   <button onClick={openPortal} disabled={portalLoading}
                     className="text-xs text-blue-600 hover:underline font-bold disabled:opacity-40">
-                    {portalLoading ? ‘Opening…’ : ‘View invoices →’}
+                    {portalLoading ? 'Opening…' : 'View invoices →'}
                   </button>
                 </div>
               </Card>
