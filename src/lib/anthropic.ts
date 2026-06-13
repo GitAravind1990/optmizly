@@ -5,11 +5,34 @@ if (typeof window !== 'undefined') {
   throw new Error('anthropic.ts must only be used on the server')
 }
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-})
+const USE_BEDROCK = process.env.LLM_PROVIDER === 'bedrock'
+
+function createClient(): Anthropic {
+  if (USE_BEDROCK) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { AnthropicBedrock } = require('@anthropic-ai/bedrock-sdk')
+    return new AnthropicBedrock({
+      awsAccessKey: process.env.AWS_ACCESS_KEY_ID,
+      awsSecretKey: process.env.AWS_SECRET_ACCESS_KEY,
+      awsRegion: process.env.AWS_REGION ?? 'us-east-1',
+    }) as unknown as Anthropic
+  }
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+}
+
+export const anthropic = createClient()
 
 export type Model = 'claude-haiku-4-5-20251001' | 'claude-sonnet-4-6'
+
+// Map Anthropic model IDs → Bedrock model IDs
+const BEDROCK_MODEL_MAP: Record<Model, string> = {
+  'claude-haiku-4-5-20251001': process.env.BEDROCK_HAIKU_MODEL  ?? 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+  'claude-sonnet-4-6':         process.env.BEDROCK_SONNET_MODEL ?? 'us.anthropic.claude-sonnet-4-6-20251001-v1:0',
+}
+
+function resolveModel(model: Model): string {
+  return USE_BEDROCK ? BEDROCK_MODEL_MAP[model] : model
+}
 
 export async function callClaude(
   system: string,
@@ -18,7 +41,7 @@ export async function callClaude(
   model: Model = 'claude-haiku-4-5-20251001'
 ): Promise<string> {
   const message = await anthropic.messages.create({
-    model,
+    model: resolveModel(model),
     max_tokens: maxTokens,
     temperature: 0,
     system,
@@ -26,8 +49,8 @@ export async function callClaude(
   })
 
   return message.content
-    .filter(b => b.type === 'text')
-    .map(b => (b as { type: 'text'; text: string }).text)
+    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+    .map(b => b.text)
     .join('')
 }
 
@@ -57,14 +80,12 @@ export function extractJSON<T = Record<string, unknown>>(text: string): T {
   if (end > -1) clean = clean.slice(0, end + 1)
   // Strip trailing commas
   clean = clean.replace(/,\s*([}\]])/g, '$1')
-  // Fix empty values: "key":} or "key":, or "key":]
+  // Fix empty values
   clean = clean.replace(/:\s*([}\],])/g, ':null$1')
-  // Fix empty array starts [,
+  // Fix empty array starts
   clean = clean.replace(/\[\s*,/g, '[null,')
 
-  // Robust truncation repair — handle unterminated strings
   function repairJSON(s: string): string {
-    // Track parser state to find where truncation occurred
     let inString = false
     let escaped = false
     let depth = 0
@@ -85,15 +106,11 @@ export function extractJSON<T = Record<string, unknown>>(text: string): T {
       }
     }
 
-    // If we ended inside a string, truncate back to last safe position
-    if (inString) {
-      s = s.slice(0, lastSafePos) + '"'
-    }
+    if (inString) s = s.slice(0, lastSafePos) + '"'
 
-    // Close any open structures
-    const opens2 = (s.match(/{/g) ?? []).length
+    const opens2  = (s.match(/{/g) ?? []).length
     const closes2 = (s.match(/}/g) ?? []).length
-    const aopens2 = (s.match(/\[/g) ?? []).length
+    const aopens2  = (s.match(/\[/g) ?? []).length
     const acloses2 = (s.match(/\]/g) ?? []).length
     s += ']'.repeat(Math.max(0, aopens2 - acloses2))
     s += '}'.repeat(Math.max(0, opens2 - closes2))
@@ -105,12 +122,9 @@ export function extractJSON<T = Record<string, unknown>>(text: string): T {
   try {
     return JSON.parse(clean) as T
   } catch {
-    // Last resort: try to find largest valid JSON substring
     for (let i = clean.length - 1; i > 0; i--) {
       if (clean[i] === '}' || clean[i] === ']') {
-        try {
-          return JSON.parse(clean.slice(0, i + 1)) as T
-        } catch { continue }
+        try { return JSON.parse(clean.slice(0, i + 1)) as T } catch { continue }
       }
     }
     throw new Error('Could not parse JSON response')
