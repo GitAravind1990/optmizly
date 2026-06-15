@@ -1,0 +1,39 @@
+-- Enable RLS on all tables. Prisma uses the postgres superuser role which
+-- bypasses RLS, so this does not affect app functionality. It closes off
+-- direct PostgREST (anon/authenticated) access to all tables.
+
+ALTER TABLE "User"                  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Client"                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ClientReport"          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ReportTemplate"        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Subscription"          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Usage"                 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "PerformanceFixerAudit" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "AIFixGeneration"       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ContentOptimization"   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ContentOptimizationFix" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "BlogPost"              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ContentIdeaProject"    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ContentIdea"           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ContentCalendar"       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "CompetitorAnalysis"    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "CompetitorComparison"  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "OnPageAnalysis"        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "RankTrackingProject"   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "RankTrackingKeyword"   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "RankHistory"           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "RankAlert"             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LocalSEOAccount"       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LocalSEOLocation"      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LocalKeywordRank"      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LocalRankHistory"      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LocalReview"           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LocalCitation"         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LLMVisibilityAnalysis" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LLMVisibilityPage"     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LLMQueryTest"          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "BacklinkDomainAnalysis" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "BacklinkProject"       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "BacklinkOpportunity"   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "SeoAudit"              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LocalSEOTask"          ENABLE ROW LEVEL SECURITY;
