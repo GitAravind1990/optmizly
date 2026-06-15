@@ -1,8 +1,47 @@
 ﻿import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { apiError, apiSuccess } from '@/lib/api'
+import { isIP } from 'net'
+import dns from 'dns/promises'
 
 export const runtime = 'nodejs'
+
+function isPrivateIP(ip: string): boolean {
+  return [
+    /^127\./,
+    /^10\./,
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    /^192\.168\./,
+    /^169\.254\./,   // link-local + AWS metadata endpoint
+    /^0\./,
+    /^::1$/,
+    /^fc/i,
+    /^fd/i,
+  ].some(r => r.test(ip))
+}
+
+async function validateUrl(urlStr: string): Promise<void> {
+  let parsed: URL
+  try { parsed = new URL(urlStr) } catch { throw new Error('Invalid URL') }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error('Only HTTP/HTTPS URLs are allowed')
+  }
+
+  const hostname = parsed.hostname
+  if (isIP(hostname)) {
+    if (isPrivateIP(hostname)) throw new Error('Private/internal URLs are not allowed')
+    return
+  }
+
+  try {
+    const { address } = await dns.lookup(hostname)
+    if (isPrivateIP(address)) throw new Error('Private/internal URLs are not allowed')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : ''
+    throw new Error(msg.includes('not allowed') ? msg : 'Could not resolve hostname')
+  }
+}
 
 function extractMainContent(html: string): string {
   // 1. Remove entire noise blocks (including their inner content)
@@ -68,6 +107,8 @@ export async function POST(req: NextRequest) {
 
     const { url } = await req.json()
     if (!url) return apiError(new Error('URL is required'))
+
+    await validateUrl(url)
 
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 10000)
