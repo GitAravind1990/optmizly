@@ -1,8 +1,8 @@
-import { auth } from '@clerk/nextjs/server';
+﻿import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
-const ADMIN_EMAIL = 'gkm.aravind@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'gkm.aravind@gmail.com';
 
 export async function GET(req: NextRequest) {
   try {

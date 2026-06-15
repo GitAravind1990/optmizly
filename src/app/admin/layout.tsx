@@ -1,8 +1,8 @@
-import { auth } from '@clerk/nextjs/server';
+﻿import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 
-const ADMIN_EMAIL = 'gkm.aravind@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'gkm.aravind@gmail.com';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
