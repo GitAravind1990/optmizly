@@ -1,4 +1,4 @@
-﻿import { NextRequest } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { apiError, apiSuccess } from '@/lib/api'
 import { isIP } from 'net'
@@ -103,12 +103,19 @@ function extractMainContent(html: string): string {
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await auth()
-    if (!userId) return apiError({ message: 'Not authenticated', status: 401, name: 'AuthError' })
+    if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
     const { url } = await req.json()
-    if (!url) return apiError(new Error('URL is required'))
+    if (!url) return NextResponse.json({ error: 'URL is required' }, { status: 400 })
 
-    await validateUrl(url)
+    try {
+      await validateUrl(url)
+    } catch (e) {
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : 'Invalid URL' },
+        { status: 400 }
+      )
+    }
 
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 10000)
