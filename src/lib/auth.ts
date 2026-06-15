@@ -48,25 +48,24 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
     throw new AuthError(403, `This tool requires a higher plan. Your plan: ${user.plan}`)
   }
 
-  // Check monthly quota
+  // Atomically increment first, then check — prevents concurrent requests bypassing quota
   const month = getMonthKey()
-  const usage = await prisma.usage.findUnique({
-    where: { userId_month: { userId: user.id, month } },
-  })
-
-  const currentCount = usage?.count ?? 0
   const limit = PLAN_LIMITS[user.plan]
 
-  if (currentCount >= limit) {
-    throw new AuthError(429, `Monthly limit of ${limit} analyses reached. Upgrade to continue.`)
-  }
-
-  // Increment usage
-  await prisma.usage.upsert({
+  const updated = await prisma.usage.upsert({
     where: { userId_month: { userId: user.id, month } },
     create: { userId: user.id, month, count: 1 },
     update: { count: { increment: 1 } },
   })
+
+  if (updated.count > limit) {
+    // Roll back the increment — we were already at the limit
+    await prisma.usage.update({
+      where: { userId_month: { userId: user.id, month } },
+      data: { count: { decrement: 1 } },
+    })
+    throw new AuthError(429, `Monthly limit of ${limit} analyses reached. Upgrade to continue.`)
+  }
 
   return {
     userId: user.id,
