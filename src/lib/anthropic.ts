@@ -5,10 +5,24 @@ if (typeof window !== 'undefined') {
   throw new Error('anthropic.ts must only be used on the server')
 }
 
-const USE_BEDROCK = process.env.LLM_PROVIDER === 'bedrock'
+const LLM_PROVIDER = process.env.LLM_PROVIDER ?? 'anthropic'
 
-function createClient(): Anthropic {
-  if (USE_BEDROCK) {
+export type Model = 'claude-haiku-4-5-20251001' | 'claude-sonnet-4-6'
+
+// Map Anthropic model tiers → Groq model IDs
+const GROQ_MODEL_MAP: Record<Model, string> = {
+  'claude-haiku-4-5-20251001': process.env.GROQ_HAIKU_MODEL  ?? 'llama-3.1-8b-instant',
+  'claude-sonnet-4-6':         process.env.GROQ_SONNET_MODEL ?? 'llama-3.3-70b-versatile',
+}
+
+// Map Anthropic model IDs → Bedrock model IDs
+const BEDROCK_MODEL_MAP: Record<Model, string> = {
+  'claude-haiku-4-5-20251001': process.env.BEDROCK_HAIKU_MODEL  ?? 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+  'claude-sonnet-4-6':         process.env.BEDROCK_SONNET_MODEL ?? 'us.anthropic.claude-sonnet-4-6-20251001-v1:0',
+}
+
+function createAnthropicClient(): Anthropic {
+  if (LLM_PROVIDER === 'bedrock') {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { AnthropicBedrock } = require('@anthropic-ai/bedrock-sdk')
     return new AnthropicBedrock({
@@ -20,18 +34,23 @@ function createClient(): Anthropic {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 }
 
-export const anthropic = createClient()
+// Only instantiated when using Anthropic/Bedrock
+export const anthropic = LLM_PROVIDER === 'groq' ? null! : createAnthropicClient()
 
-export type Model = 'claude-haiku-4-5-20251001' | 'claude-sonnet-4-6'
-
-// Map Anthropic model IDs → Bedrock model IDs
-const BEDROCK_MODEL_MAP: Record<Model, string> = {
-  'claude-haiku-4-5-20251001': process.env.BEDROCK_HAIKU_MODEL  ?? 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
-  'claude-sonnet-4-6':         process.env.BEDROCK_SONNET_MODEL ?? 'us.anthropic.claude-sonnet-4-6-20251001-v1:0',
-}
-
-function resolveModel(model: Model): string {
-  return USE_BEDROCK ? BEDROCK_MODEL_MAP[model] : model
+async function callGroq(system: string, prompt: string, maxTokens: number, model: Model): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const Groq = require('groq-sdk').default
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  const completion = await groq.chat.completions.create({
+    model: GROQ_MODEL_MAP[model],
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: prompt },
+    ],
+    max_tokens: maxTokens,
+    temperature: 0,
+  })
+  return completion.choices[0]?.message?.content ?? ''
 }
 
 export async function callClaude(
@@ -40,8 +59,13 @@ export async function callClaude(
   maxTokens = 1500,
   model: Model = 'claude-haiku-4-5-20251001'
 ): Promise<string> {
+  if (LLM_PROVIDER === 'groq') {
+    return callGroq(system, prompt, maxTokens, model)
+  }
+
+  const resolvedModel = LLM_PROVIDER === 'bedrock' ? BEDROCK_MODEL_MAP[model] : model
   const message = await anthropic.messages.create({
-    model: resolveModel(model),
+    model: resolvedModel,
     max_tokens: maxTokens,
     temperature: 0,
     system,
