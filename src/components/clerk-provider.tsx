@@ -34,22 +34,29 @@ export function ClerkProviderWrapper({ children }: { children: ReactNode }) {
   return <ClerkProvider publishableKey={publishableKey}>{children}</ClerkProvider>
 }
 
-// Note: Use hooks from @clerk/nextjs directly, e.g.:
-// import { useUser, useAuth, useSession } from '@clerk/nextjs'
+import { useAuth } from '@clerk/nextjs'
 
-// Stub components for Clerk when credentials aren't available
-export function SignedOut({ children }: { children: ReactNode }) {
-  const context = useContext(ClerkContext)
-  const isSignedIn = context?.isSignedIn ?? false
-  if (isSignedIn) return null
-  return <>{children}</>
+function SignedInReal({ children }: { children: ReactNode }) {
+  const { isSignedIn } = useAuth()
+  return isSignedIn ? <>{children}</> : null
+}
+
+function SignedOutReal({ children }: { children: ReactNode }) {
+  const { isSignedIn } = useAuth()
+  return isSignedIn ? null : <>{children}</>
 }
 
 export function SignedIn({ children }: { children: ReactNode }) {
   const context = useContext(ClerkContext)
-  const isSignedIn = context?.isSignedIn ?? false
-  if (!isSignedIn) return null
-  return <>{children}</>
+  // Stub mode (no publishable key)
+  if (context !== null) return context.isSignedIn ? <>{children}</> : null
+  return <SignedInReal>{children}</SignedInReal>
+}
+
+export function SignedOut({ children }: { children: ReactNode }) {
+  const context = useContext(ClerkContext)
+  if (context !== null) return context.isSignedIn ? null : <>{children}</>
+  return <SignedOutReal>{children}</SignedOutReal>
 }
 
 export function UserButton() {

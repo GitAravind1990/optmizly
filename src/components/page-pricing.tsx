@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { SignedIn, SignedOut } from './clerk-provider'
 
 const plans = [
@@ -12,14 +13,49 @@ const plans = [
   {
     name: 'Pro', price: '$19', period: 'per month', color: 'blue', featured: true,
     features: ['50 analyses / month', 'Everything in Free', '⚡ Content Optimizer + Full Rewrite', 'E-E-A-T deep analysis', 'Relevant Backlinks finder', '🔭 AI Visibility (Citation + Queries)', 'Content Gap analyzer'],
-    cta: 'Start Pro Trial', signedOutHref: '/signup', signedInHref: '/pricing',
+    cta: 'Start Pro Trial', signedOutHref: '/signup',
+    checkoutProductId: process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID,
   },
   {
     name: 'Agency', price: '$49', period: 'per month', color: 'amber',
     features: ['200 analyses / month', 'Everything in Pro', 'AI Citation Tracker', 'Local SEO Suite (4 tools)', 'SERP Competitor Audit', 'Topical Authority Mapper ☆', 'AI Performance Fixer (Core Web Vitals)'],
-    cta: 'Start Agency Trial', signedOutHref: '/signup', signedInHref: '/pricing',
+    cta: 'Start Agency Trial', signedOutHref: '/signup',
+    checkoutProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PRODUCT_ID,
   },
 ]
+
+function btnClass(color: string) {
+  return `mt-6 block w-full rounded-xl py-3 text-center text-sm font-extrabold transition-opacity hover:opacity-90 disabled:opacity-50 ${
+    color === 'blue' ? 'bg-brand-600 text-white' :
+    color === 'amber' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white' :
+    'bg-slate-100 text-slate-700'
+  }`
+}
+
+function CheckoutButton({ productId, cta, color }: { productId: string; cta: string; color: string }) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleCheckout() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button onClick={handleCheckout} disabled={loading} className={btnClass(color)}>
+      {loading ? 'Redirecting…' : cta}
+    </button>
+  )
+}
 
 export function PagePricing() {
   return (
@@ -43,18 +79,14 @@ export function PagePricing() {
                 </div>
               ))}
               <SignedOut>
-                <Link href={p.signedOutHref} className={`mt-6 block w-full rounded-xl py-3 text-center text-sm font-extrabold transition-opacity hover:opacity-90 ${
-                  p.color === 'blue' ? 'bg-brand-600 text-white' :
-                  p.color === 'amber' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white' :
-                  'bg-slate-100 text-slate-700'
-                }`}>{p.cta}</Link>
+                <Link href={p.signedOutHref} className={btnClass(p.color)}>{p.cta}</Link>
               </SignedOut>
               <SignedIn>
-                <Link href={p.signedInHref} className={`mt-6 block w-full rounded-xl py-3 text-center text-sm font-extrabold transition-opacity hover:opacity-90 ${
-                  p.color === 'blue' ? 'bg-brand-600 text-white' :
-                  p.color === 'amber' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white' :
-                  'bg-slate-100 text-slate-700'
-                }`}>{p.cta}</Link>
+                {p.checkoutProductId ? (
+                  <CheckoutButton productId={p.checkoutProductId} cta={p.cta} color={p.color} />
+                ) : (
+                  <Link href="/dashboard" className={btnClass(p.color)}>{p.cta}</Link>
+                )}
               </SignedIn>
             </div>
           ))}
