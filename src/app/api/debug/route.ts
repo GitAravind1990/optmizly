@@ -1,10 +1,10 @@
-import { auth } from '@clerk/nextjs/server'
+﻿import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { NextRequest } from 'next/server'
 
 export const runtime = 'nodejs'
 
-const ADMIN_EMAIL = 'gkm.aravind@gmail.com'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'gkm.aravind@gmail.com'
 
 function check(key: string) {
   const val = process.env[key]
