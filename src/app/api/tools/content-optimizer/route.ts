@@ -1,9 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
-import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+import { callClaude as callClaudeShared, setTrackingUser } from '@/lib/anthropic';
 
 export const maxDuration = 60;
 
@@ -20,6 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+    if (user) setTrackingUser(user.id);
     const limit = QUOTA[user?.plan ?? 'FREE'] ?? 3;
 
     const monthlyCount = await prisma.contentOptimization.count({
@@ -165,17 +164,7 @@ interface Fix {
 }
 
 async function callClaude(prompt: string): Promise<string> {
-  try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 3000,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    return response.content[0].type === 'text' ? response.content[0].text : '';
-  } catch (err) {
-    console.error('Claude error:', err);
-    return '';
-  }
+  return callClaudeShared('', prompt, 3000, 'claude-sonnet-4-6')
 }
 
 function parseJSON<T>(text: string, fallback: T): T {
