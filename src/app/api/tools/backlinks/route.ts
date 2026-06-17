@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callClaude, extractJSON, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
@@ -15,6 +15,7 @@ async function getProUser() {
   const user = await prisma.user.findUnique({ where: { clerkId } })
   if (!user) throw new AuthError(401, 'User not found')
   if (user.plan === Plan.FREE) throw new AuthError(403, 'PRO plan required')
+  setTrackingUser(user.id)
   return user
 }
 

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude } from '@/lib/anthropic'
+import { callClaude, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 
@@ -14,6 +14,7 @@ async function getAgencyUser() {
   const user = await prisma.user.findUnique({ where: { clerkId } })
   if (!user) throw new AuthError(401, 'User not found')
   if (user.plan !== 'AGENCY') throw new AuthError(403, 'AGENCY plan required')
+  setTrackingUser(user.id)
   return user
 }
 

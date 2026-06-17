@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callClaude, extractJSON, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 
@@ -13,6 +13,7 @@ async function getUser() {
   if (!clerkId) throw new AuthError(401, 'Not authenticated')
   const user = await prisma.user.findUnique({ where: { clerkId } })
   if (!user) throw new AuthError(401, 'User not found')
+  setTrackingUser(user.id)
   return user
 }
 
