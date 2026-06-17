@@ -36,6 +36,12 @@ export default function AdminDashboard() {
         <h1 className="text-3xl font-black">Optmizly Owner Dashboard</h1>
         <div className="flex items-center gap-3">
           <a
+            href="/dashboard"
+            className="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-700 text-sm font-semibold"
+          >
+            Tools Dashboard
+          </a>
+          <a
             href="/admin/blog"
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-semibold"
           >
