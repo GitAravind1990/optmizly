@@ -30,6 +30,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  totalInputTokens  Int @default(0)
+  totalOutputTokens Int @default(0)
+
   subscription         Subscription?
   usage                Usage[]
   performanceAudits    PerformanceFixerAudit[]

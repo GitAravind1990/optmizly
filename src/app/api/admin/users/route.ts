@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
         email: true,
         plan: true,
         createdAt: true,
+        totalInputTokens: true,
+        totalOutputTokens: true,
         subscription: {
           select: {
             plan: true,
@@ -56,6 +58,8 @@ export async function GET(req: NextRequest) {
         joinedDate: u.createdAt,
         analyses: u.contentOptimizations.length,
         subscription: u.subscription ?? null,
+        totalInputTokens: u.totalInputTokens,
+        totalOutputTokens: u.totalOutputTokens,
       })),
       pagination: {
         total,
