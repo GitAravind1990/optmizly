@@ -34,7 +34,7 @@ export default async function BlogPage() {
           <Link href="/blog" className="text-sm font-semibold text-blue-600">Blog</Link>
           <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900">Pricing</Link>
           <Link href="/signup" className="ml-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
-            Get Started Free â†’
+            Get Started Free →
           </Link>
         </div>
       </nav>
@@ -62,7 +62,7 @@ export default async function BlogPage() {
                 <p className="text-slate-500 text-sm leading-relaxed">{post.description}</p>
               </Link>
               <Link href={`/blog/${post.slug}`} className="inline-flex items-center gap-1 mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700">
-                Read article â†’
+                Read article →
               </Link>
             </article>
           ))}

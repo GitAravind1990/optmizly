@@ -8,7 +8,7 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 const FROM = process.env.EMAIL_FROM ?? 'Optmizly <hello@Optmizly.com>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://Optmizly.com'
 
-// â”€â”€ Welcome â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Welcome ───────────────────────────────────────────────────────────────────
 export async function sendWelcomeEmail(to: string, firstName?: string) {
   try {
     if (!resend) {
@@ -21,7 +21,7 @@ export async function sendWelcomeEmail(to: string, firstName?: string) {
     await resend.emails.send({
       from: FROM,
       to,
-      subject: 'Welcome to Optmizly ðŸ‘‹',
+      subject: 'Welcome to Optmizly 👋',
       html,
     })
     console.log(`[Email] Welcome sent to ${to}`)
@@ -30,7 +30,7 @@ export async function sendWelcomeEmail(to: string, firstName?: string) {
   }
 }
 
-// â”€â”€ Subscription confirmed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Subscription confirmed ────────────────────────────────────────────────────
 export async function sendSubscriptionEmail(
   to: string,
   plan: 'Pro' | 'Agency',
@@ -55,7 +55,7 @@ export async function sendSubscriptionEmail(
     await resend.emails.send({
       from: FROM,
       to,
-      subject: `You're now on Optmizly ${plan} ðŸŽ‰`,
+      subject: `You're now on Optmizly ${plan} 🎉`,
       html,
     })
     console.log(`[Email] Subscription confirmation sent to ${to}`)
@@ -64,7 +64,7 @@ export async function sendSubscriptionEmail(
   }
 }
 
-// â”€â”€ Subscription cancelled â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Subscription cancelled ────────────────────────────────────────────────────
 export async function sendCancelledEmail(
   to: string,
   plan: string,

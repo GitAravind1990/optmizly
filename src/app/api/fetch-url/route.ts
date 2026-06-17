@@ -59,7 +59,7 @@ function extractMainContent(html: string): string {
     // Remove common noise divs by class/id (ads, banners, sidebars, comments, popups)
     .replace(/<div[^>]+(?:class|id)="[^"]*(?:sidebar|widget|banner|advertisement|cookie|popup|modal|overlay|comment|related|social|share|subscribe|newsletter|promo|breadcrumb|pagination|tag-cloud|author-bio)[^"]*"[^>]*>[\s\S]*?<\/div>/gi, '')
 
-  // 2. Try to isolate main content â€” prefer <article>, <main>, then common content class patterns
+  // 2. Try to isolate main content — prefer <article>, <main>, then common content class patterns
   const contentPatterns = [
     /<article[^>]*>([\s\S]*?)<\/article>/i,
     /<main[^>]*>([\s\S]*?)<\/main>/i,
