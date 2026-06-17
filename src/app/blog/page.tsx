@@ -3,11 +3,11 @@ import Link from 'next/link'
 import { getAllPosts } from '@/lib/blog'
 
 export const metadata: Metadata = {
-  title: 'Blog â€” SEO & AI Search Insights',
+  title: 'Blog — SEO & AI Search Insights',
   description: 'Actionable guides on semantic SEO, E-E-A-T, topical authority, AI citations, and ranking in the age of AI search.',
   alternates: { canonical: '/blog' },
   openGraph: {
-    title: 'Optmizly Blog â€” SEO & AI Search Insights',
+    title: 'Optmizly Blog — SEO & AI Search Insights',
     description: 'Actionable guides on semantic SEO, E-E-A-T, topical authority, and AI citations.',
     url: '/blog',
   },
