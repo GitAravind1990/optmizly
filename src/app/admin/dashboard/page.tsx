@@ -222,40 +222,52 @@ function UsersTab() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              {['Email', 'Plan', 'Joined', 'Analyses', 'Status', 'Actions'].map(h => (
+              {['Email', 'Plan', 'Joined', 'Analyses', 'Tokens (in/out)', 'Est. Cost', 'Status', 'Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-semibold text-gray-700">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {data.users.map((user: any, i: number) => (
-              <tr key={i} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-3 text-gray-800">{user.email}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                    user.plan === 'FREE' ? 'bg-blue-100 text-blue-800' :
-                    user.plan === 'PRO' ? 'bg-purple-100 text-purple-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {user.plan}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{new Date(user.joinedDate).toLocaleDateString()}</td>
-                <td className="px-4 py-3 font-medium">{user.analyses}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    user.subscription?.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {user.subscription?.status || 'Free'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 space-x-2">
-                  <button className="text-purple-600 hover:underline text-xs font-medium">Upgrade</button>
-                  <span className="text-gray-300">|</span>
-                  <button className="text-red-500 hover:underline text-xs font-medium">Cancel</button>
-                </td>
-              </tr>
-            ))}
+            {data.users.map((user: any, i: number) => {
+              const inTok = user.totalInputTokens ?? 0;
+              const outTok = user.totalOutputTokens ?? 0;
+              // Groq haiku rates: $0.05/M input, $0.08/M output
+              const estCost = (inTok * 0.05 + outTok * 0.08) / 1_000_000;
+              return (
+                <tr key={i} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-3 text-gray-800">{user.email}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      user.plan === 'FREE' ? 'bg-blue-100 text-blue-800' :
+                      user.plan === 'PRO' ? 'bg-purple-100 text-purple-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {user.plan}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{new Date(user.joinedDate).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 font-medium">{user.analyses}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs font-mono">
+                    {inTok.toLocaleString()} / {outTok.toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-gray-700 font-semibold text-xs">
+                    ${estCost < 0.001 ? estCost.toFixed(5) : estCost.toFixed(4)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      user.subscription?.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {user.subscription?.status || 'Free'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 space-x-2">
+                    <button className="text-purple-600 hover:underline text-xs font-medium">Upgrade</button>
+                    <span className="text-gray-300">|</span>
+                    <button className="text-red-500 hover:underline text-xs font-medium">Cancel</button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

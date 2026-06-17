@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from './prisma'
 import { PLAN_LIMITS, PLAN_TOOLS, getMonthKey } from './plans'
 import { Plan } from '@prisma/client'
+import { setTrackingUser } from './anthropic'
 
 export type AuthedUser = {
   userId: string
@@ -66,6 +67,8 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
     })
     throw new AuthError(429, `Monthly limit of ${limit} analyses reached. Upgrade to continue.`)
   }
+
+  setTrackingUser(user.id)
 
   return {
     userId: user.id,

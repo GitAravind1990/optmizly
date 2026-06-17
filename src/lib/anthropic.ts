@@ -1,8 +1,23 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { AsyncLocalStorage } from 'async_hooks'
+import { prisma } from './prisma'
 
 // This file is SERVER ONLY — never import in client components
 if (typeof window !== 'undefined') {
   throw new Error('anthropic.ts must only be used on the server')
+}
+
+// Per-request userId storage for automatic token tracking
+const trackingStorage = new AsyncLocalStorage<string>()
+
+/** Set the tracking userId for the current async context (call once in a route handler after auth). */
+export function setTrackingUser(userId: string): void {
+  trackingStorage.enterWith(userId)
+}
+
+/** Wrap an async route body to auto-track tokens for all callClaude calls within it. */
+export function runWithTracking<T>(userId: string, fn: () => Promise<T>): Promise<T> {
+  return trackingStorage.run(userId, fn)
 }
 
 const LLM_PROVIDER = process.env.LLM_PROVIDER ?? 'anthropic'
@@ -37,7 +52,7 @@ function createAnthropicClient(): Anthropic {
 // Only instantiated when using Anthropic/Bedrock
 export const anthropic = LLM_PROVIDER === 'groq' ? null! : createAnthropicClient()
 
-async function callGroq(system: string, prompt: string, maxTokens: number, model: Model): Promise<string> {
+async function callGroq(system: string, prompt: string, maxTokens: number, model: Model): Promise<{ text: string; inputTokens: number; outputTokens: number }> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Groq = require('groq-sdk').default
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
@@ -50,7 +65,25 @@ async function callGroq(system: string, prompt: string, maxTokens: number, model
     max_tokens: maxTokens,
     temperature: 0,
   })
-  return completion.choices[0]?.message?.content ?? ''
+  return {
+    text: completion.choices[0]?.message?.content ?? '',
+    inputTokens: completion.usage?.prompt_tokens ?? 0,
+    outputTokens: completion.usage?.completion_tokens ?? 0,
+  }
+}
+
+async function trackTokens(userId: string, inputTokens: number, outputTokens: number): Promise<void> {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        totalInputTokens: { increment: inputTokens },
+        totalOutputTokens: { increment: outputTokens },
+      },
+    })
+  } catch {
+    // fire-and-forget: don't let tracking errors surface to callers
+  }
 }
 
 export async function callClaude(
@@ -59,23 +92,38 @@ export async function callClaude(
   maxTokens = 1500,
   model: Model = 'claude-haiku-4-5-20251001'
 ): Promise<string> {
+  let text: string
+  let inputTokens: number
+  let outputTokens: number
+
   if (LLM_PROVIDER === 'groq') {
-    return callGroq(system, prompt, maxTokens, model)
+    const result = await callGroq(system, prompt, maxTokens, model)
+    text = result.text
+    inputTokens = result.inputTokens
+    outputTokens = result.outputTokens
+  } else {
+    const resolvedModel = LLM_PROVIDER === 'bedrock' ? BEDROCK_MODEL_MAP[model] : model
+    const message = await anthropic.messages.create({
+      model: resolvedModel,
+      max_tokens: maxTokens,
+      temperature: 0,
+      system,
+      messages: [{ role: 'user', content: prompt }],
+    })
+    text = message.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map(b => b.text)
+      .join('')
+    inputTokens = message.usage.input_tokens
+    outputTokens = message.usage.output_tokens
   }
 
-  const resolvedModel = LLM_PROVIDER === 'bedrock' ? BEDROCK_MODEL_MAP[model] : model
-  const message = await anthropic.messages.create({
-    model: resolvedModel,
-    max_tokens: maxTokens,
-    temperature: 0,
-    system,
-    messages: [{ role: 'user', content: prompt }],
-  })
+  const userId = trackingStorage.getStore()
+  if (userId) {
+    void trackTokens(userId, inputTokens, outputTokens)
+  }
 
-  return message.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map(b => b.text)
-    .join('')
+  return text
 }
 
 export function extractJSON<T = Record<string, unknown>>(text: string): T {
