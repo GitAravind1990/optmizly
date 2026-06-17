@@ -13,7 +13,7 @@ interface SubscriptionEmailProps {
 
 const PLAN_TOOLS: Record<string, string[]> = {
   Pro: ['E-E-A-T Analysis', 'Relevant Backlinks', 'AI Rewrite (with framework)', 'Citation Plan', 'Content Gap', 'AI Queries'],
-  Agency: ['Everything in Pro', 'AI Cite Tracker', 'Local SEO Suite (4 tools)', 'SERP Competitor Audit', 'Topical Authority Mapper â˜…'],
+  Agency: ['Everything in Pro', 'AI Cite Tracker', 'Local SEO Suite (4 tools)', 'SERP Competitor Audit', 'Topical Authority Mapper ★'],
 }
 
 export function SubscriptionEmail({
@@ -30,7 +30,7 @@ export function SubscriptionEmail({
   return (
     <Html>
       <Head />
-      <Preview>You're now on Optmizly {plan} â€” {limit} analyses/month unlocked</Preview>
+      <Preview>You're now on Optmizly {plan} — {limit} analyses/month unlocked</Preview>
       <Tailwind>
         <Body className="bg-slate-50 font-sans">
           <Container className="mx-auto py-12 px-4 max-w-xl">
@@ -45,12 +45,12 @@ export function SubscriptionEmail({
               className="rounded-2xl p-8 mb-6 text-center"
               style={{ background: isAgency ? 'linear-gradient(135deg,#92400e,#d97706)' : 'linear-gradient(135deg,#1e3a8a,#2563eb)' }}
             >
-              <Text className="text-4xl m-0">ðŸŽ‰</Text>
+              <Text className="text-4xl m-0">🎉</Text>
               <Heading className="text-white text-2xl font-black mt-3 mb-2">
                 You're on {plan}!
               </Heading>
               <Text className="text-white/80 text-sm m-0">
-                {limit} analyses/month Â· {amount}/month
+                {limit} analyses/month · {amount}/month
               </Text>
             </Section>
 
@@ -62,7 +62,7 @@ export function SubscriptionEmail({
 
               {PLAN_TOOLS[plan].map(tool => (
                 <Text key={tool} className="text-sm text-slate-700 m-0 mb-2">
-                  <span className="text-emerald-500 font-bold mr-2">âœ“</span>{tool}
+                  <span className="text-emerald-500 font-bold mr-2">✓</span>{tool}
                 </Text>
               ))}
 
@@ -79,16 +79,16 @@ export function SubscriptionEmail({
                 className="text-white font-bold text-sm px-8 py-3 rounded-xl no-underline block text-center"
                 style={{ background: accentColor }}
               >
-                Start Using {plan} Tools â†’
+                Start Using {plan} Tools →
               </Button>
             </Section>
 
             {/* Footer */}
             <Section className="text-center">
               <Text className="text-xs text-slate-400 m-0">
-                Questions? Reply to this email â€” we respond within 24 hours.
+                Questions? Reply to this email — we respond within 24 hours.
               </Text>
-              <Text className="text-xs text-slate-400 mt-1">Optmizly Â· Â© 2025</Text>
+              <Text className="text-xs text-slate-400 mt-1">Optmizly · © 2025</Text>
             </Section>
 
           </Container>
