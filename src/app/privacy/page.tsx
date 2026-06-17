@@ -1,7 +1,7 @@
 ﻿import Link from 'next/link'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Privacy Policy â€” Optmizly' }
+export const metadata: Metadata = { title: 'Privacy Policy – Optmizly' }
 
 const sections = [
   {
@@ -10,7 +10,7 @@ const sections = [
   },
   {
     title: '2. Information We Collect',
-    body: `Account data: When you register, we collect your name and email address via Clerk (our authentication provider). Payment data: When you subscribe to a paid plan, your payment information is processed by Lemon Squeezy. We never see or store your card details. Usage data: We record the number of analyses you run each month to enforce plan limits. We do not store the content you submit for analysis â€” it is sent to the Anthropic API to generate results and is not retained on our servers or databases. Technical data: We may collect standard server logs including IP addresses and browser user-agent strings for security and diagnostics.`,
+    body: `Account data: When you register, we collect your name and email address via Clerk (our authentication provider). Payment data: When you subscribe to a paid plan, your payment information is processed by Lemon Squeezy. We never see or store your card details. Usage data: We record the number of analyses you run each month to enforce plan limits. We do not store the content you submit for analysis – it is sent to the Anthropic API to generate results and is not retained on our servers or databases. Technical data: We may collect standard server logs including IP addresses and browser user-agent strings for security and diagnostics.`,
   },
   {
     title: '3. How We Use Your Information',
@@ -18,11 +18,11 @@ const sections = [
   },
   {
     title: '4. Legal Basis for Processing (GDPR)',
-    body: `If you are located in the European Economic Area (EEA) or UK, we process your personal data under the following legal bases: Contract performance â€” processing necessary to provide the Service you have subscribed to. Legitimate interests â€” security monitoring, fraud prevention, and product improvement, where these do not override your rights. Legal obligation â€” where we are required to retain or disclose data by law. Consent â€” where we ask for your explicit consent (e.g. optional marketing emails).`,
+    body: `If you are located in the European Economic Area (EEA) or UK, we process your personal data under the following legal bases: Contract performance – processing necessary to provide the Service you have subscribed to. Legitimate interests – security monitoring, fraud prevention, and product improvement, where these do not override your rights. Legal obligation – where we are required to retain or disclose data by law. Consent – where we ask for your explicit consent (e.g. optional marketing emails).`,
   },
   {
     title: '5. Third-Party Services',
-    body: `We share data with the following sub-processors to operate the Service: Clerk (authentication and user management), Supabase/PostgreSQL (database), Lemon Squeezy (payment processing), Anthropic (AI analysis â€” content you submit is processed under Anthropic's API terms), Resend (transactional email), and Vercel (hosting and edge functions). Each service operates under its own privacy policy and data processing agreements. Content submitted for analysis is processed by Anthropic's API. Please review Anthropic's privacy policy at anthropic.com.`,
+    body: `We share data with the following sub-processors to operate the Service: Clerk (authentication and user management), Supabase/PostgreSQL (database), Lemon Squeezy (payment processing), Anthropic (AI analysis – content you submit is processed under Anthropic's API terms), Resend (transactional email), and Vercel (hosting and edge functions). Each service operates under its own privacy policy and data processing agreements. Content submitted for analysis is processed by Anthropic's API. Please review Anthropic's privacy policy at anthropic.com.`,
   },
   {
     title: '6. International Data Transfers',
@@ -38,7 +38,7 @@ const sections = [
   },
   {
     title: '9. Your Rights',
-    body: `Depending on your location, you may have the following rights regarding your personal data: Access â€” request a copy of the data we hold about you. Rectification â€” request correction of inaccurate data. Erasure ("right to be forgotten") â€” request deletion of your data. Restriction â€” request that we limit how we process your data. Portability â€” receive your data in a structured, machine-readable format. Objection â€” object to processing based on legitimate interests. Withdrawal of consent â€” where processing is based on consent, withdraw it at any time. To exercise any of these rights, contact us at privacy@Optmizly.com. We will respond within 30 days. EEA/UK users also have the right to lodge a complaint with their local supervisory authority.`,
+    body: `Depending on your location, you may have the following rights regarding your personal data: Access – request a copy of the data we hold about you. Rectification – request correction of inaccurate data. Erasure ("right to be forgotten") – request deletion of your data. Restriction – request that we limit how we process your data. Portability – receive your data in a structured, machine-readable format. Objection – object to processing based on legitimate interests. Withdrawal of consent – where processing is based on consent, withdraw it at any time. To exercise any of these rights, contact us at privacy@Optmizly.com. We will respond within 30 days. EEA/UK users also have the right to lodge a complaint with their local supervisory authority.`,
   },
   {
     title: '10. Children\'s Privacy',
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-white">
       <nav className="border-b border-slate-200 px-6 h-14 flex items-center gap-4">
-        <Link href="/" className="font-extrabold text-slate-900">â—ˆ Optmizly</Link>
+        <Link href="/" className="font-extrabold text-slate-900">◈ Optmizly</Link>
         <div className="flex-1" />
         <Link href="/dashboard" className="text-sm text-slate-500 hover:text-slate-900">Dashboard</Link>
       </nav>

@@ -1,12 +1,12 @@
 ﻿import Link from 'next/link'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Refund Policy â€” Optmizly' }
+export const metadata: Metadata = { title: 'Refund Policy – Optmizly' }
 
 const sections = [
   {
     title: '1. 14-Day Money-Back Guarantee',
-    body: `We offer a 14-day money-back guarantee on all new paid subscriptions (Pro and Agency plans). If you are not satisfied with Optmizly for any reason within 14 days of your first payment, contact us at support@Optmizly.com and we will issue a full refund â€” no questions asked. The 14-day window begins on the date of your first payment.`,
+    body: `We offer a 14-day money-back guarantee on all new paid subscriptions (Pro and Agency plans). If you are not satisfied with Optmizly for any reason within 14 days of your first payment, contact us at support@Optmizly.com and we will issue a full refund – no questions asked. The 14-day window begins on the date of your first payment.`,
   },
   {
     title: '2. Eligibility',
@@ -18,7 +18,7 @@ const sections = [
   },
   {
     title: '4. Renewals',
-    body: `The 14-day money-back guarantee applies to the first payment only and does not apply to subsequent renewal charges. If you do not wish to be charged for a renewal, you must cancel your subscription before the renewal date. You can cancel at any time from your account settings â€” cancellation takes effect at the end of the current billing period and you retain access to paid features until then.`,
+    body: `The 14-day money-back guarantee applies to the first payment only and does not apply to subsequent renewal charges. If you do not wish to be charged for a renewal, you must cancel your subscription before the renewal date. You can cancel at any time from your account settings – cancellation takes effect at the end of the current billing period and you retain access to paid features until then.`,
   },
   {
     title: '5. Non-Refundable Situations',
@@ -42,7 +42,7 @@ export default function RefundPolicyPage() {
   return (
     <div className="min-h-screen bg-white">
       <nav className="border-b border-slate-200 px-6 h-14 flex items-center gap-4">
-        <Link href="/" className="font-extrabold text-slate-900">â—ˆ Optmizly</Link>
+        <Link href="/" className="font-extrabold text-slate-900">◈ Optmizly</Link>
         <div className="flex-1" />
         <Link href="/dashboard" className="text-sm text-slate-500 hover:text-slate-900">Dashboard</Link>
       </nav>
@@ -53,7 +53,7 @@ export default function RefundPolicyPage() {
 
         <div className="bg-green-50 border border-green-200 rounded-xl px-6 py-4 mb-12">
           <p className="text-green-800 font-semibold text-sm">
-            14-Day Money-Back Guarantee â€” If you&apos;re not satisfied within 14 days of your first payment, we&apos;ll refund you in full. No questions asked.
+            14-Day Money-Back Guarantee – If you&apos;re not satisfied within 14 days of your first payment, we&apos;ll refund you in full. No questions asked.
           </p>
         </div>
 

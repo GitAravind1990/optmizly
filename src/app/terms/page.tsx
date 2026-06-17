@@ -1,7 +1,7 @@
 ﻿import Link from 'next/link'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Terms of Service â€” Optmizly' }
+export const metadata: Metadata = { title: 'Terms of Service – Optmizly' }
 
 const sections = [
   {
@@ -22,7 +22,7 @@ const sections = [
   },
   {
     title: '5. Payments and Billing',
-    body: `Paid plans are billed monthly or annually via Lemon Squeezy. By subscribing, you authorise recurring charges to your payment method. All prices are in USD. Taxes may apply depending on your location and will be added at checkout. Subscriptions auto-renew at the end of each billing period. You may cancel at any time â€” you retain access to paid features until the end of your current billing period. No partial refunds are issued for unused time within a billing period, except as outlined in our Refund Policy.`,
+    body: `Paid plans are billed monthly or annually via Lemon Squeezy. By subscribing, you authorise recurring charges to your payment method. All prices are in USD. Taxes may apply depending on your location and will be added at checkout. Subscriptions auto-renew at the end of each billing period. You may cancel at any time – you retain access to paid features until the end of your current billing period. No partial refunds are issued for unused time within a billing period, except as outlined in our Refund Policy.`,
   },
   {
     title: '6. Refund Policy',
@@ -38,7 +38,7 @@ const sections = [
   },
   {
     title: '9. Limitation of Liability',
-    body: `To the maximum extent permitted by applicable law, Optmizly and its officers, employees, and affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages â€” including loss of profits, data, business, or goodwill â€” arising from your use of or inability to use the Service, even if we have been advised of the possibility of such damages. Our total cumulative liability for any claims arising from these terms shall not exceed the greater of (a) the total amount you paid to Optmizly in the 3 months preceding the claim or (b) USD $50.`,
+    body: `To the maximum extent permitted by applicable law, Optmizly and its officers, employees, and affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages – including loss of profits, data, business, or goodwill – arising from your use of or inability to use the Service, even if we have been advised of the possibility of such damages. Our total cumulative liability for any claims arising from these terms shall not exceed the greater of (a) the total amount you paid to Optmizly in the 3 months preceding the claim or (b) USD $50.`,
   },
   {
     title: '10. Indemnification',
@@ -66,7 +66,7 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen bg-white">
       <nav className="border-b border-slate-200 px-6 h-14 flex items-center gap-4">
-        <Link href="/" className="font-extrabold text-slate-900">â—ˆ Optmizly</Link>
+        <Link href="/" className="font-extrabold text-slate-900">◈ Optmizly</Link>
         <div className="flex-1" />
         <Link href="/dashboard" className="text-sm text-slate-500 hover:text-slate-900">Dashboard</Link>
       </nav>
