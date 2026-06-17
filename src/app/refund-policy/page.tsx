@@ -14,7 +14,7 @@ const sections = [
   },
   {
     title: '3. How to Request a Refund',
-    body: `To request a refund, email us at support@Optmizly.com with the subject line "Refund Request" and include: your registered email address, the date of your payment, and a brief reason for the refund (optional but appreciated). We aim to process all eligible refund requests within 3â€“5 business days. Refunds are returned to the original payment method. Depending on your bank or card issuer, it may take an additional 5â€“10 business days for the funds to appear.`,
+    body: `To request a refund, email us at support@Optmizly.com with the subject line "Refund Request" and include: your registered email address, the date of your payment, and a brief reason for the refund (optional but appreciated). We aim to process all eligible refund requests within 3–5 business days. Refunds are returned to the original payment method. Depending on your bank or card issuer, it may take an additional 5–10 business days for the funds to appear.`,
   },
   {
     title: '4. Renewals',

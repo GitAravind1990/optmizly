@@ -37,10 +37,10 @@ export async function POST(req: NextRequest) {
     const monthName = MONTH_NAMES[report.month - 1]
     const reportUrl = `https://Optmizly.com/agency/reports/${report.id}`
 
-    // Email sending is a TODO â€” mark as sent for now
+    // Email sending is a TODO — mark as sent for now
     // Future: integrate Resend / SendGrid here
     console.log(`[Email] Would send to ${report.client.email}`)
-    console.log(`[Email] Subject: SEO Report for ${report.client.website} â€” ${monthName} ${report.year}`)
+    console.log(`[Email] Subject: SEO Report for ${report.client.website} — ${monthName} ${report.year}`)
     console.log(`[Email] Report URL: ${reportUrl}`)
 
     await prisma.clientReport.update({

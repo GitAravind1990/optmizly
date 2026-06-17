@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // â”€â”€ Automated checks â”€â”€
+    // ── Automated checks ──
     const ctx: AutoCheckContext = {
       url: auditUrl,
       finalUrl: page.finalUrl,
@@ -143,12 +143,12 @@ export async function POST(req: NextRequest) {
     const bodyText = plainText(page.html)
     const wordCount = bodyText ? bodyText.split(/\s+/).length : 0
 
-    // â”€â”€ AI scoring for judgement categories â”€â”€
+    // ── AI scoring for judgement categories ──
     let aiResults: Record<string, AICategoryResult> = {}
     try {
       const schemaTypes = [...page.html.matchAll(/"@type"\s*:\s*"([^"]+)"/g)].map(m => m[1])
       const raw = await callClaude(
-        'You are an expert enterprise SEO auditor. Return ONLY valid JSON â€” no markdown, no backticks.',
+        'You are an expert enterprise SEO auditor. Return ONLY valid JSON — no markdown, no backticks.',
         `Audit this web page for four SEO dimensions and score each 0-100 (higher = better).
 
 URL: ${page.finalUrl}
@@ -163,7 +163,7 @@ Score these dimensions:
 - "eeat": Experience, Expertise, Authoritativeness, Trust (author bios, credentials, citations, disclaimers, trust signals)
 - "aiSeo": AI Search / GEO readiness (entity markup, FAQs, citable stats, structured answers, topical authority)
 - "cannibalization": keyword cannibalization risk for this page (intent clarity, focus, title/H1 uniqueness)
-- "localSeo": local SEO technical factors (NAP signals, location targeting, LocalBusiness signals) â€” score "na" as 100 if clearly not a local business page
+- "localSeo": local SEO technical factors (NAP signals, location targeting, LocalBusiness signals) — score "na" as 100 if clearly not a local business page
 
 Return JSON exactly:
 {
@@ -192,7 +192,7 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
       aiResults = {}
     }
 
-    // â”€â”€ Category + overall scoring â”€â”€
+    // ── Category + overall scoring ──
     const categoryScores: Record<string, number> = {}
     let passedChecks = 0, failedChecks = 0, warnChecks = 0
 
@@ -221,7 +221,7 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
     const scored = Object.values(categoryScores)
     const overallScore = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : 0
 
-    // â”€â”€ Persist â”€â”€
+    // ── Persist ──
     const audit = await prisma.seoAudit.create({
       data: {
         userId: user.userId,
