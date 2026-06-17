@@ -67,6 +67,16 @@ export async function GET(_req: NextRequest) {
     const paidUsers = usersByPlanMap.PRO + usersByPlanMap.AGENCY;
     const churnRate = paidUsers > 0 ? (canceledThisMonth / paidUsers) * 100 : 0;
 
+    // TOKEN USAGE
+    const tokenTotals = await prisma.user.aggregate({
+      _sum: { totalInputTokens: true, totalOutputTokens: true },
+    });
+    const totalInputTokens = tokenTotals._sum.totalInputTokens ?? 0;
+    const totalOutputTokens = tokenTotals._sum.totalOutputTokens ?? 0;
+    const totalTokens = totalInputTokens + totalOutputTokens;
+    // Groq haiku rates: $0.05/M input, $0.08/M output
+    const estimatedCost = (totalInputTokens * 0.05 + totalOutputTokens * 0.08) / 1_000_000;
+
     return NextResponse.json({
       revenue: { mrrByPlan, totalMRR, churnRate: churnRate.toFixed(1) },
       users: {
@@ -75,6 +85,12 @@ export async function GET(_req: NextRequest) {
         newThisMonth: newUsersThisMonth,
       },
       features: toolUsage,
+      tokens: {
+        totalInputTokens,
+        totalOutputTokens,
+        totalTokens,
+        estimatedCost: parseFloat(estimatedCost.toFixed(4)),
+      },
       period: { startDate, endDate, days },
     });
   } catch (error) {
