@@ -27,7 +27,7 @@ export default async function BlogPage() {
       <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 h-16">
           <Link href="/" className="flex items-center gap-2 font-extrabold text-slate-900 text-lg tracking-tight">
-            <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm">â—ˆ</span>
+            <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm">◈</span>
             Optmizly
           </Link>
           <div className="flex-1" />
