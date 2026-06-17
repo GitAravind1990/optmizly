@@ -46,7 +46,7 @@ export function CancelledEmail({
               )}
 
               <Text className="text-slate-600 text-sm leading-relaxed mb-5">
-                If you cancelled by mistake or want to reactivate, you can do so any time â€” your data and settings are preserved.
+                If you cancelled by mistake or want to reactivate, you can do so any time — your data and settings are preserved.
               </Text>
 
               <Hr className="border-slate-100 mb-5" />
@@ -63,7 +63,7 @@ export function CancelledEmail({
               <Text className="text-xs text-slate-400 m-0">
                 Changed your mind? Reply to this email and we'll help.
               </Text>
-              <Text className="text-xs text-slate-400 mt-1">Optmizly Â· Â© 2025</Text>
+              <Text className="text-xs text-slate-400 mt-1">Optmizly · © 2025</Text>
             </Section>
 
           </Container>
