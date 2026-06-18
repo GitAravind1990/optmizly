@@ -49,11 +49,11 @@ export default function HomePage() {
       {/* Social proof */}
       <section className="border-y border-slate-100 bg-slate-50 py-16 px-6">
         <div className="mx-auto max-w-6xl">
-          <p className="text-center text-xs font-bold uppercase tracking-widest text-slate-400 mb-8">Trusted by content teams at</p>
-          <div className="flex justify-center items-center gap-10 flex-wrap opacity-50 grayscale mb-14">
-            {['Growthack', 'ContentFlow', 'RankLab', 'Verblio', 'PitchBlack'].map(n => (
-              <span key={n} className="text-lg font-black text-slate-700">{n}</span>
-            ))}
+          <div className="flex justify-center mb-14">
+            <span className="inline-flex items-center gap-2.5 rounded-full border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-slate-600 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 flex-shrink-0" />
+              Trusted by 500+ content teams worldwide
+            </span>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             {testimonials.map((t, i) => (
@@ -88,13 +88,13 @@ export default function HomePage() {
           <p className="text-center text-slate-500 max-w-lg mx-auto mb-12">From content scoring to topical authority mapping and AI-powered fixing – built for content teams, SEOs, and agencies.</p>
           <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
             {tools.map(t => (
-              <div key={t.name} className={`rounded-2xl border p-5 transition-shadow hover:shadow-md ${t.name === 'Content Optimizer' ? 'border-blue-500 border-2 bg-blue-50' : t.name === 'Topical Authority' ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white'}`}>
+              <div key={t.name} className="rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:shadow-md hover:border-slate-300">
                 {t.new && <div className="inline-block text-xs font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full mb-2">NEW</div>}
                 <div className="text-2xl mb-3">{t.icon}</div>
                 <div className="font-bold text-sm mb-1">{t.name}</div>
                 <div className="text-xs text-slate-500 leading-relaxed mb-3">{t.desc}</div>
                 <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full ${
-                  t.plan === 'Free' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                  t.plan === 'Free' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                   t.plan === 'Pro' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
                   'bg-amber-50 text-amber-700 border border-amber-200'
                 }`}>{t.plan}</span>
@@ -113,7 +113,7 @@ export default function HomePage() {
         <div className="flex justify-center gap-6 text-xs">
           <Link href="/privacy" className="hover:text-slate-700">Privacy Policy</Link>
           <Link href="/terms" className="hover:text-slate-700">Terms of Service</Link>
-          <a href="mailto:hello@Optmizly.com" className="hover:text-slate-700">Contact</a>
+          <a href="mailto:hello@optmizly.com" className="hover:text-slate-700">Contact</a>
         </div>
       </footer>
     </div>
