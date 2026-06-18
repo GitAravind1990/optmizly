@@ -18,16 +18,22 @@ export const metadata: Metadata = {
 
 const tools = [
   { icon: '📊', name: 'Content Analyzer', desc: '8-dimension score with Issues & Entity tabs built in', plan: 'Free' },
+  { icon: '🔍', name: 'On-Page SEO', desc: 'Title, meta, headings, schema and technical SEO audit', plan: 'Free' },
   { icon: '⚡', name: 'Content Optimizer', desc: 'Semantic SEO analysis + Full Rewrite mode – two tools in one', plan: 'Pro', new: true },
+  { icon: '💡', name: 'Content Planner', desc: 'AI-generated content briefs and topic ideas for your niche', plan: 'Pro' },
+  { icon: '📈', name: 'Rank Tracker', desc: 'Track keyword positions over time with trend alerts', plan: 'Pro' },
+  { icon: '🕵️', name: 'Competitor Spy', desc: 'Reverse-engineer competitor content strategy and gaps', plan: 'Pro' },
   { icon: '🏆', name: 'E-E-A-T Analysis', desc: 'Deep Experience, Expertise, Authority, Trust analysis', plan: 'Pro' },
-  { icon: '🔗', name: 'Relevant Backlinks', desc: 'Real site-specific link building opportunities', plan: 'Pro' },
+  { icon: '🕳️', name: 'Content Gap', desc: 'Topics competitors cover that you don\'t', plan: 'Pro' },
   { icon: '🔭', name: 'AI Visibility', desc: 'Citation strategy + AI query mapping – get cited by ChatGPT & Perplexity', plan: 'Pro' },
-  { icon: '🎯', name: 'Content Gap', desc: 'Topics competitors cover that you don\'t', plan: 'Pro' },
-  { icon: '🎯', name: 'Cite Tracker', desc: 'Simulate ChatGPT & Perplexity responses for your queries', plan: 'Agency' },
-  { icon: '⚡', name: 'AI Performance Fixer', desc: 'Fix Core Web Vitals – LCP, CLS, FID – with AI-generated code patches', plan: 'Agency' },
+  { icon: '🔗', name: 'Backlinks', desc: 'Real site-specific link building opportunities', plan: 'Pro' },
+  { icon: '🩺', name: 'SEO Audit', desc: 'Full technical SEO crawl with prioritised fix list', plan: 'Agency' },
   { icon: '📍', name: 'Local SEO Suite', desc: '4 tools – entities, NAP, local queries, GBP content', plan: 'Agency' },
   { icon: '📈', name: 'SERP Audit', desc: 'Competitor breakdown, root cause diagnosis, recovery plan', plan: 'Agency' },
   { icon: '🗺️', name: 'Topical Authority', desc: 'Visual keyword cluster map with search volumes & calendar', plan: 'Agency' },
+  { icon: '🎯', name: 'Cite Tracker', desc: 'Simulate ChatGPT & Perplexity responses for your queries', plan: 'Agency' },
+  { icon: '⚡', name: 'AI Performance Fixer', desc: 'Fix Core Web Vitals – LCP, CLS, FID – with AI-generated code patches', plan: 'Agency' },
+  { icon: '📋', name: 'Client Reports', desc: 'White-label reports for all tools – export and share with clients', plan: 'Agency' },
 ]
 
 const testimonials = [
@@ -84,7 +90,7 @@ export default function HomePage() {
       <section className="py-20 px-6">
         <div className="mx-auto max-w-6xl">
           <p className="text-center text-xs font-bold uppercase tracking-widest text-brand-600 mb-3">Everything you need</p>
-          <h2 className="text-4xl font-extrabold text-center tracking-tight mb-4">11 Tools. One Platform.</h2>
+          <h2 className="text-4xl font-extrabold text-center tracking-tight mb-4">17 Tools. One Platform.</h2>
           <p className="text-center text-slate-500 max-w-lg mx-auto mb-12">From content scoring to topical authority mapping and AI-powered fixing – built for content teams, SEOs, and agencies.</p>
           <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
             {tools.map(t => (
