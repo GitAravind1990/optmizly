@@ -34,7 +34,7 @@ export function PageHero() {
         </a>
       </div>
       <div className="mt-16 flex justify-center gap-12 border-t border-slate-100 pt-12 flex-wrap">
-        {[['11', 'AI-powered tools'], ['8', 'Score dimensions'], ['3', 'Pricing plans'], ['500+', 'content teams']].map(([n, l]) => (
+        {[['17', 'AI-powered tools'], ['8', 'Score dimensions'], ['3', 'Pricing plans'], ['500+', 'content teams']].map(([n, l]) => (
           <div key={l} className="text-center">
             <div className="text-3xl font-black text-slate-900">{n}</div>
             <div className="text-sm text-slate-400 mt-1">{l}</div>

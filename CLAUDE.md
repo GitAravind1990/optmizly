@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-AI-powered SaaS platform for content optimization. 15 tools across Free/Pro/Agency tiers.
+AI-powered SaaS platform for content optimization. 17 tools across Free/Pro/Agency tiers.
 
 ## Tech Stack
 
