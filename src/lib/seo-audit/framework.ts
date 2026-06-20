@@ -1,6 +1,6 @@
 // Enterprise SEO Audit — Complete Issues Framework (2026 Edition)
 // Source: SEO_Issues_Framework_2026.docx (Arion Media Corp)
-// 34 categories / 200+ checks.
+// 35 categories / 200+ checks.
 //
 // Each check has a stable `id` of the form `<categoryKey>.<subIndex>.<checkIndex>`.
 // `auto: true` marks checks the regex/header engine in auto-checks.ts attempts to

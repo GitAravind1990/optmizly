@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     const metrics = extractMetrics(audits);
     metrics.overallScore = Math.round(cwvData.lighthouseResult.categories.performance.score * 100);
 
-    const industryData = industry ? getIndustryComparison(industry) : null;
+    const industryData = industry ? getIndustryComparison(industry, url) : null;
 
     const audit = await prisma.performanceFixerAudit.create({
       data: {
@@ -159,7 +159,7 @@ export async function GET() {
   }
 }
 
-function getIndustryComparison(industry: string) {
+function getIndustryComparison(industry: string, url: string) {
   const benchmarks: Record<string, { avg: number; topPercent: number }> = {
     ecommerce: { avg: 65, topPercent: 92 },
     saas: { avg: 78, topPercent: 95 },
@@ -168,5 +168,9 @@ function getIndustryComparison(industry: string) {
     news: { avg: 60, topPercent: 88 },
   };
   const b = benchmarks[industry.toLowerCase()] ?? { avg: 70, topPercent: 90 };
-  return { avg: b.avg, topPercent: b.topPercent, rank: Math.floor(Math.random() * 50) + 1 };
+  // Deterministic rank based on url so the same domain always shows the same rank
+  let h = 0
+  for (let i = 0; i < url.length; i++) h = (Math.imul(31, h) + url.charCodeAt(i)) | 0
+  const rank = (Math.abs(h) % 50) + 1
+  return { avg: b.avg, topPercent: b.topPercent, rank };
 }
