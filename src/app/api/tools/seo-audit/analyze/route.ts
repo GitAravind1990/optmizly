@@ -195,6 +195,8 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
     // ── Category + overall scoring ──
     const categoryScores: Record<string, number> = {}
     let passedChecks = 0, failedChecks = 0, warnChecks = 0
+    // Track globally-counted IDs to avoid double-counting cross-category aliases
+    const globalCounted = new Set<string>()
 
     for (const cat of AUDIT_FRAMEWORK) {
       const checkIds = cat.subCategories.flatMap(s => s.checks.map(c => c.id))
@@ -202,9 +204,12 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
       for (const id of checkIds) {
         const res = autoResults[id]
         if (!res) continue
-        if (res.status === 'pass') passedChecks++
-        else if (res.status === 'fail') failedChecks++
-        else if (res.status === 'warn') warnChecks++
+        if (!globalCounted.has(id)) {
+          globalCounted.add(id)
+          if (res.status === 'pass') passedChecks++
+          else if (res.status === 'fail') failedChecks++
+          else if (res.status === 'warn') warnChecks++
+        }
         const s = STATUS_SCORE[res.status]
         if (s !== null) scores.push(s)
       }
@@ -212,9 +217,15 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
       const aiScore = aiResults[cat.key]?.score ?? null
 
       let final: number | null = null
-      if (autoAvg !== null && aiScore !== null) final = Math.round(autoAvg * 0.5 + aiScore * 0.5)
-      else if (autoAvg !== null) final = Math.round(autoAvg)
-      else if (aiScore !== null) final = aiScore
+      if (autoAvg !== null && aiScore !== null) {
+        // AI categories: Claude's holistic score carries more weight than 1-2 auto signals
+        const aiWeight = cat.ai ? 0.75 : 0.5
+        final = Math.round(autoAvg * (1 - aiWeight) + aiScore * aiWeight)
+      } else if (autoAvg !== null) {
+        final = Math.round(autoAvg)
+      } else if (aiScore !== null) {
+        final = aiScore
+      }
       if (final !== null) categoryScores[cat.key] = final
     }
 

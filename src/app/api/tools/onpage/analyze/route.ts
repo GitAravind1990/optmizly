@@ -29,8 +29,9 @@ function analyzeKeywords(content: string, keyword: string) {
     if (kwWords.every((w, j) => words[i + j] === w)) count++
   }
   const density = wordCount > 0 ? parseFloat(((count / wordCount) * 100).toFixed(2)) : 0
-  const inFirstParagraph = content.toLowerCase().slice(0, 300).includes(kw)
-  const inLastParagraph = content.toLowerCase().slice(-300).includes(kw)
+  const kwBoundary = new RegExp('\\b' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b')
+  const inFirstParagraph = kwBoundary.test(content.toLowerCase().slice(0, 300))
+  const inLastParagraph = kwBoundary.test(content.toLowerCase().slice(-300))
 
   const issues: string[] = []
   if (count === 0) issues.push(`Keyword "${keyword}" not found in content`)

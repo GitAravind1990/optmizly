@@ -124,7 +124,8 @@ export async function POST(req: NextRequest) {
       const eeatRaw = await callClaude(
         EEAT_SYSTEM,
         `Analyse for E-E-A-T. Topic: ${summary ?? ''}.\n\n${content.slice(0, 3000)}`,
-        1200
+        1200,
+        'claude-sonnet-4-6'
       )
       try { eeatResult = extractJSON(eeatRaw) } catch { eeatResult = {} }
     }

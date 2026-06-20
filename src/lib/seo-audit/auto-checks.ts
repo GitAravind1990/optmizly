@@ -1,6 +1,6 @@
 // Automated SEO-audit detectors. Pure functions (no AI, no network) that parse a
 // fetched page's raw HTML + response headers + robots.txt + sitemap.xml and return
-// pass/fail/warn results keyed by the check ids defined in framework.ts.
+// pass/fail/warn results keyed by the check ids defined in framework.ts (35 categories).
 //
 // Only checks the engine can reasonably judge from a single page are produced here;
 // any framework check id not returned is treated as a manual checklist item by the UI.
@@ -225,10 +225,13 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
     r['migration.0.5'] = blocksAll
       ? fail('robots.txt blocks the entire URL structure (Disallow: /)')
       : pass('robots.txt is not blocking the site structure')
+    const robotsExists = robotsTxt.length > 0
     const blocksSearch = lines.some(l => /^disallow:.*(\?s=|\?q=|\/search)/i.test(l))
-    r['siteSearch.0.1'] = blocksSearch
-      ? pass('Internal search params (?s=/?q=) appear blocked in robots.txt')
-      : warn('No robots.txt rule blocking internal search result URLs (?s= / ?q=)')
+    r['siteSearch.0.1'] = !robotsExists
+      ? warn('No robots.txt file found — cannot block internal search result URLs')
+      : blocksSearch
+        ? pass('Internal search params (?s=/?q=) appear blocked in robots.txt')
+        : warn('No robots.txt rule blocking internal search result URLs (?s= / ?q=)')
     const blocksImages = lines.some(l => /^disallow:.*\.(jpg|jpeg|png|gif|webp|avif)/i.test(l))
     r['images.0.5'] = blocksImages
       ? warn('robots.txt disallows image files — they cannot be indexed in Google Images')
@@ -359,10 +362,17 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   r['thirdParty.0.0'] = extScripts.length > 8
     ? warn(`${extScripts.length} third-party scripts detected — audit and remove non-essential ones`)
     : pass(`${extScripts.length} third-party scripts`)
-  r['thirdParty.0.1'] = syncHeadScripts.length > 0
+  // 0.1: external (analytics/chat/ad) scripts that are render-blocking (sync, in head)
+  const extSyncHeadScripts = syncHeadScripts.filter(s =>
+    /^https?:\/\//i.test(s.src) && !s.src.toLowerCase().startsWith(origin.toLowerCase())
+  )
+  r['thirdParty.0.1'] = extSyncHeadScripts.length > 0
+    ? warn(`${extSyncHeadScripts.length} external analytics/chat/ad scripts load synchronously in <head> — defer or async them`)
+    : pass('No external render-blocking scripts in <head>')
+  // 0.2: any script (first or third party) loading synchronously in head
+  r['thirdParty.0.2'] = syncHeadScripts.length > 0
     ? warn(`${syncHeadScripts.length} synchronous scripts in <head> may block rendering`)
     : pass('No render-blocking synchronous scripts in <head>')
-  r['thirdParty.0.2'] = r['thirdParty.0.1']
   r['cwv.1.2'] = extScripts.length > 8
     ? warn(`${extScripts.length} third-party scripts can delay interaction (INP)`)
     : pass('Third-party script count is reasonable')
@@ -503,7 +513,7 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
       ? pass('x-default hreflang is set')
       : warn('No x-default hreflang set')
   } else {
-    r['international.0.0'] = warn('No hreflang tags (only needed for multilingual/multi-regional sites)')
+    r['international.0.0'] = pass('No hreflang tags — not required for single-language sites')
   }
 
   // ── JavaScript / renderability heuristics ──
@@ -561,7 +571,15 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   r['social.0.0'] = missingOg.length > 0
     ? warn(`Missing Open Graph tags: ${missingOg.join(', ')}`)
     : pass('og:title, og:description and og:image are all set')
-  r['social.0.3'] = r['social.0.0']
+  // 0.3: specifically checks article/blog pages — these must have OG article type + tags
+  const isArticlePage = hasType(ldTypes, 'Article', 'BlogPosting', 'NewsArticle') || ogType === 'article'
+  if (isArticlePage) {
+    r['social.0.3'] = missingOg.length > 0
+      ? fail(`Article page is missing Open Graph tags: ${missingOg.join(', ')} — required for social sharing of blog content`)
+      : pass('Article/blog page has all required OG tags')
+  } else {
+    r['social.0.3'] = pass('Not identified as an article/blog page — OG article tags not required')
+  }
   const twitterCard = metas.find(m => m.name === 'twitter:card')?.content ?? ''
   r['social.0.2'] = twitterCard
     ? pass(`twitter:card set (${twitterCard})`)

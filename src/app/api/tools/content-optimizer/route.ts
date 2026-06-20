@@ -18,19 +18,20 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-    if (user) setTrackingUser(user.id);
-    const limit = QUOTA[user?.plan ?? 'FREE'] ?? 3;
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 401 });
+    setTrackingUser(user.id);
+    const limit = QUOTA[user.plan] ?? 3;
 
     const monthlyCount = await prisma.contentOptimization.count({
       where: {
-        userId: user?.id,
+        userId: user.id,
         analyzedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
       },
     });
 
     if (monthlyCount >= limit) {
       return NextResponse.json(
-        { error: `Quota exceeded. ${user?.plan ?? 'FREE'} plan allows ${limit} analyses/month.` },
+        { error: `Quota exceeded. ${user.plan} plan allows ${limit} analyses/month.` },
         { status: 429 }
       );
     }
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     const optimization = await prisma.contentOptimization.create({
       data: {
-        userId: user!.id,
+        userId: user.id,
         content,
         targetKeyword,
         contentUrl: contentUrl || null,

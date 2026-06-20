@@ -39,9 +39,21 @@ export async function POST(req: NextRequest) {
     const { locationId } = await req.json()
     if (!locationId) throw new AuthError(400, 'locationId required')
 
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     const location = await prisma.localSEOLocation.findUnique({
       where: { id: locationId },
-      include: { keywords: true, account: true },
+      include: {
+        account: true,
+        keywords: {
+          include: {
+            history: {
+              where: { checkedDate: { gte: thirtyDaysAgo } },
+              orderBy: { checkedDate: 'asc' },
+              take: 1,
+            },
+          },
+        },
+      },
     })
     if (!location || location.account.userId !== user.id) throw new AuthError(404, 'Location not found')
 
@@ -55,6 +67,8 @@ export async function POST(req: NextRequest) {
     for (const kw of location.keywords) {
       const newRank = simulateNewRank(kw.currentRank ?? null, kw.keyword, dayNum)
       const change7d = (kw.previousRank !== null && newRank !== null) ? kw.previousRank - newRank : null
+      const rank30dAgo = kw.history[0]?.rank ?? null
+      const change30d = (rank30dAgo !== null && newRank !== null) ? rank30dAgo - newRank : null
 
       updates.push({ keyword: kw.keyword, old: kw.currentRank ?? null, new: newRank })
 
@@ -75,7 +89,7 @@ export async function POST(req: NextRequest) {
           previousRank: kw.currentRank,
           currentRank: newRank,
           rankChange7d: change7d,
-          rankChange30d: kw.rankChange30d,
+          rankChange30d: change30d ?? kw.rankChange30d,
         },
       })
 
