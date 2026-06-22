@@ -77,7 +77,9 @@ export default function BacklinkAnalysisPage({ params }: { params: Promise<{ id:
   if (!analysis) return (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center">
-        <div className="text-4xl mb-2">❌</div>
+        <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-2">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-red-400"><line x1="6" y1="6" x2="16" y2="16"/><line x1="16" y1="6" x2="6" y2="16"/></svg>
+        </div>
         <div className="font-bold text-slate-700">Analysis not found</div>
         <Link href="/dashboard/backlinks" className="text-sm text-blue-600 mt-2 inline-block">← Back</Link>
       </div>
@@ -162,7 +164,9 @@ export default function BacklinkAnalysisPage({ params }: { params: Promise<{ id:
         {/* ── BACKLINKS / REFERRING DOMAINS TABS ── */}
         {(tab === 'Backlinks' || tab === 'Referring Domains') && (
           <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
-            <div className="text-4xl mb-3">🔗</div>
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            </div>
             <div className="text-lg font-bold text-slate-700 mb-1">Coming Soon</div>
           </div>
         )}

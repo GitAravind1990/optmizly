@@ -57,12 +57,12 @@ type AnalysisSummary = {
 }
 
 const CATEGORY_INFO = [
-  { key: 'keywordScore', label: 'Keyword', icon: '🔑', weight: '25%' },
-  { key: 'headerScore', label: 'Headers', icon: '📝', weight: '20%' },
-  { key: 'metaScore', label: 'Meta Tags', icon: '🏷️', weight: '20%' },
-  { key: 'imageScore', label: 'Images', icon: '🖼️', weight: '10%' },
-  { key: 'linkScore', label: 'Links', icon: '🔗', weight: '10%' },
-  { key: 'readabilityScore', label: 'Readability', icon: '📖', weight: '15%' },
+  { key: 'keywordScore', label: 'Keyword', weight: '25%' },
+  { key: 'headerScore', label: 'Headers', weight: '20%' },
+  { key: 'metaScore', label: 'Meta Tags', weight: '20%' },
+  { key: 'imageScore', label: 'Images', weight: '10%' },
+  { key: 'linkScore', label: 'Links', weight: '10%' },
+  { key: 'readabilityScore', label: 'Readability', weight: '15%' },
 ]
 
 function scoreColor(score: number) {
@@ -210,7 +210,11 @@ export default function OnPagePage() {
 
         {analyses.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="text-4xl mb-3">📄</div>
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400">
+                <rect x="4" y="2" width="14" height="18" rx="2"/><line x1="7" y1="7" x2="15" y2="7"/><line x1="7" y1="11" x2="15" y2="11"/><line x1="7" y1="15" x2="11" y2="15"/>
+              </svg>
+            </div>
             <h2 className="text-lg font-bold text-slate-700">No analyses yet</h2>
             <p className="text-sm text-slate-500 mt-1 mb-4">Paste your content and a target keyword to get started</p>
             <button onClick={startNew} className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-bold text-white hover:bg-blue-700">
@@ -248,7 +252,7 @@ export default function OnPagePage() {
                     <div className="flex gap-3 mt-2 flex-wrap">
                       {CATEGORY_INFO.map(c => (
                         <div key={c.key} className="flex items-center gap-1">
-                          <span className="text-[10px]">{c.icon}</span>
+                          <span className="text-[10px] text-slate-400">{c.label.slice(0,3)}</span>
                           <span className={`text-xs font-semibold ${scoreColor(a[c.key as keyof AnalysisSummary] as number)}`}>
                             {a[c.key as keyof AnalysisSummary]}
                           </span>
@@ -410,8 +414,8 @@ export default function OnPagePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => exportOnPageCSV(current)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">↓ CSV</button>
-            <button onClick={() => exportOnPagePDF(current)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">↓ PDF</button>
+            <button onClick={() => exportOnPageCSV(current)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Export CSV</button>
+            <button onClick={() => exportOnPagePDF(current)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Export PDF</button>
             <button
               onClick={() => startReanalyze({ ...current, createdAt: '', version: 1 } as AnalysisSummary & { createdAt: string; version: number })}
               className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-50"
@@ -486,8 +490,8 @@ export default function OnPagePage() {
               return (
                 <div key={c.key} className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-600 flex items-center gap-1">
-                      <span>{c.icon}</span>{c.label}
+                    <span className="text-xs font-semibold text-slate-600">
+                      {c.label}
                     </span>
                     <span className={`text-sm font-bold ${scoreColor(score)}`}>{score}</span>
                   </div>
@@ -508,8 +512,8 @@ export default function OnPagePage() {
             {[
               { label: 'Occurrences', value: current.keywordData.count },
               { label: 'Density', value: `${current.keywordData.density}%` },
-              { label: 'In opening', value: current.keywordData.inFirstParagraph ? '✓ Yes' : '✗ No' },
-              { label: 'In closing', value: current.keywordData.inLastParagraph ? '✓ Yes' : '✗ No' },
+              { label: 'In opening', value: current.keywordData.inFirstParagraph ? 'Yes' : 'No' },
+              { label: 'In closing', value: current.keywordData.inLastParagraph ? 'Yes' : 'No' },
             ].map(s => (
               <div key={s.label} className="rounded-lg bg-slate-50 p-3">
                 <div className="text-xs text-slate-500">{s.label}</div>
@@ -521,7 +525,7 @@ export default function OnPagePage() {
             <ul className="space-y-1">
               {current.keywordData.issues.map((iss, i) => (
                 <li key={i} className="text-xs text-amber-700 flex items-start gap-1.5">
-                  <span className="mt-0.5">⚠</span>{iss}
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-1" />{iss}
                 </li>
               ))}
             </ul>
@@ -554,7 +558,7 @@ export default function OnPagePage() {
           )}
           {current.headers.issues.map((iss, i) => (
             <div key={i} className="text-xs text-amber-700 flex items-start gap-1.5">
-              <span className="mt-0.5">⚠</span>{iss}
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-1" />{iss}
             </div>
           ))}
         </div>
@@ -567,20 +571,20 @@ export default function OnPagePage() {
               <div className="text-xs text-slate-500 mb-1">Title tag</div>
               <div className="text-sm text-slate-800">{current.metaTags.title || <span className="text-slate-400 italic">Not found</span>}</div>
               {current.metaTags.title && (
-                <div className="text-xs text-slate-400 mt-1">{current.metaTags.title.length} chars — {current.metaTags.titleHasKeyword ? '✓ keyword present' : '✗ keyword missing'}</div>
+                <div className="text-xs text-slate-400 mt-1">{current.metaTags.title.length} chars — {current.metaTags.titleHasKeyword ? 'keyword present' : 'keyword missing'}</div>
               )}
             </div>
             <div className="rounded-lg bg-slate-50 p-3">
               <div className="text-xs text-slate-500 mb-1">Meta description</div>
               <div className="text-sm text-slate-800">{current.metaTags.description || <span className="text-slate-400 italic">Not found</span>}</div>
               {current.metaTags.description && (
-                <div className="text-xs text-slate-400 mt-1">{current.metaTags.description.length} chars — {current.metaTags.descHasKeyword ? '✓ keyword present' : '✗ keyword missing'}</div>
+                <div className="text-xs text-slate-400 mt-1">{current.metaTags.description.length} chars — {current.metaTags.descHasKeyword ? 'keyword present' : 'keyword missing'}</div>
               )}
             </div>
           </div>
           {current.metaTags.issues.map((iss, i) => (
             <div key={i} className="text-xs text-amber-700 flex items-start gap-1.5">
-              <span className="mt-0.5">⚠</span>{iss}
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-1" />{iss}
             </div>
           ))}
         </div>
@@ -604,7 +608,7 @@ export default function OnPagePage() {
               </div>
             </div>
             {current.images.issues.map((iss, i) => (
-              <div key={i} className="text-xs text-amber-700 flex items-start gap-1.5"><span>⚠</span>{iss}</div>
+              <div key={i} className="text-xs text-amber-700 flex items-start gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-1" />{iss}</div>
             ))}
           </div>
 
@@ -621,7 +625,7 @@ export default function OnPagePage() {
               </div>
             </div>
             {current.links.issues.map((iss, i) => (
-              <div key={i} className="text-xs text-amber-700 flex items-start gap-1.5"><span>⚠</span>{iss}</div>
+              <div key={i} className="text-xs text-amber-700 flex items-start gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-1" />{iss}</div>
             ))}
           </div>
         </div>
@@ -652,7 +656,7 @@ export default function OnPagePage() {
                             {fix.priority}
                           </span>
                           <span className="text-[10px] font-semibold text-slate-500 uppercase">{fix.category}</span>
-                          {applied && <span className="text-[10px] font-bold text-green-600 uppercase">✓ Applied</span>}
+                          {applied && <span className="text-[10px] font-bold text-green-600 uppercase">Applied</span>}
                         </div>
                         <div className="text-sm font-semibold text-slate-800">{fix.issue}</div>
                         <div className="text-xs text-slate-600 mt-1">{fix.suggestion}</div>

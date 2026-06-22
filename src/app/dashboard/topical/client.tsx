@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { Button, Card, Badge, EmptyState, Spinner } from '@/components/ui'
@@ -44,7 +44,6 @@ export function TopicalClient() {
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-4xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">🗺ï¸</span>
           <div><h1 className="text-base font-black">Topical Authority</h1>
           <p className="text-xs text-slate-500">Pillar + cluster map with search volumes, coverage gaps, and content calendar</p></div>
           <Button className="ml-auto" onClick={handleRun} loading={loading}>
@@ -208,7 +207,7 @@ export function TopicalClient() {
                     <h2 className="text-sm font-bold mb-3">Quick Wins</h2>
                     {result.quick_wins.map((w, i) => (
                       <div key={i} className="flex gap-2 text-sm mb-2">
-                        <span className="text-emerald-500 font-bold flex-shrink-0">→</span>
+                        <span className="text-emerald-500 font-bold flex-shrink-0">+</span>
                         <span className="text-slate-700">{w}</span>
                       </div>
                     ))}
@@ -220,7 +219,7 @@ export function TopicalClient() {
             {/* Content calendar */}
             {result.content_calendar?.length > 0 && (
               <Card>
-                <h2 className="text-sm font-bold mb-3">📅 Content Calendar</h2>
+                <h2 className="text-sm font-bold mb-3">Content Calendar</h2>
                 <div className="space-y-2">
                   {result.content_calendar.map((c, i) => (
                     <div key={i} className="flex items-start gap-3 py-2 border-b border-slate-100 last:border-0">
@@ -238,19 +237,18 @@ export function TopicalClient() {
               </Card>
             )}
 
-            <div style={{display:'flex',gap:'8px',flexWrap:'wrap',alignItems:'center'}}>
-              <button onClick={() => exportTopicalCSV(result)} style={{padding:'7px 14px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>⬇ CSV</button>
-              <button onClick={() => exportTopicalPDF(result)} style={{padding:'7px 14px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>⬇ PDF</button>
-              <Button variant="secondary" size="sm" onClick={() => { setResult(null); setSelected(null) }}>↺ New Analysis</Button>
+            <div className="flex gap-2 flex-wrap items-center">
+              <button onClick={() => exportTopicalCSV(result)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export CSV</button>
+              <button onClick={() => exportTopicalPDF(result)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export PDF</button>
+              <Button variant="secondary" size="sm" onClick={() => { setResult(null); setSelected(null) }}>New Analysis</Button>
             </div>
           </div>
         )}
 
         {!result && !loading && (
-          <EmptyState icon="🗺ï¸" title="Topical Authority Mapper" desc="Enter your niche above and click Build Map. Optmizly will generate a full pillar + cluster map with search volumes and a content calendar." />
+          <EmptyState title="Topical Authority Mapper" desc="Enter your niche above and click Build Map. Optmizly will generate a full pillar + cluster map with search volumes and a content calendar." />
         )}
       </div>
     </div>
   )
 }
-

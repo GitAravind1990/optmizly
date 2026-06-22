@@ -163,7 +163,14 @@ export default function AgencyClientsPage() {
           <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading clients...</div>
         ) : clients.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="text-4xl mb-4">👥</div>
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400">
+                <circle cx="8" cy="7" r="3.5"/>
+                <circle cx="15" cy="7" r="3.5"/>
+                <path d="M1 19c0-4 3.1-6 7-6s7 2 7 6"/>
+                <path d="M15 13c2 0 5 1 5 6"/>
+              </svg>
+            </div>
             <p className="text-slate-600 font-medium">No clients yet</p>
             <p className="text-slate-400 text-sm mt-1">Add your first client to start generating reports</p>
           </div>

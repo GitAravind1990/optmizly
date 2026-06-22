@@ -167,7 +167,9 @@ export default function LocalSEOPage() {
         <div className="flex items-center justify-center py-20 text-slate-400 text-sm">Loading...</div>
       ) : accounts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="text-4xl mb-3">📍</div>
+          <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400"><path d="M11 2a6 6 0 0 1 6 6c0 5-6 12-6 12S5 13 5 8a6 6 0 0 1 6-6z"/><circle cx="11" cy="8" r="2"/></svg>
+          </div>
           <h2 className="text-lg font-bold text-slate-700">No local SEO accounts yet</h2>
           <p className="text-sm text-slate-500 mt-1 mb-4">Add a multi-location business to start tracking local rankings, reviews, and citations</p>
           <button onClick={() => setShowCreate(true)} className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-bold text-white hover:bg-blue-700">

@@ -281,7 +281,9 @@ export default function CompetitorSpyPage() {
           <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading analyses...</div>
         ) : analyses.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="text-5xl mb-4">🔍</div>
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400"><circle cx="10" cy="10" r="7"/><line x1="15.5" y1="15.5" x2="20" y2="20"/></svg>
+            </div>
             <p className="text-slate-600 font-medium">No competitor analyses yet</p>
             <p className="text-slate-400 text-sm mt-1">Click "Analyze Competitor" to spy on any domain</p>
           </div>

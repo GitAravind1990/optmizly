@@ -17,9 +17,9 @@ export function TrackerClient({ unlocked = true }: { unlocked?: boolean }) {
   if (!unlocked) return <LockedState tool="Cite Tracker" plan="Agency" />
 
   const verdictConfig = {
-    likely:   { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', bar: 'bg-emerald-500', label: 'Likely Cited ✓' },
-    possible: { bg: 'bg-amber-50',   border: 'border-amber-200',   text: 'text-amber-700',   bar: 'bg-amber-500',   label: 'Possibly Cited ~' },
-    unlikely: { bg: 'bg-red-50',     border: 'border-red-200',     text: 'text-red-700',     bar: 'bg-red-500',     label: 'Unlikely Cited ✗' },
+    likely:   { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', bar: 'bg-emerald-500', label: 'Likely Cited' },
+    possible: { bg: 'bg-amber-50',   border: 'border-amber-200',   text: 'text-amber-700',   bar: 'bg-amber-500',   label: 'Possibly Cited' },
+    unlikely: { bg: 'bg-red-50',     border: 'border-red-200',     text: 'text-red-700',     bar: 'bg-red-500',     label: 'Unlikely Cited' },
   }
 
   async function handleRun() {
@@ -50,7 +50,6 @@ export function TrackerClient({ unlocked = true }: { unlocked?: boolean }) {
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-3xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">🎯</span>
           <div>
             <h1 className="text-base font-black">Cite Tracker</h1>
             <p className="text-xs text-slate-500">Simulate ChatGPT & Perplexity responses — check if your content gets cited</p>
@@ -123,16 +122,16 @@ export function TrackerClient({ unlocked = true }: { unlocked?: boolean }) {
                       </div>
                     </div>
                   ) : null}
-                  {r.what_would_increase_citation && <p className="text-xs text-slate-600">💡 Fix: {r.what_would_increase_citation}</p>}
+                  {r.what_would_increase_citation && <p className="text-xs text-slate-600">Fix: {r.what_would_increase_citation}</p>}
                 </div>
               )
             })}
           </div>
         )}
         {result && (
-          <div style={{display:'flex',gap:'8px',marginTop:'4px',flexWrap:'wrap'}}>
-            <button onClick={() => exportTrackerCSV(result)} style={{padding:'7px 14px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>⬇ CSV</button>
-            <button onClick={() => exportTrackerPDF(result)} style={{padding:'7px 14px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>⬇ PDF</button>
+          <div className="flex gap-2 mt-1">
+            <button onClick={() => exportTrackerCSV(result)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export CSV</button>
+            <button onClick={() => exportTrackerPDF(result)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export PDF</button>
           </div>
         )}
         {!result && !loading && <EmptyState icon="🎯" title="Cite Tracker" desc="Paste your content, add your target queries, and run to see if ChatGPT and Perplexity would cite you." />}

@@ -47,7 +47,6 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-3xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">🔭</span>
           <div>
             <h1 className="text-base font-black">AI Visibility</h1>
             <p className="text-xs text-slate-500">Citation strategy + AI query mapping — get cited by ChatGPT, Perplexity & Google AI Overviews</p>
@@ -61,7 +60,7 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
 
         {hasResults && (
           <div className="flex gap-1 border-b border-slate-200">
-            {([['citation', '📎 Citation Plan'], ['queries', '🔎 AI Queries']] as [Tab, string][]).map(([id, label]) => (
+            {([['citation', 'Citation Plan'], ['queries', 'AI Queries']] as [Tab, string][]).map(([id, label]) => (
               <button key={id} onClick={() => setTab(id)}
                 className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors ${tab === id ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
                 {label}
@@ -88,9 +87,9 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
                     {item.why && <p className="text-xs text-slate-400">{item.why}</p>}
                   </Card>
                 ))}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                  <button onClick={() => exportCitationCSV(citationData)} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>⬇ CSV</button>
-                  <button onClick={() => exportCitationPDF(citationData)} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>⬇ PDF</button>
+                <div className="flex gap-2 mt-1">
+                  <button onClick={() => exportCitationCSV(citationData)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export CSV</button>
+                  <button onClick={() => exportCitationPDF(citationData)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export PDF</button>
                 </div>
               </div>
             )}
@@ -110,9 +109,9 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
                     {q.fix && <p className="text-xs text-blue-600">Fix: {q.fix}</p>}
                   </Card>
                 ))}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                  <button onClick={() => exportQueriesCSV(queriesData)} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>⬇ CSV</button>
-                  <button onClick={() => exportQueriesPDF(queriesData)} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>⬇ PDF</button>
+                <div className="flex gap-2 mt-1">
+                  <button onClick={() => exportQueriesCSV(queriesData)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export CSV</button>
+                  <button onClick={() => exportQueriesPDF(queriesData)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export PDF</button>
                 </div>
               </div>
             )}

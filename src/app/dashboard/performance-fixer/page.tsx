@@ -158,17 +158,19 @@ export default function PerformanceFixerPage() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto">
           <div className="bg-gradient-to-br from-amber-50 to-purple-50 border border-amber-200 p-12 rounded-2xl text-center">
-            <div className="text-5xl mb-4">🔒</div>
+            <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-amber-600"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
             <h1 className="text-2xl font-black mb-2">Agency-Exclusive Tool</h1>
             <p className="text-slate-600 mb-6">AI Performance Fixer is available exclusively on the Agency plan ($49/mo).</p>
             <div className="bg-white rounded-xl p-6 mb-6 text-left border border-amber-100">
               <h2 className="font-bold text-sm mb-3 text-slate-700">What you unlock:</h2>
               <ul className="space-y-2 text-sm text-slate-600">
-                <li className="flex items-center gap-2"><span className="text-emerald-500 font-bold">✓</span> All PageSpeed Insights metrics (20+)</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-500 font-bold">✓</span> AI-Generated Code Fixes (Claude AI)</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-500 font-bold">✓</span> ROI Calculator — revenue impact analysis</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-500 font-bold">✓</span> Industry Benchmarks</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-500 font-bold">✓</span> 50 audits / month</li>
+                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> All PageSpeed Insights metrics (20+)</li>
+                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> AI-Generated Code Fixes (Claude AI)</li>
+                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> ROI Calculator — revenue impact analysis</li>
+                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> Industry Benchmarks</li>
+                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> 50 audits / month</li>
               </ul>
             </div>
             <div className="flex gap-3 justify-center">

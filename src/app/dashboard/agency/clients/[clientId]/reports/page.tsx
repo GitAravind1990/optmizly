@@ -132,7 +132,13 @@ export default function ClientReportsPage({ params }: { params: Promise<{ client
 
         {reports.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="text-4xl mb-4">📊</div>
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400">
+                <rect x="3" y="12" width="4" height="8" rx="1"/>
+                <rect x="9" y="7" width="4" height="13" rx="1"/>
+                <rect x="15" y="3" width="4" height="17" rx="1"/>
+              </svg>
+            </div>
             <p className="text-slate-600 font-medium">No reports yet</p>
             <p className="text-slate-400 text-sm mt-1">Click "Generate This Month" to create the first report</p>
           </div>

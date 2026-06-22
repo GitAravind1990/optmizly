@@ -293,7 +293,9 @@ export function BacklinksClient() {
             <div className="text-center py-16 text-slate-400">Loading...</div>
           ) : analyses.length === 0 ? (
             <div className="text-center py-16">
-              <div className="text-5xl mb-3">📊</div>
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="9" y="7" width="4" height="13" rx="1"/><rect x="15" y="3" width="4" height="17" rx="1"/></svg>
+              </div>
               <div className="text-lg font-bold text-slate-700">No analyses yet</div>
               <div className="text-sm text-slate-400 mt-1">Enter a domain above to fetch real backlink data</div>
             </div>
@@ -372,7 +374,9 @@ export function BacklinksClient() {
             <div className="text-center py-16 text-slate-400">Loading projects...</div>
           ) : projects.length === 0 ? (
             <div className="text-center py-16">
-              <div className="text-5xl mb-3">🤖</div>
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400"><rect x="5" y="2" width="12" height="14" rx="2"/><path d="M5 8H3a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h2"/><path d="M17 8h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-2"/><line x1="9" y1="18" x2="9" y2="22"/><line x1="13" y1="18" x2="13" y2="22"/><line x1="7" y1="22" x2="15" y2="22"/></svg>
+              </div>
               <div className="text-lg font-bold text-slate-700">No outreach projects yet</div>
               <div className="text-sm text-slate-400 mt-1">Create a project to get AI-generated pitch angles and track outreach status</div>
               <button onClick={() => setShowProjectForm(true)}

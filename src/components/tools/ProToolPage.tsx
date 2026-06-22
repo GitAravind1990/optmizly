@@ -7,7 +7,7 @@ import { useContent } from '@/context/ContentContext'
 interface ProToolPageProps {
   toolId: string
   title: string
-  icon: string
+  icon?: string
   description: string
   plan: 'Pro' | 'Agency'
   unlocked: boolean
@@ -51,7 +51,6 @@ export function ProToolPage({
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-3xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{icon}</span>
           <div>
             <h1 className="text-base font-black">{title}</h1>
             <p className="text-xs text-slate-500">{description}</p>

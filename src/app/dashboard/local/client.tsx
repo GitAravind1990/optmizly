@@ -5,10 +5,10 @@ import { Button, Card, Badge, Spinner } from '@/components/ui'
 import { exportLocalCSV, exportLocalPDF } from '@/lib/export'
 
 const SUB_TOOLS = [
-  { id: 'entities', label: 'Local Entities', icon: '📍', desc: 'Missing hyperlocal entities, neighborhoods, landmarks' },
-  { id: 'nap',      label: 'NAP + Schema',   icon: '🗂️', desc: 'NAP audit and JSON-LD LocalBusiness schema generator' },
-  { id: 'queries',  label: 'Local Queries',  icon: '🔎', desc: 'Local AI search queries you should rank for' },
-  { id: 'gbp',      label: 'GBP Content',    icon: '📋', desc: 'Google Business Profile posts, Q&A and review templates' },
+  { id: 'entities', label: 'Local Entities', desc: 'Missing hyperlocal entities, neighborhoods, landmarks' },
+  { id: 'nap',      label: 'NAP + Schema',   desc: 'NAP audit and JSON-LD LocalBusiness schema generator' },
+  { id: 'queries',  label: 'Local Queries',  desc: 'Local AI search queries you should rank for' },
+  { id: 'gbp',      label: 'GBP Content',    desc: 'Google Business Profile posts, Q&A and review templates' },
 ]
 
 export function LocalClient() {
@@ -44,7 +44,6 @@ export function LocalClient() {
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-3xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">📍</span>
           <div><h1 className="text-base font-black">Local SEO Suite</h1>
           <p className="text-xs text-slate-500">4 tools for hyperlocal content, schema, queries, and GBP</p></div>
         </div>
@@ -81,7 +80,7 @@ export function LocalClient() {
           {SUB_TOOLS.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
               className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all ${activeTab === t.id ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-              {t.icon} {t.label}
+              {t.label}
               {results[t.id] && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-1" />}
             </button>
           ))}
@@ -94,7 +93,7 @@ export function LocalClient() {
             <Card>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-sm font-black">{tool.icon} {tool.label}</h2>
+                  <h2 className="text-sm font-black">{tool.label}</h2>
                   <p className="text-xs text-slate-500">{tool.desc}</p>
                 </div>
                 <Button onClick={() => runSubTool(activeTab)} loading={loading === activeTab} size="sm">
@@ -116,9 +115,9 @@ export function LocalClient() {
                 </div>
               )}
               {active && !loading && (
-                <div style={{display:'flex',gap:'8px',marginTop:'12px',flexWrap:'wrap'}}>
-                  <button onClick={() => exportLocalCSV(active as never, activeTab)} style={{padding:'7px 14px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>⬇ CSV</button>
-                  <button onClick={() => exportLocalPDF(active, activeTab, fields.city || 'local')} style={{padding:'7px 14px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>⬇ PDF</button>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => exportLocalCSV(active as never, activeTab)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export CSV</button>
+                  <button onClick={() => exportLocalPDF(active, activeTab, fields.city || 'local')} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export PDF</button>
                 </div>
               )}
             </Card>
@@ -176,15 +175,18 @@ function LocalResult({ data, subTool }: { data: Record<string, unknown>; subTool
         <div className="grid grid-cols-3 gap-3">
           {[['Name', d.nap_audit?.name_found], ['Address', d.nap_audit?.address_found], ['Phone', d.nap_audit?.phone_found]].map(([l, v]) => (
             <div key={l as string} className={`rounded-xl p-3 text-center border ${v ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-              <div className={`text-lg font-black ${v ? 'text-emerald-600' : 'text-red-600'}`}>{v ? '✓' : '✗'}</div>
-              <div className="text-xs font-bold text-slate-500">{l as string} Found</div>
+              <div className={`text-sm font-bold ${v ? 'text-emerald-600' : 'text-red-600'}`}>{v ? 'Found' : 'Missing'}</div>
+              <div className="text-xs font-bold text-slate-500 mt-1">{l as string}</div>
             </div>
           ))}
         </div>
         {d.nap_audit?.consistency_issues?.length > 0 && (
           <div>
             {d.nap_audit.consistency_issues.map((i, idx) => (
-              <div key={idx} className="text-xs text-red-600 flex gap-1 mb-1"><span>⚠</span>{i}</div>
+              <div key={idx} className="text-xs text-red-600 flex gap-1.5 mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0 mt-1" />
+                {i}
+              </div>
             ))}
           </div>
         )}

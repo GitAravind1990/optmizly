@@ -361,7 +361,11 @@ function IdeaModal({ idea, onClose, onUpdate }: {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="text-4xl mb-4">📝</div>
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400">
+                      <rect x="2" y="2" width="14" height="14" rx="2"/><line x1="5" y1="6" x2="13" y2="6"/><line x1="5" y1="9" x2="13" y2="9"/><line x1="5" y1="12" x2="9" y2="12"/>
+                    </svg>
+                  </div>
                   <p className="text-slate-600 font-medium mb-2">No outline generated yet</p>
                   <p className="text-slate-400 text-sm mb-6">AI will generate a detailed outline + intro paragraph</p>
                   <button
@@ -483,7 +487,7 @@ export default function ContentIdeasPage() {
                   })}
                   className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                 >
-                  ↓ CSV
+                  Export CSV
                 </button>
                 <button
                   onClick={() => exportContentIdeasPDF({
@@ -493,7 +497,7 @@ export default function ContentIdeasPage() {
                   })}
                   className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                 >
-                  ↓ PDF
+                  Export PDF
                 </button>
               </>
             )}
@@ -577,7 +581,12 @@ export default function ContentIdeasPage() {
             <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading ideas...</div>
           ) : displayIdeas.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="text-5xl mb-4">💡</div>
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400">
+                  <line x1="11" y1="2" x2="11" y2="4"/><line x1="19.07" y1="3.93" x2="17.66" y2="5.34"/><line x1="22" y1="11" x2="20" y2="11"/>
+                  <path d="M8 18h6M9 21h4M11 6a5 5 0 1 0 3.54 8.54"/>
+                </svg>
+              </div>
               <p className="text-slate-600 font-medium">No content ideas yet</p>
               <p className="text-slate-400 text-sm mt-1">Click "+ Generate Ideas" to create AI-powered content ideas</p>
             </div>
@@ -603,14 +612,14 @@ export default function ContentIdeasPage() {
                     {/* Main content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        {idea.pinned && <span className="text-amber-500 text-xs">📌</span>}
+                        {idea.pinned && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />}
                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${STATUS_CONFIG[idea.status]?.color ?? 'bg-slate-100 text-slate-500'}`}>
                           {STATUS_CONFIG[idea.status]?.label ?? idea.status}
                         </span>
                         <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
                           {CONTENT_TYPE_LABEL[idea.contentType] ?? idea.contentType}
                         </span>
-                        {idea.aiOutline && <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">✨ Outline ready</span>}
+                        {idea.aiOutline && <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Outline ready</span>}
                       </div>
                       <h3 className="text-sm font-bold text-slate-900 leading-snug mb-1">{idea.title}</h3>
                       <div className="flex items-center gap-4 text-xs text-slate-500">
@@ -629,7 +638,9 @@ export default function ContentIdeasPage() {
                         title={idea.pinned ? 'Unpin' : 'Pin'}
                         className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-amber-500 transition-colors"
                       >
-                        {idea.pinned ? '📌' : '📍'}
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className={idea.pinned ? 'text-amber-500' : 'text-slate-400'}>
+                          <path d="M7 1v8M4 9l3 4 3-4M3 5h8"/>
+                        </svg>
                       </button>
                       <button
                         onClick={() => handleDelete(idea.id)}
