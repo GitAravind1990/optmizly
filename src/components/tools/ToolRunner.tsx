@@ -63,7 +63,7 @@ export function ToolRunner({ onResult }: ToolRunnerProps) {
       <div className="flex gap-2">
         <input type="url" value={urlInput} onChange={e => setUrlInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && fetchAndAnalyse()}
-          placeholder="🔗 Paste a URL to fetch & analyse automatically"
+          placeholder="Paste a URL to fetch and analyze automatically"
           className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         <Button onClick={fetchAndAnalyse} loading={fetchLoading} variant="amber">
           Fetch &amp; Analyse

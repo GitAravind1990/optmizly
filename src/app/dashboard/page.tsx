@@ -42,7 +42,7 @@ export default function DashboardPage() {
 
       {analysisResult && (
         <div className="flex gap-1 px-6 pt-3 border-b border-slate-200 bg-white shrink-0">
-          {([['scores', '📊 Scores'], ['issues', '🔍 Issues'], ['entities', '🔗 Entities']] as [Tab, string][]).map(([id, label]) => (
+          {([['scores', 'Scores'], ['issues', 'Issues'], ['entities', 'Entities']] as [Tab, string][]).map(([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
@@ -63,7 +63,7 @@ export default function DashboardPage() {
 
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {!analysisResult ? (
-          <EmptyState icon="◈" title="Ready to analyse" desc="Paste content or fetch a URL above, then click Analyse to get your full content score." />
+          <EmptyState title="Ready to analyse" desc="Paste content or fetch a URL above, then click Analyse to get your full content score." />
         ) : tab === 'scores' ? (
           <div className="max-w-3xl mx-auto fade-up space-y-5">
             <Card className="flex items-center gap-5">
@@ -111,7 +111,7 @@ export default function DashboardPage() {
                 <div className="space-y-2 mb-4">
                   {wins.map((w, i) => (
                     <div key={i} className="flex gap-2 text-sm">
-                      <span className="text-emerald-500 font-bold flex-shrink-0">→</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 mt-1.5" />
                       <span className="text-slate-700">{w}</span>
                     </div>
                   ))}
@@ -132,13 +132,13 @@ export default function DashboardPage() {
 
             {analysisResult.llm_citation_tip && (
               <Card className="bg-blue-50 border-blue-200">
-                <h2 className="text-xs font-bold text-blue-700 mb-1">💡 LLM Citation Tip</h2>
+                <h2 className="text-xs font-bold text-blue-700 mb-1">AI Visibility Tip</h2>
                 <p className="text-sm text-blue-800">{analysisResult.llm_citation_tip}</p>
               </Card>
             )}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button onClick={() => exportScoresCSV(analysisResult as never)} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>⬇ CSV</button>
-              <button onClick={() => exportScoresPDF(analysisResult as never)} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>⬇ PDF</button>
+              <button onClick={() => exportScoresCSV(analysisResult as never)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Export CSV</button>
+              <button onClick={() => exportScoresPDF(analysisResult as never)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Export PDF</button>
             </div>
           </div>
         ) : tab === 'issues' ? (
@@ -148,16 +148,18 @@ export default function DashboardPage() {
               <div className="flex items-center gap-3">
                 <Badge variant={issues.length > 5 ? 'red' : issues.length > 2 ? 'amber' : 'green'}>{issues.length} issues found</Badge>
                 {issues.length > 0 && (
-                  <Link href="/dashboard/optimizer" className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 px-3 py-1.5 text-xs font-bold text-white">
-                    ⚡ Optimize content →
+                  <Link href="/dashboard/optimizer" className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 px-3 py-1.5 text-xs font-bold text-white transition-colors">
+                    Optimize Content
                   </Link>
                 )}
               </div>
             </div>
             {issues.length === 0 ? (
               <Card className="text-center py-10">
-                <div className="text-3xl mb-3">🎉</div>
-                <p className="font-bold">No critical issues found</p>
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><polyline points="3,9 7,13 15,5"/></svg>
+                </div>
+                <p className="font-bold text-slate-800">No critical issues found</p>
                 <p className="text-sm text-slate-500 mt-1">Your content is in good shape.</p>
               </Card>
             ) : issues.map((issue, i) => (
@@ -180,9 +182,9 @@ export default function DashboardPage() {
           <div className="max-w-3xl mx-auto fade-up space-y-5">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h1 className="text-base font-black">Entity Gaps</h1>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => exportEntitiesCSV(gaps, wins)} style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>⬇ CSV</button>
-                <button onClick={() => exportEntitiesPDF(gaps, wins)} style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>⬇ PDF</button>
+              <div className="flex gap-2">
+                <button onClick={() => exportEntitiesCSV(gaps, wins)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Export CSV</button>
+                <button onClick={() => exportEntitiesPDF(gaps, wins)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Export PDF</button>
               </div>
             </div>
             <Card>

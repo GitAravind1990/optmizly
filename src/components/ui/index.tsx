@@ -73,10 +73,17 @@ export function ScoreBar({ value, label, weight }: { value: number; label: strin
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
-export function EmptyState({ icon, title, desc }: { icon: string; title: string; desc: string }) {
+export function EmptyState({ icon: _icon, title, desc }: { icon?: string; title: string; desc: string }) {
   return (
     <div className="flex flex-col items-center justify-center h-full py-20 text-center">
-      <div className="text-4xl mb-4">{icon}</div>
+      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400">
+          <rect x="3" y="3" width="16" height="16" rx="2"/>
+          <line x1="7" y1="8" x2="15" y2="8"/>
+          <line x1="7" y1="11" x2="15" y2="11"/>
+          <line x1="7" y1="14" x2="11" y2="14"/>
+        </svg>
+      </div>
       <h3 className="text-base font-bold text-slate-800 mb-2">{title}</h3>
       <p className="text-sm text-slate-500 max-w-xs leading-relaxed">{desc}</p>
     </div>
@@ -87,14 +94,20 @@ export function EmptyState({ icon, title, desc }: { icon: string; title: string;
 export function LockedState({ tool, plan }: { tool: string; plan: 'Pro' | 'Agency' }) {
   return (
     <div className="flex flex-col items-center justify-center h-full py-20 text-center">
-      <div className="text-4xl mb-4">🔒</div>
+      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-slate-400">
+          <rect x="4" y="9" width="12" height="9" rx="1.5"/>
+          <path d="M7 9V7a3 3 0 016 0v2"/>
+          <circle cx="10" cy="14" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
       <h3 className="text-base font-bold text-slate-800 mb-2">{tool}</h3>
       <p className="text-sm text-slate-500 max-w-xs mb-6">This tool requires the <strong>{plan}</strong> plan.</p>
       <a href="/pricing" className={cn(
         'rounded-xl px-6 py-2.5 text-sm font-bold text-white',
         plan === 'Agency' ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-brand-600 hover:bg-brand-700'
       )}>
-        Upgrade to {plan} →
+        Upgrade to {plan}
       </a>
     </div>
   )
