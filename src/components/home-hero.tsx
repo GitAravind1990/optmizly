@@ -102,50 +102,58 @@ export function HomeHero() {
 
       {/* ── Background layer (clipped so glows don't cause scrollbars) ── */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        {/* Primary center glow */}
+        {/* Primary center glow — indigo */}
         <div style={{
           position: 'absolute',
-          top: -320, left: '50%', transform: 'translateX(-50%)',
-          width: 1300, height: 900,
-          background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.5) 0%, rgba(79,70,229,0.22) 35%, transparent 65%)',
-          filter: 'blur(64px)',
+          top: -280, left: '50%', transform: 'translateX(-50%)',
+          width: 1400, height: 960,
+          background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.65) 0%, rgba(79,70,229,0.3) 35%, transparent 62%)',
+          filter: 'blur(56px)',
         }} />
-        {/* Left accent — purple */}
+        {/* Left accent — violet/purple */}
         <div style={{
           position: 'absolute',
-          top: -60, left: -180,
-          width: 640, height: 560,
-          background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.22) 0%, transparent 65%)',
-          filter: 'blur(80px)',
+          top: -40, left: -120,
+          width: 720, height: 620,
+          background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.35) 0%, transparent 62%)',
+          filter: 'blur(72px)',
         }} />
-        {/* Right accent — blue */}
+        {/* Right accent — cyan/teal */}
         <div style={{
           position: 'absolute',
-          top: 60, right: -180,
-          width: 640, height: 560,
-          background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.16) 0%, transparent 65%)',
+          top: 80, right: -120,
+          width: 680, height: 580,
+          background: 'radial-gradient(ellipse at center, rgba(6,182,212,0.22) 0%, rgba(20,184,166,0.14) 40%, transparent 65%)',
+          filter: 'blur(72px)',
+        }} />
+        {/* Bottom emerald pulse */}
+        <div style={{
+          position: 'absolute',
+          bottom: -80, left: '35%',
+          width: 480, height: 360,
+          background: 'radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, transparent 65%)',
           filter: 'blur(80px)',
         }} />
         {/* Vertical beam */}
         <div style={{
           position: 'absolute',
           top: 0, left: '50%', transform: 'translateX(-50%)',
-          width: 2, height: '55%',
-          background: 'linear-gradient(to bottom, transparent 0%, rgba(99,102,241,0.6) 25%, rgba(99,102,241,0.15) 70%, transparent 100%)',
+          width: 2, height: '58%',
+          background: 'linear-gradient(to bottom, transparent 0%, rgba(99,102,241,0.7) 20%, rgba(139,92,246,0.3) 65%, transparent 100%)',
         }} />
         {/* Grid */}
         <div style={{
           position: 'absolute', inset: 0,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px)',
           backgroundSize: '72px 72px',
-          maskImage: 'radial-gradient(ellipse 90% 70% at 50% 15%, black 10%, transparent 75%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 90% 70% at 50% 15%, black 10%, transparent 75%)',
+          maskImage: 'radial-gradient(ellipse 95% 75% at 50% 15%, black 10%, transparent 72%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 95% 75% at 50% 15%, black 10%, transparent 72%)',
         }} />
         {/* Horizontal shimmer line */}
         <div style={{
           position: 'absolute',
-          top: '38%', left: 0, right: 0, height: 1,
-          background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.25) 30%, rgba(139,92,246,0.35) 50%, rgba(99,102,241,0.25) 70%, transparent 100%)',
+          top: '36%', left: 0, right: 0, height: 1,
+          background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.35) 25%, rgba(167,139,250,0.55) 50%, rgba(6,182,212,0.3) 75%, transparent 100%)',
         }} />
       </div>
 
@@ -259,8 +267,8 @@ export function HomeHero() {
         <div style={{
           position: 'absolute',
           top: -20, left: 'clamp(0px, 2vw, 40px)', right: 'clamp(0px, 2vw, 40px)', bottom: 60,
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.55) 0%, rgba(139,92,246,0.25) 40%, transparent 70%)',
-          filter: 'blur(48px)',
+          background: 'radial-gradient(ellipse at 30% 0%, rgba(139,92,246,0.6) 0%, rgba(99,102,241,0.35) 35%, transparent 65%), radial-gradient(ellipse at 75% 0%, rgba(6,182,212,0.3) 0%, transparent 55%)',
+          filter: 'blur(44px)',
           borderRadius: 24,
           pointerEvents: 'none',
         }} />
@@ -272,24 +280,24 @@ export function HomeHero() {
           </AppWindow>
 
           {/* Chip: Content Score — mid left */}
-          <FloatingChip style={{ top: 290, left: 20 }}>
+          <FloatingChip style={{ top: 290, left: 20, border: '1px solid rgba(16,185,129,0.3)', boxShadow: '0 0 0 1px rgba(16,185,129,0.12) inset, 0 8px 32px rgba(0,0,0,0.5)' }}>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.42)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>
               Content Score
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 28, fontWeight: 700, color: '#10B981', letterSpacing: -1.2, lineHeight: 1, fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>82</span>
-              <span style={{ fontSize: 12, color: 'rgba(16,185,129,0.75)', fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>↑ 31 pts</span>
+              <span style={{ fontSize: 28, fontWeight: 700, color: '#34D399', letterSpacing: -1.2, lineHeight: 1, fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>82</span>
+              <span style={{ fontSize: 12, color: 'rgba(52,211,153,0.75)', fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>↑ 31 pts</span>
             </div>
           </FloatingChip>
 
           {/* Chip: Entities — top right */}
-          <FloatingChip style={{ top: 56, right: 20 }}>
+          <FloatingChip style={{ top: 56, right: 20, border: '1px solid rgba(139,92,246,0.35)', boxShadow: '0 0 0 1px rgba(139,92,246,0.15) inset, 0 8px 32px rgba(0,0,0,0.5)' }}>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.42)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>
               Entities injected
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 28, fontWeight: 700, color: '#A5B4FC', letterSpacing: -1.2, lineHeight: 1, fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>4</span>
-              <span style={{ fontSize: 12, color: 'rgba(165,180,252,0.7)', fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>of 6 gaps closed</span>
+              <span style={{ fontSize: 28, fontWeight: 700, color: '#C084FC', letterSpacing: -1.2, lineHeight: 1, fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>4</span>
+              <span style={{ fontSize: 12, color: 'rgba(192,132,252,0.7)', fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>of 6 gaps closed</span>
             </div>
           </FloatingChip>
         </div>

@@ -147,7 +147,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <nav className="flex-1 py-2 px-2">
             {TOOL_GROUPS.map(group => (
               <div key={group.label} className="mb-1">
-                <div className="px-2 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400">{group.label}</div>
+                <div className={`px-2 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest ${group.label === 'Free' ? 'text-emerald-600' : group.label === 'Pro' ? 'text-indigo-500' : 'text-amber-600'}`}>{group.label}</div>
                 {group.tools.map(tool => {
                   const unlocked = isUnlocked(tool.minPlan, plan)
                   const active   = isActive(tool)
@@ -155,11 +155,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       key={tool.id}
                       href={unlocked ? tool.href : '/pricing'}
-                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors mb-0.5 ${
+                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-all mb-0.5 ${
                         active
-                          ? 'bg-slate-100 text-slate-900 font-semibold'
+                          ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                           : unlocked
-                          ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                          ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
                           : 'text-slate-300 cursor-not-allowed'
                       }`}
                     >
@@ -167,7 +167,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <span className="flex-1 truncate">{tool.label}</span>
                       {!unlocked ? (
                         <NavIcon id="lock" />
-                      ) : tool.minPlan !== 'FREE' && (
+                      ) : tool.minPlan !== 'FREE' && !active && (
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${TIER_BADGE[tool.minPlan] ?? ''}`}>
                           {tool.minPlan === 'AGENCY' ? 'Agency' : 'Pro'}
                         </span>
@@ -212,7 +212,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-hidden flex flex-col bg-white">
+        <main className="flex-1 overflow-hidden flex flex-col bg-slate-50">
           {children}
         </main>
       </div>
