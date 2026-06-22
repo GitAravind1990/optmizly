@@ -71,7 +71,7 @@ function PerfFixerMock() {
         ))}
       </div>
       <div style={{ flex: 1, padding: '20px 18px', overflow: 'hidden' }}>
-        <div style={{ fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>AI-Generated Patch</div>
+        <div style={{ fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Generated Code Patch</div>
         <div style={{ background: T.ink, borderRadius: 8, padding: '12px 14px', fontFamily: 'ui-monospace, monospace', fontSize: 11, color: '#A5B4FC', lineHeight: 1.6 }}>
           <span style={{ color: '#86EFAC' }}>{'// LCP fix: preload hero image'}</span>{'\n'}
           <span style={{ color: '#FCA5A5' }}>{'- <img src="hero.jpg" />'}</span>{'\n'}
@@ -180,46 +180,46 @@ function SectionHead({ kicker, title, body, align = 'center' }: {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 const tools = [
-  { name: 'Content Analyzer', desc: '8-dimension score — Issues & Entity tabs', tier: 'Free', icon: '📊' },
-  { name: 'On-Page SEO', desc: 'Title, meta, headings, schema & technical audit', tier: 'Free', icon: '🔍' },
-  { name: 'Content Optimizer', desc: 'Semantic analysis + Full Rewrite mode', tier: 'Pro', new: true, icon: '⚡' },
-  { name: 'Content Planner', desc: 'AI-generated briefs and topic ideas', tier: 'Pro', icon: '💡' },
-  { name: 'Rank Tracker', desc: 'Track positions over time with trend alerts', tier: 'Pro', icon: '📈' },
-  { name: 'Competitor Spy', desc: 'Reverse-engineer competitor content strategy', tier: 'Pro', icon: '🕵️' },
-  { name: 'E-E-A-T Analysis', desc: 'Experience, Expertise, Authority, Trust deep-dive', tier: 'Pro', icon: '🏆' },
-  { name: 'Content Gap', desc: 'Topics competitors cover that you don\'t', tier: 'Pro', icon: '🕳️' },
-  { name: 'AI Visibility', desc: 'Citation strategy + AI query mapping', tier: 'Pro', icon: '🔭' },
-  { name: 'Backlinks', desc: 'Site-specific link building opportunities', tier: 'Pro', icon: '🔗' },
-  { name: 'SEO Audit', desc: 'Full technical crawl with prioritised fix list', tier: 'Agency', icon: '🩺' },
-  { name: 'Local SEO Suite', desc: '4 tools — entities, NAP, local queries, GBP', tier: 'Agency', icon: '📍' },
-  { name: 'SERP Audit', desc: 'Competitor breakdown + recovery plan', tier: 'Agency', icon: '📊' },
-  { name: 'Topical Authority', desc: 'Visual keyword cluster map with calendar', tier: 'Agency', icon: '🗺️' },
-  { name: 'Cite Tracker', desc: 'Simulate ChatGPT & Perplexity responses', tier: 'Agency', icon: '🎯' },
-  { name: 'AI Performance Fixer', desc: 'Fix Core Web Vitals with AI code patches', tier: 'Agency', icon: '⚡' },
-  { name: 'Client Reports', desc: 'White-label reports — export & share', tier: 'Agency', icon: '📋' },
+  { name: 'Content Analyzer', desc: 'Full-spectrum audit across 8 scoring dimensions with Issues and Entities tabs', tier: 'Free' },
+  { name: 'On-Page SEO', desc: 'Audit titles, meta tags, headings, schema markup, and technical signals in one pass', tier: 'Free' },
+  { name: 'Content Optimizer', desc: 'Semantic gap analysis with full-document rewrite and entity injection', tier: 'Pro', new: true },
+  { name: 'Content Planner', desc: 'Data-driven briefs and topic cluster plans built around ranking intent', tier: 'Pro' },
+  { name: 'Rank Tracker', desc: 'Position monitoring with trend alerts and SERP change notifications', tier: 'Pro' },
+  { name: 'Competitor Spy', desc: 'Uncover the exact content strategy driving your competitors\' rankings', tier: 'Pro' },
+  { name: 'E-E-A-T Analysis', desc: 'Deep audit of authorship signals, source quality, and trust indicators', tier: 'Pro' },
+  { name: 'Content Gap', desc: 'Surface the precise topics your competitors rank for that you do not', tier: 'Pro' },
+  { name: 'AI Visibility', desc: 'See how ChatGPT and Perplexity represent your brand — and improve it', tier: 'Pro' },
+  { name: 'Backlinks', desc: 'Identify high-value link opportunities tailored to your domain and niche', tier: 'Pro' },
+  { name: 'SEO Audit', desc: 'Comprehensive technical crawl with a ranked, actionable remediation list', tier: 'Agency' },
+  { name: 'Local SEO Suite', desc: 'Entity mapping, NAP consistency, local query mining, and GBP management', tier: 'Agency' },
+  { name: 'SERP Audit', desc: 'Full SERP breakdown across competing pages with a tailored recovery plan', tier: 'Agency' },
+  { name: 'Topical Authority', desc: 'Visual cluster mapping with an editorial calendar to close authority gaps', tier: 'Agency' },
+  { name: 'Cite Tracker', desc: 'Monitor and improve how AI search engines cite and reference your content', tier: 'Agency' },
+  { name: 'AI Performance Fixer', desc: 'Diagnose LCP, CLS, and FID issues — then deploy the production-ready code patch', tier: 'Agency' },
+  { name: 'Client Reports', desc: 'Fully white-labelled reports exportable as PDF or shareable via link', tier: 'Agency' },
 ]
 
 const testimonials = [
   {
-    quote: 'We stopped buying audit tools. Optmizly fixes what the audit found — that\'s the whole game. Replaced 4 subscriptions with 1.',
-    name: 'Sarah R.', role: 'Head of SEO · SaaS Startup, Austin TX', initial: 'S', color: '#4F46E5',
+    quote: 'We cancelled four subscriptions the week we went live. Optmizly finds the issue and ships the fix — that\'s the whole job done in one place.',
+    name: 'Sarah R.', role: 'Head of SEO · SaaS company, Austin TX', initial: 'S', color: '#4F46E5',
   },
   {
-    quote: 'AI Performance Fixer saved us ~12 hrs of dev tickets a week. Pays for itself in the first sprint.',
-    name: 'Marcus K.', role: 'Growth Lead · Atlas Labs, New York NY', initial: 'M', color: '#10B981',
+    quote: 'Performance Fixer cut our dev ticket backlog by 12 hours a week. The ROI was visible before the first sprint was over.',
+    name: 'Marcus K.', role: 'Growth Lead · Stackworks, New York NY', initial: 'M', color: '#10B981',
   },
   {
-    quote: '17 tools in one stack replaced six subscriptions. The Local SEO Suite alone is worth the price.',
+    quote: 'We replaced six separate tools and got measurably better results. The Local SEO Suite alone justifies the Agency plan.',
     name: 'Priya L.', role: 'Founder · Velocity SEO, Los Angeles CA', initial: 'P', color: '#F59E0B',
   },
 ]
 
 const faqItems = [
-  ['What does the free tier include?', 'Content Analyzer with full 8-dimension scoring + Issues & Entities tabs. No credit card required.'],
-  ['Will it preserve my brand voice?', 'Yes. Content Optimizer reviews diffs before applying every change — you approve each one.'],
-  ['What CMS integrations do you support?', 'WordPress, Webflow, Contentful, Sanity, Ghost — and GitHub for code patches.'],
-  ['How is this different from Surfer or Clearscope?', 'Those tools detect issues. We detect AND fix them — automatically. We\'re the only platform that ships the patch, not just the report.'],
-  ['Is my content secure?', 'Encrypted at rest and in transit. Your content is never used to train shared models.'],
+  ['What is included in the free plan?', 'The full Content Analyzer — 8-dimension scoring with Issues and Entities tabs — at no cost, with no credit card required. It is the most comprehensive free SEO audit available.'],
+  ['Will rewrites change my brand voice?', 'No. Every rewrite goes through a tracked-changes review before anything is published. You approve or reject each suggestion individually — nothing ships without your sign-off.'],
+  ['Which CMS platforms do you support?', 'WordPress, Webflow, Contentful, Sanity, and Ghost are all supported natively. Code patches push directly to GitHub via pull request.'],
+  ['How is this different from Surfer SEO or Clearscope?', 'Those tools score your content and tell you what is missing. Optmizly closes the gaps — it rewrites the sections, injects the entities, and publishes the improved document. We ship the result, not the report.'],
+  ['Is my content kept private?', 'Yes. All content is encrypted in transit and at rest. Your data is never used to train shared models, and you retain full ownership of everything you process through the platform.'],
 ]
 
 export default function HomePage() {
@@ -242,11 +242,11 @@ export default function HomePage() {
       <section style={{ padding: '30px clamp(24px, 5vw, 80px) 70px' }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: T.muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            Trusted by 500+ marketing teams worldwide
+            Used by 500+ SEO teams and digital agencies
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'clamp(20px, 4vw, 48px)', flexWrap: 'wrap' }}>
-          {['Northwind', 'Atlas Labs', 'Velocity SEO', 'Globex Co', 'Initech', 'Hooli', 'Acme Co'].map(n => (
+          {['Meridian', 'Stackworks', 'Broadwell', 'Arco Digital', 'Lumio', 'Paragon', 'Helix Agency'].map(n => (
             <div key={n} style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.4, color: '#9CA3AF' }}>{n}</div>
           ))}
         </div>
@@ -266,9 +266,9 @@ export default function HomePage() {
           }} />
           <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 40 }}>
             {[
-              ['2.4M', 'Fixes shipped', 'across customer sites'],
-              ['−2.1s', 'Avg LCP improvement', 'after AI Performance Fixer'],
-              ['+38%', 'Topical depth', 'post-optimization'],
+              ['48K', 'Fixes deployed', 'across active accounts'],
+              ['−2.1s', 'Avg LCP improvement', 'per Performance Fixer run'],
+              ['+38%', 'Topical authority gain', 'avg. after Content Optimizer'],
               ['17', 'Specialist tools', 'Free, Pro & Agency tiers'],
             ].map(([v, l, s]) => (
               <div key={l}>
@@ -284,31 +284,32 @@ export default function HomePage() {
       {/* ── TOOLS GRID (bento-ish) ── */}
       <section style={{ padding: '0 clamp(24px, 5vw, 80px) 100px' }}>
         <SectionHead
-          kicker="The toolkit"
-          title="17 tools. Built for marketers who ship."
-          body="One subscription replaces five. Free tier, Pro for solo operators, Agency for the full stack."
+          kicker="The full toolkit"
+          title="17 specialist tools. One subscription."
+          body="Every tool goes beyond the audit — it acts. From content rewrites to code patches to citation fixes, the full scope of SEO execution is covered."
         />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginTop: 56 }}>
           {tools.map(t => {
             const tc = tierColor(t.tier)
             return (
               <div key={t.name} style={{
-                padding: 20, border: `1px solid ${T.line2}`, borderRadius: 12, background: '#fff',
+                padding: '18px 20px', border: `1px solid ${T.line2}`, borderRadius: 12, background: '#fff',
                 position: 'relative',
               }}>
-                {t.new && (
-                  <div style={{ position: 'absolute', top: 12, right: 12, background: T.accent, color: '#fff', fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 999 }}>
-                    NEW
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.3 }}>{t.name}</div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    {t.new && (
+                      <span style={{ background: T.accent, color: '#fff', fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 999 }}>
+                        New
+                      </span>
+                    )}
+                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 999, background: tc.bg, color: tc.fg }}>
+                      {t.tier}
+                    </span>
                   </div>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ fontSize: 22 }}>{t.icon}</div>
-                  <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: tc.bg, color: tc.fg }}>
-                    {t.tier}
-                  </span>
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 4 }}>{t.name}</div>
-                <div style={{ fontSize: 12, color: T.body, lineHeight: 1.45 }}>{t.desc}</div>
+                <div style={{ fontSize: 12, color: T.body, lineHeight: 1.5 }}>{t.desc}</div>
               </div>
             )
           })}
@@ -323,19 +324,20 @@ export default function HomePage() {
               Content Optimizer · Pro
             </span>
             <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 600, letterSpacing: -1.4, lineHeight: 1.05, margin: '0 0 18px', color: T.ink }}>
-              We don&apos;t just find issues.<br />We <em style={{ fontStyle: 'italic', color: T.accent }}>fix</em> them.
+              Your content, rewritten<br />to <em style={{ fontStyle: 'italic', color: T.accent }}>rank.</em>
             </h2>
-            <p style={{ fontSize: 17, lineHeight: 1.55, color: T.body, marginBottom: 24 }}>
-              Drop a URL or paste a draft. Content Optimizer rewrites weak passages, injects entities, restores topical depth — and hands back a publish-ready doc.
+            <p style={{ fontSize: 17, lineHeight: 1.6, color: T.body, marginBottom: 24 }}>
+              Paste a URL or a draft. Optmizly audits every section across eight ranking dimensions, closes each gap, and returns a publish-ready document — with your voice intact and every claim sourced.
             </p>
             {[
-              'Rewrites thin sections — preserves your voice',
-              'Injects entities + structured headings',
-              'Cites real, live sources (no fabrication)',
-              'Outputs a clean diff or one-click publish',
+              'Rewrites underperforming sections without changing your voice',
+              'Closes semantic gaps with entity injection and structured headings',
+              'Sources every claim from verified, live references',
+              'Delivers a tracked-changes diff or publishes directly to your CMS',
             ].map(f => (
-              <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: T.ink2, marginBottom: 10 }}>
-                <span style={{ color: T.accent }}>✓</span> {f}
+              <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: T.ink2, marginBottom: 10, lineHeight: 1.5 }}>
+                <span style={{ width: 5, height: 5, borderRadius: 1, background: T.accent, flexShrink: 0, marginTop: 5 }} />
+                {f}
               </div>
             ))}
             <div style={{ marginTop: 24 }}>
@@ -344,7 +346,7 @@ export default function HomePage() {
                 padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 500,
                 background: T.ink, color: '#fff', textDecoration: 'none',
               }}>
-                Try Content Optimizer →
+                Optimize your first article →
               </Link>
             </div>
           </div>
@@ -354,11 +356,11 @@ export default function HomePage() {
                 <div style={{ fontSize: 11, color: T.body, lineHeight: 1.6, marginBottom: 10 }}>
                   Semantic SEO involves the use of related concepts and entities to help search engines understand the full context of your content...
                 </div>
-                <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 6, padding: '8px 10px', marginBottom: 8, fontSize: 11, color: '#92400E' }}>
-                  ⚠ Missing: "Knowledge Graph", "entity salience", "co-occurrence"
+                <div style={{ background: '#FEF3C7', borderLeft: '3px solid #F59E0B', borderRadius: '0 6px 6px 0', padding: '8px 10px', marginBottom: 8, fontSize: 11, color: '#92400E' }}>
+                  Missing: &ldquo;Knowledge Graph&rdquo;, &ldquo;entity salience&rdquo;, &ldquo;co-occurrence&rdquo;
                 </div>
-                <div style={{ background: T.goodSoft, border: '1px solid #6EE7B7', borderRadius: 6, padding: '8px 10px', fontSize: 11, color: '#065F46' }}>
-                  ✓ 3 entities injected — score: 51 → 82
+                <div style={{ background: T.goodSoft, borderLeft: '3px solid #10B981', borderRadius: '0 6px 6px 0', padding: '8px 10px', fontSize: 11, color: '#065F46' }}>
+                  3 entities injected — score: 51 &rarr; 82
                 </div>
               </div>
               <div style={{ width: 140, borderLeft: `1px solid ${T.line2}`, background: T.bgSoft, padding: '16px 12px', flexShrink: 0 }}>
@@ -387,13 +389,13 @@ export default function HomePage() {
           </AppWindow>
           <div>
             <span style={{ display: 'inline-block', background: T.accentSoft, color: T.accentDark, border: `1px solid ${T.accentBorder}`, padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 500, marginBottom: 18 }}>
-              AI Performance Fixer · Agency
+              Performance Fixer · Agency
             </span>
             <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 600, letterSpacing: -1.4, lineHeight: 1.05, margin: '0 0 18px', color: T.ink }}>
-              Core Web Vitals, patched.
+              Fix Core Web Vitals<br />without a developer.
             </h2>
-            <p style={{ fontSize: 17, lineHeight: 1.55, color: T.body, marginBottom: 24 }}>
-              LCP, CLS, FID — diagnosed and patched. Generated code is ready to copy, or open a PR straight into your repo.
+            <p style={{ fontSize: 17, lineHeight: 1.6, color: T.body, marginBottom: 24 }}>
+              LCP, CLS, FID — every metric is diagnosed, explained, and patched. The code is production-ready: copy it directly or open a GitHub PR from the tool. No dev ticket. No sprint delay.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
               {[['−2.1s', 'avg LCP'], ['−83%', 'CLS reduction'], ['1-click', 'GitHub PR'], ['3 min', 'to first patch']].map(([v, l]) => (
@@ -408,7 +410,7 @@ export default function HomePage() {
               padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 500,
               background: T.ink, color: '#fff', textDecoration: 'none',
             }}>
-              Run AI Performance Fixer →
+              Fix your Core Web Vitals →
             </Link>
           </div>
         </div>
@@ -422,10 +424,10 @@ export default function HomePage() {
               Local SEO Suite · 4 tools
             </span>
             <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 600, letterSpacing: -1.4, lineHeight: 1.05, margin: '0 0 18px', color: T.ink }}>
-              Local SEO without the spreadsheets.
+              Every location.<br />Every market. One screen.
             </h2>
-            <p style={{ fontSize: 17, lineHeight: 1.55, color: T.body, marginBottom: 24 }}>
-              Manage 1 location or 1,000 from a single screen. Entities, NAP sync, local query mining, GBP post composition.
+            <p style={{ fontSize: 17, lineHeight: 1.6, color: T.body, marginBottom: 24 }}>
+              Keep NAP consistent across hundreds of directories, surface high-intent local queries, and draft GBP posts — for one location or a thousand, managed from a single dashboard.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
               {['Entity Mapper', 'NAP Sync', 'Local Queries', 'GBP Composer'].map(n => (
@@ -437,7 +439,7 @@ export default function HomePage() {
               padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 500,
               background: T.ink, color: '#fff', textDecoration: 'none',
             }}>
-              Explore Local SEO Suite →
+              Manage your locations →
             </Link>
           </div>
           <AppWindow height={340} title="local-seo · all locations">
@@ -448,12 +450,12 @@ export default function HomePage() {
 
       {/* ── HOW IT WORKS ── */}
       <section style={{ padding: '100px clamp(24px, 5vw, 80px)' }}>
-        <SectionHead kicker="How it works" title="From audit to fix in three steps." />
+        <SectionHead kicker="How it works" title="From broken to fixed in three steps." />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24, marginTop: 60, position: 'relative' }}>
           {[
-            { n: '01', t: 'Connect', d: 'Drop a URL, connect your CMS, or push a draft via API. Indexed in under a minute.' },
-            { n: '02', t: 'Detect', d: '17 specialists run in parallel — content, performance, E-E-A-T, AI visibility, local. Get a prioritised fix list.' },
-            { n: '03', t: 'Fix', d: 'Approve fixes individually or apply all. We rewrite, patch, sync, and publish — preserving your voice.' },
+            { n: '01', t: 'Connect', d: 'Drop a URL, connect your CMS, or push content via API. Optmizly indexes and begins auditing in under a minute.' },
+            { n: '02', t: 'Audit', d: '17 specialist auditors run simultaneously across content depth, Core Web Vitals, E-E-A-T, local signals, and AI visibility. You receive one ranked fix list — not a wall of data to interpret.' },
+            { n: '03', t: 'Fix', d: 'Review every fix before it ships, or apply the full list in one click. Optmizly rewrites, patches, syncs, and publishes — then delivers a results summary.' },
           ].map(s => (
             <div key={s.n} style={{ padding: 28, border: `1px solid ${T.line}`, borderRadius: 14, background: '#fff' }}>
               <div style={{
@@ -472,7 +474,7 @@ export default function HomePage() {
 
       {/* ── COMPARISON ── */}
       <section style={{ padding: '100px clamp(24px, 5vw, 80px)', borderTop: `1px solid ${T.line2}`, background: T.bgSoft }}>
-        <SectionHead kicker="Detect vs detect + fix" title="Why teams switch from audit-only tools." />
+        <SectionHead kicker="The difference that matters" title="A report tells you what's wrong. We fix it." />
         <div style={{ marginTop: 56, background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, overflow: 'hidden' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.line2}`, fontFamily: 'ui-monospace, monospace', fontSize: 11, color: T.muted, letterSpacing: '0.06em' }}>CAPABILITY</div>
@@ -498,7 +500,7 @@ export default function HomePage() {
               <div style={{ padding: '16px 24px', fontSize: 14, fontWeight: 500, color: T.ink }}>{cap}</div>
               <div style={{ padding: '16px 24px', borderLeft: `1px solid ${T.line2}`, fontSize: 14, color: T.muted, textAlign: 'center' }}>{det}</div>
               <div style={{ padding: '16px 24px', borderLeft: `1px solid ${T.line2}`, fontSize: 14, textAlign: 'center', background: 'rgba(238,242,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <span style={{ color: T.good }}>✓</span> {fix}
+                <span style={{ width: 7, height: 7, borderRadius: 2, background: T.good, flexShrink: 0 }} /> {fix}
               </div>
             </div>
           ))}
@@ -507,7 +509,7 @@ export default function HomePage() {
 
       {/* ── TESTIMONIALS ── */}
       <section style={{ padding: '100px clamp(24px, 5vw, 80px)' }}>
-        <SectionHead kicker="What customers say" title="Marketers who ship, talking shop." />
+        <SectionHead kicker="In their own words" title="Teams that replaced multiple tools with one." />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginTop: 56 }}>
           {/* Featured dark card */}
           <div style={{
@@ -589,11 +591,11 @@ export default function HomePage() {
             pointerEvents: 'none',
           }} />
           <div style={{ position: 'relative' }}>
-            <h2 style={{ fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 600, letterSpacing: -2, lineHeight: 1, maxWidth: 720, margin: '0 auto 22px' }}>
-              Stop reading reports.<br />Start shipping fixes.
+            <h2 style={{ fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 600, letterSpacing: -2, lineHeight: 1.05, maxWidth: 720, margin: '0 auto 22px' }}>
+              Stop paying for findings.<br />Start getting results.
             </h2>
-            <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)', maxWidth: 520, margin: '0 auto 32px', lineHeight: 1.5 }}>
-              Free tier includes 5 auto-fixes / month. No card. No call. Just results.
+            <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)', maxWidth: 540, margin: '0 auto 32px', lineHeight: 1.6 }}>
+              Start on the free plan today — no credit card, no sales call. When you are ready to automate more, upgrading takes 60 seconds.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
               <Link href="/signup" style={{
@@ -602,7 +604,7 @@ export default function HomePage() {
                 background: '#fff', color: T.ink, border: '1px solid #fff',
                 textDecoration: 'none',
               }}>
-                Start free trial →
+                Start for free →
               </Link>
               <Link href="#pricing" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -611,7 +613,7 @@ export default function HomePage() {
                 border: '1px solid rgba(255,255,255,0.15)',
                 textDecoration: 'none',
               }}>
-                See pricing
+                View plans
               </Link>
             </div>
           </div>
@@ -624,12 +626,12 @@ export default function HomePage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <div style={{ width: 26, height: 26, borderRadius: 6, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>◈</span>
+                <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: -0.5 }}>O</span>
               </div>
               <span style={{ fontWeight: 600, fontSize: 16, letterSpacing: -0.3, color: T.ink }}>Optmizly</span>
             </div>
             <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.5, maxWidth: 220, margin: 0 }}>
-              The only SEO platform that detects and fixes your content issues — automatically.
+              The SEO platform that acts on its findings — content, code, and citations, all in one place.
             </p>
           </div>
           {[

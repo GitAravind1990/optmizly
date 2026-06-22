@@ -22,11 +22,11 @@ function OptimizerMock() {
         <div style={{ fontSize: 11, color: '#4A4D5E', lineHeight: 1.6, marginBottom: 12, fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>
           The integration of semantic entities and structured data significantly improves topical relevance for search engines...
         </div>
-        <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 6, padding: '8px 10px', marginBottom: 8, fontSize: 11, color: '#92400E', fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>
-          ⚠ Missing: "author schema", "E-E-A-T signals", "topical depth"
+        <div style={{ background: '#FEF3C7', borderLeft: '3px solid #F59E0B', borderRadius: '0 6px 6px 0', padding: '8px 10px', marginBottom: 8, fontSize: 11, color: '#92400E', fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>
+          Missing: &ldquo;author schema&rdquo;, &ldquo;E-E-A-T signals&rdquo;, &ldquo;topical depth&rdquo;
         </div>
-        <div style={{ background: '#ECFDF5', border: '1px solid #6EE7B7', borderRadius: 6, padding: '8px 10px', fontSize: 11, color: '#065F46', fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>
-          ✓ AI fix ready — 4 entities injected, voice preserved
+        <div style={{ background: '#ECFDF5', borderLeft: '3px solid #10B981', borderRadius: '0 6px 6px 0', padding: '8px 10px', fontSize: 11, color: '#065F46', fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>
+          4 entities injected — voice preserved
         </div>
       </div>
       <div style={{ width: 160, borderLeft: '1px solid #EEF0F4', background: '#FAFAFB', padding: '16px 12px', flexShrink: 0 }}>
@@ -101,9 +101,9 @@ export function HomeHero() {
           fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 28,
         }}>
           <span style={{ width: 6, height: 6, borderRadius: 3, background: '#4F46E5', boxShadow: '0 0 8px #4F46E5', flexShrink: 0 }} />
-          New: Auto-fix engine is live
+          Auto-fix engine — now live
           <span style={{ background: '#4F46E5', color: '#fff', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 500 }}>
-            Read more →
+            See what&apos;s new →
           </span>
         </div>
 
@@ -126,11 +126,11 @@ export function HomeHero() {
         </h1>
 
         <p style={{
-          fontSize: 'clamp(16px, 1.8vw, 19px)', lineHeight: 1.55,
+          fontSize: 'clamp(16px, 1.8vw, 19px)', lineHeight: 1.6,
           color: 'rgba(255,255,255,0.7)',
-          maxWidth: 640, margin: '0 auto 36px',
+          maxWidth: 620, margin: '0 auto 36px',
         }}>
-          17 specialist tools across Free, Pro & Agency tiers. The only platform that detects AND fixes — with code patches, content rewrites, and one-click local SEO sync.
+          Most SEO tools hand you a report and walk away. Optmizly generates the fix — rewrites your content, patches your code, syncs your citations — and delivers the result.
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 22, flexWrap: 'wrap' }}>
@@ -177,9 +177,10 @@ export function HomeHero() {
         </div>
 
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
-          {['Free tier forever', 'No credit card', 'Fixes start in 60s'].map(t => (
-            <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ color: '#86EFAC' }}>✓</span> {t}
+          {['Free plan — no credit card required', 'Cancel any time', 'First fix in under 60 seconds'].map(t => (
+            <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ width: 5, height: 5, borderRadius: 999, background: '#86EFAC', flexShrink: 0 }} />
+              {t}
             </span>
           ))}
         </div>

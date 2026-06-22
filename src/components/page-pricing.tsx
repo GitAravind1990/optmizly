@@ -12,13 +12,13 @@ const plans = [
   },
   {
     name: 'Pro', price: '$19', period: 'per month', color: 'blue', featured: true,
-    features: ['50 analyses / month', 'Everything in Free', '⚡ Content Optimizer + Full Rewrite', 'E-E-A-T deep analysis', 'Relevant Backlinks finder', '🔭 AI Visibility (Citation + Queries)', 'Content Gap analyzer'],
+    features: ['50 analyses / month', 'Everything in Free', 'Content Optimizer + Full Rewrite', 'E-E-A-T deep analysis', 'Relevant Backlinks finder', 'AI Visibility (Citation + Queries)', 'Content Gap analyzer'],
     cta: 'Start Pro Trial', signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID,
   },
   {
     name: 'Agency', price: '$49', period: 'per month', color: 'amber',
-    features: ['200 analyses / month', 'Everything in Pro', 'AI Citation Tracker', 'Local SEO Suite (4 tools)', 'SERP Competitor Audit', 'Topical Authority Mapper ☆', 'AI Performance Fixer (Core Web Vitals)'],
+    features: ['200 analyses / month', 'Everything in Pro', 'AI Citation Tracker', 'Local SEO Suite (4 tools)', 'SERP Competitor Audit', 'Topical Authority Mapper', 'AI Performance Fixer (Core Web Vitals)'],
     cta: 'Start Agency Trial', signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PRODUCT_ID,
   },
@@ -73,8 +73,8 @@ export function PagePricing() {
               <div className="text-sm text-slate-400 mb-6">{p.period}</div>
               <div className="h-px bg-slate-100 mb-6" />
               {p.features.map(f => (
-                <div key={f} className="flex items-start gap-2 text-sm mb-2.5">
-                  <span className="text-emerald-500 font-bold mt-0.5 flex-shrink-0">✓</span>
+                <div key={f} className="flex items-start gap-2.5 text-sm mb-2.5">
+                  <span className="w-1.5 h-1.5 rounded-sm bg-emerald-500 flex-shrink-0 mt-1.5" />
                   <span>{f}</span>
                 </div>
               ))}
