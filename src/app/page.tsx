@@ -27,10 +27,10 @@ const T = {
   bg: '#FFFFFF',
   bgSoft: '#FAFAFB',
   bgCool: '#F6F7FB',
-  accent: '#4F46E5',
-  accentDark: '#4338CA',
-  accentSoft: '#EEF2FF',
-  accentBorder: '#C7D2FE',
+  accent: '#0000FF',
+  accentDark: '#0000CC',
+  accentSoft: '#E0E0FF',
+  accentBorder: '#9999FF',
   good: '#10B981',
   goodSoft: '#ECFDF5',
   dark: '#080916',
@@ -72,7 +72,7 @@ function PerfFixerMock() {
       </div>
       <div style={{ flex: 1, padding: '20px 18px', overflow: 'hidden' }}>
         <div style={{ fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Generated Code Patch</div>
-        <div style={{ background: T.ink, borderRadius: 8, padding: '12px 14px', fontFamily: 'ui-monospace, monospace', fontSize: 11, color: '#A5B4FC', lineHeight: 1.6 }}>
+        <div style={{ background: T.ink, borderRadius: 8, padding: '12px 14px', fontFamily: 'ui-monospace, monospace', fontSize: 11, color: '#9999FF', lineHeight: 1.6 }}>
           <span style={{ color: '#86EFAC' }}>{'// LCP fix: preload hero image'}</span>{'\n'}
           <span style={{ color: '#FCA5A5' }}>{'- <img src="hero.jpg" />'}</span>{'\n'}
           <span style={{ color: '#86EFAC' }}>{'+ <link rel="preload" href="hero.jpg"'}</span>{'\n'}
@@ -202,7 +202,7 @@ const tools = [
 const testimonials = [
   {
     quote: 'We cancelled four subscriptions the week we went live. Optmizly finds the issue and ships the fix — that\'s the whole job done in one place.',
-    name: 'Sarah R.', role: 'Head of SEO · SaaS company, Austin TX', initial: 'S', color: '#4F46E5',
+    name: 'Sarah R.', role: 'Head of SEO · SaaS company, Austin TX', initial: 'S', color: '#0000FF',
   },
   {
     quote: 'Performance Fixer cut our dev ticket backlog by 12 hours a week. The ROI was visible before the first sprint was over.',
@@ -261,7 +261,7 @@ export default function HomePage() {
         }}>
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse at 80% 50%, rgba(79,70,229,0.25) 0%, transparent 50%)',
+            background: 'radial-gradient(ellipse at 80% 50%, rgba(0,0,255,0.25) 0%, transparent 50%)',
             pointerEvents: 'none',
           }} />
           <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 40 }}>
@@ -517,14 +517,14 @@ export default function HomePage() {
             position: 'relative', overflow: 'hidden',
             gridColumn: 'span 1',
           }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 20%, rgba(79,70,229,0.25) 0%, transparent 60%)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 20%, rgba(0,0,255,0.25) 0%, transparent 60%)', pointerEvents: 'none' }} />
             <div style={{ position: 'relative' }}>
               <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.8)', marginBottom: 16 }}>&ldquo;</div>
               <p style={{ fontSize: 20, lineHeight: 1.4, fontWeight: 500, letterSpacing: -0.4, margin: '0 0 24px' }}>
                 {testimonials[0].quote}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 999, background: '#A5B4FC', color: T.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, flexShrink: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 999, background: '#9999FF', color: T.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, flexShrink: 0 }}>
                   {testimonials[0].initial}
                 </div>
                 <div>
@@ -587,7 +587,7 @@ export default function HomePage() {
         }}>
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse 60% 80% at 50% 0%, rgba(79,70,229,0.31) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse 60% 80% at 50% 0%, rgba(0,0,255,0.31) 0%, transparent 70%)',
             pointerEvents: 'none',
           }} />
           <div style={{ position: 'relative' }}>
