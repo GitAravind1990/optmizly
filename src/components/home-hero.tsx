@@ -57,7 +57,7 @@ function AppWindow({ children, title = 'app.optmizly.com', height = 520 }: { chi
       border: '1px solid rgba(255,255,255,0.08)',
       borderRadius: 16,
       overflow: 'hidden',
-      boxShadow: '0 0 0 1px rgba(99,102,241,0.15), 0 40px 80px -20px rgba(0,0,10,0.6), 0 16px 40px -8px rgba(0,0,0,0.4)',
+      boxShadow: '0 0 0 1px rgba(0,0,255,0.15), 0 40px 80px -20px rgba(0,0,10,0.6), 0 16px 40px -8px rgba(0,0,0,0.4)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderBottom: '1px solid #EEF0F4', background: '#FAFAFB' }}>
         <span style={{ width: 10, height: 10, borderRadius: 5, background: '#FB8181', flexShrink: 0 }} />
@@ -94,28 +94,28 @@ export function HomeHero() {
     <div style={{ background: '#080916', color: '#fff', position: 'relative' }}>
       <style>{`
         @keyframes optm-pulse {
-          0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(99,102,241,0.9); }
-          50% { opacity: 0.55; box-shadow: 0 0 16px rgba(99,102,241,0.5); }
+          0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(0,0,255,0.9); }
+          50% { opacity: 0.55; box-shadow: 0 0 16px rgba(0,0,255,0.5); }
         }
         .optm-dot { animation: optm-pulse 2.4s ease-in-out infinite; }
       `}</style>
 
       {/* ── Background layer (clipped so glows don't cause scrollbars) ── */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        {/* Primary center glow — indigo */}
+        {/* Primary center glow — blue */}
         <div style={{
           position: 'absolute',
           top: -280, left: '50%', transform: 'translateX(-50%)',
           width: 1400, height: 960,
-          background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.65) 0%, rgba(79,70,229,0.3) 35%, transparent 62%)',
+          background: 'radial-gradient(ellipse at center, rgba(0,0,255,0.65) 0%, rgba(0,0,200,0.3) 35%, transparent 62%)',
           filter: 'blur(56px)',
         }} />
-        {/* Left accent — violet/purple */}
+        {/* Left accent — blue */}
         <div style={{
           position: 'absolute',
           top: -40, left: -120,
           width: 720, height: 620,
-          background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.35) 0%, transparent 62%)',
+          background: 'radial-gradient(ellipse at center, rgba(0,0,255,0.35) 0%, transparent 62%)',
           filter: 'blur(72px)',
         }} />
         {/* Right accent — cyan/teal */}
@@ -139,7 +139,7 @@ export function HomeHero() {
           position: 'absolute',
           top: 0, left: '50%', transform: 'translateX(-50%)',
           width: 2, height: '58%',
-          background: 'linear-gradient(to bottom, transparent 0%, rgba(99,102,241,0.7) 20%, rgba(139,92,246,0.3) 65%, transparent 100%)',
+          background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,255,0.7) 20%, rgba(0,0,255,0.3) 65%, transparent 100%)',
         }} />
         {/* Grid */}
         <div style={{
@@ -153,7 +153,7 @@ export function HomeHero() {
         <div style={{
           position: 'absolute',
           top: '36%', left: 0, right: 0, height: 1,
-          background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.35) 25%, rgba(167,139,250,0.55) 50%, rgba(6,182,212,0.3) 75%, transparent 100%)',
+          background: 'linear-gradient(90deg, transparent 0%, rgba(0,0,255,0.35) 25%, rgba(80,80,255,0.55) 50%, rgba(0,0,255,0.3) 75%, transparent 100%)',
         }} />
       </div>
 
@@ -165,17 +165,17 @@ export function HomeHero() {
           padding: '6px 6px 6px 14px', borderRadius: 999,
           background: 'rgba(255,255,255,0.05)',
           border: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 0 0 1px rgba(99,102,241,0.2) inset',
+          boxShadow: '0 0 0 1px rgba(0,0,255,0.2) inset',
           fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 34,
         }}>
           <span className="optm-dot" style={{
             width: 7, height: 7, borderRadius: '50%',
-            background: '#6366F1',
+            background: '#0000FF',
             flexShrink: 0,
           }} />
           Auto-fix engine — now live
           <span style={{
-            background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+            background: 'linear-gradient(135deg, #0000FF 0%, #3333FF 100%)',
             color: '#fff', padding: '3px 11px', borderRadius: 999, fontSize: 11, fontWeight: 600,
           }}>
             See what&apos;s new →
@@ -193,7 +193,7 @@ export function HomeHero() {
           The SEO toolkit<br />
           that{' '}
           <span style={{
-            background: 'linear-gradient(135deg, #818CF8 0%, #A78BFA 28%, #C084FC 58%, #E879F9 100%)',
+            background: 'linear-gradient(135deg, #4444FF 0%, #0000FF 40%, #3366FF 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
@@ -267,7 +267,7 @@ export function HomeHero() {
         <div style={{
           position: 'absolute',
           top: -20, left: 'clamp(0px, 2vw, 40px)', right: 'clamp(0px, 2vw, 40px)', bottom: 60,
-          background: 'radial-gradient(ellipse at 30% 0%, rgba(139,92,246,0.6) 0%, rgba(99,102,241,0.35) 35%, transparent 65%), radial-gradient(ellipse at 75% 0%, rgba(6,182,212,0.3) 0%, transparent 55%)',
+          background: 'radial-gradient(ellipse at 30% 0%, rgba(0,0,255,0.6) 0%, rgba(0,0,255,0.35) 35%, transparent 65%), radial-gradient(ellipse at 75% 0%, rgba(0,0,255,0.3) 0%, transparent 55%)',
           filter: 'blur(44px)',
           borderRadius: 24,
           pointerEvents: 'none',
