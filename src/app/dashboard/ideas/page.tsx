@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useCallback } from 'react'
 import { exportContentIdeasCSV, exportContentIdeasPDF } from '@/lib/export'
@@ -128,7 +128,7 @@ function GenerateForm({ projectId, onDone }: { projectId?: string; onDone: (pid:
             required
             value={form.industry}
             onChange={e => setForm(f => ({ ...f, industry: e.target.value }))}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             placeholder="SaaS, E-commerce, Healthcare..."
           />
         </div>
@@ -138,7 +138,7 @@ function GenerateForm({ projectId, onDone }: { projectId?: string; onDone: (pid:
             required
             value={form.targetAudience}
             onChange={e => setForm(f => ({ ...f, targetAudience: e.target.value }))}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             placeholder="Small business owners, CTOs..."
           />
         </div>
@@ -148,7 +148,7 @@ function GenerateForm({ projectId, onDone }: { projectId?: string; onDone: (pid:
             required
             value={form.seedKeywords}
             onChange={e => setForm(f => ({ ...f, seedKeywords: e.target.value }))}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             placeholder="content marketing, SEO strategy, blog writing"
           />
         </div>
@@ -157,7 +157,7 @@ function GenerateForm({ projectId, onDone }: { projectId?: string; onDone: (pid:
           <select
             value={form.numberOfIdeas}
             onChange={e => setForm(f => ({ ...f, numberOfIdeas: e.target.value }))}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             {[5, 10, 15, 20].map(n => <option key={n} value={n}>{n} ideas</option>)}
           </select>
@@ -166,7 +166,7 @@ function GenerateForm({ projectId, onDone }: { projectId?: string; onDone: (pid:
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+        className="w-full py-2.5 rounded-lg bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
       >
         {loading ? (
           <>
@@ -235,7 +235,7 @@ function IdeaModal({ idea, onClose, onUpdate }: {
         <div className="flex items-start justify-between p-6 border-b border-slate-100">
           <div className="flex-1 pr-4">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">{CONTENT_TYPE_LABEL[idea.contentType] ?? idea.contentType}</span>
+              <span className="text-xs font-semibold text-brand-600 uppercase tracking-wider">{CONTENT_TYPE_LABEL[idea.contentType] ?? idea.contentType}</span>
               <span className="text-slate-300">·</span>
               <span className="text-xs text-slate-500">{idea.estimatedLength.toLocaleString()} words</span>
             </div>
@@ -253,7 +253,7 @@ function IdeaModal({ idea, onClose, onUpdate }: {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg capitalize transition-colors ${tab === t ? 'text-indigo-700 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg capitalize transition-colors ${tab === t ? 'text-brand-700 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-700'}`}
             >
               {t}
             </button>
@@ -283,7 +283,7 @@ function IdeaModal({ idea, onClose, onUpdate }: {
                 {opportunityBar(idea.opportunityScore)}
               </div>
 
-              {idea.description && <p className="text-sm text-slate-600 leading-relaxed bg-indigo-50 rounded-lg p-4">{idea.description}</p>}
+              {idea.description && <p className="text-sm text-slate-600 leading-relaxed bg-brand-50 rounded-lg p-4">{idea.description}</p>}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -324,14 +324,14 @@ function IdeaModal({ idea, onClose, onUpdate }: {
                 <select
                   value={status}
                   onChange={e => setStatus(e.target.value)}
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
                 <button
                   onClick={saveChanges}
                   disabled={saving}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : 'Save'}
                 </button>
@@ -344,8 +344,8 @@ function IdeaModal({ idea, onClose, onUpdate }: {
               {idea.aiOutline ? (
                 <div>
                   {idea.aiIntro && (
-                    <div className="mb-5 p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-400">
-                      <div className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2">Generated Introduction</div>
+                    <div className="mb-5 p-4 bg-brand-50 rounded-xl border-l-4 border-brand-400">
+                      <div className="text-xs font-bold text-brand-600 uppercase tracking-wider mb-2">Generated Introduction</div>
                       <p className="text-sm text-slate-700 leading-relaxed">{idea.aiIntro}</p>
                     </div>
                   )}
@@ -371,7 +371,7 @@ function IdeaModal({ idea, onClose, onUpdate }: {
                   <button
                     onClick={generateOutline}
                     disabled={genLoading}
-                    className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                    className="px-5 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2"
                   >
                     {genLoading ? (
                       <>
@@ -395,13 +395,13 @@ function IdeaModal({ idea, onClose, onUpdate }: {
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 rows={10}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
                 placeholder="Add notes, research links, competitor URLs, writing guidelines..."
               />
               <button
                 onClick={saveChanges}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Notes'}
               </button>
@@ -503,7 +503,7 @@ export default function ContentIdeasPage() {
             )}
             <button
               onClick={() => setShowGenerate(v => !v)}
-              className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition-colors"
+              className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 transition-colors"
             >
               {showGenerate ? 'Cancel' : '+ Generate Ideas'}
             </button>
@@ -533,7 +533,7 @@ export default function ContentIdeasPage() {
             <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-2 py-1.5">Projects</div>
             <button
               onClick={() => setSelectedProject('')}
-              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${!selectedProject ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${!selectedProject ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               All Projects
               <span className="float-right text-slate-400">{ideas.length}</span>
@@ -542,7 +542,7 @@ export default function ContentIdeasPage() {
               <button
                 key={p.id}
                 onClick={() => setSelectedProject(p.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${selectedProject === p.id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${selectedProject === p.id ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 <span className="block truncate">{p.name}</span>
                 <span className="text-[10px] text-slate-400">{p._count.ideas} ideas</span>
@@ -558,7 +558,7 @@ export default function ContentIdeasPage() {
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
-              className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="opportunityScore">Sort: Opportunity Score</option>
               <option value="searchVolume">Sort: Search Volume</option>
@@ -568,7 +568,7 @@ export default function ContentIdeasPage() {
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
-              className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">All Statuses</option>
               {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -595,7 +595,7 @@ export default function ContentIdeasPage() {
               {displayIdeas.map(idea => (
                 <div
                   key={idea.id}
-                  className={`group bg-white border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer ${idea.pinned ? 'border-indigo-200 bg-indigo-50/30' : 'border-slate-200'}`}
+                  className={`group bg-white border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer ${idea.pinned ? 'border-brand-200 bg-brand-50/30' : 'border-slate-200'}`}
                   onClick={() => setSelectedIdea(idea)}
                 >
                   <div className="flex items-start gap-4">
@@ -619,7 +619,7 @@ export default function ContentIdeasPage() {
                         <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
                           {CONTENT_TYPE_LABEL[idea.contentType] ?? idea.contentType}
                         </span>
-                        {idea.aiOutline && <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Outline ready</span>}
+                        {idea.aiOutline && <span className="text-[10px] text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">Outline ready</span>}
                       </div>
                       <h3 className="text-sm font-bold text-slate-900 leading-snug mb-1">{idea.title}</h3>
                       <div className="flex items-center gap-4 text-xs text-slate-500">

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { Button, Card, Badge, EmptyState } from '@/components/ui'
@@ -213,7 +213,7 @@ export function SerpClient() {
 
             {/* Structural recommendation */}
             {r.structural_recommendation?.title && (
-              <div className="rounded-2xl bg-gradient-to-r from-indigo-900 to-purple-900 p-5 text-white">
+              <div className="rounded-2xl bg-gradient-to-r from-brand-900 to-purple-900 p-5 text-white">
                 <div className="text-xs font-bold opacity-60 uppercase tracking-widest mb-2">One Structural Recommendation</div>
                 <h3 className="text-base font-black mb-2">{r.structural_recommendation.title}</h3>
                 <p className="text-sm opacity-85 mb-3">{r.structural_recommendation.detail}</p>

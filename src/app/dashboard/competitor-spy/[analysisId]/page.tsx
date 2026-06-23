@@ -214,7 +214,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
                   <td className="px-4 py-3 text-sm text-slate-600">{g.volume.toLocaleString()}/mo</td>
                   <td className="px-4 py-3">{diffBadge(g.difficulty)}</td>
                   <td className="px-4 py-3">
-                    <Link href="/dashboard/ideas" className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+                    <Link href="/dashboard/ideas" className="text-xs font-bold text-brand-600 hover:text-brand-900">
                       Plan Content →
                     </Link>
                   </td>

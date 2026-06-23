@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -84,7 +84,7 @@ function isUnlocked(minPlan: string, userPlan: string): boolean {
 }
 
 const TIER_BADGE: Record<string, string> = {
-  PRO:    'text-indigo-500 bg-indigo-50 border border-indigo-100',
+  PRO:    'text-brand-500 bg-brand-50 border border-brand-100',
   AGENCY: 'text-amber-600 bg-amber-50 border border-amber-100',
 }
 
@@ -112,7 +112,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const planLabel = plan === 'FREE' ? 'Free' : plan === 'PRO' ? 'Pro' : 'Agency'
-  const barColor  = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-indigo-500'
+  const barColor  = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-brand-500'
 
   return (
     <ContentProvider>
@@ -124,7 +124,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Logo */}
           <div className="flex items-center gap-2.5 px-4 py-4 border-b border-slate-100">
             <Link href="/" className="flex items-center gap-2.5">
-              <span className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">O</span>
+              <span className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">O</span>
               <span className="font-bold text-sm tracking-tight text-slate-900">Optmizly</span>
             </Link>
           </div>
@@ -147,7 +147,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <nav className="flex-1 py-2 px-2">
             {TOOL_GROUPS.map(group => (
               <div key={group.label} className="mb-1">
-                <div className={`px-2 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest ${group.label === 'Free' ? 'text-emerald-600' : group.label === 'Pro' ? 'text-indigo-500' : 'text-amber-600'}`}>{group.label}</div>
+                <div className={`px-2 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest ${group.label === 'Free' ? 'text-emerald-600' : group.label === 'Pro' ? 'text-brand-500' : 'text-amber-600'}`}>{group.label}</div>
                 {group.tools.map(tool => {
                   const unlocked = isUnlocked(tool.minPlan, plan)
                   const active   = isActive(tool)
@@ -157,7 +157,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       href={unlocked ? tool.href : '/pricing'}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-all mb-0.5 ${
                         active
-                          ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                          ? 'bg-brand-600 text-white font-semibold shadow-sm'
                           : unlocked
                           ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
                           : 'text-slate-300 cursor-not-allowed'
@@ -195,7 +195,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Bottom: upgrade + user */}
           <div className="border-t border-slate-100 p-3 space-y-2">
             {plan === 'FREE' && (
-              <Link href="/pricing" className="block w-full rounded-lg bg-indigo-600 py-2 text-center text-xs font-semibold text-white hover:bg-indigo-700 transition-colors">
+              <Link href="/pricing" className="block w-full rounded-lg bg-brand-600 py-2 text-center text-xs font-semibold text-white hover:bg-brand-700 transition-colors">
                 Upgrade to Pro →
               </Link>
             )}

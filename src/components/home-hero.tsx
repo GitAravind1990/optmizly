@@ -12,7 +12,7 @@ function OptimizerMock() {
           <div key={s as string} style={{
             padding: '6px 8px', borderRadius: 6, marginBottom: 2, fontSize: 11,
             background: active ? '#EEF2FF' : 'transparent',
-            color: active ? '#4338CA' : '#6E7180',
+            color: active ? '#0000CC' : '#6E7180',
             fontWeight: active ? 500 : 400,
             fontFamily: 'var(--font-sans), system-ui, sans-serif',
           }}>{s as string}</div>
@@ -31,7 +31,7 @@ function OptimizerMock() {
       </div>
       <div style={{ width: 160, borderLeft: '1px solid #EEF0F4', background: '#FAFAFB', padding: '16px 12px', flexShrink: 0 }}>
         <div style={{ fontSize: 10, color: '#6E7180', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>Content Score</div>
-        <div style={{ fontSize: 40, fontWeight: 600, color: '#4F46E5', letterSpacing: -1.5, lineHeight: 1 }}>82</div>
+        <div style={{ fontSize: 40, fontWeight: 600, color: '#0000FF', letterSpacing: -1.5, lineHeight: 1 }}>82</div>
         <div style={{ fontSize: 11, color: '#10B981', marginTop: 4, fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>↑ from 51</div>
         <div style={{ marginTop: 16 }}>
           {[['Relevance', 88], ['E-E-A-T', 74], ['Entities', 91], ['Schema', 65]].map(([label, val]) => (
@@ -40,7 +40,7 @@ function OptimizerMock() {
                 <span>{label as string}</span><span>{val}</span>
               </div>
               <div style={{ height: 3, background: '#EEF0F4', borderRadius: 99 }}>
-                <div style={{ height: 3, width: `${val}%`, background: '#4F46E5', borderRadius: 99 }} />
+                <div style={{ height: 3, width: `${val}%`, background: '#0000FF', borderRadius: 99 }} />
               </div>
             </div>
           ))}

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -72,7 +72,7 @@ export default function AgencyClientsPage() {
           </div>
           <button
             onClick={() => setShowForm(v => !v)}
-            className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition-colors"
+            className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 transition-colors"
           >
             {showForm ? 'Cancel' : '+ Add Client'}
           </button>
@@ -90,7 +90,7 @@ export default function AgencyClientsPage() {
                   required
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="Acme Corp"
                 />
               </div>
@@ -101,7 +101,7 @@ export default function AgencyClientsPage() {
                   type="email"
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="contact@acme.com"
                 />
               </div>
@@ -111,7 +111,7 @@ export default function AgencyClientsPage() {
                   required
                   value={form.website}
                   onChange={e => setForm(f => ({ ...f, website: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="https://acme.com"
                 />
               </div>
@@ -120,7 +120,7 @@ export default function AgencyClientsPage() {
                 <input
                   value={form.industry}
                   onChange={e => setForm(f => ({ ...f, industry: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="E-commerce"
                 />
               </div>
@@ -129,7 +129,7 @@ export default function AgencyClientsPage() {
                 <input
                   value={form.keywords}
                   onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="seo services, digital marketing, content strategy"
                 />
               </div>
@@ -138,7 +138,7 @@ export default function AgencyClientsPage() {
                 <input
                   value={form.competitors}
                   onChange={e => setForm(f => ({ ...f, competitors: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="https://competitor1.com, https://competitor2.com"
                 />
               </div>
@@ -147,7 +147,7 @@ export default function AgencyClientsPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                className="px-5 py-2 rounded-lg bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 disabled:opacity-50 transition-colors"
               >
                 {submitting ? 'Adding...' : 'Add Client'}
               </button>
@@ -181,7 +181,7 @@ export default function AgencyClientsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-bold text-slate-900 text-base">{client.name}</h3>
-                    <a href={client.website} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline">{client.website}</a>
+                    <a href={client.website} target="_blank" rel="noreferrer" className="text-xs text-brand-600 hover:underline">{client.website}</a>
                   </div>
                   <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full font-medium">
                     {client._count.reports} report{client._count.reports !== 1 ? 's' : ''}
@@ -194,7 +194,7 @@ export default function AgencyClientsPage() {
                 <div className="flex gap-2">
                   <Link
                     href={`/dashboard/agency/clients/${client.id}/reports`}
-                    className="flex-1 text-center px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors"
+                    className="flex-1 text-center px-3 py-2 rounded-lg bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition-colors"
                   >
                     View Reports
                   </Link>

@@ -107,14 +107,14 @@ export default function ClientReportsPage({ params }: { params: Promise<{ client
           <div>
             <h1 className="text-2xl font-extrabold text-slate-900">{client?.name}</h1>
             <p className="text-sm text-slate-500 mt-0.5">
-              <a href={client?.website} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">{client?.website}</a>
+              <a href={client?.website} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">{client?.website}</a>
               <span className="ml-2 text-slate-400">· {client?.email}</span>
             </p>
           </div>
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+            className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             {generating ? (
               <>
@@ -189,7 +189,7 @@ export default function ClientReportsPage({ params }: { params: Promise<{ client
                             href={`/agency/reports/${report.id}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="px-3 py-1.5 rounded-lg border border-indigo-200 text-indigo-600 text-xs font-medium hover:bg-indigo-50 transition-colors"
+                            className="px-3 py-1.5 rounded-lg border border-brand-200 text-brand-600 text-xs font-medium hover:bg-brand-50 transition-colors"
                           >
                             View
                           </a>

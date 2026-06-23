@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import {
@@ -363,8 +363,8 @@ export default function SeoAuditPage() {
                     )}
 
                     {ai && (ai.issues.length > 0 || ai.fixes.length > 0) && (
-                      <div className="rounded-lg bg-indigo-50 border border-indigo-100 p-3 mb-3">
-                        <div className="text-[11px] font-bold uppercase text-indigo-600 mb-1.5">🤖 AI Assessment</div>
+                      <div className="rounded-lg bg-brand-50 border border-brand-100 p-3 mb-3">
+                        <div className="text-[11px] font-bold uppercase text-brand-600 mb-1.5">🤖 AI Assessment</div>
                         {ai.issues.length > 0 && (
                           <ul className="space-y-1 mb-2">
                             {ai.issues.map((iss, i) => <li key={i} className="text-xs text-slate-700 flex gap-1.5"><span className="text-amber-500">⚠</span>{iss}</li>)}
@@ -372,7 +372,7 @@ export default function SeoAuditPage() {
                         )}
                         {ai.fixes.length > 0 && (
                           <ul className="space-y-1">
-                            {ai.fixes.map((fx, i) => <li key={i} className="text-xs text-indigo-800 flex gap-1.5"><span>→</span>{fx}</li>)}
+                            {ai.fixes.map((fx, i) => <li key={i} className="text-xs text-brand-800 flex gap-1.5"><span>→</span>{fx}</li>)}
                           </ul>
                         )}
                       </div>
