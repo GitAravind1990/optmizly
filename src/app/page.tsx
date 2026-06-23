@@ -5,546 +5,330 @@ import { HomeHero } from '@/components/home-hero'
 import { PagePricing } from '@/components/page-pricing'
 
 export const metadata: Metadata = {
-  title: 'Optmizly – AI SEO Toolkit | Detects & Fixes Your SEO Issues',
-  description: '17 specialist SEO tools across Free, Pro & Agency tiers. The only platform that detects AND fixes — content rewrites, Core Web Vitals patches, one-click local SEO sync.',
+  title: 'Optmizly – AI Search Optimization Platform | SEO, GEO & AEO',
+  description: 'Rank higher everywhere search happens. Optimize for Google, AI Overviews, ChatGPT, Perplexity and answer engines — one intelligent platform for SEO, GEO & AEO.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'Optmizly – AI SEO Toolkit',
-    description: '17 tools. The only platform that detects AND fixes your SEO issues automatically.',
+    title: 'Optmizly – AI Search Optimization Platform',
+    description: 'One platform for SEO, GEO & AEO. Rank everywhere search happens.',
     url: '/',
-    images: [{ url: '/opengraph-image', width: 1200, height: 628, alt: 'Optmizly – AI SEO Toolkit' }],
+    images: [{ url: '/opengraph-image', width: 1200, height: 628, alt: 'Optmizly – AI Search Optimization Platform' }],
   },
 }
 
-// ─── Design tokens (mirrors Claude Design file) ──────────────────────────────
+// ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
-  ink: '#0A0B14',
-  ink2: '#1B1D2A',
-  body: '#4A4D5E',
-  muted: '#6E7180',
-  line: '#E5E7EB',
-  line2: '#EEF0F4',
+  sans: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  mono: "'Geist Mono', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace",
+  blue: '#0000FF',
+  blueMid: '#3B5BFF',
+  cyan: '#4DEEFF',
+  blueSoft: '#EEF1FF',
+  blueBorder: '#CBD4FF',
+  blueDark: '#0000CC',
+  ink: '#0B1120',
+  ink2: '#1F2937',
+  ink900: '#070B16',
+  body: '#4B5563',
+  muted: '#8A93A3',
+  line: '#E8EBF0',
+  line2: '#F0F2F6',
   bg: '#FFFFFF',
-  bgSoft: '#FAFAFB',
-  bgCool: '#F6F7FB',
-  accent: '#0000FF',
-  accentDark: '#0000CC',
-  accentSoft: '#E0E0FF',
-  accentBorder: '#9999FF',
+  bgSoft: '#FAFAFA',
   good: '#10B981',
   goodSoft: '#ECFDF5',
-  dark: '#080916',
+  grad: 'linear-gradient(118deg, #0000FF 0%, #3B5BFF 45%, #4DEEFF 100%)',
+  gradText: 'linear-gradient(118deg, #0000FF 0%, #3B5BFF 48%, #28C8E8 100%)',
 }
 
-// ─── Mock product windows ────────────────────────────────────────────────────
-
-function PerfFixerMock() {
-  const metrics = [
-    { label: 'LCP', before: '4.2s', after: '1.8s', color: T.good },
-    { label: 'CLS', before: '0.31', after: '0.04', color: T.good },
-    { label: 'FID', before: '280ms', after: '42ms', color: T.good },
-  ]
+// ── SVG Icons ─────────────────────────────────────────────────────────────────
+function Icon({ name, size = 18, color = 'currentColor', strokeWidth = 1.8 }: {
+  name: string; size?: number; color?: string; strokeWidth?: number
+}) {
+  const paths: Record<string, string> = {
+    arrow: 'M5 12h14M13 6l6 6-6 6',
+    check: 'M5 12l5 5L20 7',
+    sparkle: 'M12 3l1.6 5L19 10l-5.4 2L12 17l-1.6-5L5 10l5.4-2L12 3z',
+    bolt: 'M13 2L4 14h7l-1 8 9-12h-7l1-8z',
+    target: 'M12 12m-9 0a9 9 0 1 0 18 0 9 9 0 1 0 -18 0M12 12m-5 0a5 5 0 1 0 10 0 5 5 0 1 0 -10 0M12 12m-1 0a1 1 0 1 0 2 0 1 1 0 1 0 -2 0',
+    pin: 'M12 22s-7-7.5-7-12a7 7 0 1 1 14 0c0 4.5-7 12-7 12zM12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+    chart: 'M3 3v18h18M7 14l4-4 4 4 6-6',
+    bars: 'M5 21V11M12 21V4M19 21v-7',
+    search: 'M11 11m-8 0a8 8 0 1 0 16 0 8 8 0 1 0 -16 0M21 21l-4.3-4.3',
+    layers: 'M12 2L2 8l10 6 10-6-10-6zM2 14l10 6 10-6M2 11l10 6 10-6',
+    cluster: 'M12 4v6m0 0L7 16m5-6l5 6M5 18a2 2 0 1 0 4 0 2 2 0 0 0-4 0M15 18a2 2 0 1 0 4 0 2 2 0 0 0-4 0M10 4a2 2 0 1 0 4 0 2 2 0 0 0-4 0',
+    mic: 'M12 15a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5a4 4 0 0 0 4 4zM5 11a7 7 0 0 0 14 0M12 18v3',
+    bot: 'M12 3v3M9 12h.01M15 12h.01M6 8h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM2 13h2M20 13h2',
+    globe: 'M12 12m-9 0a9 9 0 1 0 18 0 9 9 0 1 0 -18 0M3 12h18M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z',
+    store: 'M3 9l1.5-5h15L21 9M4 9v10h16V9M4 9h16M9 19v-5h6v5',
+    building: 'M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 21V9h4a1 1 0 0 1 1 1v11M8 8h.01M8 12h.01M11 8h.01M11 12h.01',
+    feather: 'M20 4a8 8 0 0 0-11 0L3 10v11h11l6-6a8 8 0 0 0 0-11zM16 8L2 22M17 7H9',
+    star: 'M12 2l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z',
+    google: 'M21 12.2c0-.7-.06-1.4-.18-2H12v3.8h5.05a4.3 4.3 0 0 1-1.87 2.8v2.3h3.02C19.96 17.3 21 15 21 12.2z',
+  }
   return (
-    <div style={{ display: 'flex', height: '100%' }}>
-      <div style={{ width: 220, borderRight: `1px solid ${T.line2}`, background: T.bgSoft, padding: '20px 16px', flexShrink: 0 }}>
-        <div style={{ fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Performance Score</div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 18 }}>
-          <div>
-            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>Before</div>
-            <div style={{ fontSize: 42, fontWeight: 600, color: '#EF4444', letterSpacing: -1.5, lineHeight: 1 }}>47</div>
-          </div>
-          <div style={{ fontSize: 20, color: T.muted }}>→</div>
-          <div>
-            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>After</div>
-            <div style={{ fontSize: 42, fontWeight: 600, color: T.good, letterSpacing: -1.5, lineHeight: 1 }}>91</div>
-          </div>
-        </div>
-        {metrics.map(m => (
-          <div key={m.label} style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: T.ink, marginBottom: 2 }}>{m.label}</div>
-            <div style={{ fontSize: 11, color: T.muted }}>
-              <span style={{ textDecoration: 'line-through' }}>{m.before}</span>
-              {' → '}
-              <span style={{ color: T.good, fontWeight: 500 }}>{m.after}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div style={{ flex: 1, padding: '20px 18px', overflow: 'hidden' }}>
-        <div style={{ fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Generated Code Patch</div>
-        <div style={{ background: T.ink, borderRadius: 8, padding: '12px 14px', fontFamily: 'ui-monospace, monospace', fontSize: 11, color: '#9999FF', lineHeight: 1.6 }}>
-          <span style={{ color: '#86EFAC' }}>{'// LCP fix: preload hero image'}</span>{'\n'}
-          <span style={{ color: '#FCA5A5' }}>{'- <img src="hero.jpg" />'}</span>{'\n'}
-          <span style={{ color: '#86EFAC' }}>{'+ <link rel="preload" href="hero.jpg"'}</span>{'\n'}
-          {'    '}
-          <span style={{ color: '#86EFAC' }}>{'as="image" fetchpriority="high" />'}</span>{'\n'}
-          <span style={{ color: '#86EFAC' }}>{'+ <img src="hero.jpg" loading="eager" />'}</span>
-        </div>
-        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-          <div style={{ padding: '6px 14px', background: T.accent, color: '#fff', borderRadius: 6, fontSize: 12, fontWeight: 500 }}>Apply patch</div>
-          <div style={{ padding: '6px 14px', background: T.bgSoft, border: `1px solid ${T.line}`, color: T.ink, borderRadius: 6, fontSize: 12 }}>Open PR ↗</div>
-        </div>
-      </div>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
+      style={{ flexShrink: 0 }}>
+      <path d={paths[name] || paths.arrow} />
+    </svg>
   )
 }
 
-function LocalSEOMock() {
-  const locations = [
-    { name: 'Austin TX · Main St', rank: '#3', status: 'up' },
-    { name: 'Dallas TX · Oak Ave', rank: '#7', status: 'up' },
-    { name: 'Houston TX · Pine Rd', rank: '#12', status: 'down' },
-    { name: 'San Antonio TX · Elm', rank: '#5', status: 'same' },
-  ]
-  return (
-    <div style={{ display: 'flex', height: '100%' }}>
-      <div style={{ flex: 1, padding: '20px 18px' }}>
-        <div style={{ fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Locations — 4 active</div>
-        {locations.map(l => (
-          <div key={l.name} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '10px 12px', borderRadius: 8, marginBottom: 6,
-            border: `1px solid ${T.line2}`, background: '#fff',
-          }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: T.ink }}>{l.name}</div>
-              <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>NAP synced · 3 citations</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>{l.rank}</div>
-              <div style={{ fontSize: 12, color: l.status === 'up' ? T.good : l.status === 'down' ? '#EF4444' : T.muted }}>
-                {l.status === 'up' ? '↑' : l.status === 'down' ? '↓' : '–'}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div style={{ width: 180, borderLeft: `1px solid ${T.line2}`, background: T.bgSoft, padding: '20px 14px', flexShrink: 0 }}>
-        <div style={{ fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Sub-tools</div>
-        {['Entity Mapper', 'NAP Sync', 'Local Queries', 'GBP Composer'].map((tool, i) => (
-          <div key={tool} style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '7px 8px', borderRadius: 6, marginBottom: 4,
-            background: i === 1 ? T.accentSoft : 'transparent',
-            color: i === 1 ? T.accentDark : T.muted,
-            fontSize: 12, fontWeight: i === 1 ? 500 : 400,
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: 3, background: i === 1 ? T.accent : T.line, flexShrink: 0 }} />
-            {tool}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function AppWindow({ children, title = 'app.optmizly.com', height = 420 }: {
-  children: React.ReactNode; title?: string; height?: number
+// ── Section heading ───────────────────────────────────────────────────────────
+function SectionHead({ kicker, title, body, align = 'center', dark = false, maxW = 720 }: {
+  kicker?: string; title: string; body?: string
+  align?: 'center' | 'left'; dark?: boolean; maxW?: number
 }) {
   return (
-    <div style={{
-      background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, overflow: 'hidden',
-      boxShadow: '0 30px 60px -20px rgba(10,11,20,0.14), 0 8px 20px -8px rgba(10,11,20,0.06)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderBottom: `1px solid ${T.line2}`, background: T.bgSoft }}>
-        <span style={{ width: 10, height: 10, borderRadius: 5, background: '#FB8181', flexShrink: 0 }} />
-        <span style={{ width: 10, height: 10, borderRadius: 5, background: '#FCD34D', flexShrink: 0 }} />
-        <span style={{ width: 10, height: 10, borderRadius: 5, background: '#86EFAC', flexShrink: 0 }} />
-        <div style={{ flex: 1, textAlign: 'center', fontFamily: 'ui-monospace, monospace', fontSize: 11, color: T.muted }}>{title}</div>
-      </div>
-      <div style={{ height, overflow: 'hidden' }}>{children}</div>
-    </div>
-  )
-}
-
-// ─── Section heading ─────────────────────────────────────────────────────────
-
-function SectionHead({ kicker, title, body, align = 'center' }: {
-  kicker?: string; title: string; body?: string; align?: 'center' | 'left'
-}) {
-  return (
-    <div style={{ textAlign: align, maxWidth: 720, margin: align === 'center' ? '0 auto' : '0' }}>
+    <div style={{ textAlign: align, maxWidth: maxW, margin: align === 'center' ? '0 auto' : 0 }}>
       {kicker && (
-        <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 500, color: T.accent, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 14 }}>
-          {kicker}
-        </div>
+        <div style={{
+          fontFamily: T.mono, fontSize: 12, fontWeight: 500, letterSpacing: 1,
+          textTransform: 'uppercase', marginBottom: 16,
+          color: dark ? T.cyan : T.blue,
+        }}>{kicker}</div>
       )}
-      <h2 style={{ fontSize: 'clamp(32px, 4vw, 44px)', fontWeight: 600, letterSpacing: -1.4, lineHeight: 1.05, color: T.ink, margin: 0 }}>
-        {title}
-      </h2>
-      {body && <p style={{ fontSize: 17, lineHeight: 1.55, color: T.body, marginTop: 16, marginBottom: 0 }}>{body}</p>}
+      <h2 style={{
+        fontFamily: T.sans, fontSize: 'clamp(30px, 3.8vw, 46px)',
+        fontWeight: 600, letterSpacing: -1.8, lineHeight: 1.05,
+        color: dark ? '#fff' : T.ink, margin: 0,
+      }}>{title}</h2>
+      {body && (
+        <p style={{
+          fontFamily: T.sans, fontSize: 18, lineHeight: 1.55,
+          color: dark ? 'rgba(255,255,255,0.62)' : T.body,
+          marginTop: 18, marginBottom: 0,
+        }}>{body}</p>
+      )}
     </div>
   )
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
-
-const tools = [
-  { name: 'Content Analyzer', desc: 'Full-spectrum audit across 8 scoring dimensions with Issues and Entities tabs', tier: 'Free' },
-  { name: 'On-Page SEO', desc: 'Audit titles, meta tags, headings, schema markup, and technical signals in one pass', tier: 'Free' },
-  { name: 'Content Optimizer', desc: 'Semantic gap analysis with full-document rewrite and entity injection', tier: 'Pro', new: true },
-  { name: 'Content Planner', desc: 'Data-driven briefs and topic cluster plans built around ranking intent', tier: 'Pro' },
-  { name: 'Rank Tracker', desc: 'Position monitoring with trend alerts and SERP change notifications', tier: 'Pro' },
-  { name: 'Competitor Spy', desc: 'Uncover the exact content strategy driving your competitors\' rankings', tier: 'Pro' },
-  { name: 'E-E-A-T Analysis', desc: 'Deep audit of authorship signals, source quality, and trust indicators', tier: 'Pro' },
-  { name: 'Content Gap', desc: 'Surface the precise topics your competitors rank for that you do not', tier: 'Pro' },
-  { name: 'AI Visibility', desc: 'See how ChatGPT and Perplexity represent your brand — and improve it', tier: 'Pro' },
-  { name: 'Backlinks', desc: 'Identify high-value link opportunities tailored to your domain and niche', tier: 'Pro' },
-  { name: 'SEO Audit', desc: 'Comprehensive technical crawl with a ranked, actionable remediation list', tier: 'Agency' },
-  { name: 'Local SEO Suite', desc: 'Entity mapping, NAP consistency, local query mining, and GBP management', tier: 'Agency' },
-  { name: 'SERP Audit', desc: 'Full SERP breakdown across competing pages with a tailored recovery plan', tier: 'Agency' },
-  { name: 'Topical Authority', desc: 'Visual cluster mapping with an editorial calendar to close authority gaps', tier: 'Agency' },
-  { name: 'Cite Tracker', desc: 'Monitor and improve how AI search engines cite and reference your content', tier: 'Agency' },
-  { name: 'AI Performance Fixer', desc: 'Diagnose LCP, CLS, and FID issues — then deploy the production-ready code patch', tier: 'Agency' },
-  { name: 'Client Reports', desc: 'Fully white-labelled reports exportable as PDF or shareable via link', tier: 'Agency' },
-]
-
-const testimonials = [
-  {
-    quote: 'We cancelled four subscriptions the week we went live. Optmizly finds the issue and ships the fix — that\'s the whole job done in one place.',
-    name: 'Sarah R.', role: 'Head of SEO · SaaS company, Austin TX', initial: 'S', color: '#0000FF',
-  },
-  {
-    quote: 'Performance Fixer cut our dev ticket backlog by 12 hours a week. The ROI was visible before the first sprint was over.',
-    name: 'Marcus K.', role: 'Growth Lead · Stackworks, New York NY', initial: 'M', color: '#10B981',
-  },
-  {
-    quote: 'We replaced six separate tools and got measurably better results. The Local SEO Suite alone justifies the Agency plan.',
-    name: 'Priya L.', role: 'Founder · Velocity SEO, Los Angeles CA', initial: 'P', color: '#F59E0B',
-  },
-]
-
-const faqItems = [
-  ['What is included in the free plan?', 'The full Content Analyzer — 8-dimension scoring with Issues and Entities tabs — at no cost, with no credit card required. It is the most comprehensive free SEO audit available.'],
-  ['Will rewrites change my brand voice?', 'No. Every rewrite goes through a tracked-changes review before anything is published. You approve or reject each suggestion individually — nothing ships without your sign-off.'],
-  ['Which CMS platforms do you support?', 'WordPress, Webflow, Contentful, Sanity, and Ghost are all supported natively. Code patches push directly to GitHub via pull request.'],
-  ['How is this different from Surfer SEO or Clearscope?', 'Those tools score your content and tell you what is missing. Optmizly closes the gaps — it rewrites the sections, injects the entities, and publishes the improved document. We ship the result, not the report.'],
-  ['Is my content kept private?', 'Yes. All content is encrypted in transit and at rest. Your data is never used to train shared models, and you retain full ownership of everything you process through the platform.'],
-]
-
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function HomePage() {
-  const tierColor = (tier: string) =>
-    tier === 'Free'
-      ? { bg: T.goodSoft, fg: '#059669' }
-      : tier === 'Pro'
-      ? { bg: T.accentSoft, fg: T.accent }
-      : { bg: '#FEF3C7', fg: '#D97706' }
-
   return (
-    <div style={{ background: T.bg, color: T.ink }}>
+    <div style={{ background: T.bg, color: T.ink, fontFamily: T.sans }}>
       <PageHeader />
       <HomeHero />
 
-      {/* Spacer for floating hero overlap */}
-      <div style={{ height: 120 }} />
-
-      {/* ── LOGO BAR ── */}
-      <section style={{ padding: '30px clamp(24px, 5vw, 80px) 70px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: T.muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            Used by 500+ SEO teams and digital agencies
-          </div>
+      {/* ── TRUSTED ── */}
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px 0' }}>
+        <div style={{
+          textAlign: 'center', fontFamily: T.mono, fontSize: 12,
+          color: T.muted, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 28,
+        }}>
+          Trusted by growth teams of every kind
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'clamp(20px, 4vw, 48px)', flexWrap: 'wrap' }}>
-          {['Meridian', 'Stackworks', 'Broadwell', 'Arco Digital', 'Lumio', 'Paragon', 'Helix Agency'].map(n => (
-            <div key={n} style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.4, color: '#9CA3AF' }}>{n}</div>
+        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 72 }}>
+          {[
+            ['building', 'Digital Agencies'],
+            ['layers', 'SaaS Businesses'],
+            ['store', 'Ecommerce Brands'],
+            ['feather', 'Publishers'],
+            ['bolt', 'Startups'],
+          ].map(([ic, n]) => (
+            <div key={n} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 9,
+              padding: '10px 18px', border: `1px solid ${T.line}`,
+              borderRadius: 999, background: '#fff',
+              fontFamily: T.sans, fontSize: 14, fontWeight: 500, color: T.ink2,
+            }}>
+              <Icon name={ic} size={17} color={T.blue} />{n}
+            </div>
+          ))}
+        </div>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 24,
+          borderTop: `1px solid ${T.line2}`, borderBottom: `1px solid ${T.line2}`,
+          padding: '48px 0',
+        }}>
+          {[
+            ['10,000+', 'Keywords Optimized'],
+            ['2M+', 'Pages Analyzed'],
+            ['35%', 'Avg Traffic Growth'],
+            ['99.9%', 'Uptime'],
+          ].map(([v, l]) => (
+            <div key={l} style={{ textAlign: 'center' }}>
+              <div style={{
+                fontFamily: T.sans, fontSize: 'clamp(36px, 4vw, 48px)',
+                fontWeight: 600, letterSpacing: -2, lineHeight: 1,
+                background: T.gradText,
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>{v}</div>
+              <div style={{ fontFamily: T.sans, fontSize: 15, color: T.body, marginTop: 12 }}>{l}</div>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* ── DARK STATS CARD ── */}
-      <section style={{ padding: '0 clamp(24px, 5vw, 80px) 100px' }}>
-        <div style={{
-          background: T.dark, color: '#fff', borderRadius: 20,
-          padding: 'clamp(40px, 5vw, 60px) clamp(30px, 5vw, 56px)',
-          position: 'relative', overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse at 80% 50%, rgba(0,0,255,0.25) 0%, transparent 50%)',
-            pointerEvents: 'none',
-          }} />
-          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 40 }}>
-            {[
-              ['48K', 'Fixes deployed', 'across active accounts'],
-              ['−2.1s', 'Avg LCP improvement', 'per Performance Fixer run'],
-              ['+38%', 'Topical authority gain', 'avg. after Content Optimizer'],
-              ['17', 'Specialist tools', 'Free, Pro & Agency tiers'],
-            ].map(([v, l, s]) => (
-              <div key={l}>
-                <div style={{ fontSize: 'clamp(36px, 4vw, 48px)', fontWeight: 600, letterSpacing: -1.6, lineHeight: 1, color: '#fff' }}>{v}</div>
-                <div style={{ fontSize: 14, fontWeight: 500, marginTop: 12, color: '#fff' }}>{l}</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>{s}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TOOLS GRID (bento-ish) ── */}
-      <section style={{ padding: '0 clamp(24px, 5vw, 80px) 100px' }}>
+      {/* ── PROBLEM ── */}
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
         <SectionHead
-          kicker="The full toolkit"
-          title="17 specialist tools. One subscription."
-          body="Every tool goes beyond the audit — it acts. From content rewrites to code patches to citation fixes, the full scope of SEO execution is covered."
+          kicker="The shift"
+          title="Search has changed. Traditional SEO isn't enough."
+          body="Your customers now find answers across Google, AI assistants, and answer engines. Modern brands need visibility on every surface — not just the ten blue links."
         />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginTop: 56 }}>
-          {tools.map(t => {
-            const tc = tierColor(t.tier)
-            return (
-              <div key={t.name} style={{
-                padding: '18px 20px', border: `1px solid ${T.line2}`, borderRadius: 12, background: '#fff',
-                position: 'relative',
+        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12, marginTop: 56 }}>
+          {[
+            ['google', 'Google Search'],
+            ['sparkle', 'AI Overviews'],
+            ['bot', 'ChatGPT'],
+            ['sparkle', 'Gemini'],
+            ['search', 'Perplexity'],
+            ['mic', 'Voice Search'],
+            ['target', 'Answer Engines'],
+          ].map(([ic, n]) => (
+            <div key={n} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              padding: '13px 20px', border: `1px solid ${T.line}`,
+              borderRadius: 14, background: '#fff',
+              fontFamily: T.sans, fontSize: 15, fontWeight: 500, color: T.ink,
+              boxShadow: '0 1px 3px rgba(11,17,32,0.04)',
+            }}>
+              <span style={{
+                width: 26, height: 26, borderRadius: 8, background: T.blueSoft,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.3 }}>{t.name}</div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    {t.new && (
-                      <span style={{ background: T.accent, color: '#fff', fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 999 }}>
-                        New
-                      </span>
-                    )}
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 999, background: tc.bg, color: tc.fg }}>
-                      {t.tier}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ fontSize: 12, color: T.body, lineHeight: 1.5 }}>{t.desc}</div>
-              </div>
-            )
-          })}
+                <Icon name={ic} size={15} color={T.blue} />
+              </span>
+              {n}
+              <Icon name="check" size={15} color={T.good} />
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ── SPOTLIGHT 1 — Content Optimizer ── */}
-      <section style={{ padding: '100px clamp(24px, 5vw, 80px)', borderTop: `1px solid ${T.line2}`, background: T.bgSoft }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 60, alignItems: 'center' }}>
-          <div>
-            <span style={{ display: 'inline-block', background: T.accentSoft, color: T.accentDark, border: `1px solid ${T.accentBorder}`, padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 500, marginBottom: 18 }}>
-              Content Optimizer · Pro
-            </span>
-            <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 600, letterSpacing: -1.4, lineHeight: 1.05, margin: '0 0 18px', color: T.ink }}>
-              Your content, rewritten<br />to <em style={{ fontStyle: 'italic', color: T.accent }}>rank.</em>
-            </h2>
-            <p style={{ fontSize: 17, lineHeight: 1.6, color: T.body, marginBottom: 24 }}>
-              Paste a URL or a draft. Optmizly audits every section across eight ranking dimensions, closes each gap, and returns a publish-ready document — with your voice intact and every claim sourced.
-            </p>
+      {/* ── FEATURES ── */}
+      <section style={{ background: T.bgSoft, borderTop: `1px solid ${T.line2}`, borderBottom: `1px solid ${T.line2}` }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
+          <SectionHead
+            kicker="The platform"
+            title="One platform for the future of search."
+            body="SEO, GEO, and AEO working together — so you show up whether your customer types into Google or asks an AI."
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginTop: 60 }}>
             {[
-              'Rewrites underperforming sections without changing your voice',
-              'Closes semantic gaps with entity injection and structured headings',
-              'Sources every claim from verified, live references',
-              'Delivers a tracked-changes diff or publishes directly to your CMS',
-            ].map(f => (
-              <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: T.ink2, marginBottom: 10, lineHeight: 1.5 }}>
-                <span style={{ width: 5, height: 5, borderRadius: 1, background: T.accent, flexShrink: 0, marginTop: 5 }} />
-                {f}
+              ['sparkle', 'AI SEO Optimization', 'Automate technical SEO and on-page content improvements at scale.'],
+              ['bot', 'GEO Optimization', 'Increase your visibility and citations inside generative AI search results.'],
+              ['search', 'AEO Optimization', 'Structure content for answer engines and AI assistants to surface you first.'],
+              ['target', 'Content Intelligence', 'Find ranking opportunities and intent gaps before your competitors do.'],
+              ['cluster', 'Keyword Clustering', 'Group thousands of keywords intelligently with AI-driven topic mapping.'],
+              ['bars', 'Competitor Insights', 'Discover ranking gaps, share-of-voice, and growth opportunities instantly.'],
+            ].map(([ic, n, d]) => (
+              <div key={n} style={{
+                padding: 28, background: '#fff', border: `1px solid ${T.line}`,
+                borderRadius: 20, boxShadow: '0 2px 8px rgba(11,17,32,0.03)',
+              }}>
+                <div style={{
+                  width: 46, height: 46, borderRadius: 13, background: T.grad,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 20, boxShadow: '0 6px 16px -6px rgba(0,0,255,0.4)',
+                }}>
+                  <Icon name={ic} size={22} color="#fff" />
+                </div>
+                <div style={{ fontFamily: T.sans, fontSize: 19, fontWeight: 600, letterSpacing: -0.4, color: T.ink, marginBottom: 8 }}>{n}</div>
+                <p style={{ fontSize: 15, lineHeight: 1.55, color: T.body, margin: 0 }}>{d}</p>
               </div>
             ))}
-            <div style={{ marginTop: 24 }}>
-              <Link href="/signup" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 500,
-                background: T.ink, color: '#fff', textDecoration: 'none',
-              }}>
-                Optimize your first article →
-              </Link>
-            </div>
           </div>
-          <AppWindow height={360} title="optimizer · semantic-seo-guide.md">
-            <div style={{ display: 'flex', height: '100%', fontSize: 12 }}>
-              <div style={{ flex: 1, padding: '16px 18px' }}>
-                <div style={{ fontSize: 11, color: T.body, lineHeight: 1.6, marginBottom: 10 }}>
-                  Semantic SEO involves the use of related concepts and entities to help search engines understand the full context of your content...
-                </div>
-                <div style={{ background: '#FEF3C7', borderLeft: '3px solid #F59E0B', borderRadius: '0 6px 6px 0', padding: '8px 10px', marginBottom: 8, fontSize: 11, color: '#92400E' }}>
-                  Missing: &ldquo;Knowledge Graph&rdquo;, &ldquo;entity salience&rdquo;, &ldquo;co-occurrence&rdquo;
-                </div>
-                <div style={{ background: T.goodSoft, borderLeft: '3px solid #10B981', borderRadius: '0 6px 6px 0', padding: '8px 10px', fontSize: 11, color: '#065F46' }}>
-                  3 entities injected — score: 51 &rarr; 82
-                </div>
-              </div>
-              <div style={{ width: 140, borderLeft: `1px solid ${T.line2}`, background: T.bgSoft, padding: '16px 12px', flexShrink: 0 }}>
-                <div style={{ fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Dimensions</div>
-                {[['Relevance', 88], ['Entities', 91], ['E-E-A-T', 74], ['Depth', 79]].map(([l, v]) => (
-                  <div key={l as string} style={{ marginBottom: 8 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: T.muted, marginBottom: 3 }}>
-                      <span>{l}</span><span>{v}</span>
-                    </div>
-                    <div style={{ height: 3, background: T.line2, borderRadius: 99 }}>
-                      <div style={{ height: 3, width: `${v}%`, background: T.accent, borderRadius: 99 }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </AppWindow>
-        </div>
-      </section>
-
-      {/* ── SPOTLIGHT 2 — Performance Fixer ── */}
-      <section style={{ padding: '100px clamp(24px, 5vw, 80px)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 60, alignItems: 'center' }}>
-          <AppWindow height={340} title="performance · /pricing">
-            <PerfFixerMock />
-          </AppWindow>
-          <div>
-            <span style={{ display: 'inline-block', background: T.accentSoft, color: T.accentDark, border: `1px solid ${T.accentBorder}`, padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 500, marginBottom: 18 }}>
-              Performance Fixer · Agency
-            </span>
-            <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 600, letterSpacing: -1.4, lineHeight: 1.05, margin: '0 0 18px', color: T.ink }}>
-              Fix Core Web Vitals<br />without a developer.
-            </h2>
-            <p style={{ fontSize: 17, lineHeight: 1.6, color: T.body, marginBottom: 24 }}>
-              LCP, CLS, FID — every metric is diagnosed, explained, and patched. The code is production-ready: copy it directly or open a GitHub PR from the tool. No dev ticket. No sprint delay.
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-              {[['−2.1s', 'avg LCP'], ['−83%', 'CLS reduction'], ['1-click', 'GitHub PR'], ['3 min', 'to first patch']].map(([v, l]) => (
-                <div key={l} style={{ padding: 14, border: `1px solid ${T.line}`, borderRadius: 10, background: '#fff' }}>
-                  <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: -0.8, color: T.ink }}>{v}</div>
-                  <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{l}</div>
-                </div>
-              ))}
-            </div>
-            <Link href="/signup" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 500,
-              background: T.ink, color: '#fff', textDecoration: 'none',
-            }}>
-              Fix your Core Web Vitals →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── SPOTLIGHT 3 — Local SEO ── */}
-      <section style={{ padding: '100px clamp(24px, 5vw, 80px)', borderTop: `1px solid ${T.line2}`, background: T.bgSoft }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 60, alignItems: 'center' }}>
-          <div>
-            <span style={{ display: 'inline-block', background: T.accentSoft, color: T.accentDark, border: `1px solid ${T.accentBorder}`, padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 500, marginBottom: 18 }}>
-              Local SEO Suite · 4 tools
-            </span>
-            <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 600, letterSpacing: -1.4, lineHeight: 1.05, margin: '0 0 18px', color: T.ink }}>
-              Every location.<br />Every market. One screen.
-            </h2>
-            <p style={{ fontSize: 17, lineHeight: 1.6, color: T.body, marginBottom: 24 }}>
-              Keep NAP consistent across hundreds of directories, surface high-intent local queries, and draft GBP posts — for one location or a thousand, managed from a single dashboard.
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
-              {['Entity Mapper', 'NAP Sync', 'Local Queries', 'GBP Composer'].map(n => (
-                <span key={n} style={{ background: '#fff', border: `1px solid ${T.line}`, color: T.body, padding: '4px 12px', borderRadius: 999, fontSize: 13, fontWeight: 500 }}>{n}</span>
-              ))}
-            </div>
-            <Link href="/signup" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 500,
-              background: T.ink, color: '#fff', textDecoration: 'none',
-            }}>
-              Manage your locations →
-            </Link>
-          </div>
-          <AppWindow height={340} title="local-seo · all locations">
-            <LocalSEOMock />
-          </AppWindow>
         </div>
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section style={{ padding: '100px clamp(24px, 5vw, 80px)' }}>
-        <SectionHead kicker="How it works" title="From broken to fixed in three steps." />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24, marginTop: 60, position: 'relative' }}>
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
+        <SectionHead kicker="How Optmizly works" title="From audit to growth in four steps." />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginTop: 60, position: 'relative' }}>
           {[
-            { n: '01', t: 'Connect', d: 'Drop a URL, connect your CMS, or push content via API. Optmizly indexes and begins auditing in under a minute.' },
-            { n: '02', t: 'Audit', d: '17 specialist auditors run simultaneously across content depth, Core Web Vitals, E-E-A-T, local signals, and AI visibility. You receive one ranked fix list — not a wall of data to interpret.' },
-            { n: '03', t: 'Fix', d: 'Review every fix before it ships, or apply the full list in one click. Optmizly rewrites, patches, syncs, and publishes — then delivers a results summary.' },
-          ].map(s => (
-            <div key={s.n} style={{ padding: 28, border: `1px solid ${T.line}`, borderRadius: 14, background: '#fff' }}>
+            ['01', 'Analyze', 'Audit your website across SEO, GEO & AEO in minutes.', 'search'],
+            ['02', 'Optimize', 'Get prioritized AI recommendations and auto-fixes.', 'sparkle'],
+            ['03', 'Publish', 'Implement changes and structured data in one click.', 'bolt'],
+            ['04', 'Grow', 'Track rankings, citations, and organic traffic over time.', 'chart'],
+          ].map(([n, t, d, ic], i) => (
+            <div key={n} style={{ position: 'relative', padding: 26, background: '#fff', border: `1px solid ${T.line}`, borderRadius: 20 }}>
+              <div style={{ fontFamily: T.mono, fontSize: 12, color: T.blue, letterSpacing: 1, marginBottom: 16 }}>STEP {n}</div>
               <div style={{
-                width: 48, height: 48, borderRadius: 12, background: T.ink, color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 18, fontFamily: 'ui-monospace, monospace', fontSize: 13, fontWeight: 600,
+                width: 44, height: 44, borderRadius: 12, background: T.blueSoft,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18,
               }}>
-                {s.n}
+                <Icon name={ic} size={21} color={T.blue} />
               </div>
-              <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: -0.6, color: T.ink, marginBottom: 8 }}>{s.t}</div>
-              <p style={{ fontSize: 14, lineHeight: 1.55, color: T.body, margin: 0 }}>{s.d}</p>
+              <div style={{ fontFamily: T.sans, fontSize: 20, fontWeight: 600, letterSpacing: -0.5, color: T.ink, marginBottom: 8 }}>{t}</div>
+              <p style={{ fontSize: 14, lineHeight: 1.55, color: T.body, margin: 0 }}>{d}</p>
+              {i < 3 && (
+                <div style={{
+                  position: 'absolute', right: -12, top: '50%', zIndex: 2,
+                  width: 24, height: 24, borderRadius: 999, background: '#fff',
+                  border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', transform: 'translateY(-50%)',
+                }}>
+                  <Icon name="arrow" size={12} color={T.blue} />
+                </div>
+              )}
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── COMPARISON ── */}
-      <section style={{ padding: '100px clamp(24px, 5vw, 80px)', borderTop: `1px solid ${T.line2}`, background: T.bgSoft }}>
-        <SectionHead kicker="The difference that matters" title="A report tells you what's wrong. We fix it." />
-        <div style={{ marginTop: 56, background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr' }}>
-            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.line2}`, fontFamily: 'ui-monospace, monospace', fontSize: 11, color: T.muted, letterSpacing: '0.06em' }}>CAPABILITY</div>
-            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.line2}`, borderLeft: `1px solid ${T.line2}`, textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: T.muted }}>Other tools</div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: T.body }}>Detect.</div>
-            </div>
-            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.line2}`, borderLeft: `1px solid ${T.line2}`, textAlign: 'center', background: T.accentSoft }}>
-              <div style={{ fontSize: 12, color: T.accentDark }}>Optmizly</div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: T.accentDark }}>Detect + Fix.</div>
-            </div>
-          </div>
-          {[
-            ['Content gaps', 'Lists missing entities', 'Rewrites in place'],
-            ['Core Web Vitals', 'Shows your LCP score', 'Generates code patches'],
-            ['E-E-A-T issues', 'Flags missing author bio', 'Drafts bio + injects schema'],
-            ['AI visibility', 'Tells you you\'re invisible', 'Maps queries + drafts citations'],
-            ['NAP inconsistency', 'Lists 47 directories', 'Syncs all 47, one click'],
-            ['Topical authority', 'Shows a 62% score', 'Generates cluster + briefs'],
-            ['Local queries', 'Surfaces query data', 'Drafts GBP posts answering them'],
-          ].map(([cap, det, fix], i, arr) => (
-            <div key={cap} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', borderBottom: i < arr.length - 1 ? `1px solid ${T.line2}` : 'none' }}>
-              <div style={{ padding: '16px 24px', fontSize: 14, fontWeight: 500, color: T.ink }}>{cap}</div>
-              <div style={{ padding: '16px 24px', borderLeft: `1px solid ${T.line2}`, fontSize: 14, color: T.muted, textAlign: 'center' }}>{det}</div>
-              <div style={{ padding: '16px 24px', borderLeft: `1px solid ${T.line2}`, fontSize: 14, textAlign: 'center', background: 'rgba(238,242,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <span style={{ width: 7, height: 7, borderRadius: 2, background: T.good, flexShrink: 0 }} /> {fix}
+      {/* ── USE CASES ── */}
+      <section style={{ background: T.bgSoft, borderTop: `1px solid ${T.line2}`, borderBottom: `1px solid ${T.line2}` }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
+          <SectionHead kicker="Use cases" title="Built for every kind of growth team." />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginTop: 56 }}>
+            {[
+              ['building', 'Agencies', 'Manage multiple clients efficiently from one dashboard.'],
+              ['layers', 'SaaS', 'Grow organic traffic and pipeline predictably.'],
+              ['store', 'Ecommerce', 'Increase product visibility across search & AI.'],
+              ['pin', 'Local Businesses', 'Rank in local map packs and AI search answers.'],
+              ['feather', 'Publishers', 'Scale content production without losing quality.'],
+            ].map(([ic, n, d]) => (
+              <div key={n} style={{ padding: 24, background: '#fff', border: `1px solid ${T.line}`, borderRadius: 20 }}>
+                <div style={{
+                  width: 42, height: 42, borderRadius: 12, background: T.blueSoft,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+                }}>
+                  <Icon name={ic} size={20} color={T.blue} />
+                </div>
+                <div style={{ fontFamily: T.sans, fontSize: 16, fontWeight: 600, letterSpacing: -0.3, color: T.ink, marginBottom: 7 }}>{n}</div>
+                <p style={{ fontSize: 13.5, lineHeight: 1.5, color: T.body, margin: 0 }}>{d}</p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section style={{ padding: '100px clamp(24px, 5vw, 80px)' }}>
-        <SectionHead kicker="In their own words" title="Teams that replaced multiple tools with one." />
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
+        <SectionHead kicker="Testimonials" title="Growth teams future-proofing their search." />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginTop: 56 }}>
-          {/* Featured dark card */}
-          <div style={{
-            padding: 32, background: T.ink, color: '#fff', borderRadius: 14,
-            position: 'relative', overflow: 'hidden',
-            gridColumn: 'span 1',
-          }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 20%, rgba(0,0,255,0.25) 0%, transparent 60%)', pointerEvents: 'none' }} />
-            <div style={{ position: 'relative' }}>
-              <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.8)', marginBottom: 16 }}>&ldquo;</div>
-              <p style={{ fontSize: 20, lineHeight: 1.4, fontWeight: 500, letterSpacing: -0.4, margin: '0 0 24px' }}>
-                {testimonials[0].quote}
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 999, background: '#9999FF', color: T.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, flexShrink: 0 }}>
-                  {testimonials[0].initial}
-                </div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{testimonials[0].name}</div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{testimonials[0].role}</div>
-                </div>
+          {[
+            { q: 'Optmizly helped us prepare for the future of search and improve our organic visibility across AI answers.', n: 'Marketing Director', r: 'SaaS Company', i: 'M', col: '#0000FF' },
+            { q: 'We finally rank inside ChatGPT and Perplexity, not just Google. GEO scoring changed how our team works.', n: 'Head of Growth', r: 'Ecommerce Brand', i: 'H', col: '#3B5BFF' },
+            { q: 'Managing SEO + GEO + AEO for 30 clients used to take a team. Now it\'s one dashboard.', n: 'Agency Founder', r: 'Digital Agency', i: 'A', col: '#28C8E8' },
+          ].map((t) => (
+            <div key={t.n} style={{
+              padding: 30, background: '#fff', border: `1px solid ${T.line}`,
+              borderRadius: 20, display: 'flex', flexDirection: 'column', gap: 20,
+            }}>
+              <div style={{ display: 'flex', gap: 3 }}>
+                {[0, 1, 2, 3, 4].map((s) => (
+                  <svg key={s} width="16" height="16" viewBox="0 0 24 24" fill="#FFB020" stroke="#FFB020" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" />
+                  </svg>
+                ))}
               </div>
-            </div>
-          </div>
-          {testimonials.slice(1).map(t => (
-            <div key={t.name} style={{ padding: 24, border: `1px solid ${T.line}`, borderRadius: 14, background: '#fff', display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <div style={{ fontSize: 20, color: T.accent }}>&ldquo;</div>
-              <p style={{ fontSize: 15, lineHeight: 1.5, color: T.ink, margin: 0, flex: 1, letterSpacing: -0.1 }}>{t.quote}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 14, borderTop: `1px solid ${T.line2}` }}>
-                <div style={{ width: 32, height: 32, borderRadius: 999, background: t.color, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
-                  {t.initial}
-                </div>
+              <p style={{ fontSize: 17, lineHeight: 1.5, color: T.ink, margin: 0, flex: 1, letterSpacing: -0.2 }}>
+                &ldquo;{t.q}&rdquo;
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 18, borderTop: `1px solid ${T.line2}` }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 999, background: t.col, color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: T.sans, fontSize: 15, fontWeight: 600, flexShrink: 0,
+                }}>{t.i}</div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{t.name}</div>
-                  <div style={{ fontSize: 12, color: T.muted }}>{t.role}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{t.n}</div>
+                  <div style={{ fontSize: 13, color: T.muted }}>{t.r}</div>
                 </div>
               </div>
             </div>
@@ -555,115 +339,106 @@ export default function HomePage() {
       {/* ── PRICING ── */}
       <PagePricing />
 
-      {/* ── FAQ ── */}
-      <section style={{ padding: '100px clamp(24px, 5vw, 80px)', borderTop: `1px solid ${T.line2}`, background: T.bgSoft }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 80 }}>
-          <div>
-            <SectionHead kicker="FAQ" title="Common questions." align="left" />
-            <p style={{ fontSize: 14, color: T.body, marginTop: 18, lineHeight: 1.6 }}>
-              Can&apos;t find what you&apos;re looking for?{' '}
-              <a href="mailto:hello@optmizly.com" style={{ color: T.accent, fontWeight: 500, textDecoration: 'none' }}>
-                Contact us →
-              </a>
-            </p>
-          </div>
-          <div>
-            {faqItems.map(([q, a], i) => (
-              <div key={q} style={{ padding: '20px 0', borderBottom: i < faqItems.length - 1 ? `1px solid ${T.line2}` : 'none' }}>
-                <div style={{ fontSize: 16, fontWeight: 600, color: T.ink, letterSpacing: -0.2, marginBottom: 10 }}>{q}</div>
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: T.body, margin: 0 }}>{a}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FINAL CTA ── */}
-      <section style={{ padding: '0 clamp(24px, 5vw, 80px) 100px' }}>
+      {/* ── FOOTER CTA ── */}
+      <section style={{ background: T.ink900, position: 'relative', overflow: 'hidden' }}>
         <div style={{
-          background: T.dark, color: '#fff', borderRadius: 24,
-          padding: 'clamp(60px, 7vw, 100px) clamp(30px, 5vw, 56px)',
-          textAlign: 'center', position: 'relative', overflow: 'hidden',
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(60% 90% at 50% 0%, rgba(59,91,255,0.35), transparent 65%), radial-gradient(40% 70% at 80% 100%, rgba(77,238,255,0.18), transparent 60%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'relative', maxWidth: 820, margin: '0 auto',
+          padding: 'clamp(80px, 10vw, 130px) 32px', textAlign: 'center',
         }}>
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse 60% 80% at 50% 0%, rgba(0,0,255,0.31) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }} />
-          <div style={{ position: 'relative' }}>
-            <h2 style={{ fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 600, letterSpacing: -2, lineHeight: 1.05, maxWidth: 720, margin: '0 auto 22px' }}>
-              Stop paying for findings.<br />Start getting results.
-            </h2>
-            <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)', maxWidth: 540, margin: '0 auto 32px', lineHeight: 1.6 }}>
-              Start on the free plan today — no credit card, no sales call. When you are ready to automate more, upgrading takes 60 seconds.
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <Link href="/signup" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '12px 24px', borderRadius: 8, fontSize: 15, fontWeight: 500,
-                background: '#fff', color: T.ink, border: '1px solid #fff',
-                textDecoration: 'none',
-              }}>
-                Start for free →
-              </Link>
-              <Link href="#pricing" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '12px 24px', borderRadius: 8, fontSize: 15, fontWeight: 500,
-                background: 'rgba(255,255,255,0.06)', color: '#fff',
-                border: '1px solid rgba(255,255,255,0.15)',
-                textDecoration: 'none',
-              }}>
-                View plans
-              </Link>
-            </div>
+          <h2 style={{
+            fontFamily: T.sans, fontSize: 'clamp(36px, 5vw, 60px)',
+            fontWeight: 600, letterSpacing: -2.6, lineHeight: 1.04,
+            color: '#fff', margin: '0 auto 22px', maxWidth: 720,
+          }}>
+            Future-proof your search strategy.
+          </h2>
+          <p style={{ fontSize: 19, color: 'rgba(255,255,255,0.72)', maxWidth: 540, margin: '0 auto 38px', lineHeight: 1.5 }}>
+            Optimize for Google and AI search platforms with Optmizly — the AI Search Optimization Platform.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <Link href="/signup" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '0 28px', height: 52, borderRadius: 14,
+              fontFamily: T.sans, fontSize: 16, fontWeight: 600,
+              background: T.grad, color: '#fff', textDecoration: 'none',
+              boxShadow: '0 8px 24px -8px rgba(0,0,255,0.6), inset 0 1px 0 rgba(255,255,255,0.22)',
+            }}>
+              Start Free Today →
+            </Link>
+            <Link href="#pricing" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '0 28px', height: 52, borderRadius: 14,
+              fontFamily: T.sans, fontSize: 16, fontWeight: 600,
+              background: 'rgba(255,255,255,0.08)', color: '#fff',
+              border: '1px solid rgba(255,255,255,0.18)', textDecoration: 'none',
+            }}>
+              View Plans
+            </Link>
           </div>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ padding: 'clamp(40px, 5vw, 60px) clamp(24px, 5vw, 80px) 40px', borderTop: `1px solid ${T.line2}`, background: T.bgSoft }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 40, marginBottom: 40 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <div style={{ width: 26, height: 26, borderRadius: 6, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: -0.5 }}>O</span>
+      <footer style={{ background: T.bgSoft, borderTop: `1px solid ${T.line2}` }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 32px 40px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 40, marginBottom: 48 }}>
+            {/* Brand */}
+            <div style={{ gridColumn: 'span 1', maxWidth: 260 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  background: T.grad, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: T.sans }}>O</span>
+                </div>
+                <span style={{ fontFamily: T.sans, fontWeight: 600, fontSize: 18, letterSpacing: -0.5, color: T.blue }}>
+                  optmizly
+                </span>
               </div>
-              <span style={{ fontWeight: 600, fontSize: 16, letterSpacing: -0.3, color: T.ink }}>Optmizly</span>
+              <p style={{ fontFamily: T.sans, fontSize: 14, color: T.muted, lineHeight: 1.6, margin: 0 }}>
+                The AI Search Optimization Platform. Rank everywhere search happens — Google, AI overviews, and answer engines.
+              </p>
             </div>
-            <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.5, maxWidth: 220, margin: 0 }}>
-              The SEO platform that acts on its findings — content, code, and citations, all in one place.
-            </p>
+
+            {/* Link columns */}
+            {[
+              ['Platform', ['AI SEO', 'GEO Optimization', 'AEO Optimization', 'Content Intelligence', 'Competitor Insights']],
+              ['Solutions', ['For Agencies', 'For SaaS', 'For Ecommerce', 'For Publishers', 'For Local Business']],
+              ['Resources', ['Blog', 'Pricing', 'Privacy Policy', 'Terms of Service']],
+              ['Company', ['About', 'Contact', 'hello@optmizly.com']],
+            ].map(([h, items]) => (
+              <div key={h as string}>
+                <div style={{ fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.ink, marginBottom: 16 }}>{h as string}</div>
+                {(items as string[]).map((item) => {
+                  const isEmail = item.includes('@')
+                  const href = isEmail ? `mailto:${item}` : item === 'Blog' ? '/blog' : item === 'Pricing' ? '/pricing' : item === 'Privacy Policy' ? '/privacy' : item === 'Terms of Service' ? '/terms' : '#'
+                  return (
+                    <div key={item} style={{ marginBottom: 10 }}>
+                      <a href={href} style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, textDecoration: 'none' }}>{item}</a>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
           </div>
-          {[
-            ['Product', ['Content Optimizer', 'AI Performance Fixer', 'Local SEO Suite', 'All 17 tools']],
-            ['Solutions', ['For SEO teams', 'For agencies', 'For local businesses', 'For enterprise']],
-            ['Resources', ['Blog', 'Pricing', 'Privacy Policy', 'Terms of Service']],
-            ['Company', ['About', 'Contact', 'hello@optmizly.com']],
-          ].map(([h, items]) => (
-            <div key={h as string}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: T.ink, marginBottom: 14 }}>{h as string}</div>
-              {(items as string[]).map(item => {
-                const isEmail = item.includes('@')
-                const href = isEmail ? `mailto:${item}` : item === 'Blog' ? '/blog' : item === 'Pricing' ? '/pricing' : item === 'Privacy Policy' ? '/privacy' : item === 'Terms of Service' ? '/terms' : '#'
-                return (
-                  <div key={item} style={{ marginBottom: 8 }}>
-                    <a href={href} style={{ fontSize: 13, color: T.muted, textDecoration: 'none' }}>{item}</a>
-                  </div>
-                )
-              })}
+
+          <div style={{
+            borderTop: `1px solid ${T.line2}`, paddingTop: 24,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            flexWrap: 'wrap', gap: 12, fontFamily: T.sans, fontSize: 13, color: T.muted,
+          }}>
+            <div>© 2026 Optmizly, Inc. All rights reserved.</div>
+            <div style={{ display: 'flex', gap: 20 }}>
+              <Link href="/privacy" style={{ color: T.muted, textDecoration: 'none' }}>Privacy</Link>
+              <Link href="/terms" style={{ color: T.muted, textDecoration: 'none' }}>Terms</Link>
+              <a href="mailto:hello@optmizly.com" style={{ color: T.muted, textDecoration: 'none' }}>Contact</a>
             </div>
-          ))}
-        </div>
-        <div style={{
-          borderTop: `1px solid ${T.line2}`, paddingTop: 24,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
-          fontSize: 12, color: T.muted,
-        }}>
-          <div>© 2026 Optmizly, Inc. · AI-powered SEO for Google & AI search</div>
-          <div style={{ display: 'flex', gap: 18 }}>
-            <Link href="/privacy" style={{ color: T.muted, textDecoration: 'none' }}>Privacy</Link>
-            <Link href="/terms" style={{ color: T.muted, textDecoration: 'none' }}>Terms</Link>
-            <a href="mailto:hello@optmizly.com" style={{ color: T.muted, textDecoration: 'none' }}>Contact</a>
           </div>
         </div>
       </footer>

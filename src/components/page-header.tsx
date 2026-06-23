@@ -3,29 +3,85 @@
 import Link from 'next/link'
 import { SignedIn, SignedOut } from './clerk-provider'
 
+const blue = '#0000FF'
+const blueMid = '#3B5BFF'
+const cyan = '#4DEEFF'
+const grad = `linear-gradient(118deg, ${blue} 0%, ${blueMid} 45%, ${cyan} 100%)`
+const sans = "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
+
 export function PageHeader() {
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/10 backdrop-blur-sm" style={{ background: 'rgba(8,9,22,0.88)' }}>
-      <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 h-16">
-        <div className="flex items-center gap-2 font-extrabold text-white text-lg tracking-tight">
-          <span className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white text-sm font-bold">◈</span>
-          Optmizly
+    <header style={{
+      position: 'sticky', top: 0, zIndex: 50,
+      background: 'rgba(255,255,255,0.82)',
+      backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+      borderBottom: '1px solid #F0F2F6',
+    }}>
+      <div style={{
+        maxWidth: 1200, margin: '0 auto', padding: '0 32px', height: 70,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        {/* Left: logo + nav */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 9, background: grad, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 12px -4px rgba(0,0,255,0.45)',
+            }}>
+              <span style={{ color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: sans }}>O</span>
+            </div>
+            <span style={{ fontFamily: sans, fontWeight: 600, fontSize: 19, letterSpacing: -0.6, color: blue }}>
+              optmizly
+            </span>
+          </Link>
+          <nav style={{ display: 'flex', gap: 26, fontFamily: sans, fontSize: 15, fontWeight: 500 }}>
+            {[
+              ['Platform', '#'],
+              ['Solutions', '#'],
+              ['Pricing', '/pricing'],
+              ['Blog', '/blog'],
+              ['Docs', '#'],
+            ].map(([label, href]) => (
+              <Link key={label} href={href} style={{ color: '#4B5563', textDecoration: 'none' }}>
+                {label}
+              </Link>
+            ))}
+          </nav>
         </div>
-        <div className="flex-1" />
-        <Link href="/blog" className="text-sm font-medium text-white/60 hover:text-white hidden sm:block transition-colors">Blog</Link>
-        <Link href="/pricing" className="text-sm font-medium text-white/60 hover:text-white hidden sm:block transition-colors">Pricing</Link>
-        <SignedOut>
-          <Link href="/login" className="text-sm font-medium text-white/60 hover:text-white transition-colors">Sign in</Link>
-          <Link href="/signup" className="ml-2 rounded-full bg-brand-600 px-5 py-2 text-sm font-bold text-white hover:bg-brand-700 transition-colors">
-            Get Started Free →
-          </Link>
-        </SignedOut>
-        <SignedIn>
-          <Link href="/dashboard" className="rounded-full bg-brand-600 px-5 py-2 text-sm font-bold text-white hover:bg-brand-700 transition-colors">
-            Open Dashboard →
-          </Link>
-        </SignedIn>
+
+        {/* Right: auth */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <SignedOut>
+            <Link href="/login" style={{
+              fontFamily: sans, fontSize: 15, fontWeight: 500,
+              color: '#0B1120', textDecoration: 'none',
+            }}>
+              Sign in
+            </Link>
+            <Link href="/signup" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '0 20px', height: 40, borderRadius: 12,
+              fontFamily: sans, fontSize: 14, fontWeight: 600,
+              background: grad, color: '#fff', textDecoration: 'none',
+              boxShadow: '0 6px 18px -6px rgba(0,0,255,0.5), inset 0 1px 0 rgba(255,255,255,0.2)',
+            }}>
+              Start Free →
+            </Link>
+          </SignedOut>
+          <SignedIn>
+            <Link href="/dashboard" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '0 20px', height: 40, borderRadius: 12,
+              fontFamily: sans, fontSize: 14, fontWeight: 600,
+              background: grad, color: '#fff', textDecoration: 'none',
+              boxShadow: '0 6px 18px -6px rgba(0,0,255,0.5), inset 0 1px 0 rgba(255,255,255,0.2)',
+            }}>
+              Open Dashboard →
+            </Link>
+          </SignedIn>
+        </div>
       </div>
-    </nav>
+    </header>
   )
 }
