@@ -105,7 +105,7 @@ function CheckoutButton({ productId, cta, featured }: { productId: string; cta: 
       disabled={loading}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        width: '100%', height: 52, borderRadius: 14, border: 'none', cursor: 'pointer',
+        width: '100%', height: 52, borderRadius: 14, cursor: 'pointer',
         fontFamily: T.sans, fontSize: 15, fontWeight: 600, letterSpacing: -0.2,
         background: featured ? T.grad : '#fff',
         color: featured ? '#fff' : T.ink,
