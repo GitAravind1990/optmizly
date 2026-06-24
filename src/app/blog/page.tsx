@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getAllPosts } from '@/lib/blog'
+import { PageHeader } from '@/components/page-header'
 
 export const metadata: Metadata = {
   title: 'Blog — SEO & AI Search Insights',
@@ -24,20 +25,7 @@ export default async function BlogPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 h-16">
-          <Link href="/" className="flex items-center gap-2 font-extrabold text-slate-900 text-lg tracking-tight">
-            <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm">◈</span>
-            Optmizly
-          </Link>
-          <div className="flex-1" />
-          <Link href="/blog" className="text-sm font-semibold text-blue-600">Blog</Link>
-          <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900">Pricing</Link>
-          <Link href="/signup" className="ml-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
-            Get Started Free →
-          </Link>
-        </div>
-      </nav>
+      <PageHeader />
 
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-4xl font-black tracking-tight text-slate-900 mb-3">Blog</h1>
