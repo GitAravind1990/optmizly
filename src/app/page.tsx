@@ -314,22 +314,16 @@ export default function HomePage() {
 
             {/* Link columns */}
             {[
-              ['Platform', ['AI SEO', 'GEO Optimization', 'AEO Optimization', 'Content Intelligence', 'Competitor Insights']],
-              ['Solutions', ['For Agencies', 'For SaaS', 'For Ecommerce', 'For Publishers', 'For Local Business']],
-              ['Resources', ['Blog', 'Pricing', 'Privacy Policy', 'Terms of Service']],
-              ['Company', ['About', 'Contact', 'hello@optmizly.com']],
+              ['Resources', [['Blog', '/blog'], ['Pricing', '/pricing'], ['Privacy Policy', '/privacy'], ['Terms of Service', '/terms'], ['Refund Policy', '/refund-policy']]],
+              ['Company', [['Contact', 'mailto:hello@optmizly.com']]],
             ].map(([h, items]) => (
               <div key={h as string}>
                 <div style={{ fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.ink, marginBottom: 16 }}>{h as string}</div>
-                {(items as string[]).map((item) => {
-                  const isEmail = item.includes('@')
-                  const href = isEmail ? `mailto:${item}` : item === 'Blog' ? '/blog' : item === 'Pricing' ? '/pricing' : item === 'Privacy Policy' ? '/privacy' : item === 'Terms of Service' ? '/terms' : '#'
-                  return (
-                    <div key={item} style={{ marginBottom: 10 }}>
-                      <a href={href} style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, textDecoration: 'none' }}>{item}</a>
-                    </div>
-                  )
-                })}
+                {(items as [string, string][]).map(([label, href]) => (
+                  <div key={label} style={{ marginBottom: 10 }}>
+                    <a href={href} style={{ fontFamily: T.sans, fontSize: 13, color: T.muted, textDecoration: 'none' }}>{label}</a>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
