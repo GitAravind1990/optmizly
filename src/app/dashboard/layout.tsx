@@ -213,7 +213,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Main content */}
         <main className="flex-1 overflow-hidden flex flex-col bg-slate-50">
-          {children}
+
+          {/* Top bar */}
+          <div className="flex-shrink-0 h-11 border-b border-slate-100 bg-white flex items-center justify-end gap-5 px-6">
+            {[
+              ['Blog', '/blog'],
+              ['Pricing', '/pricing'],
+              ['Help', 'mailto:hello@optmizly.com'],
+            ].map(([label, href]) => (
+              <Link key={label} href={href} className="text-xs font-medium text-slate-400 hover:text-slate-700 transition-colors">
+                {label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Page content */}
+          <div className="flex-1 overflow-auto">
+            {children}
+          </div>
+
+          {/* Footer */}
+          <div className="flex-shrink-0 border-t border-slate-100 bg-white px-6 h-9 flex items-center justify-between">
+            <span className="text-[11px] text-slate-300">© 2026 Optmizly</span>
+            <div className="flex items-center gap-4">
+              {[
+                ['Privacy', '/privacy'],
+                ['Terms', '/terms'],
+                ['Contact', 'mailto:hello@optmizly.com'],
+              ].map(([label, href]) => (
+                <Link key={label} href={href} className="text-[11px] text-slate-300 hover:text-slate-500 transition-colors">
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
         </main>
       </div>
     </ContentProvider>
