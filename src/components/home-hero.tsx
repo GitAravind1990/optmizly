@@ -113,7 +113,7 @@ function HeroDashboard() {
             background: '#fff', border: `1px solid ${T.line}`,
             borderRadius: 8, padding: '3px 16px',
           }}>
-            app.optmizly.com/dashboard
+            optmizly.com/dashboard
           </div>
         </div>
       </div>
