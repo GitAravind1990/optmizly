@@ -19,8 +19,26 @@ async function getProUser() {
   return user
 }
 
-function rand(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min
+function strHash(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619) >>> 0
+  }
+  return h
+}
+
+function seededRng(seed: number) {
+  let s = seed >>> 0
+  return () => {
+    s = Math.imul(s ^ (s >>> 15), s | 1)
+    s ^= s + Math.imul(s ^ (s >>> 7), s | 61)
+    return ((s ^ (s >>> 14)) >>> 0) / 0xffffffff
+  }
+}
+
+function rand(min: number, max: number, rng: () => number = Math.random) {
+  return Math.floor(rng() * (max - min + 1)) + min
 }
 
 function extractDomainName(url: string): string {
@@ -44,22 +62,25 @@ const BACKLINK_SOURCES = [
 ]
 
 function generateMockData(domainName: string) {
-  const traffic = rand(5000, 50000)
-  const da = rand(30, 80)
+  const rng = seededRng(strHash(domainName))
+  const r = (min: number, max: number) => rand(min, max, rng)
 
-  const shuffledKws = [...SAAS_KEYWORDS].sort(() => Math.random() - 0.5)
+  const traffic = r(5000, 50000)
+  const da = r(30, 80)
+
+  const shuffledKws = [...SAAS_KEYWORDS].sort(() => rng() - 0.5)
   const topKeywords = shuffledKws.slice(0, 20).map((kw, i) => ({
     keyword: kw,
     position: i + 1,
-    volume: rand(200, 8000),
+    volume: r(200, 8000),
     traffic: Math.floor(traffic * (0.15 - i * 0.006)),
   }))
 
-  const shuffledBL = [...BACKLINK_SOURCES].sort(() => Math.random() - 0.5)
+  const shuffledBL = [...BACKLINK_SOURCES].sort(() => rng() - 0.5)
   const topBacklinks = shuffledBL.slice(0, 8).map(domain => ({
     domain,
-    links: rand(2, 45),
-    da: rand(50, 95),
+    links: r(2, 45),
+    da: r(50, 95),
   }))
 
   const topPages = [
@@ -71,11 +92,11 @@ function generateMockData(domainName: string) {
   ]
 
   const gapKeywords = [
-    { keyword: 'ai seo tools', volume: rand(1000, 4000), difficulty: rand(20, 45) },
-    { keyword: 'seo content brief generator', volume: rand(500, 2000), difficulty: rand(15, 40) },
-    { keyword: 'topical authority seo', volume: rand(800, 3000), difficulty: rand(25, 50) },
-    { keyword: 'e-e-a-t seo checklist', volume: rand(300, 1500), difficulty: rand(20, 45) },
-    { keyword: 'semantic seo guide', volume: rand(600, 2500), difficulty: rand(30, 55) },
+    { keyword: 'ai seo tools', volume: r(1000, 4000), difficulty: r(20, 45) },
+    { keyword: 'seo content brief generator', volume: r(500, 2000), difficulty: r(15, 40) },
+    { keyword: 'topical authority seo', volume: r(800, 3000), difficulty: r(25, 50) },
+    { keyword: 'e-e-a-t seo checklist', volume: r(300, 1500), difficulty: r(20, 45) },
+    { keyword: 'semantic seo guide', volume: r(600, 2500), difficulty: r(30, 55) },
   ]
 
   const missingEntities = [
@@ -90,32 +111,32 @@ function generateMockData(domainName: string) {
     {
       title: 'AI-Powered SEO: Complete 2026 Guide',
       opportunity: 'Competitor has thin content on AI SEO — high search demand unmet',
-      traffic: rand(2000, 6000),
+      traffic: r(2000, 6000),
     },
     {
       title: 'Topical Authority vs Domain Authority: What Matters More',
       opportunity: 'Gap in comparison content for modern SEO metrics',
-      traffic: rand(1000, 3500),
+      traffic: r(1000, 3500),
     },
     {
       title: `Why ${domainName} Users Switch to Optmizly`,
       opportunity: 'Comparison/alternative pages drive high-intent traffic',
-      traffic: rand(500, 2000),
+      traffic: r(500, 2000),
     },
   ]
 
   return {
     traffic,
     da,
-    pa: Math.max(da - rand(0, 12), 20),
-    backlinksTotal: rand(500, 5000),
-    backlinksNew: rand(5, 50),
+    pa: Math.max(da - r(0, 12), 20),
+    backlinksTotal: r(500, 5000),
+    backlinksNew: r(5, 50),
     topKeywords,
-    keywordCount: rand(500, 5000),
+    keywordCount: r(500, 5000),
     topBacklinks,
     topPages,
-    contentCount: rand(50, 200),
-    avgContentLength: rand(2000, 3000),
+    contentCount: r(50, 200),
+    avgContentLength: r(2000, 3000),
     gapKeywords,
     missingEntities,
     contentOpps,

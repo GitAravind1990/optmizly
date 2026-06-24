@@ -19,10 +19,28 @@ async function getAgencyUser() {
   return user
 }
 
-function generateMockRankings(keywords: string[]) {
+function strHash(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619) >>> 0
+  }
+  return h
+}
+
+function seededRng(seed: number) {
+  let s = seed >>> 0
+  return () => {
+    s = Math.imul(s ^ (s >>> 15), s | 1)
+    s ^= s + Math.imul(s ^ (s >>> 7), s | 61)
+    return ((s ^ (s >>> 14)) >>> 0) / 0xffffffff
+  }
+}
+
+function generateMockRankings(keywords: string[], rng: () => number) {
   const data: Record<string, number> = {}
   for (const kw of keywords) {
-    data[kw] = Math.floor(Math.random() * 50) + 1
+    data[kw] = Math.floor(rng() * 50) + 1
   }
   const sorted = Object.entries(data).sort((a, b) => a[1] - b[1])
   const avgPosition = keywords.length
@@ -35,16 +53,16 @@ function generateMockRankings(keywords: string[]) {
   }
 }
 
-function generateMockTraffic() {
-  const current = Math.floor(Math.random() * 8000) + 2000
-  const change = Math.floor(Math.random() * 41) - 20
+function generateMockTraffic(rng: () => number) {
+  const current = Math.floor(rng() * 8000) + 2000
+  const change = Math.floor(rng() * 41) - 20
   return { current, previous: Math.round(current / (1 + change / 100)), change }
 }
 
-function generateMockBacklinks() {
+function generateMockBacklinks(rng: () => number) {
   return {
-    total: Math.floor(Math.random() * 4500) + 500,
-    new: Math.floor(Math.random() * 46) + 5,
+    total: Math.floor(rng() * 4500) + 500,
+    new: Math.floor(rng() * 46) + 5,
   }
 }
 
@@ -198,11 +216,12 @@ export async function POST(req: NextRequest) {
 
     const keywords: string[] = JSON.parse(client.trackKeywords || '[]')
 
-    const rankings = generateMockRankings(keywords)
-    const traffic = generateMockTraffic()
-    const backlinks = generateMockBacklinks()
-    const domainAuthority = Math.round(Math.random() * 30 + 30)
-    const pageAuthority = Math.round(Math.random() * 30 + 35)
+    const rng = seededRng(strHash(`${clientId}-${month}-${year}`))
+    const rankings = generateMockRankings(keywords, rng)
+    const traffic = generateMockTraffic(rng)
+    const backlinks = generateMockBacklinks(rng)
+    const domainAuthority = Math.round(rng() * 30 + 30)
+    const pageAuthority = Math.round(rng() * 30 + 35)
 
     const aiSummary = await callClaude(
       'You are a professional SEO analyst writing concise monthly reports for agency clients. Be data-driven, specific, and encouraging. Write in third person about the client.',

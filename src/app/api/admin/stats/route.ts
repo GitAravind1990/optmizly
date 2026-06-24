@@ -74,8 +74,8 @@ export async function GET(_req: NextRequest) {
     const totalInputTokens = tokenTotals._sum.totalInputTokens ?? 0;
     const totalOutputTokens = tokenTotals._sum.totalOutputTokens ?? 0;
     const totalTokens = totalInputTokens + totalOutputTokens;
-    // Groq haiku rates: $0.05/M input, $0.08/M output
-    const estimatedCost = (totalInputTokens * 0.05 + totalOutputTokens * 0.08) / 1_000_000;
+    // Anthropic claude-haiku-4-5 rates: $0.80/M input, $4.00/M output
+    const estimatedCost = (totalInputTokens * 0.80 + totalOutputTokens * 4.00) / 1_000_000;
 
     return NextResponse.json({
       revenue: { mrrByPlan, totalMRR, churnRate: churnRate.toFixed(1) },
