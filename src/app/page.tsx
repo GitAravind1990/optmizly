@@ -270,33 +270,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── USE CASES ── */}
-      <section style={{ background: T.bgSoft, borderTop: `1px solid ${T.line2}`, borderBottom: `1px solid ${T.line2}` }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
-          <SectionHead kicker="Use cases" title="Built for every kind of growth team." />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginTop: 56 }}>
-            {[
-              ['building', 'Agencies', 'Manage multiple clients efficiently from one dashboard.'],
-              ['layers', 'SaaS', 'Grow organic traffic and pipeline predictably.'],
-              ['store', 'Ecommerce', 'Increase product visibility across search & AI.'],
-              ['pin', 'Local Businesses', 'Rank in local map packs and AI search answers.'],
-              ['feather', 'Publishers', 'Scale content production without losing quality.'],
-            ].map(([ic, n, d]) => (
-              <div key={n} style={{ padding: 24, background: '#fff', border: `1px solid ${T.line}`, borderRadius: 20 }}>
-                <div style={{
-                  width: 42, height: 42, borderRadius: 12, background: T.blueSoft,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-                }}>
-                  <Icon name={ic} size={20} color={T.blue} />
-                </div>
-                <div style={{ fontFamily: T.sans, fontSize: 16, fontWeight: 600, letterSpacing: -0.3, color: T.ink, marginBottom: 7 }}>{n}</div>
-                <p style={{ fontSize: 13.5, lineHeight: 1.5, color: T.body, margin: 0 }}>{d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── TESTIMONIALS ── */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
         <SectionHead kicker="Testimonials" title="Growth teams future-proofing their search." />
