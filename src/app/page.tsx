@@ -120,7 +120,7 @@ export default function HomePage() {
         }}>
           Trusted by growth teams of every kind
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 72 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12 }}>
           {[
             ['building', 'Digital Agencies'],
             ['layers', 'SaaS Businesses'],
@@ -135,28 +135,6 @@ export default function HomePage() {
               fontFamily: T.sans, fontSize: 14, fontWeight: 500, color: T.ink2,
             }}>
               <Icon name={ic} size={17} color={T.blue} />{n}
-            </div>
-          ))}
-        </div>
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 24,
-          borderTop: `1px solid ${T.line2}`, borderBottom: `1px solid ${T.line2}`,
-          padding: '48px 0',
-        }}>
-          {[
-            ['10,000+', 'Keywords Optimized'],
-            ['2M+', 'Pages Analyzed'],
-            ['35%', 'Avg Traffic Growth'],
-            ['99.9%', 'Uptime'],
-          ].map(([v, l]) => (
-            <div key={l} style={{ textAlign: 'center' }}>
-              <div style={{
-                fontFamily: T.sans, fontSize: 'clamp(36px, 4vw, 48px)',
-                fontWeight: 600, letterSpacing: -2, lineHeight: 1,
-                background: T.gradText,
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-              }}>{v}</div>
-              <div style={{ fontFamily: T.sans, fontSize: 15, color: T.body, marginTop: 12 }}>{l}</div>
             </div>
           ))}
         </div>
@@ -265,45 +243,6 @@ export default function HomePage() {
                   <Icon name="arrow" size={12} color={T.blue} />
                 </div>
               )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── TESTIMONIALS ── */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
-        <SectionHead kicker="Testimonials" title="Growth teams future-proofing their search." />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginTop: 56 }}>
-          {[
-            { q: 'Optmizly helped us prepare for the future of search and improve our organic visibility across AI answers.', n: 'Marketing Director', r: 'SaaS Company', i: 'M', col: '#0000FF' },
-            { q: 'We finally rank inside ChatGPT and Perplexity, not just Google. GEO scoring changed how our team works.', n: 'Head of Growth', r: 'Ecommerce Brand', i: 'H', col: '#3B5BFF' },
-            { q: 'Managing SEO + GEO + AEO for 30 clients used to take a team. Now it\'s one dashboard.', n: 'Agency Founder', r: 'Digital Agency', i: 'A', col: '#28C8E8' },
-          ].map((t) => (
-            <div key={t.n} style={{
-              padding: 30, background: '#fff', border: `1px solid ${T.line}`,
-              borderRadius: 20, display: 'flex', flexDirection: 'column', gap: 20,
-            }}>
-              <div style={{ display: 'flex', gap: 3 }}>
-                {[0, 1, 2, 3, 4].map((s) => (
-                  <svg key={s} width="16" height="16" viewBox="0 0 24 24" fill="#FFB020" stroke="#FFB020" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" />
-                  </svg>
-                ))}
-              </div>
-              <p style={{ fontSize: 17, lineHeight: 1.5, color: T.ink, margin: 0, flex: 1, letterSpacing: -0.2 }}>
-                &ldquo;{t.q}&rdquo;
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 18, borderTop: `1px solid ${T.line2}` }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 999, background: t.col, color: '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: T.sans, fontSize: 15, fontWeight: 600, flexShrink: 0,
-                }}>{t.i}</div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{t.n}</div>
-                  <div style={{ fontSize: 13, color: T.muted }}>{t.r}</div>
-                </div>
-              </div>
             </div>
           ))}
         </div>
