@@ -24,13 +24,7 @@ export function PageHeader() {
         {/* Left: logo + nav */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 9, background: grad, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 12px -4px rgba(0,0,255,0.45)',
-            }}>
-              <span style={{ color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: sans }}>O</span>
-            </div>
+            <img src="/logo.png" alt="Optmizly" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }} />
             <span style={{ fontFamily: sans, fontWeight: 600, fontSize: 19, letterSpacing: -0.6, color: blue }}>
               optmizly
             </span>

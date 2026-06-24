@@ -124,8 +124,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Logo */}
           <div className="flex items-center gap-2.5 px-4 py-4 border-b border-slate-100">
             <Link href="/" className="flex items-center gap-2.5">
-              <span className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">O</span>
-              <span className="font-bold text-sm tracking-tight text-slate-900">Optmizly</span>
+              <img src="/logo.png" alt="Optmizly" className="w-7 h-7 object-contain flex-shrink-0" />
+              <span style={{ color: '#0000FF' }} className="font-semibold text-sm tracking-tight">optmizly</span>
             </Link>
           </div>
 

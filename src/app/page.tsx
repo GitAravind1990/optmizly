@@ -363,13 +363,7 @@ export default function HomePage() {
             {/* Brand */}
             <div style={{ gridColumn: 'span 1', maxWidth: 260 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
-                <div style={{
-                  width: 30, height: 30, borderRadius: 8,
-                  background: T.grad, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <span style={{ color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: T.sans }}>O</span>
-                </div>
+                <img src="/logo.png" alt="Optmizly" style={{ width: 30, height: 30, objectFit: 'contain', flexShrink: 0 }} />
                 <span style={{ fontFamily: T.sans, fontWeight: 600, fontSize: 18, letterSpacing: -0.5, color: T.blue }}>
                   optmizly
                 </span>
