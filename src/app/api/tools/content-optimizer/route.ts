@@ -139,9 +139,10 @@ export async function GET() {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     const optimizations = await prisma.contentOptimization.findMany({
-      where: { userId: user?.id },
+      where: { userId: user.id },
       orderBy: { analyzedAt: 'desc' },
       take: 20,
       select: { id: true, targetKeyword: true, overallScore: true, detectedIntent: true, analyzedAt: true },

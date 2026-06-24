@@ -54,8 +54,13 @@ export async function POST(req: NextRequest) {
 
     if (!email) {
       // Email missing from webhook payload — fetch directly from Clerk API
+      const clerkSecretKey = process.env.CLERK_SECRET_KEY
+      if (!clerkSecretKey) {
+        console.warn('[Clerk Webhook] CLERK_SECRET_KEY not set — cannot fetch user email')
+        return NextResponse.json({ received: true })
+      }
       const clerkUser = await fetch(`https://api.clerk.com/v1/users/${clerkId}`, {
-        headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
+        headers: { Authorization: `Bearer ${clerkSecretKey}` },
       }).then(r => r.json())
       email = clerkUser.email_addresses?.[0]?.email_address ?? ''
     }

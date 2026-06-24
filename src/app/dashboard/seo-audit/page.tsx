@@ -80,15 +80,23 @@ export default function SeoAuditPage() {
   useEffect(() => { loadAudits() }, [])
 
   async function loadAudits() {
-    const r = await fetch('/api/tools/seo-audit')
-    const d = await r.json()
-    if (d.data) setAudits(d.data)
+    try {
+      const r = await fetch('/api/tools/seo-audit')
+      const d = await r.json()
+      if (d.data) setAudits(d.data)
+    } catch {
+      // network error — leave existing data
+    }
   }
 
   async function loadAudit(id: string) {
-    const r = await fetch(`/api/tools/seo-audit?id=${id}`)
-    const d = await r.json()
-    if (d.data) { setCurrent(d.data); setExpanded(null); setView('result') }
+    try {
+      const r = await fetch(`/api/tools/seo-audit?id=${id}`)
+      const d = await r.json()
+      if (d.data) { setCurrent(d.data); setExpanded(null); setView('result') }
+    } catch {
+      // network error — stay on current view
+    }
   }
 
   async function runAudit() {

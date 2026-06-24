@@ -51,66 +51,92 @@ export default function LocalSEOAccountPage() {
   const [addingKw, setAddingKw] = useState(false)
 
   const load = useCallback(async () => {
-    const r = await fetch(`/api/tools/local-seo/accounts/${accountId}`)
-    const d = await r.json()
-    if (r.status === 404) { router.push('/dashboard/local-seo'); return }
-    if (d.data) {
-      setAccount(d.data)
-      if (!selectedLocation && d.data.locations.length > 0) setSelectedLocation(d.data.locations[0].id)
+    try {
+      const r = await fetch(`/api/tools/local-seo/accounts/${accountId}`)
+      const d = await r.json()
+      if (r.status === 404) { router.push('/dashboard/local-seo'); return }
+      if (d.data) {
+        setAccount(d.data)
+        if (!selectedLocation && d.data.locations.length > 0) setSelectedLocation(d.data.locations[0].id)
+      }
+    } catch {
+      // network error — leave existing state
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [accountId, router, selectedLocation])
 
   useEffect(() => { load() }, [load])
 
   async function checkRankings(locationId: string) {
     setCheckingLoc(locationId); setCheckMsg('')
-    const r = await fetch('/api/tools/local-seo/check-rankings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ locationId }),
-    })
-    const d = await r.json()
-    if (d.data) setCheckMsg(`Updated ${d.data.keywordsChecked} keywords`)
-    await load(); setCheckingLoc(null)
+    try {
+      const r = await fetch('/api/tools/local-seo/check-rankings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locationId }),
+      })
+      const d = await r.json()
+      if (d.data) setCheckMsg(`Updated ${d.data.keywordsChecked} keywords`)
+      await load()
+    } finally {
+      setCheckingLoc(null)
+    }
   }
 
   async function generateReply(locationId: string, reviewId: string) {
     setGeneratingReply(reviewId)
-    await fetch(`/api/tools/local-seo/locations/${locationId}/reviews`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reviewId, action: 'generate-response' }),
-    })
-    await load(); setGeneratingReply(null)
+    try {
+      await fetch(`/api/tools/local-seo/locations/${locationId}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewId, action: 'generate-response' }),
+      })
+      await load()
+    } finally {
+      setGeneratingReply(null)
+    }
   }
 
   async function updateTask(taskId: string, status: string) {
     setUpdatingTask(taskId)
-    await fetch(`/api/tools/local-seo/tasks/${taskId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
-    await load(); setUpdatingTask(null)
+    try {
+      await fetch(`/api/tools/local-seo/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      await load()
+    } finally {
+      setUpdatingTask(null)
+    }
   }
 
   async function deleteTask(taskId: string) {
     setUpdatingTask(taskId)
-    await fetch(`/api/tools/local-seo/tasks/${taskId}`, { method: 'DELETE' })
-    await load(); setUpdatingTask(null)
+    try {
+      await fetch(`/api/tools/local-seo/tasks/${taskId}`, { method: 'DELETE' })
+      await load()
+    } finally {
+      setUpdatingTask(null)
+    }
   }
 
   async function addKeywords(locationId: string) {
     const kws = addKwText.split('\n').map(k => k.trim()).filter(Boolean)
     if (!kws.length) return
     setAddingKw(true)
-    await fetch(`/api/tools/local-seo/locations/${locationId}/keywords`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keywords: kws }),
-    })
-    setAddKwText(''); await load(); setAddingKw(false)
+    try {
+      await fetch(`/api/tools/local-seo/locations/${locationId}/keywords`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keywords: kws }),
+      })
+      setAddKwText('')
+      await load()
+    } finally {
+      setAddingKw(false)
+    }
   }
 
   if (loading) return <div className="flex-1 flex items-center justify-center text-slate-400">Loading...</div>

@@ -30,10 +30,15 @@ export default function LocalSEOPage() {
 
   async function load() {
     setLoading(true)
-    const r = await fetch('/api/tools/local-seo/accounts')
-    const d = await r.json()
-    if (d.data) setAccounts(d.data)
-    setLoading(false)
+    try {
+      const r = await fetch('/api/tools/local-seo/accounts')
+      const d = await r.json()
+      if (d.data) setAccounts(d.data)
+    } catch {
+      // network error — leave existing data
+    } finally {
+      setLoading(false)
+    }
   }
 
   function updateLoc(i: number, field: keyof LocForm, val: string) {
@@ -61,9 +66,12 @@ export default function LocalSEOPage() {
 
   async function deleteAccount(id: string) {
     setDeleting(id)
-    await fetch(`/api/tools/local-seo/accounts/${id}`, { method: 'DELETE' })
-    setAccounts(prev => prev.filter(a => a.id !== id))
-    setDeleting(null)
+    try {
+      await fetch(`/api/tools/local-seo/accounts/${id}`, { method: 'DELETE' })
+      setAccounts(prev => prev.filter(a => a.id !== id))
+    } finally {
+      setDeleting(null)
+    }
   }
 
   const avgRating = (locs: Location[]) => {

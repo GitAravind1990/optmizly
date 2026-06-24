@@ -183,18 +183,28 @@ export function BacklinksClient() {
 
   async function loadAnalyses() {
     setLoadingAnalyses(true)
-    const r = await fetch('/api/tools/backlinks/domain-analysis')
-    const d = await r.json()
-    if (Array.isArray(d)) setAnalyses(d)
-    setLoadingAnalyses(false)
+    try {
+      const r = await fetch('/api/tools/backlinks/domain-analysis')
+      const d = await r.json()
+      if (Array.isArray(d)) setAnalyses(d)
+    } catch {
+      // network error — leave existing data
+    } finally {
+      setLoadingAnalyses(false)
+    }
   }
 
   async function loadProjects() {
     setLoadingProjects(true)
-    const r = await fetch('/api/tools/backlinks')
-    const d = await r.json()
-    if (Array.isArray(d)) setProjects(d)
-    setLoadingProjects(false)
+    try {
+      const r = await fetch('/api/tools/backlinks')
+      const d = await r.json()
+      if (Array.isArray(d)) setProjects(d)
+    } catch {
+      // network error — leave existing data
+    } finally {
+      setLoadingProjects(false)
+    }
   }
 
   async function runAnalysis() {

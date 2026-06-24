@@ -15,9 +15,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
   }
 
-  // Create client with webhook key for signature verification
+  const dodoApiKey = process.env.DODO_API_KEY
+  if (!dodoApiKey) {
+    console.error('[Dodo Webhook] DODO_API_KEY not set')
+    return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
+  }
+
   const dodoWebhook = new DodoPayments({
-    bearerToken: process.env.DODO_API_KEY!,
+    bearerToken: dodoApiKey,
     webhookKey: webhookSecret,
   })
 
