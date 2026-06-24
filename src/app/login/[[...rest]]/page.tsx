@@ -21,8 +21,8 @@ export default function SignInPage() {
       {/* Left panel — branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 p-12 text-white">
         <Link href="/" className="flex items-center gap-2.5 font-extrabold text-white text-xl tracking-tight w-fit">
-          <span className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white text-base">◈</span>
-          Optmizly
+          <img src="/logo.png" alt="Optmizly" className="w-9 h-9 object-contain flex-shrink-0" />
+          optmizly
         </Link>
 
         <div>
@@ -62,8 +62,8 @@ export default function SignInPage() {
       <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 px-6 py-12">
         {/* Mobile logo */}
         <Link href="/" className="flex items-center gap-2 font-extrabold text-slate-900 text-lg tracking-tight mb-10 lg:hidden">
-          <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm">◈</span>
-          Optmizly
+          <img src="/logo.png" alt="Optmizly" className="w-8 h-8 object-contain flex-shrink-0" />
+          optmizly
         </Link>
 
         <div className="w-full max-w-md">

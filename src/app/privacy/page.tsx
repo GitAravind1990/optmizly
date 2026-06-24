@@ -1,5 +1,6 @@
 ﻿import Link from 'next/link'
 import type { Metadata } from 'next'
+import { PageHeader } from '@/components/page-header'
 
 export const metadata: Metadata = { title: 'Privacy Policy – Optmizly' }
 
@@ -61,11 +62,7 @@ const sections = [
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-white">
-      <nav className="border-b border-slate-200 px-6 h-14 flex items-center gap-4">
-        <Link href="/" className="font-extrabold text-slate-900">◈ Optmizly</Link>
-        <div className="flex-1" />
-        <Link href="/dashboard" className="text-sm text-slate-500 hover:text-slate-900">Dashboard</Link>
-      </nav>
+      <PageHeader />
 
       <div className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-4xl font-black mb-2">Privacy Policy</h1>
