@@ -49,50 +49,21 @@ function Icon({ name, size = 18, color = 'currentColor', strokeWidth = 1.8 }: {
   )
 }
 
-// ── Score ring gauge ──────────────────────────────────────────────────────────
-function ScoreRing({ label, value, color, delta }: {
-  label: string; value: number; color: string; delta: string
-}) {
-  const r = 30
-  const c = 2 * Math.PI * r
-  const off = c * (1 - value / 100)
+// ── Lock icon ─────────────────────────────────────────────────────────────────
+function LockIcon() {
   return (
-    <div style={{
-      background: '#fff', border: `1px solid ${T.line}`, borderRadius: 16,
-      padding: '18px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-    }}>
-      <div style={{ position: 'relative', width: 78, height: 78 }}>
-        <svg width="78" height="78" viewBox="0 0 78 78">
-          <circle cx="39" cy="39" r={r} fill="none" stroke={T.line} strokeWidth="7" />
-          <circle cx="39" cy="39" r={r} fill="none" stroke={color} strokeWidth="7"
-            strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round"
-            transform="rotate(-90 39 39)" />
-        </svg>
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <span style={{ fontFamily: T.sans, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: -0.5 }}>
-            {value}
-          </span>
-        </div>
-      </div>
-      <div style={{ fontFamily: T.sans, fontSize: 13, fontWeight: 600, color: T.ink }}>{label}</div>
-      <div style={{ fontFamily: T.sans, fontSize: 11, color: T.good, fontWeight: 500 }}>▲ {delta}</div>
-    </div>
+    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round" style={{ flexShrink: 0 }}>
+      <rect x="2" y="5.5" width="8" height="5.5" rx="1" />
+      <path d="M4 5.5V4a2 2 0 014 0v1.5" />
+    </svg>
   )
 }
 
 // ── Dashboard mock ────────────────────────────────────────────────────────────
 function HeroDashboard() {
-  const sidebar = [
-    ['grid', 'Dashboard', true],
-    ['sparkle', 'AI SEO', false],
-    ['bot', 'GEO', false],
-    ['search', 'AEO', false],
-    ['cluster', 'Keywords', false],
-    ['bars', 'Competitors', false],
-  ] as const
+  const freeTools = ['Content Analyzer', 'On-Page SEO']
+  const proTools  = ['Content Planner', 'Rank Tracker', 'Content Optimizer', 'AI Visibility']
+  const agencyTools = ['SEO Audit', 'SERP Audit', 'Performance Fixer']
 
   return (
     <div style={{
@@ -119,95 +90,166 @@ function HeroDashboard() {
       </div>
 
       {/* Content */}
-      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', height: 472 }}>
-        {/* Sidebar */}
+      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', height: 480 }}>
+
+        {/* ── Sidebar ── */}
         <div style={{
-          background: T.bgSoft, borderRight: `1px solid ${T.line2}`,
-          padding: '18px 14px', display: 'flex', flexDirection: 'column', gap: 4,
+          background: '#fff', borderRight: `1px solid ${T.line2}`,
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
-          <div style={{ padding: '0 8px 14px', marginBottom: 4, fontFamily: T.sans, fontWeight: 600, fontSize: 16, letterSpacing: -0.6, color: T.blue }}>
-            optmizly
-          </div>
-          {sidebar.map(([ic, lbl, active]) => (
-            <div key={lbl} style={{
-              display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px',
-              borderRadius: 9, fontSize: 13, fontFamily: T.sans,
-              fontWeight: active ? 600 : 500,
-              color: active ? T.blue : T.body,
-              background: active ? T.blueSoft : 'transparent',
-            }}>
-              <Icon name={ic} size={16} color={active ? T.blue : T.muted} />
-              {lbl}
-            </div>
-          ))}
+          {/* Logo */}
           <div style={{
-            marginTop: 'auto', padding: 12, borderRadius: 12,
-            background: '#fff', border: `1px solid ${T.line}`,
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '12px 14px', borderBottom: `1px solid ${T.line2}`,
           }}>
-            <div style={{ fontSize: 11, color: T.muted, marginBottom: 6, fontFamily: T.sans }}>Visibility index</div>
-            <div style={{ fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: -0.6, fontFamily: T.sans }}>
-              88
-              <span style={{ fontSize: 13, color: T.good, fontWeight: 500, marginLeft: 6 }}>+12</span>
+            <img src="/logo.png" alt="" style={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0 }} />
+            <span style={{ fontFamily: T.sans, fontWeight: 600, fontSize: 13, color: T.blue }}>optmizly</span>
+          </div>
+
+          {/* Plan usage */}
+          <div style={{ padding: '9px 14px', borderBottom: `1px solid ${T.line2}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: T.ink, fontFamily: T.sans }}>Free Plan</span>
+              <span style={{ fontSize: 10, color: T.muted, fontFamily: T.sans }}>1 / 3</span>
+            </div>
+            <div style={{ height: 3, borderRadius: 2, background: T.line2 }}>
+              <div style={{ height: '100%', width: '33%', background: T.blue, borderRadius: 2 }} />
+            </div>
+            <div style={{ fontSize: 9, color: T.muted, marginTop: 3, fontFamily: T.sans }}>2 analyses remaining</div>
+          </div>
+
+          {/* Nav */}
+          <div style={{ flex: 1, padding: '6px 8px', overflowY: 'hidden' }}>
+            {/* FREE */}
+            <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1, color: '#10B981', padding: '6px 6px 3px', fontFamily: T.sans }}>FREE</div>
+            {freeTools.map((label, i) => (
+              <div key={label} style={{
+                display: 'flex', alignItems: 'center', padding: '5px 8px',
+                borderRadius: 6, marginBottom: 1, fontSize: 10, fontFamily: T.sans,
+                fontWeight: i === 0 ? 600 : 400,
+                color: i === 0 ? '#fff' : '#64748B',
+                background: i === 0 ? T.blue : 'transparent',
+              }}>
+                {label}
+              </div>
+            ))}
+
+            {/* PRO */}
+            <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1, color: T.blue, padding: '8px 6px 3px', fontFamily: T.sans }}>PRO</div>
+            {proTools.map(label => (
+              <div key={label} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '5px 8px', borderRadius: 6, marginBottom: 1,
+                fontSize: 10, fontFamily: T.sans, color: '#CBD5E1',
+              }}>
+                <span>{label}</span><LockIcon />
+              </div>
+            ))}
+
+            {/* AGENCY */}
+            <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1, color: '#D97706', padding: '8px 6px 3px', fontFamily: T.sans }}>AGENCY</div>
+            {agencyTools.map(label => (
+              <div key={label} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '5px 8px', borderRadius: 6, marginBottom: 1,
+                fontSize: 10, fontFamily: T.sans, color: '#CBD5E1',
+              }}>
+                <span>{label}</span><LockIcon />
+              </div>
+            ))}
+          </div>
+
+          {/* Upgrade button */}
+          <div style={{ padding: '10px 10px', borderTop: `1px solid ${T.line2}` }}>
+            <div style={{
+              background: T.blue, color: '#fff', borderRadius: 7,
+              padding: '6px 0', textAlign: 'center',
+              fontSize: 10, fontWeight: 600, fontFamily: T.sans,
+            }}>
+              Upgrade to Pro →
             </div>
           </div>
         </div>
 
-        {/* Main panel */}
-        <div style={{ padding: '20px 22px', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: T.ink, letterSpacing: -0.3, fontFamily: T.sans }}>
-                Search Visibility Overview
-              </div>
-              <div style={{ fontSize: 12, color: T.muted, marginTop: 2, fontFamily: T.sans }}>
-                optmizly.com · last 30 days
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <span style={{ fontSize: 11, fontWeight: 500, color: T.body, border: `1px solid ${T.line}`, borderRadius: 8, padding: '5px 10px', fontFamily: T.sans }}>30d</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#fff', background: T.blue, borderRadius: 8, padding: '5px 10px', fontFamily: T.sans }}>Optimize all</span>
-            </div>
+        {/* ── Main: Content Analyzer ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', background: T.bgSoft }}>
+          {/* Top bar */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 14,
+            padding: '0 16px', height: 34, borderBottom: `1px solid ${T.line2}`, background: '#fff',
+            fontSize: 10, color: T.muted, fontFamily: T.sans, flexShrink: 0,
+          }}>
+            {['Blog', 'Pricing', 'Help'].map(l => <span key={l}>{l}</span>)}
           </div>
 
-          {/* Score rings */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 14 }}>
-            <ScoreRing label="SEO Score" value={92} color="#0000FF" delta="6 pts" />
-            <ScoreRing label="GEO Score" value={78} color="#3B5BFF" delta="14 pts" />
-            <ScoreRing label="AEO Score" value={84} color="#28C8E8" delta="9 pts" />
-          </div>
-
-          {/* Bottom row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {/* Chart */}
-            <div style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, padding: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: T.ink, marginBottom: 2, fontFamily: T.sans }}>Ranking Improvements</div>
-              <div style={{ fontSize: 11, color: T.good, marginBottom: 10, fontFamily: T.sans }}>+35% organic traffic</div>
-              <svg width="100%" height="92" viewBox="0 0 240 92" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="dashFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor="#3B5BFF" stopOpacity="0.22" />
-                    <stop offset="1" stopColor="#3B5BFF" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path d="M0 78 L40 70 L80 72 L120 54 L160 40 L200 30 L240 14 L240 92 L0 92 Z" fill="url(#dashFill)" />
-                <path d="M0 78 L40 70 L80 72 L120 54 L160 40 L200 30 L240 14"
-                  fill="none" stroke="#0000FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+          {/* Tool area */}
+          <div style={{ flex: 1, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 7, overflow: 'hidden' }}>
+            {/* URL row */}
+            <div style={{ display: 'flex', gap: 7, flexShrink: 0 }}>
+              <div style={{
+                flex: 1, border: `1px solid ${T.line}`, borderRadius: 7, background: '#fff',
+                height: 32, padding: '0 10px', display: 'flex', alignItems: 'center',
+                fontSize: 10, color: T.muted, fontFamily: T.sans,
+              }}>
+                Paste a URL to fetch and analyze automatically
+              </div>
+              <div style={{
+                background: '#F59E0B', color: '#fff', borderRadius: 7,
+                height: 32, padding: '0 10px', display: 'flex', alignItems: 'center',
+                fontSize: 10, fontWeight: 600, fontFamily: T.sans, whiteSpace: 'nowrap',
+              }}>
+                Fetch &amp; Analyse
+              </div>
             </div>
-            {/* Suggestions */}
-            <div style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, padding: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: T.ink, marginBottom: 10, fontFamily: T.sans }}>Content Suggestions</div>
-              {[
-                ['Add FAQ schema for AI Overviews', '#0000FF'],
-                ['Target 3 answer-engine queries', '#28C8E8'],
-                ['Strengthen E-E-A-T signals', '#3B5BFF'],
-              ].map(([s, col]) => (
-                <div key={s} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 9 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: 4, background: col, marginTop: 5, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: T.ink2, lineHeight: 1.35, fontFamily: T.sans }}>{s}</span>
-                </div>
-              ))}
-              <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: T.blue, fontFamily: T.sans }}>Apply 9 fixes →</div>
+
+            {/* Divider */}
+            <div style={{ textAlign: 'center', fontSize: 9, color: T.muted, fontFamily: T.sans, flexShrink: 0 }}>
+              or paste text below
+            </div>
+
+            {/* Textarea */}
+            <div style={{
+              border: `1px solid ${T.line}`, borderRadius: 7, background: '#fff',
+              padding: '8px 10px', height: 88, flexShrink: 0,
+              fontSize: 10, color: T.muted, fontFamily: T.sans,
+            }}>
+              Paste your article, blog post, or page content here...
+            </div>
+
+            {/* Analyse row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <span style={{ fontSize: 9, color: T.muted, fontFamily: T.sans }}>0 characters</span>
+              <div style={{
+                background: T.blue, color: '#fff', borderRadius: 7,
+                padding: '5px 14px', fontSize: 10, fontWeight: 600, fontFamily: T.sans,
+              }}>
+                Analyse →
+              </div>
+            </div>
+
+            {/* Empty state */}
+            <div style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 7,
+            }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 9, background: T.line2,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke={T.muted} strokeWidth="1.5" strokeLinecap="round">
+                  <rect x="2" y="1" width="11" height="13" rx="1.5" />
+                  <line x1="5" y1="5" x2="10" y2="5" />
+                  <line x1="5" y1="8" x2="10" y2="8" />
+                  <line x1="5" y1="11" x2="8" y2="11" />
+                </svg>
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.ink, fontFamily: T.sans }}>Ready to analyse</div>
+              <div style={{
+                fontSize: 10, color: T.muted, textAlign: 'center',
+                maxWidth: 220, lineHeight: 1.5, fontFamily: T.sans,
+              }}>
+                Paste content or fetch a URL above, then click Analyse to get your full content score.
+              </div>
             </div>
           </div>
         </div>
