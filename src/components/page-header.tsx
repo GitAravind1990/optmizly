@@ -31,11 +31,8 @@ export function PageHeader() {
           </Link>
           <nav style={{ display: 'flex', gap: 26, fontFamily: sans, fontSize: 15, fontWeight: 500 }}>
             {[
-              ['Platform', '#'],
-              ['Solutions', '#'],
               ['Pricing', '/pricing'],
               ['Blog', '/blog'],
-              ['Docs', '#'],
             ].map(([label, href]) => (
               <Link key={label} href={href} style={{ color: '#4B5563', textDecoration: 'none' }}>
                 {label}
