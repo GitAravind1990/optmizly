@@ -62,9 +62,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           {post.title}
         </h1>
 
-        <p className="text-lg text-slate-500 leading-relaxed mb-10 pb-10 border-b border-slate-100">
+        <p className="text-lg text-slate-500 leading-relaxed mb-8">
           {post.description}
         </p>
+
+        <div className="flex items-center gap-3 mb-10 pb-10 border-b border-slate-100">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center text-white text-sm font-bold shrink-0">
+            {post.author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">{post.author}</p>
+            <p className="text-xs text-slate-400">{post.authorTitle}</p>
+          </div>
+        </div>
 
         <div className="prose prose-slate prose-headings:font-bold prose-headings:tracking-tight prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-code:bg-slate-100 prose-code:px-1 prose-code:rounded prose-code:text-sm prose-strong:text-slate-900 max-w-none">
           {post.contentType === 'html'

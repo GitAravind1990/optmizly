@@ -9,6 +9,8 @@ export interface PostMeta {
   category: string
   featuredImage?: string | null
   tags?: string
+  author: string
+  authorTitle: string
 }
 
 export interface Post extends PostMeta {
@@ -21,7 +23,7 @@ export async function getAllPosts(): Promise<PostMeta[]> {
     const posts = await prisma.blogPost.findMany({
       where: { published: true },
       orderBy: { publishedAt: 'desc' },
-      select: { slug: true, title: true, description: true, publishedAt: true, readingTime: true, category: true, featuredImage: true, tags: true },
+      select: { slug: true, title: true, description: true, publishedAt: true, readingTime: true, category: true, featuredImage: true, tags: true, author: true, authorTitle: true },
     })
     return posts.map(p => ({ ...p, date: p.publishedAt?.toISOString().split('T')[0] ?? '' }))
   } catch {

@@ -282,6 +282,8 @@ model BlogPost {
   tags          String    @default("") // comma-separated
   featuredImage String?
   readingTime   String    @default("5 min read")
+  author        String    @default("Aravindraj")
+  authorTitle   String    @default("Founder, Optmizly")
   published     Boolean   @default(false)
   publishedAt   DateTime?
   scheduledAt   DateTime?

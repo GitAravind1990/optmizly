@@ -49,9 +49,17 @@ export default async function BlogPage() {
                 </h2>
                 <p className="text-slate-500 text-sm leading-relaxed">{post.description}</p>
               </Link>
-              <Link href={`/blog/${post.slug}`} className="inline-flex items-center gap-1 mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700">
-                Read article →
-              </Link>
+              <div className="flex items-center justify-between mt-4">
+                <Link href={`/blog/${post.slug}`} className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700">
+                  Read article →
+                </Link>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {post.author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <span className="text-xs text-slate-500">{post.author}</span>
+                </div>
+              </div>
             </article>
           ))}
         </div>
