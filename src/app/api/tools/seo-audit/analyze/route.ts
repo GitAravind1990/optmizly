@@ -2,6 +2,7 @@
 import { requireAuth } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
+import { validateUrl } from '@/lib/ssrf-guard'
 import { runAutoChecks, type AutoCheckContext, type RedirectHop, type AutoCheckResult } from '@/lib/seo-audit/auto-checks'
 import { AUDIT_FRAMEWORK, AI_CATEGORY_KEYS, TOTAL_CHECKS, type CheckStatus } from '@/lib/seo-audit/framework'
 import { fetchOPRScore } from '@/lib/openpagerank'
@@ -38,6 +39,7 @@ async function fetchWithRedirects(url: string, timeoutMs = 12000): Promise<Fetch
       redirects.push({ status: res.status, url: current })
       if (!loc) break
       current = new URL(loc, current).toString()
+      await validateUrl(current)  // block redirects to internal/private addresses
       continue
     }
     break
@@ -102,6 +104,9 @@ export async function POST(req: NextRequest) {
       auditUrl = url.trim()
       if (!/^https?:\/\//i.test(auditUrl)) auditUrl = 'https://' + auditUrl
       try { new URL(auditUrl) } catch { return apiError({ message: 'Invalid URL', status: 400, name: 'ValidationError' }) }
+      try { await validateUrl(auditUrl) } catch (e) {
+        return apiError({ message: e instanceof Error ? e.message : 'Invalid URL', status: 400, name: 'ValidationError' })
+      }
 
       page = await fetchWithRedirects(auditUrl)
       if (!page.html || page.html.length < 50) {
