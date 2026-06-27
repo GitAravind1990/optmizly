@@ -16,6 +16,7 @@ const securityHeaders = [
 ]
 
 const nextConfig = {
+  poweredByHeader: false,
   serverExternalPackages: ['@prisma/client'],
   eslint: {
     ignoreDuringBuilds: true,
