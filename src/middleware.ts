@@ -22,11 +22,30 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
 
 const IS_PROD = process.env.NODE_ENV === 'production'
 
+function buildCSP(nonce: string): string {
+  return [
+    "default-src 'self'",
+    // Modern browsers: 'nonce-...' + 'strict-dynamic' enforces nonce; 'unsafe-inline' is ignored.
+    // Older browsers: 'unsafe-inline' acts as fallback (strict-dynamic not understood).
+    // Host sources: last-resort fallback for browsers that understand neither.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https://cdn.clerk.com https://*.clerk.com https://maps.googleapis.com`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https://img.clerk.com https://maps.gstatic.com https://maps.googleapis.com https://*.google.com",
+    "font-src 'self' data:",
+    "connect-src 'self' https://api.clerk.com https://*.clerk.com wss://*.clerk.com https://maps.googleapis.com",
+    "frame-src 'self' https://*.clerk.com",
+    "worker-src blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "upgrade-insecure-requests",
+  ].join('; ')
+}
+
 export default clerkMiddleware(async (_auth, req: NextRequest) => {
   if (req.nextUrl.pathname.startsWith('/api/')) {
     if (!rateLimiter) {
-      // In production, missing Upstash config means rate limiting is broken — fail closed.
-      // In development, allow through so local work isn't blocked.
       if (IS_PROD) {
         return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 503 })
       }
@@ -42,7 +61,17 @@ export default clerkMiddleware(async (_auth, req: NextRequest) => {
     }
   }
 
-  return NextResponse.next()
+  // Per-request nonce. Next.js reads x-nonce from request headers and automatically
+  // adds nonce="..." to its own inline RSC hydration scripts.
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+  const csp = buildCSP(nonce)
+
+  const requestHeaders = new Headers(req.headers)
+  requestHeaders.set('x-nonce', nonce)
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  response.headers.set('content-security-policy', csp)
+  return response
 })
 
 export const config = {

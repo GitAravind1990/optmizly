@@ -23,7 +23,7 @@ function StubClerkProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function ClerkProviderWrapper({ children }: { children: ReactNode }) {
+export function ClerkProviderWrapper({ children, nonce }: { children: ReactNode; nonce?: string }) {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 
   // If no Clerk key is available, use stub provider for dev
@@ -31,7 +31,7 @@ export function ClerkProviderWrapper({ children }: { children: ReactNode }) {
     return <StubClerkProvider>{children}</StubClerkProvider>
   }
 
-  return <ClerkProvider publishableKey={publishableKey}>{children}</ClerkProvider>
+  return <ClerkProvider publishableKey={publishableKey} nonce={nonce}>{children}</ClerkProvider>
 }
 
 import { useAuth } from '@clerk/nextjs'

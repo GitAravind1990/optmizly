@@ -2,6 +2,7 @@
 import { ClerkProviderWrapper } from '@/components/clerk-provider'
 import { CookieBanner } from '@/components/cookie-banner'
 import { Inter } from 'next/font/google'
+import { headers } from 'next/headers'
 import './globals.css'
 
 export const dynamic = 'force-dynamic'
@@ -50,11 +51,13 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased bg-white text-slate-900`}>
-        <ClerkProviderWrapper>
+        <ClerkProviderWrapper nonce={nonce}>
           {children}
           <CookieBanner />
         </ClerkProviderWrapper>
