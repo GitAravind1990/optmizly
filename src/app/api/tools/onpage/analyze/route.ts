@@ -305,7 +305,7 @@ Rules:
     // Fetch previous score if re-analyzing
     let previousScore: number | null = null
     if (previousAnalysisId) {
-      const prev = await prisma.onPageAnalysis.findUnique({ where: { id: previousAnalysisId } })
+      const prev = await prisma.onPageAnalysis.findFirst({ where: { id: previousAnalysisId, userId: user.id } })
       previousScore = prev?.overallScore ?? null
     }
 
