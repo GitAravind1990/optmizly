@@ -362,7 +362,7 @@ function SERPTab({ result }: { result: RankingResult }) {
 }
 
 function GapsTab({ result }: { result: RankingResult }) {
-  const { website, competitors, topical } = result
+  const { website, competitors } = result
   const gapEntries = Object.entries(website.gaps) as [string, number][]
 
   const userScoreFor: Record<string, number> = {
@@ -373,12 +373,20 @@ function GapsTab({ result }: { result: RankingResult }) {
     technical: website.technical_score,
   }
 
+  // Derive competitor 0-100 scores from the gap values.
+  // authority/content/topical/technical gaps are in the same 0-100 scale as the user scores.
+  // backlinks gap is raw referring-domain count, so use a log scale against avg_rd instead.
   const compScoreFor: Record<string, number> = {
-    authority: competitors.avg_da,
-    backlinks: Math.min(100, competitors.avg_rd / 10),
-    content: Math.min(100, competitors.avg_words / 30),
-    topical: topical.semantic_score,
-    technical: Math.min(100, competitors.avg_da * 0.8),
+    authority: Math.min(100, Math.max(0, website.da_score - website.gaps.authority)),
+    backlinks: Math.min(100, Math.round(Math.log10(Math.max(2, competitors.avg_rd)) * 26)),
+    content:   Math.min(100, Math.max(0, website.content_score   - website.gaps.content)),
+    topical:   Math.min(100, Math.max(0, website.topical_score   - website.gaps.topical)),
+    technical: Math.min(100, Math.max(0, website.technical_score - website.gaps.technical)),
+  }
+
+  function gapBadge(key: string, gap: number): string {
+    if (key === 'backlinks') return gap < 0 ? `-${fmt(Math.abs(gap))} RDs` : `+${fmt(gap)} RDs`
+    return gap < 0 ? `${gap} gap` : `+${gap} advantage`
   }
 
   return (
@@ -395,7 +403,7 @@ function GapsTab({ result }: { result: RankingResult }) {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-slate-700">{GAP_LABELS[key] ?? key}</span>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isDeficit ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                    {isDeficit ? `${gap} gap` : `+${gap} advantage`}
+                    {gapBadge(key, gap)}
                   </span>
                 </div>
                 <div className="space-y-1.5">
