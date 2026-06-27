@@ -2,8 +2,6 @@ import { clerkMiddleware } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Upstash-backed rate limiter — only active when env vars are set.
-// Falls back to no limiting if not configured (avoids breaking the site).
 let rateLimiter: ((ip: string) => Promise<{ success: boolean }>) | null = null
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
@@ -22,15 +20,25 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   rateLimiter = (ip: string) => ratelimit.limit(ip)
 }
 
+const IS_PROD = process.env.NODE_ENV === 'production'
+
 export default clerkMiddleware(async (_auth, req: NextRequest) => {
-  if (req.nextUrl.pathname.startsWith('/api/') && rateLimiter) {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1'
-    const { success } = await rateLimiter(ip)
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Too many requests — slow down.' },
-        { status: 429, headers: { 'Retry-After': '60' } }
-      )
+  if (req.nextUrl.pathname.startsWith('/api/')) {
+    if (!rateLimiter) {
+      // In production, missing Upstash config means rate limiting is broken — fail closed.
+      // In development, allow through so local work isn't blocked.
+      if (IS_PROD) {
+        return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 503 })
+      }
+    } else {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1'
+      const { success } = await rateLimiter(ip)
+      if (!success) {
+        return NextResponse.json(
+          { error: 'Too many requests — slow down.' },
+          { status: 429, headers: { 'Retry-After': '60' } }
+        )
+      }
     }
   }
 
