@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth('gap')
     const { content, summary } = await req.json()
-    const raw = await callClaude(SYSTEM, `Find content gaps. Topic: ${summary ?? ''}.\n\n${content.slice(0, 3000)}`, 2000)
+    const raw = await callClaude(SYSTEM, `Find content gaps.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`, 2000)
     return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
   } catch (e) {
     return apiError(e)

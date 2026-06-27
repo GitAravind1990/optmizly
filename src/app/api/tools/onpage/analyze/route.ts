@@ -258,8 +258,9 @@ export async function POST(req: NextRequest) {
         'You are an expert on-page SEO consultant. Return ONLY valid JSON — no markdown, no backticks.',
         `Generate specific, actionable SEO fixes for this page. Target keyword: "${targetKeyword}"
 
-Content snippet (first 1500 chars):
+<content>
 ${contentSnippet}
+</content>
 
 Issues detected:
 ${allIssues.slice(0, 10).join('\n')}

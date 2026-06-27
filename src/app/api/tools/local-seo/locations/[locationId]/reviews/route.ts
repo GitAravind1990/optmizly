@@ -38,7 +38,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ loc
       const system = `You are a professional business owner responding to customer reviews for ${location.name} in ${location.city}, ${location.state}. Write professional, empathetic responses. Return ONLY the response text, no quotes, no explanation.`
 
       const prompt = `Review (${review.rating}/5 stars) from ${review.author ?? 'a customer'}:
-"${review.reviewText}"
+<review>
+${review.reviewText}
+</review>
 
 Write a 2-3 sentence response:
 - 4-5 stars: thank them warmly and invite them back

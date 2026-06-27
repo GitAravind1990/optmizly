@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth('eeat')
     const { content, summary } = await req.json()
-    const raw = await callClaude(SYSTEM, `Analyse for E-E-A-T. Topic: ${summary ?? ''}.\n\n${content.slice(0, 3000)}`, 1200)
+    const raw = await callClaude(SYSTEM, `Analyse for E-E-A-T.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`, 1200)
     return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
   } catch (e) {
     return apiError(e)

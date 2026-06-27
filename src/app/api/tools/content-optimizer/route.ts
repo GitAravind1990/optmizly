@@ -163,7 +163,9 @@ function parseJSON<T>(text: string, fallback: T): T {
 async function analyzeSearchIntent(content: string, keyword: string) {
   const prompt = `Analyze this content for search intent matching the keyword "${keyword}".
 
-Content: ${content.slice(0, 3000)}
+<content>
+${content.slice(0, 3000)}
+</content>
 
 Return ONLY valid JSON:
 {
@@ -182,7 +184,9 @@ Return ONLY valid JSON:
 async function analyzeEntities(content: string, keyword: string) {
   const prompt = `Analyze entities in this content for the topic "${keyword}".
 
-Content: ${content.slice(0, 3000)}
+<content>
+${content.slice(0, 3000)}
+</content>
 
 Return ONLY valid JSON:
 {
@@ -200,7 +204,9 @@ Return ONLY valid JSON:
 async function analyzeLsiKeywords(content: string, keyword: string) {
   const prompt = `Identify LSI keywords for content about "${keyword}".
 
-Content: ${content.slice(0, 3000)}
+<content>
+${content.slice(0, 3000)}
+</content>
 
 Return ONLY valid JSON:
 {
@@ -217,7 +223,9 @@ Return ONLY valid JSON:
 async function generateSchemaMarkup(content: string, keyword: string) {
   const prompt = `Generate JSON-LD schema markup for this content about "${keyword}".
 
-Content: ${content.slice(0, 3000)}
+<content>
+${content.slice(0, 3000)}
+</content>
 
 Return ONLY valid JSON:
 {
@@ -233,7 +241,9 @@ Return ONLY valid JSON:
 async function analyzeTopicCoverage(content: string, keyword: string) {
   const prompt = `Analyze topic coverage for content about "${keyword}".
 
-Content: ${content.slice(0, 3000)}
+<content>
+${content.slice(0, 3000)}
+</content>
 
 Return ONLY valid JSON:
 {
@@ -255,7 +265,9 @@ Return ONLY valid JSON:
 async function analyzeEEAT(content: string, keyword: string) {
   const prompt = `Analyze E-E-A-T for this content about "${keyword}".
 
-Content: ${content.slice(0, 3000)}
+<content>
+${content.slice(0, 3000)}
+</content>
 
 Return ONLY valid JSON:
 {
@@ -279,7 +291,9 @@ Return ONLY valid JSON:
 async function generateImprovements(content: string, keyword: string) {
   const prompt = `Suggest specific improvements for this content about "${keyword}".
 
-Content: ${content.slice(0, 3000)}
+<content>
+${content.slice(0, 3000)}
+</content>
 
 Return ONLY valid JSON:
 {

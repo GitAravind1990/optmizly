@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
     if (!eeatResult?.overall) {
       const eeatRaw = await callClaude(
         EEAT_SYSTEM,
-        `Analyse for E-E-A-T. Topic: ${summary ?? ''}.\n\n${content.slice(0, 3000)}`,
+        `Analyse for E-E-A-T.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`,
         1200,
         'claude-sonnet-4-6'
       )
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
     // Step 2: Full rewrite with higher token limit
     const raw = await callClaude(
       REWRITE_SYSTEM(`${eeatFindings}\n\nRECOMMENDATIONS TO APPLY:\n${eeatRecs}`),
-      `Rewrite this content following the high-performance SEO framework. Write the COMPLETE article, do not truncate:\n\n${content.slice(0, 6000)}`,
+      `Rewrite the content below following the high-performance SEO framework. Write the COMPLETE article, do not truncate:\n<content>\n${content.slice(0, 6000)}\n</content>`,
       6000,
       'claude-sonnet-4-6'
     )

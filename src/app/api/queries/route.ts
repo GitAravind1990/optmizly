@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth('queries')
     const { content, summary } = await req.json()
-    const raw = await callClaude(SYSTEM, `Map AI search queries. Topic: ${summary ?? ''}.\n\n${content.slice(0, 3000)}`, 2000)
+    const raw = await callClaude(SYSTEM, `Map AI search queries.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`, 2000)
     return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
   } catch (e) {
     return apiError(e)

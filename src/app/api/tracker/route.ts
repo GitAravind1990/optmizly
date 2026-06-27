@@ -29,11 +29,14 @@ Rules:
 - NEVER leave any string empty or any array empty`
 
     const prompt = `Analyse this content for AI citation potential:
-
+<content>
 ${content.slice(0, 2500)}
+</content>
 
 Evaluate for these queries (one result per query):
-${queries.slice(0, 4).map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')}`
+<queries>
+${queries.slice(0, 4).map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')}
+</queries>`
     const raw = await callClaude(system, prompt, 4000)
     return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
   } catch (e) {

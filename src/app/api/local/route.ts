@@ -35,10 +35,10 @@ export async function POST(req: NextRequest) {
     const system = SYSTEMS[subTool](ctx, city)
 
     const prompts: Record<string, string> = {
-      entities: `Analyze local entity gaps:\n\n${content.slice(0, 4500)}`,
-      nap: `Audit NAP and generate schema:\n\n${content.slice(0, 4000)}`,
-      queries: `Map local AI queries for:\nBusiness: ${businessName}\nLocation: ${city}\nService: ${service}\n\nContent:\n${content.slice(0, 4000)}`,
-      gbp: `Generate GBP content for:\nBusiness: ${businessName}\nLocation: ${city}\nService: ${service}\n\nContent:\n${content.slice(0, 3500)}`,
+      entities: `Analyze local entity gaps:\n<content>\n${content.slice(0, 4500)}\n</content>`,
+      nap: `Audit NAP and generate schema:\n<content>\n${content.slice(0, 4000)}\n</content>`,
+      queries: `Map local AI queries for:\nBusiness: ${businessName}\nLocation: ${city}\nService: ${service}\n\n<content>\n${content.slice(0, 4000)}\n</content>`,
+      gbp: `Generate GBP content for:\nBusiness: ${businessName}\nLocation: ${city}\nService: ${service}\n\n<content>\n${content.slice(0, 3500)}\n</content>`,
     }
 
     const raw = await callClaude(system, prompts[subTool], 2500)

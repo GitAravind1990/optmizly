@@ -162,7 +162,9 @@ Word count: ${wordCount}
 Detected schema types: ${schemaTypes.length ? [...new Set(schemaTypes)].join(', ') : 'none'}
 
 Page text (first 4000 chars):
+<page_content>
 ${bodyText.slice(0, 4000)}
+</page_content>
 
 Score these dimensions:
 - "eeat": Experience, Expertise, Authoritativeness, Trust (author bios, credentials, citations, disclaimers, trust signals)
