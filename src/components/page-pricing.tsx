@@ -123,7 +123,7 @@ function CheckoutButton({ productId, cta, featured }: { productId: string; cta: 
 
 export function PagePricing() {
   return (
-    <section id="pricing" style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
+    <section id="pricing" style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(64px,8vw,120px) clamp(20px,4vw,32px)' }}>
       {/* Section head */}
       <div style={{ textAlign: 'center', maxWidth: 720, margin: '0 auto' }}>
         <div style={{
@@ -141,13 +141,19 @@ export function PagePricing() {
         </p>
       </div>
 
+      <style>{`
+        @media (max-width: 639px) {
+          .pricing-card-featured { transform: none !important; }
+        }
+      `}</style>
+
       {/* Cards */}
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
         gap: 22, marginTop: 60, alignItems: 'start',
       }}>
         {plans.map((p) => (
-          <div key={p.name} style={{
+          <div key={p.name} className={p.featured ? 'pricing-card-featured' : ''} style={{
             padding: 32, borderRadius: 24, position: 'relative', overflow: 'hidden',
             background: p.featured ? T.ink900 : '#fff',
             color: p.featured ? '#fff' : T.ink,

@@ -90,10 +90,10 @@ function HeroDashboard() {
       </div>
 
       {/* Content */}
-      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', height: 480 }}>
+      <div className="hero-mock-grid" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', height: 480 }}>
 
         {/* ── Sidebar ── */}
-        <div style={{
+        <div className="hero-mock-sidebar" style={{
           background: '#fff', borderRight: `1px solid ${T.line2}`,
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
@@ -288,13 +288,19 @@ export function HomeHero() {
           100% { transform: translateX(-50%) translateY(26px) scale(1.07); }
         }
         @media (prefers-reduced-motion: reduce) { .opt-glow { animation: none; } }
+        @media (max-width: 639px) {
+          .hero-text { padding: 56px 20px 0 !important; }
+          .hero-mock-wrap { padding: 0 16px !important; }
+          .hero-mock-sidebar { display: none !important; }
+          .hero-mock-grid { grid-template-columns: 1fr !important; height: 320px !important; }
+        }
       `}</style>
 
       <div className="opt-grid" />
       <div className="opt-glow" />
 
       {/* Text block */}
-      <div style={{
+      <div className="hero-text" style={{
         position: 'relative', zIndex: 1,
         maxWidth: 1100, margin: '0 auto', padding: '96px 32px 0', textAlign: 'center',
       }}>
@@ -384,7 +390,7 @@ export function HomeHero() {
       </div>
 
       {/* Dashboard window */}
-      <div style={{
+      <div className="hero-mock-wrap" style={{
         position: 'relative', zIndex: 1,
         maxWidth: 1080, margin: '0 auto', padding: '0 32px',
       }}>

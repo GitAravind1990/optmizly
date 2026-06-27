@@ -109,11 +109,23 @@ function SectionHead({ kicker, title, body, align = 'center', dark = false, maxW
 export default function HomePage() {
   return (
     <div style={{ background: T.bg, color: T.ink, fontFamily: T.sans }}>
+      <style>{`
+        @media (max-width: 639px) {
+          .opt-s  { padding-left: 20px !important; padding-right: 20px !important; }
+          .opt-sy { padding-top: 64px !important; padding-bottom: 64px !important; }
+          .opt-sy0 { padding-top: 48px !important; padding-bottom: 0 !important; }
+          .opt-step-arrow { display: none !important; }
+          .opt-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
+          .opt-footer-brand { grid-column: span 2 !important; }
+          .opt-footer-bottom { flex-direction: column !important; gap: 16px !important; }
+          .opt-cta-pad { padding: 64px 20px !important; }
+        }
+      `}</style>
       <PageHeader />
       <HomeHero />
 
       {/* ── TRUSTED ── */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px 0' }}>
+      <section className="opt-s opt-sy0" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px 0' }}>
         <div style={{
           textAlign: 'center', fontFamily: T.mono, fontSize: 12,
           color: T.muted, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 28,
@@ -141,7 +153,7 @@ export default function HomePage() {
       </section>
 
       {/* ── PROBLEM ── */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
+      <section className="opt-s opt-sy" style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
         <SectionHead
           kicker="The shift"
           title="Search has changed. Traditional SEO isn't enough."
@@ -179,7 +191,7 @@ export default function HomePage() {
 
       {/* ── FEATURES ── */}
       <section style={{ background: T.bgSoft, borderTop: `1px solid ${T.line2}`, borderBottom: `1px solid ${T.line2}` }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
+        <div className="opt-s opt-sy" style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
           <SectionHead
             kicker="The platform"
             title="One platform for the future of search."
@@ -214,7 +226,7 @@ export default function HomePage() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
+      <section className="opt-s opt-sy" style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 32px' }}>
         <SectionHead kicker="How Optmizly works" title="From audit to growth in four steps." />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginTop: 60, position: 'relative' }}>
           {[
@@ -234,7 +246,7 @@ export default function HomePage() {
               <div style={{ fontFamily: T.sans, fontSize: 20, fontWeight: 600, letterSpacing: -0.5, color: T.ink, marginBottom: 8 }}>{t}</div>
               <p style={{ fontSize: 14, lineHeight: 1.55, color: T.body, margin: 0 }}>{d}</p>
               {i < 3 && (
-                <div style={{
+                <div className="opt-step-arrow" style={{
                   position: 'absolute', right: -12, top: '50%', zIndex: 2,
                   width: 24, height: 24, borderRadius: 999, background: '#fff',
                   border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center',
@@ -260,7 +272,7 @@ export default function HomePage() {
         }} />
         <div style={{
           position: 'relative', maxWidth: 820, margin: '0 auto',
-          padding: 'clamp(80px, 10vw, 130px) 32px', textAlign: 'center',
+          padding: 'clamp(64px, 10vw, 130px) clamp(20px, 4vw, 32px)', textAlign: 'center',
         }}>
           <h2 style={{
             fontFamily: T.sans, fontSize: 'clamp(36px, 5vw, 60px)',
@@ -297,10 +309,10 @@ export default function HomePage() {
 
       {/* ── FOOTER ── */}
       <footer style={{ background: T.bgSoft, borderTop: `1px solid ${T.line2}` }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 32px 40px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 40, marginBottom: 48 }}>
+        <div className="opt-s" style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 32px 40px' }}>
+          <div className="opt-footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 40, marginBottom: 48 }}>
             {/* Brand */}
-            <div style={{ gridColumn: 'span 1', maxWidth: 260 }}>
+            <div className="opt-footer-brand" style={{ gridColumn: 'span 1', maxWidth: 260 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
                 <img src="/logo.png" alt="Optmizly" style={{ width: 30, height: 30, objectFit: 'contain', flexShrink: 0 }} />
                 <span style={{ fontFamily: T.sans, fontWeight: 600, fontSize: 18, letterSpacing: -0.5, color: T.blue }}>
@@ -328,7 +340,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div style={{
+          <div className="opt-footer-bottom" style={{
             borderTop: `1px solid ${T.line2}`, paddingTop: 24,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             flexWrap: 'wrap', gap: 12, fontFamily: T.sans, fontSize: 13, color: T.muted,

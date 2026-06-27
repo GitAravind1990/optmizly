@@ -90,11 +90,14 @@ const TIER_BADGE: Record<string, string> = {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [usage, setUsage] = useState<UsageData | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
 
   useEffect(() => {
     fetch('/api/user').then(r => r.json()).then(setUsage).catch(() => {})
   }, [])
+
+  useEffect(() => { setSidebarOpen(false) }, [pathname])
 
   const plan = usage?.plan ?? 'FREE'
   const pct  = usage ? Math.min(100, (usage.count / usage.limit) * 100) : 0
@@ -118,8 +121,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <ContentProvider>
       <div className="flex h-screen overflow-hidden bg-white">
 
+        {/* Mobile sidebar backdrop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/20 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* ── Sidebar ── */}
-        <aside className="w-60 flex-shrink-0 border-r border-slate-100 bg-white overflow-y-auto flex flex-col">
+        <aside className={`fixed inset-y-0 left-0 z-50 w-60 flex-shrink-0 border-r border-slate-100 bg-white overflow-y-auto flex flex-col transition-transform duration-200 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
 
           {/* Logo */}
           <div className="flex items-center gap-2.5 px-4 py-4 border-b border-slate-100">
@@ -215,7 +226,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-hidden flex flex-col bg-slate-50">
 
           {/* Top bar */}
-          <div className="flex-shrink-0 h-11 border-b border-slate-100 bg-white flex items-center justify-end gap-5 px-6">
+          <div className="flex-shrink-0 h-11 border-b border-slate-100 bg-white flex items-center gap-3 px-4 md:px-6">
+            <button
+              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors flex-shrink-0"
+              onClick={() => setSidebarOpen(o => !o)}
+              aria-label="Toggle sidebar"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+              </svg>
+            </button>
+            <div className="flex-1 flex items-center justify-end gap-5">
             {[
               ['Blog', '/blog'],
               ['Pricing', '/pricing'],
@@ -225,6 +246,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {label}
               </Link>
             ))}
+            </div>
           </div>
 
           {/* Page content */}
