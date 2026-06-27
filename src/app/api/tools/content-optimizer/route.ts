@@ -1,39 +1,18 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import { callClaude as callClaudeShared, setTrackingUser } from '@/lib/anthropic';
+import { callClaude as callClaudeShared } from '@/lib/anthropic';
+import { requireAuth, AuthError } from '@/lib/auth';
 
 export const maxDuration = 60;
 
-const QUOTA: Record<string, number> = { FREE: 3, PRO: 50, AGENCY: 200 };
-
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await requireAuth('content-optimizer')
 
     const { content, targetKeyword, contentUrl } = await req.json();
     if (!content || !targetKeyword) {
       return NextResponse.json({ error: 'Content and target keyword are required' }, { status: 400 });
-    }
-
-    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 401 });
-    setTrackingUser(user.id);
-    const limit = QUOTA[user.plan] ?? 3;
-
-    const monthlyCount = await prisma.contentOptimization.count({
-      where: {
-        userId: user.id,
-        analyzedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-      },
-    });
-
-    if (monthlyCount >= limit) {
-      return NextResponse.json(
-        { error: `Quota exceeded. ${user.plan} plan allows ${limit} analyses/month.` },
-        { status: 429 }
-      );
     }
 
     // Run all 7 analyses in parallel
@@ -59,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     const optimization = await prisma.contentOptimization.create({
       data: {
-        userId: user.id,
+        userId: user.userId,
         content,
         targetKeyword,
         contentUrl: contentUrl || null,
@@ -128,6 +107,9 @@ export async function POST(req: NextRequest) {
       improvements,
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('Content Optimizer error:', error);
     return NextResponse.json({ error: 'Analysis failed' }, { status: 500 });
   }
