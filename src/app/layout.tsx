@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from 'next'
 import { ClerkProviderWrapper } from '@/components/clerk-provider'
+import { CookieBanner } from '@/components/cookie-banner'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} font-sans antialiased bg-white text-slate-900`}>
         <ClerkProviderWrapper>
           {children}
+          <CookieBanner />
         </ClerkProviderWrapper>
       </body>
     </html>
