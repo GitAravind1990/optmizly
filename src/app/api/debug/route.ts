@@ -1,10 +1,7 @@
-﻿import { auth } from '@clerk/nextjs/server'
-import { prisma } from '@/lib/prisma'
-import { NextRequest } from 'next/server'
+﻿import { NextRequest } from 'next/server'
+import { requireAdmin } from '@/lib/adminAuth'
 
 export const runtime = 'nodejs'
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'gkm.aravind@gmail.com'
 
 function check(key: string) {
   const val = process.env[key]
@@ -12,13 +9,8 @@ function check(key: string) {
 }
 
 export async function GET(_req: NextRequest) {
-  const { userId } = await auth()
-  if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } })
-  if (user?.email !== ADMIN_EMAIL) {
-    return Response.json({ error: 'Admin only' }, { status: 403 })
-  }
+  const admin = await requireAdmin()
+  if (!admin.ok) return Response.json({ error: admin.error }, { status: admin.status })
 
   return Response.json({
     DATABASE_URL:                     check('DATABASE_URL'),

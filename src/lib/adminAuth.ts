@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'gkm.aravind@gmail.com'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL
 
 export async function requireAdmin(): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
   const { userId } = await auth()

@@ -1,18 +1,11 @@
-﻿import { auth } from '@clerk/nextjs/server';
-import { prisma } from '@/lib/prisma';
+﻿import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'gkm.aravind@gmail.com';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-    if (user?.email !== ADMIN_EMAIL) {
-      return NextResponse.json({ error: 'Admin only' }, { status: 403 });
-    }
+    const admin = await requireAdmin();
+    if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
     const { searchParams } = new URL(req.url);
     const plan = searchParams.get('plan') as 'FREE' | 'PRO' | 'AGENCY' | null;

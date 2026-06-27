@@ -1,15 +1,9 @@
-﻿import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'gkm.aravind@gmail.com';
+﻿import { redirect } from 'next/navigation';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { userId } = await auth();
-  if (!userId) redirect('/login');
-
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-  if (user?.email !== ADMIN_EMAIL) redirect('/');
+  const result = await requireAdmin();
+  if (!result.ok) redirect(result.status === 401 ? '/login' : '/');
 
   return (
     <div className="min-h-screen bg-gray-50">
