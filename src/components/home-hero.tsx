@@ -263,15 +263,7 @@ export function HomeHero() {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', background: '#fff' }}>
       <style>{`
-        .opt-grid {
-          position: absolute; inset: 0; z-index: 0; pointer-events: none;
-          background-image:
-            linear-gradient(#EEF1F6 1px, transparent 1px),
-            linear-gradient(90deg, #EEF1F6 1px, transparent 1px);
-          background-size: 56px 56px;
-          -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 22%, #000 35%, transparent 78%);
-          mask-image: radial-gradient(ellipse 70% 65% at 50% 22%, #000 35%, transparent 78%);
-        }
+        .opt-grid { display: none; }
         .opt-glow {
           position: absolute; left: 50%; top: -120px; z-index: 0; pointer-events: none;
           width: 1100px; height: 620px; transform: translateX(-50%);
