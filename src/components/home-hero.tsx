@@ -303,6 +303,7 @@ export function HomeHero() {
           background: T.blueSoft, color: T.blueDark,
           border: `1px solid ${T.blueBorder}`,
           fontFamily: T.sans, fontSize: 13, fontWeight: 500,
+          whiteSpace: 'nowrap',
         }}>
           <span style={{ width: 7, height: 7, borderRadius: 4, background: T.blue }} />
           Now optimizing for ChatGPT, Gemini &amp; Perplexity
