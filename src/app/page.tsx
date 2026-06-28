@@ -119,6 +119,10 @@ export default function HomePage() {
           .opt-footer-brand { grid-column: span 2 !important; }
           .opt-footer-bottom { flex-direction: column !important; gap: 16px !important; }
           .opt-cta-pad { padding: 64px 20px !important; }
+          .opt-trusted-chips { flex-direction: column !important; align-items: stretch !important; }
+          .opt-trusted-chips > div { justify-content: center !important; }
+          .opt-check-chips { flex-direction: column !important; align-items: stretch !important; }
+          .opt-check-chips > div { justify-content: center !important; }
         }
       `}</style>
       <PageHeader />
@@ -132,7 +136,7 @@ export default function HomePage() {
         }}>
           Trusted by growth teams of every kind
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <div className="opt-trusted-chips" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12 }}>
           {[
             ['building', 'Digital Agencies'],
             ['layers', 'SaaS Businesses'],
@@ -159,7 +163,7 @@ export default function HomePage() {
           title="Search has changed. Traditional SEO isn't enough."
           body="Your customers now find answers across Google, AI assistants, and answer engines. Modern brands need visibility on every surface — not just the ten blue links."
         />
-        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12, marginTop: 56 }}>
+        <div className="opt-check-chips" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12, marginTop: 56 }}>
           {[
             ['google', 'Google Search'],
             ['sparkle', 'AI Overviews'],

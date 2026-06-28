@@ -179,7 +179,7 @@ function HeroDashboard() {
             padding: '0 16px', height: 34, borderBottom: `1px solid ${T.line2}`, background: '#fff',
             fontSize: 10, color: T.muted, fontFamily: T.sans, flexShrink: 0,
           }}>
-            {['Blog', 'Pricing', 'Help'].map(l => <span key={l}>{l}</span>)}
+            {['Help'].map(l => <span key={l}>{l}</span>)}
           </div>
 
           {/* Tool area */}
@@ -285,6 +285,7 @@ export function HomeHero() {
           .hero-mock-wrap { padding: 0 16px !important; }
           .hero-mock-sidebar { display: none !important; }
           .hero-mock-grid { grid-template-columns: 1fr !important; height: 320px !important; }
+          .opt-trust { flex-direction: column !important; gap: 12px !important; align-items: center !important; }
         }
       `}</style>
 
@@ -369,7 +370,7 @@ export function HomeHero() {
         </div>
 
         {/* Trust line */}
-        <div style={{
+        <div className="opt-trust" style={{
           fontSize: 14, color: T.muted, display: 'flex',
           justifyContent: 'center', gap: 22, flexWrap: 'wrap', marginBottom: 56,
           fontFamily: T.sans,
