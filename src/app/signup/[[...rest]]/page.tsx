@@ -8,41 +8,41 @@ export const metadata: Metadata = {
 }
 
 const perks = [
-  { icon: '🆓', text: '3 free analyses every month — no card needed' },
-  { icon: '⚡', text: 'Detect & fix content issues automatically' },
-  { icon: '🔭', text: 'AI visibility: get cited by ChatGPT & Perplexity' },
-  { icon: '🏆', text: 'E-E-A-T scoring built for Google\'s quality signals' },
-  { icon: '📈', text: 'SERP audit, topical maps & backlink finder' },
+  '3 free analyses every month — no card needed',
+  'Rank on Google, ChatGPT, Gemini, Claude & Perplexity',
+  'E-E-A-T scoring built for Google quality signals',
+  'AI-powered content optimizer & full rewriter',
+  'SERP audit, topical maps & backlink finder',
 ]
 
 export default function SignUpPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 p-12 text-white">
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white" style={{ background: 'linear-gradient(135deg, #020818 0%, #07112E 50%, #0000AA 100%)' }}>
         <Link href="/" className="flex items-center gap-2.5 font-extrabold text-white text-xl tracking-tight w-fit">
           <img src="/logo.png" alt="Optmizly" className="w-9 h-9 object-contain flex-shrink-0" />
           optmizly
         </Link>
 
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-500/10 px-4 py-1.5 text-xs font-bold text-blue-300 mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/40 bg-blue-400/10 px-4 py-1.5 text-xs font-bold text-blue-300 mb-6">
             Free plan — no credit card required
           </div>
           <h1 className="text-4xl font-black leading-tight mb-4">
-            Start ranking<br />
-            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              smarter today.
+            Rank higher everywhere<br />
+            <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+              search happens.
             </span>
           </h1>
           <p className="text-slate-300 text-lg mb-10 leading-relaxed max-w-sm">
-            11 AI-powered SEO tools that detect AND fix your content — used by content teams, SEOs, and agencies.
+            17 AI-powered tools for SEO, GEO & AEO — optimize once, rank everywhere.
           </p>
 
           <ul className="space-y-4">
-            {perks.map(({ icon, text }) => (
+            {perks.map((text) => (
               <li key={text} className="flex items-center gap-3 text-slate-200 text-sm">
-                <span className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-base flex-shrink-0">{icon}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4DEEFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><path d="M5 12l5 5L20 7"/></svg>
                 {text}
               </li>
             ))}

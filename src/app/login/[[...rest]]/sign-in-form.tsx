@@ -19,6 +19,7 @@ export function SignInForm() {
   return (
     <ClerkSignIn
       forceRedirectUrl="/auth-redirect"
+      signUpUrl="/signup"
       appearance={{
         elements: {
           rootBox: 'w-full',

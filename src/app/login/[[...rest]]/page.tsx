@@ -8,18 +8,18 @@ export const metadata: Metadata = {
 }
 
 const features = [
-  { icon: '📊', text: 'Content scoring across 8 dimensions' },
-  { icon: '⚡', text: 'AI-powered content optimizer & rewriter' },
-  { icon: '🔭', text: 'AI visibility — get cited by ChatGPT & Perplexity' },
-  { icon: '🏆', text: 'E-E-A-T deep analysis' },
-  { icon: '🗺️', text: 'Topical authority mapper with cluster calendar' },
+  'Content scoring across 8 dimensions',
+  'Rank on Google, ChatGPT, Gemini, Claude & Perplexity',
+  'E-E-A-T deep analysis for quality signals',
+  'AI-powered content optimizer & full rewriter',
+  'Topical authority mapper with cluster calendar',
 ]
 
 export default function SignInPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 p-12 text-white">
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white" style={{ background: 'linear-gradient(135deg, #020818 0%, #07112E 50%, #0000AA 100%)' }}>
         <Link href="/" className="flex items-center gap-2.5 font-extrabold text-white text-xl tracking-tight w-fit">
           <img src="/logo.png" alt="Optmizly" className="w-9 h-9 object-contain flex-shrink-0" />
           optmizly
@@ -27,19 +27,19 @@ export default function SignInPage() {
 
         <div>
           <h1 className="text-4xl font-black leading-tight mb-4">
-            Rank higher.<br />
-            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              Get cited by AI.
+            Rank higher everywhere<br />
+            <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+              search happens.
             </span>
           </h1>
           <p className="text-slate-300 text-lg mb-10 leading-relaxed max-w-sm">
-            The only platform that detects <em>and</em> fixes content issues — 11 specialist tools in one dashboard.
+            17 AI-powered tools for SEO, GEO & AEO — optimize once, rank everywhere.
           </p>
 
           <ul className="space-y-4">
-            {features.map(({ icon, text }) => (
+            {features.map((text) => (
               <li key={text} className="flex items-center gap-3 text-slate-200 text-sm">
-                <span className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-base flex-shrink-0">{icon}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4DEEFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><path d="M5 12l5 5L20 7"/></svg>
                 {text}
               </li>
             ))}
@@ -48,7 +48,7 @@ export default function SignInPage() {
 
         <div className="border-t border-white/10 pt-8">
           <div className="flex gap-8">
-            {[['11', 'AI tools'], ['8', 'Score dims'], ['3', 'Plan tiers']].map(([n, l]) => (
+            {[['17', 'AI tools'], ['8', 'Score dims'], ['3', 'Plan tiers']].map(([n, l]) => (
               <div key={l}>
                 <div className="text-2xl font-black">{n}</div>
                 <div className="text-xs text-slate-400 mt-0.5">{l}</div>
