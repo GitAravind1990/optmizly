@@ -309,7 +309,7 @@ export function HomeHero() {
         }}>
           <span style={{ width: 7, height: 7, borderRadius: 4, background: T.blue, flexShrink: 0 }} />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Now optimizing for ChatGPT, Gemini &amp; Perplexity
+            Now optimizing for ChatGPT, Gemini, Claude &amp; Perplexity
           </span>
           <Icon name="arrow" size={13} color={T.blue} />
         </div>

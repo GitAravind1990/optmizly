@@ -169,6 +169,7 @@ export default function HomePage() {
             ['sparkle', 'AI Overviews'],
             ['bot', 'ChatGPT'],
             ['sparkle', 'Gemini'],
+            ['feather', 'Claude'],
             ['search', 'Perplexity'],
             ['mic', 'Voice Search'],
             ['target', 'Answer Engines'],
