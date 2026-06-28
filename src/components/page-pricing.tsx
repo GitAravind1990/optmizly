@@ -52,6 +52,7 @@ const plans = [
       'Content Optimizer + Full Rewrite',
       'E-E-A-T deep analysis',
       'Relevant Backlinks finder',
+      'AI Ranking Engine',
       'AI Visibility (Citation + Queries)',
       'Priority support',
     ],
