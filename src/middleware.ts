@@ -22,6 +22,8 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
 
 const IS_PROD = process.env.NODE_ENV === 'production'
 
+const REPORT_URI = '/api/csp-report'
+
 function buildCSP(nonce: string): string {
   return [
     "default-src 'self'",
@@ -40,6 +42,8 @@ function buildCSP(nonce: string): string {
     "form-action 'self'",
     "frame-ancestors 'none'",
     "upgrade-insecure-requests",
+    `report-uri ${REPORT_URI}`,
+    "report-to csp-endpoint",
   ].join('; ')
 }
 
@@ -71,6 +75,11 @@ export default clerkMiddleware(async (_auth, req: NextRequest) => {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } })
   response.headers.set('content-security-policy', csp)
+  // report-to (CSP Level 3, Chrome/Edge); report-uri above covers Firefox/Safari
+  response.headers.set(
+    'reporting-endpoints',
+    `csp-endpoint="${REPORT_URI}"`
+  )
   return response
 })
 
