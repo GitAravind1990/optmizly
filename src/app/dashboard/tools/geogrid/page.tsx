@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { APIProvider, Map, AdvancedMarker, Pin, useMapsLibrary } from '@vis.gl/react-google-maps'
 import { GridStats } from '@/components/geogrid/GridStats'
 import { ReviewVelocity, type ReviewData } from '@/components/geogrid/ReviewVelocity'
@@ -104,8 +105,11 @@ function GridMapInline({ grid, center, businessName }: { grid: RankedGridPoint[]
 
 // ─── Inner page content (must be inside APIProvider) ──────────────────────────
 function GeogridContent() {
+  const searchParams = useSearchParams()
   const [plan, setPlan] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('geogrid')
+  const [tab, setTab] = useState<Tab>(() =>
+    searchParams.get('tab') === 'review-velocity' ? 'review-velocity' : 'geogrid'
+  )
 
   // Geogrid state
   const [biz, setBiz]         = useState('')

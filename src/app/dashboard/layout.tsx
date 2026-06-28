@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { UserButton } from '@clerk/nextjs'
 import { ContentProvider } from '@/context/ContentContext'
 
@@ -96,6 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     fetch('/api/user').then(r => r.json()).then(setUsage).catch(() => {})
@@ -106,16 +107,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const plan = usage?.plan ?? 'FREE'
   const pct  = usage ? Math.min(100, (usage.count / usage.limit) * 100) : 0
 
+  const isGeogridPath = pathname === '/dashboard/tools/geogrid'
+
   function isActive(tool: Tool) {
-    if (tool.id === 'content-analyzer') return pathname === '/dashboard'
-    if (tool.id === 'client-reports')   return pathname.startsWith('/dashboard/agency')
-    if (tool.id === 'competitor-spy')   return pathname.startsWith('/dashboard/competitor-spy')
-    if (tool.id === 'onpage')           return pathname.startsWith('/dashboard/onpage')
-    if (tool.id === 'rank-tracker')     return pathname.startsWith('/dashboard/rank-tracker')
-    if (tool.id === 'local-seo')        return pathname.startsWith('/dashboard/local-seo')
-    if (tool.id === 'seo-audit')        return pathname.startsWith('/dashboard/seo-audit')
-    if (tool.id === 'backlinks')        return pathname.startsWith('/dashboard/backlinks')
-    if (tool.id === 'ranking-engine')   return pathname.startsWith('/dashboard/ranking-engine')
+    if (tool.id === 'content-analyzer')  return pathname === '/dashboard'
+    if (tool.id === 'client-reports')    return pathname.startsWith('/dashboard/agency')
+    if (tool.id === 'competitor-spy')    return pathname.startsWith('/dashboard/competitor-spy')
+    if (tool.id === 'onpage')            return pathname.startsWith('/dashboard/onpage')
+    if (tool.id === 'rank-tracker')      return pathname.startsWith('/dashboard/rank-tracker')
+    if (tool.id === 'local-seo')         return pathname.startsWith('/dashboard/local-seo')
+    if (tool.id === 'seo-audit')         return pathname.startsWith('/dashboard/seo-audit')
+    if (tool.id === 'backlinks')         return pathname.startsWith('/dashboard/backlinks')
+    if (tool.id === 'ranking-engine')    return pathname.startsWith('/dashboard/ranking-engine')
+    if (tool.id === 'review-velocity')   return isGeogridPath && searchParams.get('tab') === 'review-velocity'
+    if (tool.id === 'geogrid')           return isGeogridPath && searchParams.get('tab') !== 'review-velocity'
     return pathname === tool.href
   }
 
