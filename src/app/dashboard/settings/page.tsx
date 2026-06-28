@@ -89,7 +89,7 @@ export default function SettingsPage() {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Badge variant={meta.color}>{meta.label}</Badge>
-            <UserButton afterSignOutUrl="/" />
+            <UserButton />
           </div>
         </div>
 

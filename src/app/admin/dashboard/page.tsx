@@ -53,7 +53,7 @@ export default function AdminDashboard() {
           >
             Refresh
           </button>
-          <UserButton afterSignOutUrl="/" />
+          <UserButton />
         </div>
       </div>
 

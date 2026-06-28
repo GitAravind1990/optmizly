@@ -219,7 +219,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             )}
             <div className="flex items-center gap-2.5 px-1">
-              <UserButton afterSignOutUrl="/" />
+              <UserButton />
               <span className="text-xs text-slate-400 truncate">{planLabel} Plan</span>
             </div>
           </div>

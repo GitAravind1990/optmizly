@@ -31,7 +31,7 @@ export function ClerkProviderWrapper({ children, nonce }: { children: ReactNode;
     return <StubClerkProvider>{children}</StubClerkProvider>
   }
 
-  return <ClerkProvider publishableKey={publishableKey} nonce={nonce}>{children}</ClerkProvider>
+  return <ClerkProvider publishableKey={publishableKey} nonce={nonce} afterSignOutUrl="/">{children}</ClerkProvider>
 }
 
 import { useAuth } from '@clerk/nextjs'
