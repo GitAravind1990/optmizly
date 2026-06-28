@@ -45,11 +45,7 @@ export function PageHeader() {
               optmizly
             </span>
           </Link>
-          <nav className="ph-nav">
-            {[['Pricing', '/pricing'], ['Blog', '/blog']].map(([label, href]) => (
-              <Link key={label} href={href} style={{ color: '#4B5563', textDecoration: 'none' }}>{label}</Link>
-            ))}
-          </nav>
+          <nav className="ph-nav" />
         </div>
 
         {/* Desktop auth */}
@@ -97,13 +93,6 @@ export function PageHeader() {
 
       {/* Mobile menu */}
       <div className={`ph-mobile${open ? ' is-open' : ''}`}>
-        {[['Pricing', '/pricing'], ['Blog', '/blog']].map(([label, href]) => (
-          <Link key={label} href={href} onClick={() => setOpen(false)} style={{
-            fontFamily: sans, fontSize: 16, fontWeight: 500, color: '#0B1120',
-            textDecoration: 'none', padding: '11px 4px',
-            borderBottom: '1px solid #F0F2F6',
-          }}>{label}</Link>
-        ))}
         <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <SignedOut>
             <Link href="/login" onClick={() => setOpen(false)} style={{
