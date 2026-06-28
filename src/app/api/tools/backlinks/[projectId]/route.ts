@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
+import { canUseTool } from '@/lib/plans'
 
 export const runtime = 'nodejs'
 
@@ -12,7 +12,7 @@ async function getProUser() {
   if (!clerkId) throw new AuthError(401, 'Not authenticated')
   const user = await prisma.user.findUnique({ where: { clerkId } })
   if (!user) throw new AuthError(401, 'User not found')
-  if (user.plan === Plan.FREE) throw new AuthError(403, 'PRO plan required')
+  if (!canUseTool(user.plan, 'backlinks')) throw new AuthError(403, 'PRO or AGENCY plan required')
   return user
 }
 

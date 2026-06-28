@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import Anthropic from '@anthropic-ai/sdk';
+import { canUseTool } from '@/lib/plans';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 60;
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     if (!auditId) return NextResponse.json({ error: 'auditId required' }, { status: 400 });
 
     const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-    if (user?.plan !== 'AGENCY') return NextResponse.json({ error: 'Agency only' }, { status: 403 });
+    if (!user || !canUseTool(user.plan, 'performance-fixer')) return NextResponse.json({ error: 'Agency only' }, { status: 403 });
 
     const audit = await prisma.performanceFixerAudit.findFirst({
       where: { id: auditId, userId: user.id },
