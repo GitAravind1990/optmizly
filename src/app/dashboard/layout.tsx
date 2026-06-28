@@ -31,6 +31,7 @@ function NavIcon({ id }: { id: string }) {
     'ranking-engine':   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="7.5" cy="7.5" r="6.5"/><circle cx="7.5" cy="7.5" r="3"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><line x1="7.5" y1="0" x2="7.5" y2="2"/><line x1="7.5" y1="13" x2="7.5" y2="15"/><line x1="0" y1="7.5" x2="2" y2="7.5"/><line x1="13" y1="7.5" x2="15" y2="7.5"/></svg>,
     'client-reports':   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="9" height="11" rx="1"/><path d="M5.5 3V1.5h4V3"/><line x1="5.5" y1="7" x2="9.5" y2="7"/><line x1="5.5" y1="9.5" x2="8.5" y2="9.5"/></svg>,
     'geogrid':          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="9" y="1" width="5" height="5" rx="1"/><rect x="1" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg>,
+    'review-velocity':  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7.5 1l1.8 3.6 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4L1.7 5.2l4-.6z"/></svg>,
     'settings':         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="7.5" cy="7.5" r="2.25"/><path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.2 3.2l1.1 1.1M10.7 10.7l1.1 1.1M3.2 11.8l1.1-1.1M10.7 4.3l1.1-1.1"/></svg>,
     'lock':             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="5.5" width="8" height="5.5" rx="1"/><path d="M4 5.5V4a2 2 0 014 0v1.5"/></svg>,
   }
@@ -71,7 +72,8 @@ const TOOL_GROUPS = [
       { id: 'tracker',           label: 'Cite Tracker',         href: '/dashboard/tracker',           minPlan: 'AGENCY' },
       { id: 'performance-fixer', label: 'Performance Fixer',    href: '/dashboard/performance-fixer', minPlan: 'AGENCY' },
       { id: 'client-reports',    label: 'Client Reports',       href: '/dashboard/agency/clients',    minPlan: 'AGENCY' },
-      { id: 'geogrid',           label: 'Geogrid',              href: '/dashboard/tools/geogrid',     minPlan: 'AGENCY' },
+      { id: 'geogrid',           label: 'Geogrid',              href: '/dashboard/tools/geogrid',         minPlan: 'AGENCY' },
+      { id: 'review-velocity',   label: 'Review Velocity',      href: '/dashboard/tools/geogrid?tab=review-velocity', minPlan: 'AGENCY' },
     ],
   },
 ]
