@@ -296,18 +296,21 @@ export function HomeHero() {
       <div className="hero-text" style={{
         position: 'relative', zIndex: 1,
         maxWidth: 1100, margin: '0 auto', padding: '96px 32px 0', textAlign: 'center',
+        overflow: 'hidden',
       }}>
         {/* Badge */}
-        <div style={{
+        <div className="opt-badge" style={{
           display: 'inline-flex', alignItems: 'center', gap: 7,
           padding: '5px 12px', borderRadius: 999, marginBottom: 26,
           background: T.blueSoft, color: T.blueDark,
           border: `1px solid ${T.blueBorder}`,
           fontFamily: T.sans, fontSize: 13, fontWeight: 500,
-          whiteSpace: 'nowrap',
+          maxWidth: '100%', boxSizing: 'border-box',
         }}>
-          <span style={{ width: 7, height: 7, borderRadius: 4, background: T.blue }} />
-          Now optimizing for ChatGPT, Gemini &amp; Perplexity
+          <span style={{ width: 7, height: 7, borderRadius: 4, background: T.blue, flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            Now optimizing for ChatGPT, Gemini &amp; Perplexity
+          </span>
           <Icon name="arrow" size={13} color={T.blue} />
         </div>
 
