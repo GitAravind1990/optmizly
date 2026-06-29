@@ -1,6 +1,9 @@
 ﻿import type { Metadata } from 'next'
 import { ClerkProviderWrapper } from '@/components/clerk-provider'
 import { CookieBanner } from '@/components/cookie-banner'
+import { PHProvider } from '@/components/posthog-provider'
+import { PostHogUserIdentity } from '@/components/posthog-user-identity'
+import { Analytics } from '@vercel/analytics/next'
 import { Inter } from 'next/font/google'
 import { headers } from 'next/headers'
 import './globals.css'
@@ -54,13 +57,21 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const nonce = (await headers()).get('x-nonce') ?? undefined
 
+  const hasPostHog = !!process.env.NEXT_PUBLIC_POSTHOG_KEY
+  const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased bg-white text-slate-900`}>
-        <ClerkProviderWrapper nonce={nonce}>
-          {children}
-          <CookieBanner />
-        </ClerkProviderWrapper>
+        <PHProvider>
+          <ClerkProviderWrapper nonce={nonce}>
+            {/* PostHogUserIdentity needs both Clerk context and PostHog initialised */}
+            {hasPostHog && hasClerk && <PostHogUserIdentity />}
+            {children}
+            <CookieBanner />
+          </ClerkProviderWrapper>
+        </PHProvider>
+        <Analytics />
       </body>
     </html>
   )

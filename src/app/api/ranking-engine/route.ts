@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, type AuthedUser } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
+import { prisma } from '@/lib/prisma'
+import { captureServerEvent } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -22,8 +24,38 @@ export async function POST(req: NextRequest) {
       2500,
       'claude-sonnet-4-6'
     )
-    return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
+    const result = extractJSON(raw)
+
+    // Analytics: awaited but fully isolated — a PostHog failure never surfaces to the user
+    await trackToolRun(user, 'ranking-engine').catch(() => {})
+
+    return apiSuccess({ ...result, userPlan: user.plan })
   } catch (e) {
     return apiError(e)
+  }
+}
+
+async function trackToolRun(user: AuthedUser, toolName: string): Promise<void> {
+  // Sum usage across all months to determine if this is the user's first-ever tool run.
+  // requireAuth already incremented the counter before the AI call, so totalRuns === 1
+  // means this is the very first successful call this user has ever made.
+  const agg = await prisma.usage.aggregate({
+    where: { userId: user.userId },
+    _sum: { count: true },
+  })
+  const totalRuns = agg._sum.count ?? 0
+  const isFirst = totalRuns === 1
+
+  await captureServerEvent(user.clerkId, 'tool_run_completed', {
+    tool_name: toolName,
+    $set: { plan: user.plan },
+  })
+
+  if (isFirst) {
+    await captureServerEvent(user.clerkId, 'first_tool_run', {
+      tool_name: toolName,
+      is_first_ever_run: true,
+      $set: { activated: true, plan: user.plan },
+    })
   }
 }
