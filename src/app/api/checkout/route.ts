@@ -3,6 +3,7 @@ import { auth, currentUser } from '@clerk/nextjs/server'
 import { dodo } from '@/lib/dodopayments'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
+import { captureServerEvent } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -32,6 +33,11 @@ export async function POST(req: NextRequest) {
 
     const checkoutUrl = (session as any).checkout_url ?? (session as any).url
     if (!checkoutUrl) throw new Error('Checkout URL not returned')
+
+    captureServerEvent(clerkId, 'checkout_started', {
+      product_id: productId,
+      from_plan: user?.plan ?? 'FREE',
+    }).catch(() => {})
 
     return apiSuccess({ url: checkoutUrl })
   } catch (e) {

@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, type AuthedUser } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
+import { prisma } from '@/lib/prisma'
+import { captureServerEvent } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -78,8 +80,32 @@ export async function POST(req: NextRequest) {
       }))
     }
 
+    await trackToolRun(user, 'analyse').catch(() => {})
+
     return apiSuccess({ ...result, userPlan: user.plan })
   } catch (e) {
     return apiError(e)
+  }
+}
+
+async function trackToolRun(user: AuthedUser, toolName: string): Promise<void> {
+  const agg = await prisma.usage.aggregate({
+    where: { userId: user.userId },
+    _sum: { count: true },
+  })
+  const totalRuns = agg._sum.count ?? 0
+  const isFirst = totalRuns === 1
+
+  await captureServerEvent(user.clerkId, 'tool_run_completed', {
+    tool_name: toolName,
+    $set: { plan: user.plan },
+  })
+
+  if (isFirst) {
+    await captureServerEvent(user.clerkId, 'first_tool_run', {
+      tool_name: toolName,
+      is_first_ever_run: true,
+      $set: { activated: true, plan: user.plan },
+    })
   }
 }

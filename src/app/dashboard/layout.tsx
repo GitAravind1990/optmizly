@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { UserButton } from '@clerk/nextjs'
 import { ContentProvider } from '@/context/ContentContext'
+import posthog from 'posthog-js'
 
 type UsageData = { plan: string; count: number; limit: number; remaining: number }
 
@@ -183,6 +184,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
                           : 'text-slate-300 cursor-not-allowed'
                       }`}
+                      onClick={() => {
+                        if (unlocked && !active) posthog.capture('tool_opened', { tool_name: tool.id })
+                        else if (!unlocked) posthog.capture('upgrade_clicked', { from_plan: plan, target_plan: tool.minPlan, location: 'sidebar_locked_tool', tool_name: tool.id })
+                      }}
                     >
                       <NavIcon id={tool.id} />
                       <span className="flex-1 truncate">{tool.label}</span>
@@ -216,12 +221,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Bottom: upgrade + user */}
           <div className="border-t border-slate-100 p-3 space-y-2">
             {plan === 'FREE' && (
-              <Link href="/pricing" className="block w-full rounded-lg bg-brand-600 py-2 text-center text-xs font-semibold text-white hover:bg-brand-700 transition-colors">
+              <Link
+                href="/pricing"
+                className="block w-full rounded-lg bg-brand-600 py-2 text-center text-xs font-semibold text-white hover:bg-brand-700 transition-colors"
+                onClick={() => posthog.capture('upgrade_clicked', { from_plan: 'FREE', target_plan: 'PRO', location: 'sidebar' })}
+              >
                 Upgrade to Pro →
               </Link>
             )}
             {plan === 'PRO' && (
-              <Link href="/pricing" className="block w-full rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 py-2 text-center text-xs font-semibold text-white hover:opacity-90 transition-opacity">
+              <Link
+                href="/pricing"
+                className="block w-full rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 py-2 text-center text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                onClick={() => posthog.capture('upgrade_clicked', { from_plan: 'PRO', target_plan: 'AGENCY', location: 'sidebar' })}
+              >
                 Upgrade to Agency →
               </Link>
             )}

@@ -3,6 +3,7 @@ import DodoPayments from 'dodopayments'
 import { getPlanFromProductId } from '@/lib/dodopayments'
 import { prisma } from '@/lib/prisma'
 import { Plan } from '@prisma/client'
+import { captureServerEvent } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -93,6 +94,16 @@ export async function POST(req: NextRequest) {
         })
         await prisma.user.update({ where: { id: userId }, data: { plan } })
         console.log(`[Dodo Webhook] Upserted subscription ${sub.subscription_id} → ${planKey}`)
+
+        // Fire revenue event server-side, after verified webhook — never on the client
+        const dbUser = await prisma.user.findUnique({ where: { id: userId } })
+        if (dbUser?.clerkId) {
+          captureServerEvent(dbUser.clerkId, 'subscription_activated', {
+            plan: planKey,
+            product_id: productId,
+            $set: { plan: planKey },
+          }).catch(() => {})
+        }
       } else {
         console.warn('[Dodo Webhook] Could not resolve userId for subscription', sub.subscription_id)
       }

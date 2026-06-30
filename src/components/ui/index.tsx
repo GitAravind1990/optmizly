@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { ReactNode, ButtonHTMLAttributes } from 'react'
+import posthog from 'posthog-js'
 
 // ── Button ────────────────────────────────────────────────────────────────────
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -103,10 +104,19 @@ export function LockedState({ tool, plan }: { tool: string; plan: 'Pro' | 'Agenc
       </div>
       <h3 className="text-base font-bold text-slate-800 mb-2">{tool}</h3>
       <p className="text-sm text-slate-500 max-w-xs mb-6">This tool requires the <strong>{plan}</strong> plan.</p>
-      <a href="/pricing" className={cn(
-        'rounded-xl px-6 py-2.5 text-sm font-bold text-white',
-        plan === 'Agency' ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-brand-600 hover:bg-brand-700'
-      )}>
+      <a
+        href="/pricing"
+        className={cn(
+          'rounded-xl px-6 py-2.5 text-sm font-bold text-white',
+          plan === 'Agency' ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-brand-600 hover:bg-brand-700'
+        )}
+        onClick={() => posthog.capture('upgrade_clicked', {
+          from_plan: plan === 'Agency' ? 'PRO' : 'FREE',
+          target_plan: plan.toUpperCase(),
+          location: 'locked_tool',
+          tool_name: tool,
+        })}
+      >
         Upgrade to {plan}
       </a>
     </div>

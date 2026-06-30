@@ -3,6 +3,7 @@ import { prisma } from './prisma'
 import { PLAN_LIMITS, PLAN_TOOLS, getMonthKey } from './plans'
 import { Plan } from '@prisma/client'
 import { setTrackingUser } from './anthropic'
+import { captureServerEvent } from './posthog-server'
 
 export type AuthedUser = {
   userId: string
@@ -65,6 +66,11 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
       where: { userId_month: { userId: user.id, month } },
       data: { count: { decrement: 1 } },
     })
+    captureServerEvent(clerkId, 'free_limit_hit', {
+      tool,
+      plan: user.plan,
+      limit,
+    }).catch(() => {})
     throw new AuthError(429, `Monthly limit of ${limit} analyses reached. Upgrade to continue.`)
   }
 
