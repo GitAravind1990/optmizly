@@ -106,8 +106,8 @@ export async function POST(req: NextRequest) {
               $set: { plan: planKey },
             }).catch(() => {})
           }
-          // Only send email on initial activation (not renewals)
-          if (eventType === 'subscription.created' || eventType === 'subscription.active') {
+          // Only send email on initial creation (not on active status change or renewals)
+          if (eventType === 'subscription.created') {
             const firstName = dbUser.email.split('@')[0]
             const amount = planKey === 'PRO' ? '$29' : '$79'
             const nextBilling = periodEnd
