@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
           if (eventType === 'subscription.created') {
             const firstName = dbUser.email.split('@')[0]
             const rawAmount = sub.recurring_pre_tax_amount
-            const amount = rawAmount ? `$${(rawAmount / 100).toFixed(0)}` : (planKey === 'PRO' ? '$29' : '$79')
+            const amount = rawAmount ? `$${(rawAmount / 100).toFixed(0)}` : (planKey === 'PRO' ? '$19' : '$49')
             const nextBilling = periodEnd
               ? periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
               : undefined
