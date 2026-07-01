@@ -34,12 +34,14 @@ export const metadata: Metadata = {
     title: 'Optmizly – AI Content Optimizer',
     description: 'Rank higher on Google and get cited by ChatGPT & Perplexity. 11 AI-powered SEO tools.',
     url: '/',
+    images: [{ url: '/opengraph-image', width: 1200, height: 628, alt: 'Optmizly – AI Content Optimizer' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Optmizly – AI Content Optimizer',
     description: 'Rank higher on Google and get cited by ChatGPT & Perplexity. 11 AI-powered SEO tools.',
     creator: '@Optmizly',
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
