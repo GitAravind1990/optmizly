@@ -21,7 +21,7 @@ export function LimitWarningEmail({
   return (
     <Html>
       <Head />
-      <Preview>You have {remaining} free {remaining === 1 ? 'analysis' : 'analyses'} left this month</Preview>
+      <Preview>{`You have ${remaining} free ${remaining === 1 ? 'analysis' : 'analyses'} left this month`}</Preview>
       <Tailwind>
         <Body className="bg-slate-50 font-sans">
           <Container className="mx-auto py-12 px-4 max-w-xl">
