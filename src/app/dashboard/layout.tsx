@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { UserButton } from '@clerk/nextjs'
 import { ContentProvider } from '@/context/ContentContext'
+import { WelcomeBanner } from '@/components/welcome-banner'
 import posthog from 'posthog-js'
 
 type UsageData = { plan: string; count: number; limit: number; remaining: number }
@@ -272,6 +273,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Page content */}
           <div className="flex-1 overflow-auto">
+            <WelcomeBanner />
             {children}
           </div>
 

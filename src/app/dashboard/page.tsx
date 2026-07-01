@@ -63,7 +63,7 @@ export default function DashboardPage() {
 
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {!analysisResult ? (
-          <EmptyState title="Ready to analyse" desc="Paste content or fetch a URL above, then click Analyse to get your full content score." />
+          <EmptyState icon="◈" title="Analyse your content" desc="Paste your content or enter a URL above and click Analyse — you'll get a score across 8 SEO dimensions in seconds." />
         ) : tab === 'scores' ? (
           <div className="max-w-3xl mx-auto fade-up space-y-5">
             <Card className="flex items-center gap-5">
