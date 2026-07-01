@@ -31,7 +31,7 @@ export function DripDay3Email({ firstName = 'there', pricingUrl }: DripDay3Props
               </Text>
 
               {[
-                ['📈', 'SERP Audit', 'See exactly why you're not ranking — real competitor breakdown with a step-by-step recovery plan.'],
+                ['📈', 'SERP Audit', "See exactly why you're not ranking — real competitor breakdown with a step-by-step recovery plan."],
                 ['🎯', 'Rank Tracker', 'Track keyword positions over time. Get alerts when you move up or drop.'],
                 ['⭐', 'E-E-A-T Analysis', 'Score your expertise and trust signals the way Google evaluates them.'],
                 ['📊', 'Ranking Engine', 'Enter a keyword and domain — get a probability score before you write a word.'],
