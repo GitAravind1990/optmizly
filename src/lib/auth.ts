@@ -87,12 +87,17 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
       where: { userId_month: { userId: user.id, month } },
       data: { count: { decrement: 1 } },
     })
-    // Send once on the first blocked request (count === limit + 1 before rollback)
-    if (updated.count === limit + 1) {
-      getClerkFirstName(clerkId, user.email.split('@')[0])
-        .then(firstName => sendLimitReachedEmail(user.email, limit, firstName))
-        .catch(() => {})
-    }
+    // Send exactly once per month — atomically flip limitEmailSent false→true
+    prisma.usage.updateMany({
+      where: { userId: user.id, month, limitEmailSent: false },
+      data: { limitEmailSent: true },
+    }).then(({ count: flagged }) => {
+      if (flagged > 0) {
+        getClerkFirstName(clerkId, user.email.split('@')[0])
+          .then(firstName => sendLimitReachedEmail(user.email, limit, firstName))
+          .catch(() => {})
+      }
+    }).catch(() => {})
     captureServerEvent(clerkId, 'free_limit_hit', {
       tool,
       plan: user.plan,

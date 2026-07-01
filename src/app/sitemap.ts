@@ -1,7 +1,7 @@
 ﻿import { MetadataRoute } from 'next'
 import { getAllPosts } from '@/lib/blog'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://Optmizly.com'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://optmizly.com'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts = (await getAllPosts()).map(post => ({
