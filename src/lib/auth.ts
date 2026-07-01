@@ -4,7 +4,7 @@ import { PLAN_LIMITS, PLAN_TOOLS, getMonthKey } from './plans'
 import { Plan } from '@prisma/client'
 import { setTrackingUser } from './anthropic'
 import { captureServerEvent } from './posthog-server'
-import { sendLimitWarningEmail } from './email'
+import { sendLimitWarningEmail, sendLimitReachedEmail } from './email'
 
 export async function getClerkFirstName(clerkId: string | null, fallback = 'there'): Promise<string> {
   if (!clerkId || !process.env.CLERK_SECRET_KEY) return fallback
@@ -87,6 +87,12 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
       where: { userId_month: { userId: user.id, month } },
       data: { count: { decrement: 1 } },
     })
+    // Send once on the first blocked request (count === limit + 1 before rollback)
+    if (updated.count === limit + 1) {
+      getClerkFirstName(clerkId, user.email.split('@')[0])
+        .then(firstName => sendLimitReachedEmail(user.email, limit, firstName))
+        .catch(() => {})
+    }
     captureServerEvent(clerkId, 'free_limit_hit', {
       tool,
       plan: user.plan,

@@ -4,6 +4,7 @@ import { WelcomeEmail } from '@/emails/welcome'
 import { SubscriptionEmail } from '@/emails/subscription'
 import { CancelledEmail } from '@/emails/cancelled'
 import { LimitWarningEmail } from '@/emails/limit-warning'
+import { LimitReachedEmail } from '@/emails/limit-reached'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM = process.env.EMAIL_FROM ?? 'Optmizly <hello@Optmizly.com>'
@@ -86,6 +87,29 @@ export async function sendLimitWarningEmail(
     console.log(`[Email] Limit warning sent to ${to}`)
   } catch (e) {
     console.error('[Email] Failed to send limit warning:', e)
+  }
+}
+
+// ── Usage limit reached ───────────────────────────────────────────────────────
+export async function sendLimitReachedEmail(
+  to: string,
+  limit: number,
+  firstName?: string,
+) {
+  try {
+    if (!resend) return
+    const html = await render(
+      LimitReachedEmail({ firstName, limit, pricingUrl: `${APP_URL}/pricing` })
+    )
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `You've used all your free analyses this month`,
+      html,
+    })
+    console.log(`[Email] Limit reached sent to ${to}`)
+  } catch (e) {
+    console.error('[Email] Failed to send limit reached email:', e)
   }
 }
 
