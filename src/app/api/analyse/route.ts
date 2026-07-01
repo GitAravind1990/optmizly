@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth('analyse')
     clerkId = user.clerkId
-    const { content } = await req.json()
+    const { content, contentUrl } = await req.json()
 
     if (!content || content.length < 50) {
       return apiError({ message: 'Content too short', status: 400, name: 'ValidationError' })
@@ -83,6 +83,17 @@ export async function POST(req: NextRequest) {
     }
 
     await trackToolRun(user, 'analyse').catch(() => {})
+
+    prisma.analysisHistory.create({
+      data: {
+        userId: user.userId,
+        contentSnippet: content.slice(0, 100).trim(),
+        contentUrl: contentUrl ?? null,
+        overallScore: result.overall_score ?? 0,
+        grade: result.grade ?? '?',
+        result: JSON.stringify(result),
+      },
+    }).catch(() => {})
 
     return apiSuccess({ ...result, userPlan: user.plan })
   } catch (e) {

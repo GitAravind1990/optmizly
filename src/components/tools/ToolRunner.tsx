@@ -22,7 +22,7 @@ export function ToolRunner({ onResult }: ToolRunnerProps) {
   const [analyseLoading, setAnalyseLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const runAnalysis = useCallback(async (contentToAnalyse?: string) => {
+  const runAnalysis = useCallback(async (contentToAnalyse?: string, contentUrl?: string) => {
     const c = contentToAnalyse ?? content
     if (!c || c.length < 50) { setError('Paste some content first'); return }
     setAnalyseLoading(true); setError('')
@@ -30,7 +30,7 @@ export function ToolRunner({ onResult }: ToolRunnerProps) {
       const r = await fetch('/api/analyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: c }),
+        body: JSON.stringify({ content: c, contentUrl }),
       })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error)
@@ -52,7 +52,7 @@ export function ToolRunner({ onResult }: ToolRunnerProps) {
       const d = await r.json()
       if (!r.ok) throw new Error(d.error)
       setContent(d.content)
-      await runAnalysis(d.content)
+      await runAnalysis(d.content, urlInput.trim())
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not fetch URL')
     } finally { setFetchLoading(false) }

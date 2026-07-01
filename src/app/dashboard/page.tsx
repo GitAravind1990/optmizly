@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { ToolRunner } from '@/components/tools/ToolRunner'
 import { exportScoresCSV, exportScoresPDF, exportEntitiesCSV, exportEntitiesPDF } from '@/lib/export'
 import { Card, ScoreBar, Badge, EmptyState } from '@/components/ui'
@@ -8,6 +8,16 @@ import { useContent } from '@/context/ContentContext'
 import Link from 'next/link'
 
 type Tab = 'scores' | 'issues' | 'entities'
+
+type HistoryItem = {
+  id: string
+  contentSnippet: string
+  contentUrl: string | null
+  overallScore: number
+  grade: string
+  result: string
+  createdAt: string
+}
 
 const SCORE_DIMS = [
   { key: 'technical_seo',          label: 'Technical SEO',     weight: '10%' },
@@ -22,15 +32,47 @@ const SCORE_DIMS = [
 
 const GRADE_COLORS: Record<string, string> = { S: 'text-purple-600', A: 'text-emerald-600', B: 'text-blue-600', C: 'text-amber-600', D: 'text-red-600' }
 
+const GRADE_BG: Record<string, string> = { S: 'bg-purple-100 text-purple-700', A: 'bg-emerald-100 text-emerald-700', B: 'bg-blue-100 text-blue-700', C: 'bg-amber-100 text-amber-700', D: 'bg-red-100 text-red-700' }
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
 export default function DashboardPage() {
   const { analysisResult, setAnalysisResult, setContent } = useContent()
   const [tab, setTab] = useState<Tab>('scores')
+  const [history, setHistory] = useState<HistoryItem[]>([])
+
+  useEffect(() => {
+    fetch('/api/history').then(r => r.json()).then(d => { if (Array.isArray(d)) setHistory(d) }).catch(() => {})
+  }, [])
 
   const handleResult = useCallback((result: typeof analysisResult, content: string) => {
     setAnalysisResult(result)
     setContent(content)
     setTab('scores')
+    setHistory(prev => [{
+      id: Date.now().toString(),
+      contentSnippet: content.slice(0, 100).trim(),
+      contentUrl: null,
+      overallScore: (result as any)?.overall_score ?? 0,
+      grade: (result as any)?.grade ?? '?',
+      result: JSON.stringify(result),
+      createdAt: new Date().toISOString(),
+    }, ...prev].slice(0, 10))
   }, [setAnalysisResult, setContent])
+
+  function restoreHistory(item: HistoryItem) {
+    try {
+      setAnalysisResult(JSON.parse(item.result))
+      setTab('scores')
+    } catch {}
+  }
 
   const issues = analysisResult?.top_issues ?? []
   const gaps   = analysisResult?.entity_gaps ?? []
@@ -63,7 +105,34 @@ export default function DashboardPage() {
 
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {!analysisResult ? (
-          <EmptyState icon="◈" title="Analyse your content" desc="Paste your content or enter a URL above and click Analyse — you'll get a score across 8 SEO dimensions in seconds." />
+          history.length > 0 ? (
+            <div className="max-w-3xl mx-auto fade-up">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Recent Analyses</p>
+              <div className="space-y-2">
+                {history.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => restoreHistory(item)}
+                    className="w-full text-left flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 hover:border-blue-300 hover:shadow-sm transition-all group"
+                  >
+                    <span className={`flex-shrink-0 w-10 h-10 rounded-xl flex flex-col items-center justify-center text-xs font-black ${GRADE_BG[item.grade] ?? 'bg-slate-100 text-slate-600'}`}>
+                      <span className="text-base leading-none">{item.grade}</span>
+                      <span className="font-normal opacity-70">{item.overallScore}</span>
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 truncate group-hover:text-blue-700 transition-colors">
+                        {item.contentUrl ?? item.contentSnippet}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">{timeAgo(item.createdAt)}</p>
+                    </div>
+                    <span className="text-xs text-slate-400 group-hover:text-blue-600 transition-colors flex-shrink-0">Restore →</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <EmptyState icon="◈" title="Analyse your content" desc="Paste your content or enter a URL above and click Analyse — you'll get a score across 8 SEO dimensions in seconds." />
+          )
         ) : tab === 'scores' ? (
           <div className="max-w-3xl mx-auto fade-up space-y-5">
             <Card className="flex items-center gap-5">

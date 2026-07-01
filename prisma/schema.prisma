@@ -50,6 +50,7 @@ model User {
   backlinkAnalyses     BacklinkDomainAnalysis[] @relation("BacklinkDomainAnalyses")
   seoAudits            SeoAudit[]            @relation("SEOAudits")
   drippedEmails        DrippedEmail[]
+  analysisHistory      AnalysisHistory[]
 
   @@index([clerkId])
 }
@@ -950,6 +951,22 @@ model SeoAudit {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model AnalysisHistory {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  contentSnippet String
+  contentUrl     String?
+  overallScore   Int
+  grade          String
+  result         String   @db.Text
+
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model DrippedEmail {
