@@ -5,6 +5,9 @@ import { SubscriptionEmail } from '@/emails/subscription'
 import { CancelledEmail } from '@/emails/cancelled'
 import { LimitWarningEmail } from '@/emails/limit-warning'
 import { LimitReachedEmail } from '@/emails/limit-reached'
+import { DripDay1Email } from '@/emails/drip-day1'
+import { DripDay3Email } from '@/emails/drip-day3'
+import { DripDay7Email } from '@/emails/drip-day7'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM = process.env.EMAIL_FROM ?? 'Optmizly <hello@Optmizly.com>'
@@ -110,6 +113,45 @@ export async function sendLimitReachedEmail(
     console.log(`[Email] Limit reached sent to ${to}`)
   } catch (e) {
     console.error('[Email] Failed to send limit reached email:', e)
+  }
+}
+
+// ── Drip: Day 1 ──────────────────────────────────────────────────────────────
+export async function sendDripDay1Email(to: string, firstName?: string) {
+  try {
+    if (!resend) return
+    const html = await render(DripDay1Email({ firstName, dashboardUrl: `${APP_URL}/dashboard` }))
+    await resend.emails.send({ from: FROM, to, subject: 'One thing to try in Optmizly today', html })
+    console.log(`[Email] Drip day1 sent to ${to}`)
+  } catch (e) {
+    console.error('[Email] Failed to send drip day1:', e)
+    throw e
+  }
+}
+
+// ── Drip: Day 3 ──────────────────────────────────────────────────────────────
+export async function sendDripDay3Email(to: string, firstName?: string) {
+  try {
+    if (!resend) return
+    const html = await render(DripDay3Email({ firstName, pricingUrl: `${APP_URL}/pricing` }))
+    await resend.emails.send({ from: FROM, to, subject: 'What 15 more Optmizly tools look like', html })
+    console.log(`[Email] Drip day3 sent to ${to}`)
+  } catch (e) {
+    console.error('[Email] Failed to send drip day3:', e)
+    throw e
+  }
+}
+
+// ── Drip: Day 7 ──────────────────────────────────────────────────────────────
+export async function sendDripDay7Email(to: string, firstName?: string, isFree = true) {
+  try {
+    if (!resend) return
+    const html = await render(DripDay7Email({ firstName, isFree, dashboardUrl: `${APP_URL}/dashboard`, pricingUrl: `${APP_URL}/pricing` }))
+    await resend.emails.send({ from: FROM, to, subject: `Still working on your SEO, ${firstName ?? 'there'}?`, html })
+    console.log(`[Email] Drip day7 sent to ${to}`)
+  } catch (e) {
+    console.error('[Email] Failed to send drip day7:', e)
+    throw e
   }
 }
 

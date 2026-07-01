@@ -49,6 +49,7 @@ model User {
   backlinkProjects     BacklinkProject[]     @relation("BacklinkProjects")
   backlinkAnalyses     BacklinkDomainAnalysis[] @relation("BacklinkDomainAnalyses")
   seoAudits            SeoAudit[]            @relation("SEOAudits")
+  drippedEmails        DrippedEmail[]
 
   @@index([clerkId])
 }
@@ -948,6 +949,17 @@ model SeoAudit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
+}
+
+model DrippedEmail {
+  id        String   @id @default(cuid())
+  userId    String
+  emailType String   // 'drip_day1' | 'drip_day3' | 'drip_day7'
+  sentAt    DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, emailType])
   @@index([userId])
 }
 
