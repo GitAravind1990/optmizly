@@ -109,7 +109,8 @@ export async function POST(req: NextRequest) {
           // Only send email on initial creation (not on active status change or renewals)
           if (eventType === 'subscription.created') {
             const firstName = dbUser.email.split('@')[0]
-            const amount = planKey === 'PRO' ? '$29' : '$79'
+            const rawAmount = sub.recurring_pre_tax_amount
+            const amount = rawAmount ? `$${(rawAmount / 100).toFixed(0)}` : (planKey === 'PRO' ? '$29' : '$79')
             const nextBilling = periodEnd
               ? periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
               : undefined
