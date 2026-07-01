@@ -6,6 +6,19 @@ import { setTrackingUser } from './anthropic'
 import { captureServerEvent } from './posthog-server'
 import { sendLimitWarningEmail } from './email'
 
+export async function getClerkFirstName(clerkId: string | null, fallback = 'there'): Promise<string> {
+  if (!clerkId || !process.env.CLERK_SECRET_KEY) return fallback
+  try {
+    const res = await fetch(`https://api.clerk.com/v1/users/${clerkId}`, {
+      headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
+    })
+    const data = await res.json()
+    return data.first_name || fallback
+  } catch {
+    return fallback
+  }
+}
+
 export type AuthedUser = {
   userId: string
   clerkId: string
@@ -63,7 +76,9 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
 
   // Warn when they've just used their second-to-last analysis (fires exactly once per month)
   if (updated.count === limit - 1 && limit - 1 > 0) {
-    sendLimitWarningEmail(user.email, updated.count, limit).catch(() => {})
+    getClerkFirstName(clerkId, user.email.split('@')[0])
+      .then(firstName => sendLimitWarningEmail(user.email, updated.count, limit, firstName))
+      .catch(() => {})
   }
 
   if (updated.count > limit) {

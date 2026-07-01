@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { Plan } from '@prisma/client'
 import { captureServerEvent } from '@/lib/posthog-server'
 import { sendSubscriptionEmail, sendCancelledEmail } from '@/lib/email'
+import { getClerkFirstName } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
           }
           // Only send email on initial creation (not on active status change or renewals)
           if (eventType === 'subscription.created') {
-            const firstName = dbUser.email.split('@')[0]
+            const firstName = await getClerkFirstName(dbUser.clerkId, dbUser.email.split('@')[0])
             const rawAmount = sub.recurring_pre_tax_amount
             const amount = rawAmount ? `$${(rawAmount / 100).toFixed(0)}` : (planKey === 'PRO' ? '$19' : '$49')
             const nextBilling = periodEnd
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
       if (record) {
         const cancelledUser = await prisma.user.findUnique({ where: { id: record.userId } })
         if (cancelledUser) {
-          const firstName = cancelledUser.email.split('@')[0]
+          const firstName = await getClerkFirstName(cancelledUser.clerkId, cancelledUser.email.split('@')[0])
           const accessUntil = record.currentPeriodEnd
             ? record.currentPeriodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
             : undefined
