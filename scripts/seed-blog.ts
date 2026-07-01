@@ -392,6 +392,482 @@ const posts = [
     `.trim(),
     published: true,
   },
+  {
+    slug: 'on-page-seo-checklist',
+    title: 'On-Page SEO Checklist: Everything You Need to Rank in 2025',
+    description: 'A complete on-page SEO checklist covering title tags, headings, meta descriptions, keyword usage, internal links, and more — with specific guidance for each element.',
+    category: 'SEO Fundamentals',
+    tags: 'on-page seo,seo checklist,title tags,meta description,keyword optimization',
+    readingTime: '9 min read',
+    content: `
+<h2>What is on-page SEO?</h2>
+<p>On-page SEO refers to the optimisations you make directly on your web pages — as opposed to off-page factors like backlinks or technical factors like site speed. It's the layer of SEO you have the most direct control over, and it's often where the fastest gains come from.</p>
+<p>This checklist covers every major on-page element, what best practice looks like for each, and the most common mistakes to avoid.</p>
+
+<h2>Title tag</h2>
+<p>The title tag is the single most important on-page element. It appears as the clickable headline in search results and is a strong ranking signal.</p>
+<ul>
+  <li><strong>Length:</strong> 50–60 characters. Longer titles get truncated in search results.</li>
+  <li><strong>Keyword placement:</strong> Put your primary keyword near the front of the title.</li>
+  <li><strong>Uniqueness:</strong> Every page on your site should have a unique title tag. Duplicate titles confuse search engines about which page to rank.</li>
+  <li><strong>Brand suffix:</strong> For most pages, append your brand name at the end: "How to Do Keyword Research | Optmizly"</li>
+  <li><strong>Avoid keyword stuffing:</strong> "Keyword Research, Keyword Research Tips, Best Keyword Research Tool" is not a title — it's a red flag.</li>
+</ul>
+
+<h2>Meta description</h2>
+<p>Meta descriptions don't directly affect rankings, but they significantly affect click-through rate — which does affect rankings indirectly.</p>
+<ul>
+  <li><strong>Length:</strong> 150–160 characters. Anything longer gets truncated.</li>
+  <li><strong>Include the keyword:</strong> Google bolds matching terms in the snippet, making your result stand out.</li>
+  <li><strong>Write for clicks:</strong> Your meta description is an ad for your page. Include a clear value proposition and a soft CTA ("Learn how...", "Find out...", "Get the full list...").</li>
+  <li><strong>Don't duplicate:</strong> Like title tags, every page needs a unique meta description.</li>
+</ul>
+
+<h2>H1 heading</h2>
+<ul>
+  <li>Every page should have exactly one H1.</li>
+  <li>The H1 should contain your primary keyword and closely match your title tag — but doesn't have to be identical.</li>
+  <li>Make it descriptive and specific. "Introduction" or "Welcome" are not H1s — they're wasted opportunities.</li>
+</ul>
+
+<h2>Heading structure (H2–H6)</h2>
+<p>Headings help both readers and search engines understand your content structure. Think of them as a table of contents.</p>
+<ul>
+  <li>Use H2s for major sections, H3s for subsections within those sections.</li>
+  <li>Include secondary keywords and related terms naturally in your H2s.</li>
+  <li>Write headings as if they're answering a question — this increases the chance of being featured in People Also Ask boxes and AI answers.</li>
+  <li>Don't skip levels (H1 → H3 with no H2) — this breaks the logical hierarchy.</li>
+</ul>
+
+<h2>Keyword usage</h2>
+<ul>
+  <li><strong>Primary keyword:</strong> Should appear in the title, H1, first paragraph, at least one H2, and naturally throughout the body.</li>
+  <li><strong>Keyword density:</strong> There's no magic percentage. 1–2% is a rough benchmark, but natural usage matters more than hitting a number.</li>
+  <li><strong>LSI keywords:</strong> Include semantically related terms — synonyms, related concepts, and terms that appear in competitor content on the same topic.</li>
+  <li><strong>Avoid stuffing:</strong> If you have to force your keyword into a sentence, it doesn't belong there. Stuffing hurts more than it helps.</li>
+</ul>
+
+<h2>Content length and depth</h2>
+<p>Length is a proxy for depth — not a ranking factor in itself. The right length for your content is whatever it takes to thoroughly answer the searcher's question.</p>
+<ul>
+  <li>Check the average word count of pages ranking in the top 5 for your target keyword.</li>
+  <li>Cover all the subtopics those pages cover — and ideally something they don't.</li>
+  <li>Don't pad. A tight 800-word article beats a bloated 3,000-word one with 2,000 words of filler.</li>
+</ul>
+
+<h2>URL structure</h2>
+<ul>
+  <li>Keep URLs short and descriptive: <code>/on-page-seo-checklist</code> not <code>/blog/2025/04/01/complete-guide-to-on-page-seo-tips-and-tricks</code></li>
+  <li>Include your primary keyword in the URL.</li>
+  <li>Use hyphens to separate words, not underscores.</li>
+  <li>Avoid stop words (a, the, and, of) where they add length without adding meaning.</li>
+  <li>Once a URL is indexed, don't change it without a 301 redirect.</li>
+</ul>
+
+<h2>Images</h2>
+<ul>
+  <li><strong>Alt text:</strong> Every image should have descriptive alt text. Include your keyword where it makes sense, but don't force it on every image.</li>
+  <li><strong>File names:</strong> Use descriptive file names (<code>on-page-seo-checklist.png</code>) rather than <code>IMG_4821.png</code>.</li>
+  <li><strong>File size:</strong> Compress images before uploading. Large images are a leading cause of slow page speed.</li>
+  <li><strong>Lazy loading:</strong> Ensure images below the fold load lazily to improve Core Web Vitals.</li>
+</ul>
+
+<h2>Internal links</h2>
+<ul>
+  <li>Link to other relevant pages on your site using descriptive anchor text (not "click here" or "read more").</li>
+  <li>Every important page should be reachable within 3 clicks from your homepage.</li>
+  <li>When you publish a new page, go back and add internal links to it from existing relevant pages.</li>
+  <li>Internal links distribute PageRank and help search engines understand the relationship between your pages.</li>
+</ul>
+
+<h2>External links</h2>
+<ul>
+  <li>Link out to credible, authoritative sources when you reference data, studies, or claims.</li>
+  <li>External links signal that your content is well-researched — they don't "leak" PageRank in a way that hurts you.</li>
+  <li>Open external links in a new tab (<code>target="_blank"</code>) and add <code>rel="noopener noreferrer"</code> for security.</li>
+</ul>
+
+<h2>Schema markup</h2>
+<p>Schema markup (structured data) helps search engines understand your content and can enable rich results in SERPs.</p>
+<ul>
+  <li><strong>Article schema:</strong> For blog posts and news articles.</li>
+  <li><strong>FAQPage schema:</strong> For pages with FAQ sections — can generate expandable FAQ results directly in SERPs.</li>
+  <li><strong>HowTo schema:</strong> For step-by-step guides.</li>
+  <li><strong>BreadcrumbList schema:</strong> Displays breadcrumb navigation in search results.</li>
+</ul>
+
+<h2>Page speed and Core Web Vitals</h2>
+<p>Page experience is a confirmed ranking factor. Key metrics:</p>
+<ul>
+  <li><strong>LCP (Largest Contentful Paint):</strong> Should be under 2.5 seconds. Usually affected by image size and server response time.</li>
+  <li><strong>CLS (Cumulative Layout Shift):</strong> Should be under 0.1. Caused by elements that move after initial load (ads, late-loading fonts, images without dimensions).</li>
+  <li><strong>INP (Interaction to Next Paint):</strong> Should be under 200ms. Affected by JavaScript execution time.</li>
+</ul>
+
+<h2>Mobile optimisation</h2>
+<ul>
+  <li>Google uses mobile-first indexing — your mobile page is the one that gets ranked.</li>
+  <li>Test your page on a real mobile device, not just a desktop browser with a narrow viewport.</li>
+  <li>Ensure tap targets (buttons, links) are at least 48x48 pixels.</li>
+  <li>Don't use intrusive interstitials (pop-ups that block content on mobile).</li>
+</ul>
+
+<h2>How to audit your on-page SEO</h2>
+<p>Running through this checklist manually for every page is time-consuming. Optmizly's <strong>On-Page SEO</strong> tool audits your content against all these criteria automatically — it checks keyword usage, heading structure, meta tags, image alt text, and readability, then gives you a prioritised list of fixes.</p>
+
+<h2>The bottom line</h2>
+<p>On-page SEO isn't glamorous, but it's the foundation everything else is built on. A technically sound page with good on-page optimisation will consistently outperform a poorly optimised page with better backlinks — especially in competitive niches where the margin between page 1 and page 2 is often a handful of small improvements.</p>
+<p>Work through this checklist for your most important pages first. Fix the highest-impact items, republish, and monitor your rankings over the next 4–6 weeks.</p>
+    `.trim(),
+    published: true,
+  },
+
+  {
+    slug: 'how-to-rank-in-ai-overviews',
+    title: 'How to Rank in AI Overviews: What Google\'s AI Search Means for Your Content',
+    description: 'Google\'s AI Overviews appear above organic results for millions of queries. Here\'s how they work and what you need to do to get your content featured.',
+    category: 'AI Search',
+    tags: 'ai overviews,google sge,ai search,featured snippets,seo 2025',
+    readingTime: '7 min read',
+    content: `
+<h2>What are Google AI Overviews?</h2>
+<p>Google AI Overviews (formerly Search Generative Experience, or SGE) are AI-generated summaries that appear at the top of search results for certain queries. Instead of showing a list of blue links, Google synthesises information from multiple sources into a direct answer — with citations to the pages it drew from.</p>
+<p>For the pages cited, AI Overviews can drive significant traffic. For pages that aren't cited, the overview often absorbs the click that would have gone to position 1. Understanding how to get featured is now a core part of SEO strategy.</p>
+
+<h2>Which queries trigger AI Overviews?</h2>
+<p>AI Overviews appear most frequently for:</p>
+<ul>
+  <li><strong>Informational queries</strong> — "how to", "what is", "why does", "explain" queries where someone wants to understand something</li>
+  <li><strong>Complex questions</strong> — multi-part questions that require synthesising information from multiple sources</li>
+  <li><strong>Research queries</strong> — product comparisons, topic overviews, "best practices for X"</li>
+</ul>
+<p>They appear less often for navigational queries (when someone is looking for a specific site), transactional queries (when someone is ready to buy), and very recent news where training data may be outdated.</p>
+
+<h2>How Google selects sources for AI Overviews</h2>
+<p>Google has been somewhat opaque about the exact algorithm, but analysis of which pages get cited reveals consistent patterns:</p>
+
+<h3>High E-E-A-T signals</h3>
+<p>Pages with clear author credentials, first-hand experience, and trustworthiness signals are significantly more likely to be cited. Google is especially careful about citing authoritative sources for AI Overviews because errors are more visible than they'd be in a ranked list.</p>
+
+<h3>Direct, structured answers</h3>
+<p>Pages that answer the query directly — ideally in the first paragraph, with a clear structure — are easier for Google to extract and cite. Long preambles, excessive hedging, and buried answers reduce your chances.</p>
+
+<h3>Comprehensive topic coverage</h3>
+<p>AI Overviews often synthesise from multiple pages to give a complete answer. Pages that cover a topic comprehensively (covering multiple angles, edge cases, and related questions) tend to be cited more often than thin pages covering only one aspect.</p>
+
+<h3>Schema markup</h3>
+<p>Structured data (Article, FAQPage, HowTo) helps Google understand the format and context of your content, making it easier to extract relevant chunks for AI summaries.</p>
+
+<h3>Already ranking in top 10</h3>
+<p>While not a strict requirement, the majority of AI Overview citations come from pages already ranking on page 1 for the query. Strong traditional SEO remains the foundation.</p>
+
+<h2>7 specific things to do</h2>
+
+<h3>1. Answer the question in the first 100 words</h3>
+<p>Put the direct, concise answer to your target query in the opening paragraph. Expand with detail below. Google's extraction tends to prioritise content that appears early and that directly addresses the query.</p>
+
+<h3>2. Add a TL;DR or summary box</h3>
+<p>A clearly marked summary at the top of your article ("Key takeaways: ...") gives Google a pre-packaged extraction point. Format it as a bulleted list for easy parsing.</p>
+
+<h3>3. Use FAQ sections</h3>
+<p>FAQPage schema combined with a well-structured FAQ section is one of the highest-yield formats for AI Overview inclusion. Write questions exactly as users would phrase them, followed by direct 2–4 sentence answers.</p>
+
+<h3>4. Cite credible external sources</h3>
+<p>Pages that cite primary sources (studies, official documentation, industry data) are treated as more reliable for AI extraction. Google prefers citing sources that themselves cite sources.</p>
+
+<h3>5. Cover related questions</h3>
+<p>Use People Also Ask data to identify the follow-up questions users ask about your topic. Cover them in dedicated subsections. AI Overviews often need to address multiple related questions in a single summary, and pages that cover several get cited more.</p>
+
+<h3>6. Improve your E-E-A-T signals</h3>
+<p>Add clear author attribution with credentials, link to your about page, and ensure your content demonstrates first-hand knowledge. These signals matter more for AI Overviews than for traditional rankings.</p>
+
+<h3>7. Optimise for featured snippets first</h3>
+<p>Featured snippets and AI Overview citations overlap significantly. If you can capture featured snippets for your target queries, you're likely already in the right position for AI Overview inclusion.</p>
+
+<h2>What to do if AI Overviews are cannibalising your traffic</h2>
+<p>If you're seeing traffic drops on queries where AI Overviews now appear, you have two options:</p>
+<ol>
+  <li><strong>Get cited</strong> — optimise to be one of the sources the AI Overview cites. This can partially recover the traffic you're losing.</li>
+  <li><strong>Shift to transactional and navigational queries</strong> — AI Overviews rarely appear for "buy X" or "X login" queries. A content strategy that drives more transactional traffic is more resistant to AI Overview displacement.</li>
+</ol>
+
+<h2>The bottom line</h2>
+<p>AI Overviews represent a fundamental shift in how Google surfaces information. The sites that will thrive are those that prioritise genuine expertise, clear structured answers, and comprehensive topic coverage — which turns out to be exactly what good content has always required.</p>
+<p>The tactics that get you cited in AI Overviews are the same tactics that improve your traditional rankings. Invest in both simultaneously and you'll be in a strong position regardless of how search continues to evolve.</p>
+    `.trim(),
+    published: true,
+  },
+
+  {
+    slug: 'keyword-research-for-beginners',
+    title: 'Keyword Research for Beginners: How to Find Keywords You Can Actually Rank For',
+    description: 'Keyword research is the foundation of SEO. This beginner\'s guide explains how to find, evaluate, and prioritise keywords that match your content and your site\'s authority level.',
+    category: 'SEO Fundamentals',
+    tags: 'keyword research,seo beginners,long-tail keywords,keyword difficulty,search volume',
+    readingTime: '8 min read',
+    content: `
+<h2>Why keyword research matters</h2>
+<p>Every piece of content you create is an attempt to rank for specific search queries. Keyword research is the process of finding out which queries your target audience uses, how competitive those queries are, and which ones represent realistic opportunities for your site.</p>
+<p>Without keyword research, you're guessing. With it, you can make data-driven decisions about what to write and have a realistic sense of whether your content can rank.</p>
+
+<h2>The three things that matter in keyword research</h2>
+
+<h3>1. Search volume</h3>
+<p>Search volume is how many times a keyword is searched per month. Higher volume means more potential traffic — but also usually more competition. Don't optimise only for high-volume keywords. A keyword with 200 monthly searches that you can realistically rank #1 for is worth more than a 10,000-search keyword where you'll land on page 5.</p>
+
+<h3>2. Keyword difficulty</h3>
+<p>Keyword difficulty (KD) is an estimate of how hard it is to rank in the top 10 for a keyword, usually based on the backlink profiles of the pages currently ranking. Most SEO tools express this as a 0–100 score. As a new site, you should target keywords with KD under 30. Established sites can compete for KD 40–60. Scores above 70 require significant domain authority.</p>
+
+<h3>3. Search intent</h3>
+<p>Search intent is what the searcher actually wants when they type a query. The four main types:</p>
+<ul>
+  <li><strong>Informational</strong> — they want to learn ("how to do keyword research")</li>
+  <li><strong>Commercial</strong> — they're evaluating options ("best keyword research tools")</li>
+  <li><strong>Transactional</strong> — they want to buy or sign up ("keyword research tool free trial")</li>
+  <li><strong>Navigational</strong> — they want a specific site ("Ahrefs login")</li>
+</ul>
+<p>Your page type must match the intent. A blog post can't rank for a transactional query. A product page can't rank for an informational query. Always check what's currently ranking for a keyword before you create content for it.</p>
+
+<h2>Step-by-step keyword research process</h2>
+
+<h3>Step 1: Start with seed keywords</h3>
+<p>Seed keywords are broad terms that describe your business, product, or topic area. If you run a personal finance blog, your seed keywords might be: "budgeting", "investing", "saving money", "debt management", "retirement planning".</p>
+<p>Don't overthink seed keywords — they're just starting points for building a longer list.</p>
+
+<h3>Step 2: Expand with keyword modifiers</h3>
+<p>Take your seed keywords and add modifiers to find more specific, longer-tail versions:</p>
+<ul>
+  <li><strong>Question modifiers:</strong> how to, what is, why, when, which</li>
+  <li><strong>Qualifier modifiers:</strong> best, top, free, cheap, easy, for beginners, for small business</li>
+  <li><strong>Comparison modifiers:</strong> vs, alternative to, instead of</li>
+  <li><strong>Location modifiers:</strong> in [city], near me, UK, Australia</li>
+</ul>
+<p>"Budgeting" becomes "how to budget for beginners", "best budgeting apps", "budgeting vs saving", "budgeting for families" — each with different volumes, difficulties, and intents.</p>
+
+<h3>Step 3: Check People Also Ask and related searches</h3>
+<p>For any keyword you're researching, check the "People Also Ask" boxes and "Related searches" at the bottom of the SERP. These are Google telling you exactly what else users want to know about the topic — free keyword research straight from the source.</p>
+
+<h3>Step 4: Evaluate each keyword</h3>
+<p>For each keyword on your list, assess:</p>
+<ul>
+  <li>Monthly search volume (is there enough demand to justify the effort?)</li>
+  <li>Keyword difficulty (can your site realistically rank for this?)</li>
+  <li>Search intent (does this match the content you want to create?)</li>
+  <li>Business relevance (will ranking for this bring the right kind of visitors?)</li>
+  <li>SERP features (is there a featured snippet, AI Overview, or local pack that will reduce organic CTR?)</li>
+</ul>
+
+<h3>Step 5: Prioritise your list</h3>
+<p>Score each keyword across these factors and prioritise accordingly:</p>
+<ul>
+  <li><strong>Quick wins first:</strong> Low KD, decent volume, high business relevance</li>
+  <li><strong>Then medium-term targets:</strong> Moderate KD with high volume or very high business value</li>
+  <li><strong>Long-term aspirational targets:</strong> High KD keywords you'll work toward as your domain grows</li>
+</ul>
+
+<h2>The long-tail advantage</h2>
+<p>Long-tail keywords (3+ words, lower volume) are often dismissed because of their low individual search volumes. But they have significant advantages:</p>
+<ul>
+  <li><strong>Lower competition:</strong> Fewer sites specifically target them, so ranking is easier</li>
+  <li><strong>Higher conversion intent:</strong> "best budgeting app for freelancers in the UK" shows much clearer intent than "budgeting app"</li>
+  <li><strong>Faster to rank:</strong> New sites can appear on page 1 for long-tail keywords in weeks, while head terms take months or years</li>
+  <li><strong>They add up:</strong> 100 long-tail keywords averaging 150 searches each is 15,000 monthly searches — comparable to a single mid-tail keyword</li>
+</ul>
+
+<h2>Common keyword research mistakes</h2>
+<ul>
+  <li><strong>Only targeting high-volume keywords:</strong> These take years to rank for if you're starting out. Build authority on low-competition terms first.</li>
+  <li><strong>Ignoring intent:</strong> Creating informational content for transactional queries (or vice versa) guarantees failure regardless of keyword difficulty.</li>
+  <li><strong>One keyword per page:</strong> A page can rank for dozens of related keywords. Don't obsess over a single keyword at the expense of covering a topic comprehensively.</li>
+  <li><strong>Keyword cannibalisation:</strong> Multiple pages targeting the same keyword split your ranking potential. Consolidate or differentiate.</li>
+</ul>
+
+<h2>How to track your keyword rankings</h2>
+<p>Once you've published content targeting specific keywords, you need to track whether your rankings are moving. Optmizly's <strong>Rank Tracker</strong> monitors your keyword positions over time and alerts you to significant changes — up or down. Set it up for your target keywords as soon as you publish and check monthly.</p>
+
+<h2>The bottom line</h2>
+<p>Keyword research doesn't have to be complicated. Start with seed keywords, expand them, evaluate difficulty and intent, and build a prioritised list weighted toward keywords you can realistically rank for. Create content for the easiest targets first, build authority, and work your way up to more competitive terms over time.</p>
+<p>The sites that grow fastest in organic search aren't the ones chasing the biggest keywords — they're the ones systematically building authority through consistent wins on achievable targets.</p>
+    `.trim(),
+    published: true,
+  },
+
+  {
+    slug: 'internal-linking-strategy-for-seo',
+    title: 'Internal Linking Strategy for SEO: How to Do It Right',
+    description: 'Internal links distribute PageRank, establish topical authority, and help search engines understand your site structure. Here\'s how to build an internal linking strategy that works.',
+    category: 'SEO Strategy',
+    tags: 'internal linking,seo strategy,pagerank,site structure,anchor text',
+    readingTime: '7 min read',
+    content: `
+<h2>Why internal links matter</h2>
+<p>Internal links — links from one page on your site to another — do three important things for SEO:</p>
+<ol>
+  <li><strong>Distribute PageRank:</strong> PageRank (Google's measure of page authority) flows through internal links. Pages with more internal links pointing to them accumulate more authority and tend to rank better.</li>
+  <li><strong>Establish topical relationships:</strong> Internal links tell Google which pages are related to each other, helping it understand your site's topic structure.</li>
+  <li><strong>Aid crawling and indexing:</strong> Googlebot follows links to discover new pages. A page with no internal links pointing to it (an "orphan page") is harder to discover and may not get indexed.</li>
+</ol>
+
+<h2>The pillar-cluster model revisited</h2>
+<p>The most effective internal linking structure follows the pillar-cluster model:</p>
+<ul>
+  <li>A <strong>pillar page</strong> covers a broad topic comprehensively and links to all cluster articles on that topic</li>
+  <li><strong>Cluster articles</strong> cover specific subtopics and link back to the pillar page and to related cluster articles</li>
+</ul>
+<p>This creates a dense network of internal links within each topic area, signalling to Google that your site is an authoritative resource on the subject. It also keeps PageRank flowing within your most important content clusters.</p>
+
+<h2>Anchor text best practices</h2>
+<p>Anchor text — the clickable words in a link — is a signal that tells Google what the linked page is about. Getting anchor text right is one of the most impactful (and most botched) parts of internal linking.</p>
+<ul>
+  <li><strong>Use descriptive anchor text:</strong> "Learn more about keyword research" is better than "click here" or "read more". Descriptive anchors tell both users and search engines what the destination page covers.</li>
+  <li><strong>Include target keywords naturally:</strong> If you're linking to a page about keyword difficulty, using "keyword difficulty" or "how to evaluate keyword difficulty" as anchor text reinforces what that page is about.</li>
+  <li><strong>Vary your anchors:</strong> Don't use the exact same anchor text for every link to the same page. Natural variation (synonyms, related phrases, partial matches) looks more organic and avoids over-optimisation signals.</li>
+  <li><strong>Avoid generic anchors:</strong> "Click here", "read more", "learn more" — these anchor texts carry no topical signal. Use them sparingly and never as your primary anchor for important pages.</li>
+</ul>
+
+<h2>Where to add internal links</h2>
+
+<h3>Body content links</h3>
+<p>The most valuable internal links are those embedded naturally within your article body, where they're contextually relevant. A link within the first 100 words of an article passes more weight than one buried in the footer.</p>
+
+<h3>Contextual callout blocks</h3>
+<p>"Related reading" or "You might also like" blocks are a clean way to add internal links without forcing them into the prose. Use them at the end of major sections where a related article would be genuinely useful.</p>
+
+<h3>Navigation and sidebars</h3>
+<p>Site-wide navigation (header, footer, sidebar) passes links to every page on your site. Use these for your most important pages — your pillar pages and highest-priority tools or landing pages. Don't waste navigation slots on blog posts that don't need the PageRank.</p>
+
+<h3>Breadcrumbs</h3>
+<p>Breadcrumb navigation (Home > Blog > Category > Article) creates a chain of internal links that reinforces your site hierarchy and helps both users and search engines understand where pages sit in your structure.</p>
+
+<h2>Finding internal linking opportunities</h2>
+<p>The challenge with internal linking is that you can't link from content that doesn't exist yet. Here's a systematic process for finding opportunities in your existing content:</p>
+<ol>
+  <li><strong>Identify your target page</strong> — the page you want to build internal links to</li>
+  <li><strong>Search your own site:</strong> <code>site:yourdomain.com "keyword"</code> in Google shows pages on your site that mention the target keyword — these are natural candidates for adding an internal link</li>
+  <li><strong>Find topically related pages:</strong> Any page covering a topic closely related to your target page should link to it</li>
+  <li><strong>Check orphan pages:</strong> Pages with zero internal links are invisible to Google's crawlers — find them and link to them from relevant existing content</li>
+</ol>
+
+<h2>How many internal links per page?</h2>
+<p>There's no hard limit on internal links per page. Google's guidance is that you should use as many as are genuinely useful for readers. Practically:</p>
+<ul>
+  <li>Long-form guides (2,000+ words) might have 10–20 internal links naturally</li>
+  <li>Short articles (500–800 words) might have 3–5</li>
+  <li>Avoid adding links just to hit a number — forced links that don't make sense to readers are a poor user experience and a weak SEO signal</li>
+</ul>
+
+<h2>Internal linking for new content</h2>
+<p>One of the most common internal linking mistakes is treating it as an afterthought. When you publish a new page:</p>
+<ol>
+  <li>Add internal links from the new page to 3–5 existing relevant pages</li>
+  <li>Go back to 3–5 existing relevant pages and add links pointing to the new page</li>
+</ol>
+<p>That second step — adding links from existing content to new content — is what most people skip. It's also what helps new pages get discovered and indexed quickly.</p>
+
+<h2>The bottom line</h2>
+<p>Internal linking is one of the highest-leverage, lowest-cost SEO activities available to you. It doesn't require outreach, it doesn't cost money, and the impact compounds as your site grows. A site with 50 well-linked pages tends to significantly outperform a site with 50 isolated pages on the same topic — even if all other factors are equal.</p>
+<p>Spend 30 minutes per week reviewing your most important pages and adding internal links from relevant existing content. Over time, this builds a web of topical authority that's very difficult for competitors to replicate.</p>
+    `.trim(),
+    published: true,
+  },
+
+  {
+    slug: 'how-to-write-content-that-ranks',
+    title: 'How to Write Content That Ranks: A Practical Guide',
+    description: 'Writing content that ranks isn\'t about gaming algorithms — it\'s about covering a topic better than everyone else. Here\'s the framework for creating content that consistently performs.',
+    category: 'SEO Fundamentals',
+    tags: 'content writing,seo content,how to write for seo,content strategy,ranking content',
+    readingTime: '8 min read',
+    content: `
+<h2>The fundamental principle</h2>
+<p>Content ranks when it's the best answer to a search query. Everything else in SEO — keyword research, backlinks, technical optimisation — is either helping Google find your content or giving it enough trust signals to rank it. But if your content isn't genuinely the best result for a query, no amount of optimisation will keep it at the top.</p>
+<p>This isn't a platitude. It has a practical implication: before you write a word, you need to understand what "best" means for the specific query you're targeting — and that means studying the competition.</p>
+
+<h2>Step 1: Understand what's already ranking</h2>
+<p>Before you write, search your target keyword and read the top 5 results. You're looking for:</p>
+<ul>
+  <li><strong>Content format:</strong> Is it a guide, a listicle, a comparison, a tool page? You need to match the dominant format.</li>
+  <li><strong>Content depth:</strong> How thoroughly does each piece cover the topic? What subtopics appear in most results?</li>
+  <li><strong>Content angle:</strong> What perspective or framing do most articles take? Is there a different angle that's underserved?</li>
+  <li><strong>Content gaps:</strong> What important questions do the top results fail to answer? These are your opportunities to differentiate.</li>
+</ul>
+<p>You're not looking to copy what ranks — you're looking to understand the standard you need to meet or exceed.</p>
+
+<h2>Step 2: Define your unique angle</h2>
+<p>The easiest way to fail in SEO is to write the same article that already exists but slightly worse. If 10 articles already cover "how to do keyword research", the 11th needs a reason to exist.</p>
+<p>Possible angles that differentiate:</p>
+<ul>
+  <li><strong>More current:</strong> If existing content is from 2021 and things have changed, a 2025 version with updated information has a clear angle</li>
+  <li><strong>More specific:</strong> "Keyword research for SaaS companies" carves out an audience from the general "keyword research" pool</li>
+  <li><strong>First-hand experience:</strong> If you've actually done the thing you're writing about, your specific examples and results are unique</li>
+  <li><strong>More comprehensive:</strong> Cover the topic so thoroughly that nothing else needs to be read on the subject</li>
+  <li><strong>Different conclusion:</strong> If all existing articles agree on X and your experience shows X is wrong, that's a valuable contrarian angle</li>
+</ul>
+
+<h2>Step 3: Create a structure before you write</h2>
+<p>Good SEO content is structured before it's written. Create an outline that:</p>
+<ul>
+  <li>Covers all the subtopics that appear in the top-ranking pages (table stakes)</li>
+  <li>Includes your unique additions or angles (differentiation)</li>
+  <li>Addresses People Also Ask questions related to your keyword</li>
+  <li>Progresses logically — each section builds on the previous one</li>
+</ul>
+<p>An hour spent on a solid outline saves three hours of rewriting.</p>
+
+<h2>Step 4: Write for readers first</h2>
+<p>The most common SEO writing mistake is writing for search engines — stuffing keywords, padding length, adding sections for the sake of it. Search engines have gotten extremely good at identifying content written for readers versus content written for algorithms, and they strongly prefer the former.</p>
+<p>Write as if you're explaining something to a smart colleague who doesn't know the topic. Use:</p>
+<ul>
+  <li><strong>Specific examples:</strong> "For instance, when I ran this test on a 3,000-word article..." beats "content length can affect rankings"</li>
+  <li><strong>Concrete numbers:</strong> "Pages loading in under 2 seconds convert 15% better" beats "fast pages perform better"</li>
+  <li><strong>Active voice:</strong> "Google rewards this" beats "this is rewarded by Google"</li>
+  <li><strong>Short sentences and paragraphs:</strong> Dense walls of text have high bounce rates. Online readers scan before they read.</li>
+</ul>
+
+<h2>Step 5: Include the keyword signals</h2>
+<p>Once you've written for readers, add the keyword signals that help Google understand what your content is about. This is where most SEO writing advice starts — but it should come after you've nailed the fundamentals.</p>
+<ul>
+  <li>Primary keyword in: title, H1, first paragraph, at least one H2, URL</li>
+  <li>Related keywords and LSI terms throughout the body (check what appears in competitor content)</li>
+  <li>FAQ section targeting People Also Ask questions</li>
+  <li>Schema markup appropriate to your content type</li>
+</ul>
+
+<h2>Step 6: Demonstrate E-E-A-T</h2>
+<p>For Google to trust your content enough to rank it — especially for competitive queries — it needs signals that you know what you're talking about.</p>
+<ul>
+  <li>Attribute the content to a named author with a bio and credentials</li>
+  <li>Include first-hand examples, case studies, or results where possible</li>
+  <li>Cite credible sources for factual claims</li>
+  <li>Update the content when information changes, and show the "last updated" date</li>
+</ul>
+
+<h2>Step 7: Optimise after publishing</h2>
+<p>Publishing isn't the end of the process — it's the beginning of an optimisation cycle.</p>
+<ol>
+  <li><strong>Monitor rankings:</strong> Track your position for the target keyword. If you're not moving after 3 months, the content needs work.</li>
+  <li><strong>Check Search Console:</strong> Look at which queries your page is appearing for — you may be ranking for keywords you didn't expect, which can inform updates.</li>
+  <li><strong>Analyse engagement:</strong> High bounce rates and low time-on-page suggest readers aren't finding what they expected. Review the content and the search intent match.</li>
+  <li><strong>Update regularly:</strong> Google favours fresh content for time-sensitive topics. Set a review schedule for your most important pages (quarterly for evergreen content, monthly for fast-moving topics).</li>
+</ol>
+
+<h2>Common content writing mistakes that hurt rankings</h2>
+<ul>
+  <li><strong>Intent mismatch:</strong> Writing a blog post for a query that should be a landing page (or vice versa). Always check what's ranking before you decide on format.</li>
+  <li><strong>Thin content:</strong> Covering a topic in 500 words when the ranking pages average 2,500 words. Depth of coverage matters.</li>
+  <li><strong>No differentiation:</strong> Writing the same article that already exists. Give people a reason to choose your page over the 10 others covering the same topic.</li>
+  <li><strong>Forgetting internal links:</strong> New content should link to existing relevant content and have existing relevant content linking back to it.</li>
+  <li><strong>Publishing and forgetting:</strong> Content that's never updated eventually loses rankings as competitors publish better versions.</li>
+</ul>
+
+<h2>How to analyse your content before publishing</h2>
+<p>Optmizly's <strong>Content Analyser</strong> scores your content across 8 SEO dimensions — from on-page signals to E-E-A-T to LLM citation potential — and gives you a prioritised list of improvements before you hit publish. Run it on any important piece of content as a final check before it goes live.</p>
+
+<h2>The bottom line</h2>
+<p>Writing content that ranks consistently comes down to one thing: genuinely answering the searcher's question better than anyone else. The tactics — keyword placement, structure, schema, internal links — are the means, not the end. Get the fundamentals right (understand what's ranking, define your angle, write for readers, demonstrate expertise), and the technical optimisations become the polish on top of a solid foundation.</p>
+    `.trim(),
+    published: true,
+  },
 ]
 
 async function main() {
