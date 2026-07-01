@@ -1,9 +1,13 @@
 'use client'
 
 import { useEffect } from 'react'
+import posthog from 'posthog-js'
 
 export default function DashboardError({ error, reset }: { error: Error; reset: () => void }) {
-  useEffect(() => { console.error(error) }, [error])
+  useEffect(() => {
+    console.error(error)
+    posthog.captureException(error)
+  }, [error])
   return (
     <div className="flex flex-col items-center justify-center h-full py-20 text-center px-6">
       <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">

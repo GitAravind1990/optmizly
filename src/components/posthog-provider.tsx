@@ -19,6 +19,7 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com',
     capture_pageview: false,   // PageviewTracker below handles SPA navigation
     capture_pageleave: true,
+    capture_exceptions: true,  // auto-captures unhandled JS errors + promise rejections
     respect_dnt: true,
     session_recording: {
       maskAllInputs: true,     // masks passwords, card fields, emails by default

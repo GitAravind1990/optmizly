@@ -25,6 +25,32 @@ function makeClient(): PostHog | null {
  * Never throws — all errors are swallowed so a failed analytics call
  * cannot break an API route.
  */
+export async function captureServerException(
+  clerkId: string | null,
+  error: unknown,
+  context?: Record<string, unknown>,
+): Promise<void> {
+  const client = makeClient()
+  if (!client) return
+  const distinctId = clerkId ?? 'anonymous'
+  const err = error instanceof Error ? error : new Error(String(error))
+  try {
+    client.capture({
+      distinctId,
+      event: '$exception',
+      properties: {
+        $exception_message: err.message,
+        $exception_type: err.name,
+        $exception_stack: err.stack,
+        ...context,
+      },
+    })
+    await client.shutdown()
+  } catch {
+    // intentional no-op
+  }
+}
+
 export async function captureServerEvent(
   clerkId: string,
   event: string,
