@@ -4,6 +4,7 @@ import { PLAN_LIMITS, PLAN_TOOLS, getMonthKey } from './plans'
 import { Plan } from '@prisma/client'
 import { setTrackingUser } from './anthropic'
 import { captureServerEvent } from './posthog-server'
+import { sendLimitWarningEmail } from './email'
 
 export type AuthedUser = {
   userId: string
@@ -59,6 +60,11 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
     create: { userId: user.id, month, count: 1 },
     update: { count: { increment: 1 } },
   })
+
+  // Warn when they've just used their second-to-last analysis (fires exactly once per month)
+  if (updated.count === limit - 1 && limit - 1 > 0) {
+    sendLimitWarningEmail(user.email, updated.count, limit).catch(() => {})
+  }
 
   if (updated.count > limit) {
     // Roll back the increment — we were already at the limit

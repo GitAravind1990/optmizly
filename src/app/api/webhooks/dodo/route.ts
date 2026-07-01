@@ -4,6 +4,7 @@ import { getPlanFromProductId } from '@/lib/dodopayments'
 import { prisma } from '@/lib/prisma'
 import { Plan } from '@prisma/client'
 import { captureServerEvent } from '@/lib/posthog-server'
+import { sendSubscriptionEmail, sendCancelledEmail } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
@@ -95,14 +96,31 @@ export async function POST(req: NextRequest) {
         await prisma.user.update({ where: { id: userId }, data: { plan } })
         console.log(`[Dodo Webhook] Upserted subscription ${sub.subscription_id} → ${planKey}`)
 
-        // Fire revenue event server-side, after verified webhook — never on the client
+        // Fire revenue event + send confirmation email after verified webhook
         const dbUser = await prisma.user.findUnique({ where: { id: userId } })
-        if (dbUser?.clerkId) {
-          captureServerEvent(dbUser.clerkId, 'subscription_activated', {
-            plan: planKey,
-            product_id: productId,
-            $set: { plan: planKey },
-          }).catch(() => {})
+        if (dbUser) {
+          if (dbUser.clerkId) {
+            captureServerEvent(dbUser.clerkId, 'subscription_activated', {
+              plan: planKey,
+              product_id: productId,
+              $set: { plan: planKey },
+            }).catch(() => {})
+          }
+          // Only send email on initial activation (not renewals)
+          if (eventType === 'subscription.created' || eventType === 'subscription.active') {
+            const firstName = dbUser.email.split('@')[0]
+            const amount = planKey === 'PRO' ? '$29' : '$79'
+            const nextBilling = periodEnd
+              ? periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+              : undefined
+            sendSubscriptionEmail(
+              dbUser.email,
+              planKey === 'AGENCY' ? 'Agency' : 'Pro',
+              amount,
+              firstName,
+              nextBilling,
+            ).catch(() => {})
+          }
         }
       } else {
         console.warn('[Dodo Webhook] Could not resolve userId for subscription', sub.subscription_id)
@@ -120,6 +138,16 @@ export async function POST(req: NextRequest) {
         await prisma.user.update({ where: { id: record.userId }, data: { plan: Plan.FREE } })
       }
       console.log(`[Dodo Webhook] Cancelled subscription ${sub.subscription_id}`)
+      if (record) {
+        const cancelledUser = await prisma.user.findUnique({ where: { id: record.userId } })
+        if (cancelledUser) {
+          const firstName = cancelledUser.email.split('@')[0]
+          const accessUntil = record.currentPeriodEnd
+            ? record.currentPeriodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+            : undefined
+          sendCancelledEmail(cancelledUser.email, record.plan, firstName, accessUntil).catch(() => {})
+        }
+      }
     } else {
       console.log(`[Dodo Webhook] Unhandled event: ${eventType}`)
     }
