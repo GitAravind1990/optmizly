@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { exportOnPageCSV, exportOnPagePDF } from '@/lib/export'
+import { UpgradeModal } from '@/components/upgrade-modal'
 
 type Fix = {
   category: string
@@ -102,6 +103,7 @@ export default function OnPagePage() {
   const [reanalyzeId, setReanalyzeId] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   // UI state
   const [expandedFix, setExpandedFix] = useState<number | null>(null)
@@ -138,6 +140,7 @@ export default function OnPagePage() {
         body: JSON.stringify(body),
       })
       const d = await r.json()
+      if (r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error || 'Analysis failed')
       setCurrent(d.data)
       setView('result')
@@ -295,6 +298,8 @@ export default function OnPagePage() {
   // ── ANALYZE FORM VIEW ──────────────────────────────────────────────────────
   if (view === 'analyze') {
     return (
+      <>
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
       <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto w-full">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => setView('list')} className="text-slate-400 hover:text-slate-600">←</button>
@@ -391,6 +396,7 @@ export default function OnPagePage() {
           </div>
         </div>
       </div>
+      </>
     )
   }
 
