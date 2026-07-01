@@ -84,13 +84,14 @@ export async function POST(req: NextRequest) {
 
     await trackToolRun(user, 'analyse').catch(() => {})
 
+    const r = result as { overall_score?: number; grade?: string }
     prisma.analysisHistory.create({
       data: {
         userId: user.userId,
         contentSnippet: content.slice(0, 100).trim(),
         contentUrl: contentUrl ?? null,
-        overallScore: result.overall_score ?? 0,
-        grade: result.grade ?? '?',
+        overallScore: r.overall_score ?? 0,
+        grade: r.grade ?? '?',
         result: JSON.stringify(result),
       },
     }).catch(() => {})
