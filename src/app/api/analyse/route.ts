@@ -3,7 +3,7 @@ import { requireAuth, type AuthedUser } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { prisma } from '@/lib/prisma'
-import { captureServerEvent } from '@/lib/posthog-server'
+import { captureServerEvent, captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -54,8 +54,10 @@ RULES:
 - Return ONLY JSON`
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await requireAuth('analyse')
+    clerkId = user.clerkId
     const { content } = await req.json()
 
     if (!content || content.length < 50) {
@@ -84,6 +86,7 @@ export async function POST(req: NextRequest) {
 
     return apiSuccess({ ...result, userPlan: user.plan })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/analyse' })
     return apiError(e)
   }
 }

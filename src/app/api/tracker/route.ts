@@ -2,12 +2,15 @@ import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await requireAuth('tracker')
+    clerkId = user.clerkId
     const { content, pageUrl, queries } = await req.json()
 
     if (!queries?.length) return apiError(new Error('No queries provided'))
@@ -40,6 +43,7 @@ ${queries.slice(0, 4).map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')
     const raw = await callClaude(system, prompt, 4000)
     return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tracker' })
     return apiError(e)
   }
 }

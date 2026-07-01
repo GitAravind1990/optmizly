@@ -2,13 +2,16 @@ import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await requireAuth('topical')
+    clerkId = user.clerkId
     const { niche, urls = [] } = await req.json()
 
     if (!niche || niche.length < 3) return apiError(new Error('Niche is required'))
@@ -124,6 +127,7 @@ Generate a complete topical authority map with 3 pillars × 3 clusters each, plu
       userPlan: user.plan,
     })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/topical' })
     return apiError(e)
   }
 }

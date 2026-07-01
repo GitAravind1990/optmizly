@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -69,8 +70,10 @@ async function fetchRealSERP(
 }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await requireAuth('serp')
+    clerkId = user.clerkId
     const { url, keyword, position, biztype, city, countryCode } = await req.json()
 
     if (!url || !keyword) return apiError(new Error('URL and keyword are required'))
@@ -105,6 +108,7 @@ Rules: phase1=3 tasks (weeks 1-4), phase2=3 tasks (weeks 5-10), phase3=3 tasks (
 
     return apiSuccess(result)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/serp' })
     return apiError(e)
   }
 }

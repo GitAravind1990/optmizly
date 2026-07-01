@@ -3,7 +3,7 @@ import { requireAuth, type AuthedUser } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { prisma } from '@/lib/prisma'
-import { captureServerEvent } from '@/lib/posthog-server'
+import { captureServerEvent, captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -12,8 +12,10 @@ const SYSTEM = `You are an SEO ranking analyst. Return ONLY valid JSON matching 
 Rules: overall=weighted sum Σ(factor.weight*factor.score)/100. label: "Very Unlikely"(0-20),"Difficult"(21-40),"Possible"(41-60),"Strong Opportunity"(61-80),"Highly Likely"(81-100). verdict: "Not Recommended"|"Possible but Competitive"|"Highly Likely". time_to_rank: "3-6 Months"|"6-12 Months"|"12+ Months". gaps: negative=deficit(user below competitors),positive=advantage. 3 forecast scenarios(Quick Wins/Serious Investment/Full Authority Build). 4-6 related keywords. 2-3 clusters with 3-4 keywords each. 3-5 real competitor domains likely to rank for this keyword. 5 blockers max. 5-7 action items with impact/effort "High"|"Medium"|"Low" and gain 1-20.`
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await requireAuth('ranking-engine')
+    clerkId = user.clerkId
     const { keyword, domain, country, goal } = await req.json()
     if (!keyword || !domain || !country || !goal) {
       return apiError(new Error('keyword, domain, country and goal are required'))
@@ -31,6 +33,7 @@ export async function POST(req: NextRequest) {
 
     return apiSuccess({ ...result, userPlan: user.plan })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/ranking-engine' })
     return apiError(e)
   }
 }
