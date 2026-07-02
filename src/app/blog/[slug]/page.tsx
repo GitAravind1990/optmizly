@@ -5,6 +5,7 @@ import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getAllPosts, getPost, getRelatedPosts } from '@/lib/blog'
 import { PageHeader } from '@/components/page-header'
 import { BlogSubscribeForm } from '@/components/blog-subscribe-form'
+import { extractFaqPairs, buildFaqJsonLd } from '@/lib/faq-schema'
 
 export async function generateStaticParams() {
   const posts = await getAllPosts()
@@ -39,10 +40,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const { slug } = await params
   const post = await getPost(slug)
   if (!post) notFound()
-  const relatedPosts = await getRelatedPosts(slug, post.category)
+  const [relatedPosts, faqPairs] = await Promise.all([
+    getRelatedPosts(slug, post.category),
+    Promise.resolve(post.contentType === 'html' ? extractFaqPairs(post.content) : []),
+  ])
 
   return (
     <div className="min-h-screen bg-white">
+      {faqPairs.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: buildFaqJsonLd(faqPairs) }}
+        />
+      )}
       <PageHeader />
 
       <main className="mx-auto max-w-2xl px-6 py-16">
