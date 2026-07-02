@@ -154,15 +154,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Plan + usage */}
           {usage && (
-            <div className="px-4 py-3 border-b border-slate-100">
+            <div className={`px-4 py-3 border-b border-slate-100 transition-colors ${plan === 'FREE' && pct >= 67 ? 'bg-amber-50/60' : ''}`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-700">{planLabel} Plan</span>
-                <span className="text-xs text-slate-400">{usage.count} / {usage.limit}</span>
+                <span className={`text-xs font-medium ${pct >= 90 ? 'text-red-500' : 'text-slate-400'}`}>{usage.count} / {usage.limit}</span>
               </div>
-              <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
+              <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden mb-1.5">
                 <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
               </div>
-              <div className="text-[11px] text-slate-400 mt-1.5">{usage.remaining} analyses remaining</div>
+              {plan === 'FREE' ? (
+                usage.remaining === 0 ? (
+                  <Link
+                    href="/pricing"
+                    className="flex items-center justify-between text-[11px] font-semibold text-red-600 hover:text-red-700 transition-colors"
+                    onClick={() => posthog.capture('upgrade_clicked', { from_plan: 'FREE', target_plan: 'PRO', location: 'sidebar_limit_reached' })}
+                  >
+                    <span>Limit reached this month</span>
+                    <span>Upgrade →</span>
+                  </Link>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[11px] ${usage.remaining === 1 ? 'text-amber-600 font-semibold' : 'text-slate-400'}`}>
+                      {usage.remaining === 1 ? '1 analysis left' : `${usage.remaining} left this month`}
+                    </span>
+                    {usage.remaining <= 2 && (
+                      <Link
+                        href="/pricing"
+                        className="text-[11px] font-semibold text-brand-600 hover:underline"
+                        onClick={() => posthog.capture('upgrade_clicked', { from_plan: 'FREE', target_plan: 'PRO', location: 'sidebar_low_usage' })}
+                      >
+                        Upgrade →
+                      </Link>
+                    )}
+                  </div>
+                )
+              ) : (
+                <div className="text-[11px] text-slate-400">{usage.remaining} analyses remaining</div>
+              )}
             </div>
           )}
 
