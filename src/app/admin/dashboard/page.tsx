@@ -47,6 +47,12 @@ export default function AdminDashboard() {
           >
             Blog Posts
           </a>
+          <a
+            href="/admin/subscribers"
+            className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 text-sm font-semibold"
+          >
+            Subscribers
+          </a>
           <button
             onClick={() => location.reload()}
             className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm font-semibold"
