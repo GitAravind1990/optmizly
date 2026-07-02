@@ -64,7 +64,7 @@ export function DripDay1Email({ firstName = 'there', dashboardUrl }: DripDay1Pro
               <Text className="text-xs text-slate-500 m-0">
                 📖 <strong>From the blog:</strong>{' '}
                 <Link href="https://optmizly.com/blog/how-to-write-content-that-ranks" className="text-blue-600">
-                  How to Write Content That Ranks in 2025 →
+                  How to Write Content That Ranks in 2026 →
                 </Link>
               </Text>
             </Section>

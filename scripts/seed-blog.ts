@@ -68,7 +68,7 @@ const posts = [
 
   {
     slug: 'what-is-eeat-and-how-to-improve-your-score',
-    title: 'What Is E-E-A-T and How to Improve Your Score in 2025',
+    title: 'What Is E-E-A-T and How to Improve Your Score in 2026',
     description: 'E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) is how Google evaluates content quality. Here\'s what it means and exactly how to improve each dimension.',
     category: 'SEO Fundamentals',
     tags: 'eeat,google,seo,content quality,expertise,trustworthiness',
@@ -394,7 +394,7 @@ const posts = [
   },
   {
     slug: 'on-page-seo-checklist',
-    title: 'On-Page SEO Checklist: Everything You Need to Rank in 2025',
+    title: 'On-Page SEO Checklist: Everything You Need to Rank in 2026',
     description: 'A complete on-page SEO checklist covering title tags, headings, meta descriptions, keyword usage, internal links, and more — with specific guidance for each element.',
     category: 'SEO Fundamentals',
     tags: 'on-page seo,seo checklist,title tags,meta description,keyword optimization',
