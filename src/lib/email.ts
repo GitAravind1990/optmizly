@@ -8,6 +8,7 @@ import { LimitReachedEmail } from '@/emails/limit-reached'
 import { DripDay1Email } from '@/emails/drip-day1'
 import { DripDay3Email } from '@/emails/drip-day3'
 import { DripDay7Email } from '@/emails/drip-day7'
+import { BlogSubscribeEmail } from '@/emails/blog-subscribe'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM = process.env.EMAIL_FROM ?? 'Optmizly <hello@Optmizly.com>'
@@ -184,6 +185,28 @@ export async function sendCancelledEmail(
     console.log(`[Email] Cancellation email sent to ${to}`)
   } catch (e) {
     console.error('[Email] Failed to send cancellation email:', e)
+  }
+}
+
+// ── Blog subscribe ────────────────────────────────────────────────────────────
+export async function sendBlogSubscribeEmail(
+  to: string,
+  firstName?: string,
+  latestPostTitle?: string,
+  latestPostUrl?: string,
+) {
+  try {
+    if (!resend) return
+    const html = await render(BlogSubscribeEmail({ firstName, latestPostTitle, latestPostUrl }))
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject: "You're subscribed — here's where to start",
+      html,
+    })
+    console.log(`[Email] Blog subscribe confirmation sent to ${to}`)
+  } catch (e) {
+    console.error('[Email] Failed to send blog subscribe email:', e)
   }
 }
 

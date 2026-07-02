@@ -297,6 +297,13 @@ model BlogPost {
   @@index([published, publishedAt])
 }
 
+model BlogSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  firstName String?
+  createdAt DateTime @default(now())
+}
+
 model ContentOptimizationFix {
   id             String              @id @default(cuid())
   optimizationId String

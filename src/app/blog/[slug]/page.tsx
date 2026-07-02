@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getAllPosts, getPost } from '@/lib/blog'
 import { PageHeader } from '@/components/page-header'
+import { BlogSubscribeForm } from '@/components/blog-subscribe-form'
 
 export async function generateStaticParams() {
   const posts = await getAllPosts()
@@ -91,7 +92,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           }
         </div>
 
-        <div className="mt-16 pt-10 border-t border-slate-100 rounded-2xl bg-blue-50 p-8">
+        <div className="mt-12">
+          <BlogSubscribeForm />
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-blue-50 p-8">
           <div className="flex items-center gap-2 mb-3">
             <span className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs">◈</span>
             <span className="font-bold text-slate-900">Optmizly</span>
