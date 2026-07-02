@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
-import { getAllPosts, getPost } from '@/lib/blog'
+import { getAllPosts, getPost, getRelatedPosts } from '@/lib/blog'
 import { PageHeader } from '@/components/page-header'
 import { BlogSubscribeForm } from '@/components/blog-subscribe-form'
 
@@ -39,6 +39,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const { slug } = await params
   const post = await getPost(slug)
   if (!post) notFound()
+  const relatedPosts = await getRelatedPosts(slug, post.category)
 
   return (
     <div className="min-h-screen bg-white">
@@ -96,7 +97,33 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <BlogSubscribeForm />
         </div>
 
-        <div className="mt-6 rounded-2xl bg-blue-50 p-8">
+        {relatedPosts.length > 0 && (
+          <div className="mt-12">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Keep reading</p>
+            <div className="space-y-3">
+              {relatedPosts.map(p => (
+                <Link
+                  key={p.slug}
+                  href={`/blog/${p.slug}`}
+                  className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 hover:border-blue-200 hover:shadow-sm transition-all group"
+                >
+                  <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${CATEGORY_COLORS[p.category] ?? 'bg-slate-100 text-slate-600'}`}>
+                    {p.category}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors leading-snug mb-0.5">
+                      {p.title}
+                    </p>
+                    <p className="text-xs text-slate-400">{p.readingTime}</p>
+                  </div>
+                  <span className="text-slate-300 group-hover:text-blue-400 transition-colors shrink-0 mt-0.5">→</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-8 rounded-2xl bg-blue-50 p-8">
           <div className="flex items-center gap-2 mb-3">
             <span className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs">◈</span>
             <span className="font-bold text-slate-900">Optmizly</span>
