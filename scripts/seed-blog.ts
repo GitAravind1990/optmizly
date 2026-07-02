@@ -868,6 +868,335 @@ const posts = [
     `.trim(),
     published: true,
   },
+  {
+    slug: 'how-to-do-a-backlink-audit',
+    title: 'How to Do a Backlink Audit: A Step-by-Step Guide',
+    description: 'A backlink audit helps you identify links that are hurting your rankings and find opportunities to build more authority. Here\'s exactly how to do one.',
+    category: 'SEO Strategy',
+    tags: 'backlink audit,backlinks,link building,toxic links,domain authority,off-page seo',
+    readingTime: '7 min read',
+    content: `
+<h2>What is a backlink audit?</h2>
+<p>A backlink audit is a systematic review of every external website linking to your domain. The goal is twofold: find links that may be harming your rankings (toxic or spammy links) and identify your strongest links so you can understand what's working and replicate it.</p>
+<p>Most sites that have been online for more than a year have a mixed backlink profile — some high-quality links from authoritative sites, and some low-quality links from directories, link farms, or irrelevant sources. An audit helps you understand the ratio and take action.</p>
+
+<h2>When should you do a backlink audit?</h2>
+<p>Run a backlink audit in any of these situations:</p>
+<ul>
+  <li>You've seen a sudden, unexplained drop in organic traffic or rankings</li>
+  <li>You've received a manual penalty notification in Google Search Console</li>
+  <li>You're acquiring a website and want to understand its link health before purchase</li>
+  <li>You're launching a new link-building campaign and want to baseline your current profile</li>
+  <li>You haven't audited in more than 12 months</li>
+</ul>
+<p>For most sites, a quarterly review is sufficient to catch problems early.</p>
+
+<h2>Step 1: Pull your full link profile</h2>
+<p>Start by exporting all known backlinks to your domain. Use Google Search Console (free) as your baseline — go to Links > External links > Export. For a more complete picture, also pull data from third-party tools that crawl the web independently.</p>
+<p>No single tool has complete coverage, so cross-referencing two sources gives you a more accurate view of your full profile.</p>
+
+<h2>Step 2: Identify problematic links</h2>
+<p>Not all low-quality links cause harm, but the following patterns are worth flagging:</p>
+<ul>
+  <li><strong>Links from sites with no topical relevance:</strong> A payday loans site linking to your B2B software blog is a mismatch Google notices</li>
+  <li><strong>Links from obvious link farms or PBNs:</strong> Sites with hundreds of outbound links per page and thin, auto-generated content</li>
+  <li><strong>Exact-match anchor text overdose:</strong> If 40% of your links use your exact target keyword as anchor text, that's an unnatural pattern</li>
+  <li><strong>Links from penalised domains:</strong> Check if linking domains have had their own manual actions</li>
+  <li><strong>Sudden spike in links:</strong> A burst of 500 new links from low-authority sites in a week is a red flag</li>
+</ul>
+<p>Work through your link list and tag each domain as clean, review, or remove.</p>
+
+<h2>Step 3: Find your best links</h2>
+<p>This is the part most people skip, but it's extremely valuable. Sort your links by domain authority (or similar metric) and identify your top 20–30 referring domains. For each one, ask:</p>
+<ul>
+  <li>How did we earn this link? (Content they liked, a mention, a partnership?)</li>
+  <li>Are there similar sites in the same niche we don't have links from yet?</li>
+  <li>Can we get more links from this same domain (to other pages)?</li>
+</ul>
+<p>Your best existing links are a blueprint for your future link-building strategy.</p>
+
+<h2>Step 4: Remove or disavow toxic links</h2>
+<p>For genuinely harmful links, you have two options:</p>
+<ol>
+  <li><strong>Contact and request removal:</strong> Find the webmaster of the linking site and ask them to remove the link. This works in a minority of cases but is always worth trying first.</li>
+  <li><strong>Disavow via Google Search Console:</strong> For links you can't get removed, create a disavow file (a plain text file listing the domains or URLs to ignore) and upload it to Search Console. Google will then ignore those links when evaluating your site.</li>
+</ol>
+<p>Be conservative with disavow — only disavow links you're confident are harmful. Disavowing good links by mistake can actually hurt your rankings.</p>
+
+<h2>Step 5: Document and monitor</h2>
+<p>After your audit, document what you found and what actions you took. Set a reminder to review your link profile quarterly. New links appear (and disappear) constantly, and an audit is only useful if it becomes a recurring process rather than a one-off exercise.</p>
+
+<h2>Analyse your backlink profile with Optmizly</h2>
+<p>Optmizly's <strong>Backlink Analyser</strong> gives you a full view of your referring domains, anchor text distribution, and link quality signals — so you can spot problems and prioritise your link-building efforts from one place.</p>
+
+<h2>The bottom line</h2>
+<p>A backlink audit isn't glamorous, but it's one of the most impactful technical SEO tasks you can do. A single disavow of a few hundred toxic links has recovered rankings for sites that had been stagnant for years. More importantly, understanding your best links gives you a repeatable model for future link acquisition — which compounds over time.</p>
+    `.trim(),
+    published: true,
+  },
+
+  {
+    slug: 'how-to-refresh-old-content',
+    title: 'How to Refresh Old Content and Recover Lost Rankings',
+    description: 'Content doesn\'t rank forever. Here\'s a systematic approach to identifying which pages need updating and exactly how to bring them back to life.',
+    category: 'SEO Strategy',
+    tags: 'content refresh,content update,recover rankings,content decay,seo content strategy',
+    readingTime: '6 min read',
+    content: `
+<h2>Why content decays</h2>
+<p>A page that ranked well in 2023 may barely appear in search results today — not because anything went wrong with your site, but because the internet moved on. New competitors published better content. The topic evolved and your page became outdated. Google updated how it weights certain signals. This is content decay, and it affects every site.</p>
+<p>The good news: refreshing existing content is almost always faster and more effective than publishing brand-new content. You already have the URL, the backlinks, the crawl history, and some baseline authority. You're not starting from zero.</p>
+
+<h2>Which pages to refresh first</h2>
+<p>Not every old page deserves a refresh — prioritise pages with the most recovery potential:</p>
+<ul>
+  <li><strong>Pages that used to rank in positions 1–10 but have dropped to 11–30:</strong> These are close to the first page and need the least work to recover</li>
+  <li><strong>Pages getting impressions but few clicks in Search Console:</strong> They're appearing in results but losing to competitors — a refresh can shift that</li>
+  <li><strong>Pages covering topics that have changed significantly:</strong> Statistics, tools, regulations, best practices — anything time-sensitive</li>
+  <li><strong>Pages with declining organic traffic over the last 6–12 months:</strong> Filter your analytics by organic channel, sort by traffic change, identify consistent losers</li>
+</ul>
+<p>Don't waste refresh effort on pages that never ranked and have no backlinks — those need a complete rewrite or consolidation.</p>
+
+<h2>How to audit what specifically needs changing</h2>
+<p>Before rewriting anything, understand why the page is underperforming. Compare your page against the current top 3 results for your target keyword:</p>
+<ul>
+  <li><strong>Comprehensiveness:</strong> Are the top-ranking pages covering subtopics you've missed? Use the gaps as your update checklist.</li>
+  <li><strong>Freshness:</strong> Do they have more recent statistics, examples, or information? Update yours to match or exceed.</li>
+  <li><strong>Format:</strong> If the top results have changed format (e.g., from long guides to comparison tables), you may need to restructure.</li>
+  <li><strong>Search intent:</strong> Has what people actually want when they search this query changed? A query that used to return listicles might now return tool pages.</li>
+</ul>
+
+<h2>What to actually update</h2>
+<p>A content refresh isn't just changing the date on an old post. Substantive updates that move rankings:</p>
+<ul>
+  <li>Add sections covering topics the top results include that you don't</li>
+  <li>Replace outdated statistics with current data (and link to the source)</li>
+  <li>Remove or update sections that are no longer accurate</li>
+  <li>Add new examples, case studies, or first-hand experience</li>
+  <li>Rewrite the introduction — it's the highest-impact section and readers decide to stay or leave within the first paragraph</li>
+  <li>Add a FAQ section targeting People Also Ask questions that appear for your keyword</li>
+  <li>Update internal links to point to newer relevant content you've published since the original post</li>
+</ul>
+<p>Update the "Last updated" date and consider making it visible to readers — freshness signals matter both for Google and for reader trust.</p>
+
+<h2>Consolidate instead of refresh in some cases</h2>
+<p>If you have multiple thin pages covering the same topic, consolidation is often better than refreshing each one individually. Combine 3 weak 800-word posts into one comprehensive 2,500-word guide, 301-redirect the old URLs to the new one, and you've transferred all the link equity into a single stronger page. Google then has one clear best result to rank rather than three competing candidates.</p>
+
+<h2>Measure the impact</h2>
+<p>After refreshing, track the affected URLs in Search Console over the following 4–8 weeks. You're looking for:</p>
+<ul>
+  <li>Impression growth (appearing for more queries)</li>
+  <li>Average position improvement</li>
+  <li>Click-through rate change</li>
+</ul>
+<p>If a refresh doesn't move the needle after 8 weeks, the problem may be more fundamental — either the page needs a complete rewrite, or it's competing against pages with significantly more authority that no amount of content improvement will overcome without link building.</p>
+
+<h2>Score your content before and after</h2>
+<p>Optmizly's <strong>Content Analyser</strong> gives you a score across 8 dimensions before you publish a refresh — so you can compare against the competition and know exactly what's still missing before the update goes live.</p>
+
+<h2>The bottom line</h2>
+<p>Content refreshing is one of the most underused leverage points in SEO. Most teams spend 90% of their content budget on new posts and 10% on existing content — when the ratio should often be reversed. Identify your highest-potential decaying pages, make substantive updates based on what's currently ranking, and monitor the results. It's unglamorous work that consistently delivers.</p>
+    `.trim(),
+    published: true,
+  },
+
+  {
+    slug: 'schema-markup-guide',
+    title: 'Schema Markup: What It Is and How to Use It for SEO',
+    description: 'Schema markup helps Google understand your content and unlocks rich results in search. Here\'s what to implement and why it matters.',
+    category: 'SEO Fundamentals',
+    tags: 'schema markup,structured data,rich results,json-ld,technical seo,rich snippets',
+    readingTime: '6 min read',
+    content: `
+<h2>What is schema markup?</h2>
+<p>Schema markup (also called structured data) is code you add to your HTML that helps search engines understand what your content means — not just what it says. It's a standardised vocabulary, maintained at schema.org and supported by Google, Bing, and other major search engines.</p>
+<p>Without schema, Google reads your page and makes its best guess about what the content represents. With schema, you tell it directly: "this is a recipe", "this is a product with a price of £49", "this is a FAQ with these specific questions and answers". That clarity enables Google to display your content in enhanced ways in search results.</p>
+
+<h2>Why schema markup matters for SEO</h2>
+<p>Schema doesn't directly boost rankings — Google has confirmed it's not a ranking factor. But it matters for two indirect reasons:</p>
+<ul>
+  <li><strong>Rich results:</strong> Schema unlocks enhanced search result formats — star ratings, FAQs, prices, event dates, recipe details. These take up more visual space in the SERP and typically get significantly higher click-through rates than plain blue links.</li>
+  <li><strong>AI and entity understanding:</strong> As search becomes more AI-driven, schema helps engines understand the entities in your content — who you are, what you sell, what your content covers. This is increasingly important for appearing in AI-generated answers.</li>
+</ul>
+
+<h2>The most valuable schema types</h2>
+<p>Start with the types that unlock visible rich results for your content type:</p>
+<ul>
+  <li><strong>FAQ:</strong> Adds expandable question-and-answer pairs directly in the search result. High click-through lift for informational content. Add it to any page with an FAQ section.</li>
+  <li><strong>Article / BlogPosting:</strong> Tells Google this is editorial content, includes author, published date, and updated date. Supports E-E-A-T signals.</li>
+  <li><strong>Product:</strong> Enables price, availability, and review stars in search results for e-commerce pages.</li>
+  <li><strong>Review / AggregateRating:</strong> Shows star ratings in results — one of the highest click-through boosters available.</li>
+  <li><strong>HowTo:</strong> Displays step-by-step instructions directly in the SERP for how-to content.</li>
+  <li><strong>LocalBusiness:</strong> Critical for local SEO — tells Google your address, phone, opening hours, and business type.</li>
+  <li><strong>BreadcrumbList:</strong> Replaces the URL in search results with a clean breadcrumb path, improving result readability.</li>
+  <li><strong>Organization / WebSite:</strong> Add to your homepage to establish your brand identity, logo, and sitelinks search box eligibility.</li>
+</ul>
+
+<h2>How to implement JSON-LD</h2>
+<p>Google recommends JSON-LD as the implementation format — it's a separate script block you add to the page's <code>&lt;head&gt;</code> or <code>&lt;body&gt;</code>, which means it doesn't require changing your HTML structure.</p>
+<p>A basic FAQ schema looks like this:</p>
+<pre><code>&lt;script type="application/ld+json"&gt;
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is schema markup?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Schema markup is structured data code that helps search engines understand your content."
+      }
+    }
+  ]
+}
+&lt;/script&gt;</code></pre>
+<p>In modern CMS platforms (WordPress, Webflow, Next.js), you can inject this into page templates so it applies automatically to all relevant pages. Many WordPress SEO plugins (Yoast, Rank Math) also generate common schema types automatically.</p>
+
+<h2>Testing and validating your markup</h2>
+<p>After implementing schema, always validate it before assuming it's correct. Errors in your JSON-LD (mismatched brackets, incorrect property names) mean Google can't parse it and you get no benefit.</p>
+<p>Use Google's Rich Results Test to check if your pages are eligible for rich results and to see any errors or warnings in your implementation. Google Search Console's Enhancements section also shows rich result performance over time once your schema is indexed.</p>
+
+<h2>Common schema mistakes</h2>
+<ul>
+  <li><strong>Marking up content that isn't visible on the page:</strong> If your FAQ schema contains answers that don't appear in the page content, Google may reject it as misleading</li>
+  <li><strong>Using the wrong type:</strong> Marking a blog post as a Product or a service page as a LocalBusiness when it isn't</li>
+  <li><strong>Forgetting required properties:</strong> Each schema type has required and recommended properties — missing required ones prevents rich results from appearing</li>
+  <li><strong>Implementing and never checking:</strong> Schema in Search Console can show errors months after implementation if something broke during a site update</li>
+</ul>
+
+<h2>Check your structured data coverage</h2>
+<p>Optmizly's <strong>Content Analyser</strong> flags structured data as one of its 8 scoring dimensions — giving you an immediate signal on whether your content has adequate schema coverage before you publish or after a site update.</p>
+
+<h2>The bottom line</h2>
+<p>Schema markup is one of the few technical SEO investments with a direct, visible payoff in search results. Implementing FAQ schema on 10 informational pages in an afternoon is a realistic project that can deliver measurable click-through rate improvements within weeks. Start with the types most relevant to your content, validate your implementation, and track the Enhancements report in Search Console to see the impact.</p>
+    `.trim(),
+    published: true,
+  },
+
+  {
+    slug: 'how-to-write-meta-descriptions',
+    title: 'How to Write Meta Descriptions That Actually Get Clicked',
+    description: 'Meta descriptions don\'t directly affect rankings — but they heavily influence click-through rate, which does. Here\'s the formula for writing them properly.',
+    category: 'SEO Fundamentals',
+    tags: 'meta descriptions,click through rate,ctr,on-page seo,serp snippets,title tags',
+    readingTime: '5 min read',
+    content: `
+<h2>What is a meta description?</h2>
+<p>A meta description is an HTML attribute that provides a short summary of a page's content. It typically appears beneath the page title in search results, giving searchers a preview of what they'll find if they click. Here's what it looks like in HTML:</p>
+<pre><code>&lt;meta name="description" content="Your description here — ideally 150–160 characters." /&gt;</code></pre>
+<p>Google doesn't always use your written meta description. If it finds a section of your page that better matches the searcher's query, it will dynamically generate the snippet instead. Studies suggest Google rewrites meta descriptions roughly 60–70% of the time. But that's not a reason to skip writing them — when Google does use your description, having a well-written one meaningfully improves your click-through rate.</p>
+
+<h2>Do meta descriptions affect rankings?</h2>
+<p>Directly, no. Google confirmed in 2009 that meta descriptions are not a ranking factor, and that hasn't changed. But indirectly, they matter:</p>
+<ul>
+  <li>A compelling description improves click-through rate (CTR)</li>
+  <li>Higher CTR means more organic traffic for the same ranking position</li>
+  <li>There's evidence that sustained high CTR can positively influence Google's assessment of a result's quality</li>
+</ul>
+<p>Think of the meta description as your organic ad copy. Your ranking gets you the impression — the description determines whether that impression converts to a click.</p>
+
+<h2>What makes a good meta description</h2>
+<p>The best meta descriptions share several characteristics:</p>
+<ul>
+  <li><strong>They match search intent precisely:</strong> If someone searches "best project management tools", they want to know they'll find a comparison, not a definition of project management</li>
+  <li><strong>They include the primary keyword naturally:</strong> Google bolds keywords in snippets that match the search query, making your result stand out visually</li>
+  <li><strong>They communicate a specific benefit or outcome:</strong> "Learn how to reduce churn by 30%" beats "read our guide on customer retention"</li>
+  <li><strong>They have a soft call to action:</strong> "Find out", "Learn", "See", "Discover" — active language that suggests clicking is worth it</li>
+  <li><strong>They're 140–160 characters:</strong> Longer descriptions get truncated in search results, cutting off your message mid-sentence</li>
+</ul>
+
+<h2>A simple formula that works</h2>
+<p>For most pages, this structure produces good descriptions:</p>
+<p><strong>[What the page covers] + [Specific benefit or outcome] + [Soft CTA]</strong></p>
+<p>Examples:</p>
+<ul>
+  <li>"Discover 12 proven link-building tactics used by top SEO teams in 2026 — with step-by-step instructions for each. No fluff."</li>
+  <li>"Compare the 8 best project management tools for remote teams. See pricing, features, and which one suits your team size."</li>
+  <li>"Learn how to reduce SaaS churn with three retention strategies backed by data from 500+ B2B companies. Free guide."</li>
+</ul>
+<p>Each one tells the searcher exactly what they'll get, who it's for, and implies the page is worth their time.</p>
+
+<h2>Common meta description mistakes</h2>
+<ul>
+  <li><strong>Leaving it blank:</strong> Google will pull random text from your page, which is usually worse than anything you'd write</li>
+  <li><strong>Duplicate descriptions across pages:</strong> Each page should have a unique description — Google flags duplicates in Search Console and may be less likely to use them</li>
+  <li><strong>Keyword stuffing:</strong> "Best SEO tool, SEO software, SEO platform, SEO optimization tool" — this reads as spam to humans and Google alike</li>
+  <li><strong>Being too vague:</strong> "This page is about content marketing" tells the searcher nothing useful</li>
+  <li><strong>Writing for the crawl, not the click:</strong> Descriptions are read by humans deciding whether to click — write for them, not for robots</li>
+</ul>
+
+<h2>Prioritise which pages to write first</h2>
+<p>If you have hundreds of pages, don't try to rewrite all descriptions at once. Prioritise:</p>
+<ol>
+  <li>Your highest-traffic pages (improve CTR on what's already working)</li>
+  <li>Pages ranking in positions 4–10 (a CTR improvement here has the biggest ranking impact)</li>
+  <li>Pages with no description currently set</li>
+  <li>Pages with duplicate descriptions</li>
+</ol>
+<p>Check Google Search Console's Performance report, filter by page, and sort by impressions to find the highest-opportunity pages.</p>
+
+<h2>Check your meta description coverage</h2>
+<p>Optmizly's <strong>On-Page SEO Analyser</strong> checks your meta description as part of a full on-page audit — flagging missing, duplicate, or too-long descriptions alongside title tag issues, heading structure, and keyword placement.</p>
+
+<h2>The bottom line</h2>
+<p>Meta descriptions are 150 characters that determine whether a searcher clicks your result or the one below it. They take 5 minutes per page to write well, and the cumulative click-through improvement across your most important pages can meaningfully increase organic traffic without any change in rankings. Write them for humans, include the keyword naturally, and always be specific about what the reader will get.</p>
+    `.trim(),
+    published: true,
+  },
+
+  {
+    slug: 'what-is-a-content-score',
+    title: 'What Is a Content Score and How Do You Improve It?',
+    description: 'A content score measures how well-optimised your content is for search across multiple dimensions. Here\'s what goes into it and how to use it to improve your rankings.',
+    category: 'SEO Fundamentals',
+    tags: 'content score,content optimization,seo score,content quality,content analysis,content grading',
+    readingTime: '5 min read',
+    content: `
+<h2>What is a content score?</h2>
+<p>A content score is a numerical measure of how well a piece of content is optimised for search. Unlike a single metric (such as keyword density or word count), a content score aggregates multiple signals across different dimensions — on-page SEO, semantic relevance, E-E-A-T signals, structured data, and more — into a single number that tells you how competitive your content is likely to be.</p>
+<p>Think of it like a health check: a doctor doesn't diagnose your fitness with just your weight or just your blood pressure. They look at a panel of indicators together to get a complete picture. A content score does the same for your page's SEO readiness.</p>
+
+<h2>What factors go into a content score?</h2>
+<p>Different tools weight different signals, but the most meaningful content scores typically evaluate:</p>
+<ul>
+  <li><strong>On-Page SEO:</strong> Keyword placement in title, H1, headings, URL, and opening paragraph; meta description quality; image alt text</li>
+  <li><strong>Content depth and comprehensiveness:</strong> Does the content cover the topic thoroughly, including the subtopics that appear in top-ranking pages?</li>
+  <li><strong>Semantic richness:</strong> Does the content use related terms, entities, and concepts that establish topical relevance beyond just the primary keyword?</li>
+  <li><strong>E-E-A-T signals:</strong> Author attribution, credentials, first-hand examples, cited sources, trust indicators</li>
+  <li><strong>Structured data:</strong> Schema markup that helps search engines understand the content type and entities</li>
+  <li><strong>LLM citation potential:</strong> Signals that make content likely to be cited by AI models like ChatGPT and Perplexity when answering related questions</li>
+  <li><strong>Technical SEO:</strong> Page speed signals, mobile compatibility, crawlability</li>
+</ul>
+<p>A strong content score doesn't mean a page will rank — distribution (backlinks, internal links) still matters enormously — but it gives you confidence that the content itself is doing its job.</p>
+
+<h2>Why content scores matter</h2>
+<p>Content scores are useful at two stages: before publishing and after a ranking decline.</p>
+<p><strong>Before publishing:</strong> Running a content score check before a page goes live catches optimisation gaps while they're still easy to fix. Changing a heading structure or adding schema markup takes minutes before publish and much more effort after a page has been indexed and linked internally.</p>
+<p><strong>After a ranking decline:</strong> If a page that used to rank well has dropped, a content score analysis against current top-ranking pages reveals what's changed. Did competitors add FAQ schema? Did they expand their coverage of a subtopic you skipped? The gap analysis tells you where to focus the refresh.</p>
+
+<h2>How to improve your content score</h2>
+<p>The highest-impact improvements vary by page, but the most common gaps across content we've analysed:</p>
+<ul>
+  <li><strong>Missing entities:</strong> Content that covers a topic but doesn't mention the key related entities — people, organisations, tools, concepts — that Google expects to see in comprehensive coverage</li>
+  <li><strong>Weak E-E-A-T:</strong> Anonymous content with no author attribution, no first-hand examples, and no cited sources scores poorly on experience and expertise signals</li>
+  <li><strong>No structured data:</strong> FAQ schema alone often delivers a measurable improvement in both score and click-through rate</li>
+  <li><strong>Thin heading structure:</strong> A 2,000-word article with one H2 has poor scannability and misses the opportunity to signal topical breadth through subheadings</li>
+  <li><strong>Poor keyword placement:</strong> Primary keyword missing from the first 100 words, not present in any H2, or absent from the meta description</li>
+</ul>
+
+<h2>What a good content score looks like</h2>
+<p>There's no universal benchmark — a score of 75/100 means different things on different tools and for different topics. What matters is your score relative to the pages you're competing against. If the top 3 results for your target keyword score an average of 82/100 on a given tool and your page scores 61/100, the 21-point gap is your optimisation target.</p>
+<p>Use content scoring comparatively, not in isolation.</p>
+
+<h2>Score your content with Optmizly</h2>
+<p>Optmizly's <strong>Content Analyser</strong> scores your content across 8 dimensions — Technical SEO, On-Page SEO, Entity Optimisation, E-E-A-T Signals, Semantic Richness, LLM Citation Triggers, Structured Data, and Authority Reinforcement — and gives you a prioritised list of improvements with specific fixes for each gap. Run it before you publish, after a traffic drop, or as a regular content audit.</p>
+
+<h2>The bottom line</h2>
+<p>A content score gives you a structured, objective way to evaluate content quality before and after publishing — instead of relying on intuition or hoping for the best. It won't tell you everything (off-page authority matters too), but it closes the gap between "we published something" and "we published something that's genuinely competitive". Use it as a pre-publish checklist and as your diagnostic tool when rankings slip.</p>
+    `.trim(),
+    published: true,
+  },
 ]
 
 async function main() {
