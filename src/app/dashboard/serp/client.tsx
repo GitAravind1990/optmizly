@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button, Card, Badge, EmptyState } from '@/components/ui'
 import { exportSerpCSV, exportSerpPDF } from '@/lib/export'
+import { UpgradeModal } from '@/components/upgrade-modal'
 
 const SEV_COLORS: Record<string, 'red' | 'amber' | 'blue' | 'green'> = { critical: 'red', high: 'amber', medium: 'blue', low: 'green' }
 const ENTITY_COLORS: Record<string, string> = { target: 'text-blue-600', competitor1: 'text-red-600', competitor2: 'text-amber-600', competitor3: 'text-purple-600' }
@@ -15,6 +16,7 @@ export function SerpClient() {
   const [phase, setPhase] = useState('')
   const [result, setResult] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   async function handleRun() {
     if (!fields.url || !fields.keyword) { setError('Enter Target URL and Keyword'); return }
@@ -28,6 +30,7 @@ export function SerpClient() {
       })
       setPhase('Phase 2: Building recovery plan…')
       const d = await r.json()
+      if (r.status === 403) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error)
       setResult(d)
     } catch (e) {
@@ -46,6 +49,8 @@ export function SerpClient() {
   } | null
 
   return (
+    <>
+    {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-4xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
@@ -234,5 +239,6 @@ export function SerpClient() {
         {!result && !loading && <EmptyState icon="📈" title="SERP Audit" desc="Enter your target URL and keyword, then run the audit to get a full competitor breakdown and recovery plan." />}
       </div>
     </div>
+    </>
   )
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button, Card, Badge, EmptyState, Spinner } from '@/components/ui'
 import { exportTopicalCSV, exportTopicalPDF } from '@/lib/export'
+import { UpgradeModal } from '@/components/upgrade-modal'
 
 type Cluster = { title: string; slug: string; intent: string; difficulty: string; monthly_searches: string; primary_keyword: string; covered: boolean; ai_cite_score: number; word_count_target: number }
 type Pillar  = { title: string; slug: string; intent: string; monthly_searches: string; covered: boolean; ai_cite_score: number; word_count_target: number; clusters: Cluster[] }
@@ -18,6 +19,7 @@ export function TopicalClient() {
   const [result, setResult] = useState<Result | null>(null)
   const [error, setError] = useState('')
   const [selected, setSelected] = useState<{ pillar: number; cluster?: number } | null>(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   async function handleRun() {
     if (!niche.trim()) { setError('Enter a niche first'); return }
@@ -30,6 +32,7 @@ export function TopicalClient() {
         body: JSON.stringify({ niche, urls }),
       })
       const d = await r.json()
+      if (r.status === 403) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error)
       setResult(d)
     } catch (e) {
@@ -41,6 +44,8 @@ export function TopicalClient() {
   const selCluster = selected?.cluster !== undefined ? selPillar?.clusters[selected.cluster] : null
 
   return (
+    <>
+    {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-4xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
@@ -250,5 +255,6 @@ export function TopicalClient() {
         )}
       </div>
     </div>
+    </>
   )
 }

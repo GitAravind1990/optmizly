@@ -6,6 +6,7 @@ import {
   type AuditPriority, type CheckStatus,
 } from '@/lib/seo-audit/framework'
 import { exportSeoAuditCSV, exportSeoAuditPDF } from '@/lib/export'
+import { UpgradeModal } from '@/components/upgrade-modal'
 
 type AutoResult = { status: CheckStatus; detail: string }
 type AIResult = { score: number; issues: string[]; fixes: string[] }
@@ -72,6 +73,7 @@ export default function SeoAuditPage() {
   const [showPaste, setShowPaste] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const [expanded, setExpanded] = useState<string | null>(null)
   const [savingCheck, setSavingCheck] = useState<string | null>(null)
@@ -113,6 +115,7 @@ export default function SeoAuditPage() {
         body: JSON.stringify(body),
       })
       const d = await r.json()
+      if (r.status === 403) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error || 'Audit failed')
       setCurrent(d.data)
       setExpanded(null)
@@ -295,6 +298,8 @@ export default function SeoAuditPage() {
   const sortedCats = [...AUDIT_FRAMEWORK].sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority])
 
   return (
+    <>
+    {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     <div className="flex-1 overflow-y-auto">
       <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-3">
         <div className="flex items-center justify-between">
@@ -445,5 +450,6 @@ export default function SeoAuditPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }
