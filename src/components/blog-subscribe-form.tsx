@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import posthog from 'posthog-js'
 
 export function BlogSubscribeForm() {
   const [email, setEmail] = useState('')
@@ -17,7 +18,12 @@ export function BlogSubscribeForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, firstName }),
       })
-      setStatus(r.ok ? 'success' : 'error')
+      if (r.ok) {
+        posthog.capture('blog_subscribed', { has_first_name: !!firstName.trim() })
+        setStatus('success')
+      } else {
+        setStatus('error')
+      }
     } catch {
       setStatus('error')
     }

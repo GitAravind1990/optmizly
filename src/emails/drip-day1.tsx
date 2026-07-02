@@ -58,6 +58,15 @@ export function DripDay1Email({ firstName = 'there', dashboardUrl }: DripDay1Pro
               >
                 Analyse a page now →
               </Button>
+
+              <Hr className="border-slate-100 mt-6 mb-4" />
+
+              <Text className="text-xs text-slate-500 m-0">
+                📖 <strong>From the blog:</strong>{' '}
+                <Link href="https://optmizly.com/blog/how-to-write-content-that-ranks" className="text-blue-600">
+                  How to Write Content That Ranks in 2025 →
+                </Link>
+              </Text>
             </Section>
 
             <Section className="bg-blue-50 rounded-xl border border-blue-100 px-6 py-4 mb-6">
