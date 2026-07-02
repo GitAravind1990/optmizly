@@ -6,9 +6,24 @@ const sans = "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sa
 const muted = '#8A93A3'
 const line2 = '#F0F2F6'
 
+const faqJsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    { '@type': 'Question', name: 'Is there a free plan?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. The Free plan is free forever — no credit card required. You get 3 analyses per month and full access to content scoring.' } },
+    { '@type': 'Question', name: 'What counts as one analysis?', acceptedAnswer: { '@type': 'Answer', text: 'Each time you submit content or a URL for scoring — a content analysis, E-E-A-T check, SERP audit, or other tool — it uses one analysis credit. Credits reset at the start of each billing month.' } },
+    { '@type': 'Question', name: 'Can I cancel anytime?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Cancel from your account settings at any time. You keep full access until the end of your current billing period.' } },
+    { '@type': 'Question', name: 'What is the refund policy?', acceptedAnswer: { '@type': 'Answer', text: 'All paid plans come with a 14-day money-back guarantee. Contact us within 14 days for a full refund — no questions asked.' } },
+    { '@type': 'Question', name: 'Do I need API keys or anything installed?', acceptedAnswer: { '@type': 'Answer', text: 'No. Optmizly is fully hosted. All AI analysis is included in your plan — no third-party API keys or setup required.' } },
+    { '@type': 'Question', name: 'What AI model powers Optmizly?', acceptedAnswer: { '@type': 'Answer', text: 'Optmizly uses Claude by Anthropic for all content analysis, scoring, and recommendations.' } },
+    { '@type': 'Question', name: 'Can I upgrade or downgrade my plan?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Upgrade instantly from your dashboard settings. Downgrades take effect at the start of your next billing cycle.' } },
+  ],
+})
+
 export default function PricingPage() {
   return (
     <div style={{ background: '#fff', minHeight: '100vh', fontFamily: sans }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqJsonLd }} />
       <PageHeader />
       <PagePricing />
       <footer style={{ background: '#FAFAFA', borderTop: `1px solid ${line2}` }}>

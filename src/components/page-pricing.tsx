@@ -280,6 +280,169 @@ export function PagePricing() {
       }}>
         14-day money-back on paid plans · Cancel anytime · No credit card to start
       </div>
+
+      {/* ── FEATURE COMPARISON TABLE ── */}
+      <div style={{ marginTop: 80 }}>
+        <h3 style={{
+          fontFamily: T.sans, fontSize: 'clamp(22px, 3vw, 30px)',
+          fontWeight: 700, letterSpacing: -1, color: T.ink,
+          textAlign: 'center', margin: '0 0 40px',
+        }}>
+          Compare all features
+        </h3>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.sans, fontSize: 14, minWidth: 560 }}>
+            <thead>
+              <tr>
+                <th style={{ padding: '14px 16px', textAlign: 'left', color: T.muted, fontWeight: 600, fontSize: 13, borderBottom: `2px solid ${T.line}`, width: '44%' }}>Feature</th>
+                {['Free', 'Pro', 'Agency'].map((plan, i) => (
+                  <th key={plan} style={{
+                    padding: '14px 16px', textAlign: 'center', fontWeight: 700,
+                    borderBottom: `2px solid ${T.line}`, fontSize: 14,
+                    color: i === 1 ? T.blue : T.ink,
+                  }}>{plan}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARISON_ROWS.map((row, i) => (
+                row.type === 'category'
+                  ? (
+                    <tr key={i} style={{ background: T.line2 }}>
+                      <td colSpan={4} style={{
+                        padding: '8px 16px', fontSize: 11, fontWeight: 700,
+                        letterSpacing: '0.08em', textTransform: 'uppercase', color: T.muted,
+                      }}>{row.label}</td>
+                    </tr>
+                  ) : (
+                    <tr key={i} style={{ borderBottom: `1px solid ${T.line2}` }}>
+                      <td style={{ padding: '13px 16px', color: T.ink }}>{row.label}</td>
+                      {[row.free, row.pro, row.agency].map((val, ci) => (
+                        <td key={ci} style={{ padding: '13px 16px', textAlign: 'center' }}>
+                          {val === true
+                            ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={ci === 1 ? T.blue : T.good} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M5 12l5 5L20 7"/></svg>
+                            : val === false
+                            ? <span style={{ color: T.muted, fontSize: 18, lineHeight: 1 }}>—</span>
+                            : <span style={{ fontWeight: 600, color: ci === 1 ? T.blue : T.ink }}>{val}</span>
+                          }
+                        </td>
+                      ))}
+                    </tr>
+                  )
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── FAQ ── */}
+      <div style={{ marginTop: 80, maxWidth: 720, margin: '80px auto 0' }}>
+        <h3 style={{
+          fontFamily: T.sans, fontSize: 'clamp(22px, 3vw, 30px)',
+          fontWeight: 700, letterSpacing: -1, color: T.ink,
+          textAlign: 'center', margin: '0 0 40px',
+        }}>
+          Frequently asked questions
+        </h3>
+        <FaqAccordion />
+      </div>
     </section>
+  )
+}
+
+const COMPARISON_ROWS: Array<
+  | { type: 'category'; label: string }
+  | { type: 'row'; label: string; free: boolean | string; pro: boolean | string; agency: boolean | string }
+> = [
+  { type: 'category', label: 'Usage limits' },
+  { type: 'row', label: 'Analyses / month', free: '3', pro: '50', agency: '200' },
+  { type: 'category', label: 'Content & SEO' },
+  { type: 'row', label: '8-dimension content score', free: true, pro: true, agency: true },
+  { type: 'row', label: 'SEO, GEO & AEO scores', free: true, pro: true, agency: true },
+  { type: 'row', label: 'Content Optimizer & Rewriter', free: false, pro: true, agency: true },
+  { type: 'row', label: 'E-E-A-T deep analysis', free: false, pro: true, agency: true },
+  { type: 'row', label: 'Content Gap Finder', free: false, pro: true, agency: true },
+  { type: 'row', label: 'Relevant Backlinks finder', free: false, pro: true, agency: true },
+  { type: 'category', label: 'AI visibility' },
+  { type: 'row', label: 'AI Ranking Engine', free: false, pro: true, agency: true },
+  { type: 'row', label: 'AI Visibility Queries', free: false, pro: true, agency: true },
+  { type: 'row', label: 'LLM Citation Tracker', free: false, pro: false, agency: true },
+  { type: 'category', label: 'Agency tools' },
+  { type: 'row', label: 'SERP Competitor Audit', free: false, pro: false, agency: true },
+  { type: 'row', label: 'Topical Authority Mapper', free: false, pro: false, agency: true },
+  { type: 'row', label: 'Local SEO Suite (4 tools)', free: false, pro: false, agency: true },
+  { type: 'row', label: 'AI Performance Fixer', free: false, pro: false, agency: true },
+  { type: 'category', label: 'Support' },
+  { type: 'row', label: 'Support', free: 'Community', pro: 'Priority', agency: 'Priority' },
+]
+
+const FAQS = [
+  {
+    q: 'Is there a free plan?',
+    a: 'Yes. The Free plan is free forever — no credit card required. You get 3 analyses per month and full access to content scoring, so you can see Optmizly\'s value before committing.',
+  },
+  {
+    q: 'What counts as one analysis?',
+    a: 'Each time you submit content or a URL for scoring — whether that\'s a content analysis, E-E-A-T check, SERP audit, or other tool — it uses one analysis credit. Credits reset at the start of each billing month.',
+  },
+  {
+    q: 'Can I cancel anytime?',
+    a: 'Yes. Cancel from your account settings at any time — no hoops, no waiting. You keep full access until the end of your current billing period.',
+  },
+  {
+    q: 'What is the refund policy?',
+    a: 'All paid plans come with a 14-day money-back guarantee. If you\'re not satisfied within the first 14 days, contact us for a full refund — no questions asked.',
+  },
+  {
+    q: 'Do I need API keys or anything installed?',
+    a: 'No. Optmizly is fully hosted. All AI analysis is included in your plan — you don\'t need an Anthropic key, Google Search Console access, or any third-party setup.',
+  },
+  {
+    q: 'What AI model powers Optmizly?',
+    a: 'Optmizly uses Claude by Anthropic for all content analysis, scoring, and recommendations. Claude is one of the most capable AI models available, which is why our analysis goes well beyond surface-level keyword checks.',
+  },
+  {
+    q: 'Can I upgrade or downgrade?',
+    a: 'Yes. Upgrade instantly from your dashboard settings — the new limits apply immediately. Downgrades take effect at the start of your next billing cycle.',
+  },
+]
+
+function FaqAccordion() {
+  const [open, setOpen] = useState<number | null>(null)
+  return (
+    <div style={{ border: `1px solid ${T.line}`, borderRadius: 16, overflow: 'hidden' }}>
+      {FAQS.map((faq, i) => (
+        <div key={i} style={{ borderBottom: i < FAQS.length - 1 ? `1px solid ${T.line}` : 'none' }}>
+          <button
+            onClick={() => setOpen(open === i ? null : i)}
+            style={{
+              width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              gap: 16, padding: '18px 22px', background: 'none', border: 'none', cursor: 'pointer',
+              textAlign: 'left', fontFamily: T.sans, fontSize: 15, fontWeight: 600,
+              color: T.ink, lineHeight: 1.4,
+            }}
+          >
+            <span>{faq.q}</span>
+            <span style={{
+              flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
+              background: open === i ? T.blue : T.line2,
+              color: open === i ? '#fff' : T.muted,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 16, fontWeight: 400, lineHeight: 1, transition: 'background 0.15s',
+            }}>
+              {open === i ? '−' : '+'}
+            </span>
+          </button>
+          {open === i && (
+            <div style={{
+              padding: '0 22px 18px',
+              fontFamily: T.sans, fontSize: 14, color: T.body, lineHeight: 1.65,
+            }}>
+              {faq.a}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   )
 }
