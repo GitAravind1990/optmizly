@@ -9,6 +9,7 @@ import { DripDay1Email } from '@/emails/drip-day1'
 import { DripDay3Email } from '@/emails/drip-day3'
 import { DripDay7Email } from '@/emails/drip-day7'
 import { BlogSubscribeEmail } from '@/emails/blog-subscribe'
+import { WeeklySummaryEmail } from '@/emails/weekly-summary'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM = process.env.EMAIL_FROM ?? 'Optmizly <hello@Optmizly.com>'
@@ -185,6 +186,37 @@ export async function sendCancelledEmail(
     console.log(`[Email] Cancellation email sent to ${to}`)
   } catch (e) {
     console.error('[Email] Failed to send cancellation email:', e)
+  }
+}
+
+// ── Weekly summary ───────────────────────────────────────────────────────────
+export async function sendWeeklySummaryEmail(
+  to: string,
+  opts: {
+    firstName?: string
+    monthUsed: number
+    monthLimit: number
+    plan: string
+    weekAnalyses: number
+    bestScore?: number
+  }
+) {
+  try {
+    if (!resend) return
+    const { weekAnalyses } = opts
+    const subject = weekAnalyses > 0
+      ? `Your Optmizly week — ${weekAnalyses} ${weekAnalyses === 1 ? 'analysis' : 'analyses'} run`
+      : `You still have ${Math.max(0, opts.monthLimit - opts.monthUsed)} ${Math.max(0, opts.monthLimit - opts.monthUsed) === 1 ? 'analysis' : 'analyses'} left this month`
+    const html = await render(WeeklySummaryEmail({
+      ...opts,
+      dashboardUrl: `${APP_URL}/dashboard`,
+      pricingUrl: `${APP_URL}/pricing`,
+    }))
+    await resend.emails.send({ from: FROM, to, subject, html })
+    console.log(`[Email] Weekly summary sent to ${to}`)
+  } catch (e) {
+    console.error('[Email] Failed to send weekly summary:', e)
+    throw e
   }
 }
 
