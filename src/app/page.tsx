@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
 import { HomeHero } from '@/components/home-hero'
 import { PagePricing } from '@/components/page-pricing'
+import { HomeEmailCapture } from '@/components/home-email-capture'
 
 export const metadata: Metadata = {
   title: 'Optmizly – AI Search Optimization Platform | SEO, GEO & AEO',
@@ -264,6 +265,9 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* ── EMAIL CAPTURE ── */}
+      <HomeEmailCapture />
 
       {/* ── PRICING ── */}
       <PagePricing />
