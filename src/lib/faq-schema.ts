@@ -1,3 +1,35 @@
+const APP_URL = 'https://optmizly.com'
+
+export interface ArticleSchemaProps {
+  slug: string
+  title: string
+  description: string
+  date: string
+  author: string
+  tags?: string
+}
+
+export function buildArticleJsonLd({ slug, title, description, date, author, tags }: ArticleSchemaProps): string {
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: title,
+    description,
+    datePublished: date,
+    dateModified: date,
+    url: `${APP_URL}/blog/${slug}`,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${APP_URL}/blog/${slug}` },
+    author: { '@type': 'Person', name: author, url: APP_URL },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Optmizly',
+      url: APP_URL,
+      logo: { '@type': 'ImageObject', url: `${APP_URL}/icon.png` },
+    },
+    ...(tags ? { keywords: tags } : {}),
+  })
+}
+
 interface FaqPair {
   question: string
   answer: string

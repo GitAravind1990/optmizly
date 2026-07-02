@@ -5,7 +5,7 @@ import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getAllPosts, getPost, getRelatedPosts } from '@/lib/blog'
 import { PageHeader } from '@/components/page-header'
 import { BlogSubscribeForm } from '@/components/blog-subscribe-form'
-import { extractFaqPairs, buildFaqJsonLd } from '@/lib/faq-schema'
+import { extractFaqPairs, buildFaqJsonLd, buildArticleJsonLd } from '@/lib/faq-schema'
 
 export async function generateStaticParams() {
   const posts = await getAllPosts()
@@ -47,6 +47,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: buildArticleJsonLd({ slug, title: post.title, description: post.description, date: post.date, author: post.author, tags: post.tags }) }}
+      />
       {faqPairs.length > 0 && (
         <script
           type="application/ld+json"
