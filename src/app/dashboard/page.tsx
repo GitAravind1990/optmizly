@@ -5,6 +5,7 @@ import { ToolRunner } from '@/components/tools/ToolRunner'
 import { exportScoresCSV, exportScoresPDF, exportEntitiesCSV, exportEntitiesPDF } from '@/lib/export'
 import { Card, ScoreBar, Badge, EmptyState } from '@/components/ui'
 import { useContent } from '@/context/ContentContext'
+import { ShareScoreButton } from '@/components/share-score-button'
 import Link from 'next/link'
 
 type Tab = 'scores' | 'issues' | 'entities'
@@ -146,6 +147,7 @@ export default function DashboardPage() {
                   <span className="text-slate-400 text-sm">/100</span>
                 </div>
                 <p className="text-sm text-slate-600">{analysisResult.summary}</p>
+                <ShareScoreButton score={analysisResult.overall_score} grade={analysisResult.grade} />
               </div>
             </Card>
 
