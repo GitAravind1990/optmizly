@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -20,8 +21,10 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { id } = await params
 
     const analysis = await prisma.backlinkDomainAnalysis.findUnique({ where: { id } })
@@ -33,6 +36,7 @@ export async function GET(
       topReferringDomains: (() => { try { return JSON.parse(analysis.topReferringDomains) } catch { return [] } })(),
     })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/backlinks/domain-analysis/[id]' })
     return apiError(e)
   }
 }
@@ -41,8 +45,10 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { id } = await params
 
     const analysis = await prisma.backlinkDomainAnalysis.findUnique({ where: { id } })
@@ -51,6 +57,7 @@ export async function DELETE(
     await prisma.backlinkDomainAnalysis.delete({ where: { id } })
     return apiSuccess({ success: true })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/backlinks/domain-analysis/[id]' })
     return apiError(e)
   }
 }

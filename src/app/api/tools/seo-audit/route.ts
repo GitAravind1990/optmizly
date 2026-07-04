@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { ALL_CHECKS, AUTO_CHECK_IDS, type CheckStatus } from '@/lib/seo-audit/framework'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -22,8 +23,10 @@ function parse<T>(s: string, fallback: T): T {
 // GET /api/tools/seo-audit         → list summaries
 // GET /api/tools/seo-audit?id=xxx  → full audit
 export async function GET(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getUser()
+    clerkId = user.clerkId
     const id = req.nextUrl.searchParams.get('id')
 
     if (id) {
@@ -59,6 +62,7 @@ export async function GET(req: NextRequest) {
     })
     return apiSuccess({ data: audits })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/seo-audit' })
     return apiError(e)
   }
 }
@@ -66,8 +70,10 @@ export async function GET(req: NextRequest) {
 // PATCH /api/tools/seo-audit  → toggle a manual checklist item
 // body: { auditId, checkId, status: 'pass'|'fail'|'na'|null }
 export async function PATCH(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getUser()
+    clerkId = user.clerkId
     const { auditId, checkId, status } = await req.json()
     if (!auditId || !checkId) throw new AuthError(400, 'auditId and checkId are required')
 
@@ -104,19 +110,23 @@ export async function PATCH(req: NextRequest) {
       },
     })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/seo-audit' })
     return apiError(e)
   }
 }
 
 // DELETE /api/tools/seo-audit?id=xxx
 export async function DELETE(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getUser()
+    clerkId = user.clerkId
     const id = req.nextUrl.searchParams.get('id')
     if (!id) throw new AuthError(400, 'id is required')
     await prisma.seoAudit.deleteMany({ where: { id, userId: user.id } })
     return apiSuccess({ data: { deleted: true } })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/seo-audit' })
     return apiError(e)
   }
 }

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -22,8 +23,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ projectId: string; oppId: string }> }
 ) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { projectId, oppId } = await params
     const { status, notes } = await req.json()
 
@@ -47,6 +50,7 @@ export async function PATCH(
 
     return apiSuccess(updated)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/backlinks/[projectId]/opportunities/[oppId]' })
     return apiError(e)
   }
 }

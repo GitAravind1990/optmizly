@@ -3,14 +3,17 @@ import { requireAuth } from '@/lib/auth'
 import { apiError, apiSuccess } from '@/lib/api'
 import { generateGrid, getGridStats, type RankedGridPoint } from '@/lib/geogrid'
 import { getLocalRank } from '@/lib/dataforseo'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
-    await requireAuth('geogrid')
+    const authedUser = await requireAuth('geogrid')
+    clerkId = authedUser.clerkId
 
     const body = await req.json()
     const { businessName, keyword, centerLat, centerLng, gridSize, spacing, unit } = body
@@ -51,6 +54,7 @@ export async function POST(req: NextRequest) {
       gridSize: size,
     })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/geogrid' })
     return apiError(e)
   }
 }

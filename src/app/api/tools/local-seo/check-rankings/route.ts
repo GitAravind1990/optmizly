@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -34,8 +35,10 @@ function simulateNewRank(currentRank: number | null, keyword: string, day: numbe
 }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getAgencyUser()
+    clerkId = user.clerkId
     const { locationId } = await req.json()
     if (!locationId) throw new AuthError(400, 'locationId required')
 
@@ -108,6 +111,7 @@ export async function POST(req: NextRequest) {
 
     return apiSuccess({ success: true, keywordsChecked: location.keywords.length, updates, newTasks: newTasks.length })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/local-seo/check-rankings' })
     return apiError(e)
   }
 }

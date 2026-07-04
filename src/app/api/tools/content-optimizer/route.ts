@@ -3,12 +3,15 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { callClaude as callClaudeShared } from '@/lib/anthropic';
 import { requireAuth, AuthError } from '@/lib/auth';
+import { captureServerException } from '@/lib/posthog-server';
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await requireAuth('content-optimizer')
+    clerkId = user.clerkId
 
     const { content, targetKeyword, contentUrl } = await req.json();
     if (!content || !targetKeyword) {
@@ -111,16 +114,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('Content Optimizer error:', error);
+    await captureServerException(clerkId, error, { route: '/api/tools/content-optimizer' })
     return NextResponse.json({ error: 'Analysis failed' }, { status: 500 });
   }
 }
 
 export async function GET() {
+  const { userId: clerkId } = await auth();
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+    const user = await prisma.user.findUnique({ where: { clerkId } });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     const optimizations = await prisma.contentOptimization.findMany({
@@ -131,7 +135,8 @@ export async function GET() {
     });
 
     return NextResponse.json({ optimizations });
-  } catch {
+  } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/content-optimizer' })
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
   }
 }

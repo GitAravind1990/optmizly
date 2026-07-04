@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -19,8 +20,10 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ projectId: string; keywordId: string }> }
 ) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { projectId, keywordId } = await params
 
     const project = await prisma.rankTrackingProject.findUnique({ where: { id: projectId } })
@@ -32,6 +35,7 @@ export async function DELETE(
     await prisma.rankTrackingKeyword.delete({ where: { id: keywordId } })
     return apiSuccess({ success: true })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]/keywords/[keywordId]' })
     return apiError(e)
   }
 }

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -20,8 +21,10 @@ const VALID_SORT = ['opportunityScore', 'searchVolume', 'difficulty', 'createdAt
 type SortField = typeof VALID_SORT[number]
 
 export async function GET(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { searchParams } = new URL(req.url)
 
     const sortBy = (VALID_SORT.includes(searchParams.get('sortBy') as SortField)
@@ -55,13 +58,16 @@ export async function GET(req: NextRequest) {
 
     return apiSuccess({ ideas, projects })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/content-ideas' })
     return apiError(e)
   }
 }
 
 export async function PATCH(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { ideaId, status, pinned, notes, assignedTo, dueDate } = await req.json()
 
     if (!ideaId) throw new AuthError(400, 'ideaId is required')
@@ -85,13 +91,16 @@ export async function PATCH(req: NextRequest) {
 
     return apiSuccess({ success: true, idea: updated })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/content-ideas' })
     return apiError(e)
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { searchParams } = new URL(req.url)
     const ideaId = searchParams.get('ideaId')
     const projectId = searchParams.get('projectId')
@@ -110,6 +119,7 @@ export async function DELETE(req: NextRequest) {
 
     return apiSuccess({ success: true })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/content-ideas' })
     return apiError(e)
   }
 }

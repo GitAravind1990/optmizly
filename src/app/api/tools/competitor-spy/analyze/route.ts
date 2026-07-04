@@ -5,6 +5,7 @@ import { callClaude, extractJSON, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -151,8 +152,10 @@ interface AIInsights {
 }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { domainUrl } = await req.json()
     if (!domainUrl) throw new AuthError(400, 'domainUrl is required')
 
@@ -237,6 +240,7 @@ Return ONLY this JSON object:
       },
     }, 201)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/competitor-spy/analyze' })
     return apiError(e)
   }
 }

@@ -5,6 +5,7 @@ import { callClaude, extractJSON, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -49,8 +50,10 @@ Rules:
 - estimated_da should be a realistic number 10-95`
 
 export async function GET() {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const projects = await prisma.backlinkProject.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
@@ -73,13 +76,16 @@ export async function GET() {
       updatedAt: p.updatedAt,
     })))
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/backlinks' })
     return apiError(e)
   }
 }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { name, domain, niche, targetKeywords, contentBrief } = await req.json()
 
     if (!name?.trim()) throw new AuthError(400, 'Project name required')
@@ -144,6 +150,7 @@ Generate highly specific opportunities. Research real publications in the ${nich
 
     return apiSuccess({ success: true, projectId: project.id, opportunityCount: project.opportunities.length })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/backlinks' })
     return apiError(e)
   }
 }

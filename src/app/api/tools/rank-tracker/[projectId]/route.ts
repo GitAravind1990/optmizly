@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -16,8 +17,10 @@ async function getProUser() {
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { projectId } = await params
 
     const project = await prisma.rankTrackingProject.findUnique({
@@ -42,13 +45,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pro
     if (!project || project.userId !== user.id) throw new AuthError(404, 'Project not found')
     return apiSuccess(project)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]' })
     return apiError(e)
   }
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { projectId } = await params
     const body = await req.json()
 
@@ -66,13 +72,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pr
 
     return apiSuccess(updated)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]' })
     return apiError(e)
   }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { projectId } = await params
 
     const project = await prisma.rankTrackingProject.findUnique({ where: { id: projectId } })
@@ -81,6 +90,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await prisma.rankTrackingProject.delete({ where: { id: projectId } })
     return apiSuccess({ success: true })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]' })
     return apiError(e)
   }
 }

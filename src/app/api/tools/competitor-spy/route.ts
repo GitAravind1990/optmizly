@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -17,8 +18,10 @@ async function getProUser() {
 }
 
 export async function GET() {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const analyses = await prisma.competitorAnalysis.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
@@ -26,13 +29,16 @@ export async function GET() {
     })
     return apiSuccess(analyses)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/competitor-spy' })
     return apiError(e)
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { analysisId } = await req.json()
     if (!analysisId) throw new AuthError(400, 'analysisId required')
 
@@ -42,6 +48,7 @@ export async function DELETE(req: NextRequest) {
     await prisma.competitorAnalysis.delete({ where: { id: analysisId } })
     return apiSuccess({ success: true })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/competitor-spy' })
     return apiError(e)
   }
 }

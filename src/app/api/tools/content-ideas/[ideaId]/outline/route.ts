@@ -5,6 +5,7 @@ import { callClaude, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -20,8 +21,10 @@ async function getProUser() {
 }
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ ideaId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { ideaId } = await params
 
     const idea = await prisma.contentIdea.findUnique({
@@ -87,6 +90,7 @@ Write ONLY the intro paragraph, no labels or headers.`,
 
     return apiSuccess({ success: true, aiOutline: updated.aiOutline, aiIntro: updated.aiIntro })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/content-ideas/[ideaId]/outline' })
     return apiError(e)
   }
 }

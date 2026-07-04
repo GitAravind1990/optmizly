@@ -5,6 +5,7 @@ import { fetchOPRScore } from '@/lib/openpagerank'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -23,8 +24,10 @@ function cleanDomain(input: string): string {
 }
 
 export async function GET() {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const analyses = await prisma.backlinkDomainAnalysis.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
@@ -38,13 +41,16 @@ export async function GET() {
     })
     return apiSuccess(analyses)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/backlinks/domain-analysis' })
     return apiError(e)
   }
 }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { domain: rawDomain } = await req.json()
     if (!rawDomain?.trim()) throw new AuthError(400, 'Domain required')
 
@@ -65,6 +71,7 @@ export async function POST(req: NextRequest) {
 
     return apiSuccess({ success: true, analysisId: analysis.id })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/backlinks/domain-analysis' })
     return apiError(e)
   }
 }

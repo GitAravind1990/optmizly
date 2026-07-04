@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { callClaude, extractJSON, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -212,8 +213,10 @@ interface AIFix {
 // ─── Main route ───────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getUser()
+    clerkId = user.clerkId
     const { content, targetKeyword, pageUrl, pageTitle, previousAnalysisId } = await req.json()
 
     if (!content || !targetKeyword) {
@@ -363,6 +366,7 @@ Rules:
       fixes,
     }, 201)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/onpage/analyze' })
     return apiError(e)
   }
 }

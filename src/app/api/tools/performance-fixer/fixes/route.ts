@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import Anthropic from '@anthropic-ai/sdk';
 import { canUseTool } from '@/lib/plans';
 import { NextRequest, NextResponse } from 'next/server';
+import { captureServerException } from '@/lib/posthog-server';
 
 export const maxDuration = 60;
 
@@ -20,14 +21,14 @@ interface AIFix {
 
 // POST — generate AI fixes for an existing audit and update it
 export async function POST(req: NextRequest) {
+  const { userId: clerkId } = await auth();
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { auditId } = await req.json();
     if (!auditId) return NextResponse.json({ error: 'auditId required' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+    const user = await prisma.user.findUnique({ where: { clerkId } });
     if (!user || !canUseTool(user.plan, 'performance-fixer')) return NextResponse.json({ error: 'Agency only' }, { status: 403 });
 
     const audit = await prisma.performanceFixerAudit.findFirst({
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error('AI Fixes error:', msg);
+    await captureServerException(clerkId, error, { route: '/api/tools/performance-fixer/fixes' });
     return NextResponse.json({ error: `Failed to generate fixes: ${msg}` }, { status: 500 });
   }
 }

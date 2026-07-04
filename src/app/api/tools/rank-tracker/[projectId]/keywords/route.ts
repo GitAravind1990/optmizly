@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -16,8 +17,10 @@ async function getProUser() {
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { projectId } = await params
     const { keywords } = await req.json()
 
@@ -47,6 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
 
     return apiSuccess({ added: newKeywords.length })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]/keywords' })
     return apiError(e)
   }
 }

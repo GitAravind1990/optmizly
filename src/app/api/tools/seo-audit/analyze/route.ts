@@ -7,6 +7,7 @@ import { runAutoChecks, type AutoCheckContext, type RedirectHop, type AutoCheckR
 import { AUDIT_FRAMEWORK, AI_CATEGORY_KEYS, TOTAL_CHECKS, type CheckStatus } from '@/lib/seo-audit/framework'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { prisma } from '@/lib/prisma'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -81,8 +82,10 @@ const STATUS_SCORE: Record<CheckStatus, number | null> = { pass: 100, warn: 50, 
 interface AICategoryResult { score: number; issues: string[]; fixes: string[] }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await requireAuth('seo-audit')
+    clerkId = user.clerkId
     const { url, html: pastedHtml } = await req.json()
 
     let auditUrl = ''
@@ -277,6 +280,7 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
       },
     }, 201)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/seo-audit/analyze' })
     return apiError(e)
   }
 }

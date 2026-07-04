@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -17,8 +18,10 @@ async function getProUser() {
 
 // Mark all alerts as read
 export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { projectId } = await params
 
     const project = await prisma.rankTrackingProject.findUnique({ where: { id: projectId } })
@@ -31,6 +34,7 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ p
 
     return apiSuccess({ success: true })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]/alerts' })
     return apiError(e)
   }
 }

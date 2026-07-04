@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -16,8 +17,10 @@ async function getAgencyUser() {
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getAgencyUser()
+    clerkId = user.clerkId
     const { taskId } = await params
     const { status } = await req.json()
 
@@ -34,13 +37,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ta
 
     return apiSuccess(updated)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/local-seo/tasks/[taskId]' })
     return apiError(e)
   }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getAgencyUser()
+    clerkId = user.clerkId
     const { taskId } = await params
 
     const task = await prisma.localSEOTask.findUnique({
@@ -52,6 +58,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await prisma.localSEOTask.delete({ where: { id: taskId } })
     return apiSuccess({ success: true })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/local-seo/tasks/[taskId]' })
     return apiError(e)
   }
 }

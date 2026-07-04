@@ -5,6 +5,7 @@ import { callClaude, extractJSON, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -48,8 +49,10 @@ interface RawIdea {
 }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { seedKeywords, industry, targetAudience, numberOfIdeas = 10, projectId } = await req.json()
 
     if (!seedKeywords?.length || !industry || !targetAudience) {
@@ -138,6 +141,7 @@ Make searchVolume realistic (100-50000), difficulty 10-90, opportunityScore 30-9
 
     return apiSuccess({ success: true, count: saved.length, projectId: resolvedProjectId, ideas: saved }, 201)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/content-ideas/generate' })
     return apiError(e)
   }
 }

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { callClaude, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -20,8 +21,10 @@ async function getAgencyUser() {
 
 // Generate AI response for a review
 export async function POST(req: NextRequest, { params }: { params: Promise<{ locationId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getAgencyUser()
+    clerkId = user.clerkId
     const { locationId } = await params
     const { reviewId, action } = await req.json()
 
@@ -67,6 +70,7 @@ Write a 2-3 sentence response:
 
     throw new AuthError(400, 'Unknown action')
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/local-seo/locations/[locationId]/reviews' })
     return apiError(e)
   }
 }

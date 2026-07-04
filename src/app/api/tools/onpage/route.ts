@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -15,8 +16,10 @@ async function getUser() {
 }
 
 export async function GET(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getUser()
+    clerkId = user.clerkId
     const { searchParams } = new URL(req.url)
     const analysisId = searchParams.get('id')
 
@@ -51,13 +54,16 @@ export async function GET(req: NextRequest) {
 
     return apiSuccess(analyses)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/onpage' })
     return apiError(e)
   }
 }
 
 export async function PATCH(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getUser()
+    clerkId = user.clerkId
     const { analysisId, fixIndex } = await req.json()
     if (!analysisId || fixIndex === undefined) throw new AuthError(400, 'analysisId and fixIndex required')
 
@@ -75,13 +81,16 @@ export async function PATCH(req: NextRequest) {
 
     return apiSuccess({ success: true, appliedFixes: applied })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/onpage' })
     return apiError(e)
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getUser()
+    clerkId = user.clerkId
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
     if (!id) throw new AuthError(400, 'id required')
@@ -92,6 +101,7 @@ export async function DELETE(req: NextRequest) {
     await prisma.onPageAnalysis.delete({ where: { id } })
     return apiSuccess({ success: true })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/onpage' })
     return apiError(e)
   }
 }

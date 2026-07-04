@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -16,8 +17,10 @@ async function getProUser() {
 }
 
 export async function GET() {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const projects = await prisma.rankTrackingProject.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
@@ -52,13 +55,16 @@ export async function GET() {
 
     return apiSuccess(result)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker' })
     return apiError(e)
   }
 }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { name, domain, targetLocation, deviceType, keywords } = await req.json()
 
     if (!name?.trim()) throw new AuthError(400, 'Project name required')
@@ -89,6 +95,7 @@ export async function POST(req: NextRequest) {
 
     return apiSuccess(project)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker' })
     return apiError(e)
   }
 }

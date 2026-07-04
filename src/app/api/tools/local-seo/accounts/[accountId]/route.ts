@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -16,8 +17,10 @@ async function getAgencyUser() {
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ accountId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getAgencyUser()
+    clerkId = user.clerkId
     const { accountId } = await params
 
     const account = await prisma.localSEOAccount.findUnique({
@@ -39,13 +42,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ acc
     if (!account || account.userId !== user.id) throw new AuthError(404, 'Account not found')
     return apiSuccess(account)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/local-seo/accounts/[accountId]' })
     return apiError(e)
   }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ accountId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getAgencyUser()
+    clerkId = user.clerkId
     const { accountId } = await params
 
     const account = await prisma.localSEOAccount.findUnique({ where: { id: accountId } })
@@ -54,6 +60,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await prisma.localSEOAccount.delete({ where: { id: accountId } })
     return apiSuccess({ success: true })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/local-seo/accounts/[accountId]' })
     return apiError(e)
   }
 }

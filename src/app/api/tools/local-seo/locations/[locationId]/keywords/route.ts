@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -22,8 +23,10 @@ function hash(s: string) {
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ locationId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getAgencyUser()
+    clerkId = user.clerkId
     const { locationId } = await params
     const { keywords } = await req.json()
 
@@ -61,6 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ loc
 
     return apiSuccess({ added: newKws.length })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/local-seo/locations/[locationId]/keywords' })
     return apiError(e)
   }
 }

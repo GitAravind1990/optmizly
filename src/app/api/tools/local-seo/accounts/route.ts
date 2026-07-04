@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -53,8 +54,10 @@ const LOCAL_KEYWORDS = [
 ]
 
 export async function GET() {
+  let clerkId: string | null = null
   try {
     const user = await getAgencyUser()
+    clerkId = user.clerkId
     const accounts = await prisma.localSEOAccount.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
@@ -67,13 +70,16 @@ export async function GET() {
     })
     return apiSuccess(accounts)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/local-seo/accounts' })
     return apiError(e)
   }
 }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getAgencyUser()
+    clerkId = user.clerkId
     const { name, accountType, locations } = await req.json()
 
     if (!name?.trim()) throw new AuthError(400, 'Account name required')
@@ -196,6 +202,7 @@ export async function POST(req: NextRequest) {
 
     return apiSuccess(full)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/local-seo/accounts' })
     return apiError(e)
   }
 }

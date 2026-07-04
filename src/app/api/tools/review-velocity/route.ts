@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { apiError, apiSuccess } from '@/lib/api'
 import { getReviewVelocity } from '@/lib/dataforseo'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -19,8 +20,10 @@ function countInRange(reviews: Array<{ date: string }>, daysAgo: number): number
 }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
-    await requireAuth('review-velocity')
+    const authedUser = await requireAuth('review-velocity')
+    clerkId = authedUser.clerkId
 
     const { placeId, businessName } = await req.json()
     if (!placeId) {
@@ -58,6 +61,7 @@ export async function POST(req: NextRequest) {
       reviews: data.reviews.slice(0, 20),
     })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/review-velocity' })
     return apiError(e)
   }
 }

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 
@@ -17,8 +18,10 @@ async function getProUser() {
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ analysisId: string }> }) {
+  let clerkId: string | null = null
   try {
     const user = await getProUser()
+    clerkId = user.clerkId
     const { analysisId } = await params
 
     const analysis = await prisma.competitorAnalysis.findUnique({ where: { id: analysisId } })
@@ -35,6 +38,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ana
       aiInsights: analysis.aiInsights ? JSON.parse(analysis.aiInsights) : null,
     })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/tools/competitor-spy/[analysisId]' })
     return apiError(e)
   }
 }
