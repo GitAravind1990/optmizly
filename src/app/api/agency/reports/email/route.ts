@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
+import { sendAgencyReportEmail } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
@@ -35,13 +36,18 @@ export async function POST(req: NextRequest) {
     if (report.client.agencyId !== user.id) throw new AuthError(403, 'Forbidden')
 
     const monthName = MONTH_NAMES[report.month - 1]
-    const reportUrl = `https://Optmizly.com/agency/reports/${report.id}`
+    const reportUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://Optmizly.com'}/agency/reports/${report.id}`
 
-    // Email sending is a TODO — mark as sent for now
-    // Future: integrate Resend / SendGrid here
-    console.log(`[Email] Would send to ${report.client.email}`)
-    console.log(`[Email] Subject: SEO Report for ${report.client.website} — ${monthName} ${report.year}`)
-    console.log(`[Email] Report URL: ${reportUrl}`)
+    await sendAgencyReportEmail(report.client.email, {
+      clientName: report.client.name,
+      website: report.client.website,
+      monthName,
+      year: report.year,
+      reportUrl,
+      trafficChange: report.trafficChange,
+      backlinksAdded: report.backlinksAdded,
+      domainAuthority: report.domainAuthority,
+    })
 
     await prisma.clientReport.update({
       where: { id: reportId },

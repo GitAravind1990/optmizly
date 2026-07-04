@@ -10,6 +10,7 @@ import { DripDay3Email } from '@/emails/drip-day3'
 import { DripDay7Email } from '@/emails/drip-day7'
 import { BlogSubscribeEmail } from '@/emails/blog-subscribe'
 import { WeeklySummaryEmail } from '@/emails/weekly-summary'
+import { AgencyReportEmail } from '@/emails/agency-report'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM = process.env.EMAIL_FROM ?? 'Optmizly <hello@Optmizly.com>'
@@ -218,6 +219,34 @@ export async function sendWeeklySummaryEmail(
     console.error('[Email] Failed to send weekly summary:', e)
     throw e
   }
+}
+
+// ── Agency client report ──────────────────────────────────────────────────────
+export async function sendAgencyReportEmail(
+  to: string,
+  opts: {
+    clientName: string
+    website: string
+    monthName: string
+    year: number
+    reportUrl: string
+    trafficChange: number
+    backlinksAdded: number
+    domainAuthority: number
+  }
+) {
+  if (!resend) {
+    console.log(`[Email] Resend not configured, skipping agency report email to ${to}`)
+    return
+  }
+  const html = await render(AgencyReportEmail(opts))
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `SEO Report for ${opts.website} — ${opts.monthName} ${opts.year}`,
+    html,
+  })
+  console.log(`[Email] Agency report sent to ${to}`)
 }
 
 // ── Blog subscribe ────────────────────────────────────────────────────────────
