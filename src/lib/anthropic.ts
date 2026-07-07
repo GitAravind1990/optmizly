@@ -86,6 +86,27 @@ async function trackTokens(userId: string, inputTokens: number, outputTokens: nu
   }
 }
 
+function getRetryAfterMs(error: unknown, attempt: number): number {
+  const fallbackMs = 1000 * Math.pow(2, attempt) // 1s, 2s, 4s
+  const headers = (error as { headers?: { get?(name: string): string | null } })?.headers
+  const retryAfter = headers?.get?.('retry-after')
+  if (!retryAfter) return fallbackMs
+  const parsed = parseFloat(retryAfter)
+  return Number.isNaN(parsed) ? fallbackMs : parsed * 1000
+}
+
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn()
+    } catch (e) {
+      const status = (e as { status?: number })?.status
+      if (status !== 429 || attempt >= maxRetries) throw e
+      await new Promise(resolve => setTimeout(resolve, getRetryAfterMs(e, attempt)))
+    }
+  }
+}
+
 export async function callClaude(
   system: string,
   prompt: string,
@@ -97,19 +118,19 @@ export async function callClaude(
   let outputTokens: number
 
   if (LLM_PROVIDER === 'groq') {
-    const result = await callGroq(system, prompt, maxTokens, model)
+    const result = await withRetry(() => callGroq(system, prompt, maxTokens, model))
     text = result.text
     inputTokens = result.inputTokens
     outputTokens = result.outputTokens
   } else {
     const resolvedModel = LLM_PROVIDER === 'bedrock' ? BEDROCK_MODEL_MAP[model] : model
-    const message = await anthropic.messages.create({
+    const message = await withRetry(() => anthropic.messages.create({
       model: resolvedModel,
       max_tokens: maxTokens,
       temperature: 0,
       system,
       messages: [{ role: 'user', content: prompt }],
-    })
+    }))
     text = message.content
       .filter((b): b is Anthropic.TextBlock => b.type === 'text')
       .map(b => b.text)
