@@ -191,6 +191,7 @@ function IdeaModal({ idea, onClose, onUpdate }: {
 }) {
   const [tab, setTab] = useState<'overview' | 'outline' | 'notes'>('overview')
   const [genLoading, setGenLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [notes, setNotes] = useState(idea.notes ?? '')
   const [status, setStatus] = useState(idea.status)
   const [saving, setSaving] = useState(false)
@@ -212,6 +213,13 @@ function IdeaModal({ idea, onClose, onUpdate }: {
     } finally {
       setGenLoading(false)
     }
+  }
+
+  function copyOutline() {
+    const text = idea.aiIntro ? `${idea.aiIntro}\n\n${idea.aiOutline}` : (idea.aiOutline ?? '')
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   async function saveChanges() {
@@ -349,7 +357,15 @@ function IdeaModal({ idea, onClose, onUpdate }: {
                       <p className="text-sm text-slate-700 leading-relaxed">{idea.aiIntro}</p>
                     </div>
                   )}
-                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Full Outline</div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Outline</div>
+                    <button
+                      onClick={copyOutline}
+                      className="text-xs border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors font-medium text-slate-600"
+                    >
+                      {copied ? 'Copied!' : 'Copy Outline'}
+                    </button>
+                  </div>
                   <pre className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-sans">{idea.aiOutline}</pre>
                   <button
                     onClick={generateOutline}
