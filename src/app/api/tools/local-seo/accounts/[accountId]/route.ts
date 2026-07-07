@@ -40,7 +40,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ acc
     })
 
     if (!account || account.userId !== user.id) throw new AuthError(404, 'Account not found')
-    return apiSuccess(account)
+    return apiSuccess({ data: account })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/local-seo/accounts/[accountId]' })
     return apiError(e)

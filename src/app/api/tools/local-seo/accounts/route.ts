@@ -68,7 +68,7 @@ export async function GET() {
         _count: { select: { reviews: true, tasks: true, citations: true } },
       },
     })
-    return apiSuccess(accounts)
+    return apiSuccess({ data: accounts })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/local-seo/accounts' })
     return apiError(e)

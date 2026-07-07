@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       await prisma.localSEOTask.createMany({ data: newTasks })
     }
 
-    return apiSuccess({ success: true, keywordsChecked: location.keywords.length, updates, newTasks: newTasks.length })
+    return apiSuccess({ data: { success: true, keywordsChecked: location.keywords.length, updates, newTasks: newTasks.length } })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/local-seo/check-rankings' })
     return apiError(e)
