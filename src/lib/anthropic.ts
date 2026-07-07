@@ -133,11 +133,13 @@ export function extractJSON<T = Record<string, unknown>>(text: string): T {
   clean = clean.replace(/\\n/g, ' ').replace(/\\t/g, ' ').replace(/\\r/g, '')
   // Replace real newlines
   clean = clean.replace(/[\r\n\t]+/g, ' ')
-  // Find JSON object
-  const start = clean.indexOf('{')
+  // Find JSON object or array
+  const braceIdx = clean.indexOf('{')
+  const bracketIdx = clean.indexOf('[')
+  const start = braceIdx === -1 ? bracketIdx : bracketIdx === -1 ? braceIdx : Math.min(braceIdx, bracketIdx)
   if (start === -1) throw new Error('No JSON found in response')
   clean = clean.slice(start)
-  // Find matching closing brace
+  // Find matching closing brace/bracket
   let depth = 0, end = -1, inStr = false, esc = false
   for (let i = 0; i < clean.length; i++) {
     const ch = clean[i]
@@ -145,8 +147,8 @@ export function extractJSON<T = Record<string, unknown>>(text: string): T {
     if (ch === '\\') { esc = true; continue }
     if (ch === '"') { inStr = !inStr; continue }
     if (!inStr) {
-      if (ch === '{') depth++
-      else if (ch === '}') { depth--; if (depth === 0) { end = i; break } }
+      if (ch === '{' || ch === '[') depth++
+      else if (ch === '}' || ch === ']') { depth--; if (depth === 0) { end = i; break } }
     }
   }
   if (end > -1) clean = clean.slice(0, end + 1)
