@@ -27,15 +27,17 @@ export async function GET(req: NextRequest) {
       const analysis = await prisma.onPageAnalysis.findUnique({ where: { id: analysisId } })
       if (!analysis || analysis.userId !== user.id) throw new AuthError(404, 'Analysis not found')
       return apiSuccess({
-        ...analysis,
-        keywordData: JSON.parse(analysis.keywordData),
-        headers: JSON.parse(analysis.headers),
-        metaTags: JSON.parse(analysis.metaTags),
-        images: JSON.parse(analysis.images),
-        links: JSON.parse(analysis.links),
-        readabilityData: JSON.parse(analysis.readabilityData),
-        fixes: JSON.parse(analysis.fixes),
-        appliedFixes: JSON.parse(analysis.appliedFixes),
+        data: {
+          ...analysis,
+          keywordData: JSON.parse(analysis.keywordData),
+          headers: JSON.parse(analysis.headers),
+          metaTags: JSON.parse(analysis.metaTags),
+          images: JSON.parse(analysis.images),
+          links: JSON.parse(analysis.links),
+          readabilityData: JSON.parse(analysis.readabilityData),
+          fixes: JSON.parse(analysis.fixes),
+          appliedFixes: JSON.parse(analysis.appliedFixes),
+        },
       })
     }
 
@@ -52,7 +54,7 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    return apiSuccess(analyses)
+    return apiSuccess({ data: analyses })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/onpage' })
     return apiError(e)
@@ -79,7 +81,7 @@ export async function PATCH(req: NextRequest) {
       data: { appliedFixes: JSON.stringify(applied) },
     })
 
-    return apiSuccess({ success: true, appliedFixes: applied })
+    return apiSuccess({ data: { success: true, appliedFixes: applied } })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/onpage' })
     return apiError(e)

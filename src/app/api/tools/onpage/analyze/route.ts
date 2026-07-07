@@ -349,27 +349,17 @@ Rules:
     })
 
     return apiSuccess({
-      success: true,
-      analysisId: analysis.id,
-      overallScore,
-      previousScore,
-      scores: {
-        keyword: keywords.score,
-        headers: headers.score,
-        meta: meta.score,
-        images: images.score,
-        links: links.score,
-        readability: readability.score,
+      data: {
+        ...analysis,
+        keywordData: keywords,
+        headers,
+        metaTags: meta,
+        images,
+        links,
+        readabilityData: readability,
+        fixes,
+        appliedFixes: [],
       },
-      summary: {
-        wordCount: keywords.wordCount,
-        keywordDensity: keywords.density,
-        keywordCount: keywords.count,
-        issueCount: allIssues.length,
-        fixCount: fixes.length,
-      },
-      details: { keywords, headers, meta, images, links, readability },
-      fixes,
     }, 201)
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/onpage/analyze' })
