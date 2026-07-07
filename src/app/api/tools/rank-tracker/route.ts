@@ -53,7 +53,7 @@ export async function GET() {
       }
     })
 
-    return apiSuccess(result)
+    return apiSuccess({ data: result })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker' })
     return apiError(e)
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
       include: { keywords: true },
     })
 
-    return apiSuccess(project)
+    return apiSuccess({ data: project })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker' })
     return apiError(e)

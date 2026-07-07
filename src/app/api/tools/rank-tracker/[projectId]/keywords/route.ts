@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
     const existingSet = new Set(existing.map(k => k.keyword.toLowerCase()))
     const newKeywords = kwList.filter(k => !existingSet.has(k.toLowerCase()))
 
-    if (!newKeywords.length) return apiSuccess({ added: 0, message: 'All keywords already tracked' })
+    if (!newKeywords.length) return apiSuccess({ data: { added: 0, message: 'All keywords already tracked' } })
 
     await prisma.rankTrackingKeyword.createMany({
       data: newKeywords.map(kw => ({
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
       })),
     })
 
-    return apiSuccess({ added: newKeywords.length })
+    return apiSuccess({ data: { added: newKeywords.length } })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]/keywords' })
     return apiError(e)

@@ -32,7 +32,7 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ p
       data: { read: true },
     })
 
-    return apiSuccess({ success: true })
+    return apiSuccess({ data: { success: true } })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]/alerts' })
     return apiError(e)

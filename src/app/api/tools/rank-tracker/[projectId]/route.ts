@@ -43,7 +43,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pro
     })
 
     if (!project || project.userId !== user.id) throw new AuthError(404, 'Project not found')
-    return apiSuccess(project)
+    return apiSuccess({ data: project })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]' })
     return apiError(e)
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pr
       },
     })
 
-    return apiSuccess(updated)
+    return apiSuccess({ data: updated })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]' })
     return apiError(e)

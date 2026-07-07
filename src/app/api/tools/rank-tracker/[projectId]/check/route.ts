@@ -165,9 +165,11 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
     }
 
     return apiSuccess({
-      checked: project.keywords.length,
-      alerts: alerts.length,
-      updatedAt: new Date(),
+      data: {
+        checked: project.keywords.length,
+        alerts: alerts.length,
+        updatedAt: new Date(),
+      },
     })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]/check' })
