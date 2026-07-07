@@ -102,6 +102,7 @@ export default function OnPagePage() {
   const [pageTitle, setPageTitle] = useState('')
   const [reanalyzeId, setReanalyzeId] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
+  const [fetchingUrl, setFetchingUrl] = useState(false)
   const [error, setError] = useState('')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
@@ -150,6 +151,27 @@ export default function OnPagePage() {
       setError(e instanceof Error ? e.message : 'Analysis failed')
     } finally {
       setAnalyzing(false)
+    }
+  }
+
+  async function fetchFromUrl() {
+    if (!pageUrl.trim()) { setError('Enter a page URL first.'); return }
+    setError('')
+    setFetchingUrl(true)
+    try {
+      const r = await fetch('/api/tools/onpage/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: pageUrl.trim() }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Could not fetch that URL')
+      setContent(d.data.content)
+      if (d.data.pageTitle && !pageTitle) setPageTitle(d.data.pageTitle)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not fetch that URL')
+    } finally {
+      setFetchingUrl(false)
     }
   }
 
@@ -324,12 +346,23 @@ export default function OnPagePage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Page URL (optional)</label>
-              <input
-                value={pageUrl}
-                onChange={e => setPageUrl(e.target.value)}
-                placeholder="https://example.com/page"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div className="flex gap-2">
+                <input
+                  value={pageUrl}
+                  onChange={e => setPageUrl(e.target.value)}
+                  placeholder="https://example.com/page"
+                  className="flex-1 min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={fetchFromUrl}
+                  disabled={fetchingUrl || !pageUrl.trim()}
+                  title="Fetch this page's H1/H2/H3, title, meta description, images & links automatically"
+                  className="flex-shrink-0 rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  {fetchingUrl ? 'Fetching…' : 'Fetch content'}
+                </button>
+              </div>
             </div>
           </div>
 
