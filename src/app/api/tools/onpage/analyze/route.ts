@@ -61,18 +61,18 @@ function analyzeHeaders(content: string, keyword: string) {
   const h2 = [...h2Matches, ...h2Html]
   const h3 = [...h3Matches, ...h3Html]
 
-  const h1HasKw = h1.some(h => h.toLowerCase().includes(kw))
+  const hasKeywordInH1 = h1.some(h => h.toLowerCase().includes(kw))
   const h2HasKw = h2.some(h => h.toLowerCase().includes(kw))
 
   const issues: string[] = []
   if (h1.length === 0) issues.push('No H1 found — add a single H1 with your primary keyword')
   else if (h1.length > 1) issues.push(`${h1.length} H1 tags found — use only one H1 per page`)
-  if (!h1HasKw && h1.length > 0) issues.push(`H1 "${h1[0]}" doesn't contain the keyword "${keyword}"`)
+  if (!hasKeywordInH1 && h1.length > 0) issues.push(`H1 "${h1[0]}" doesn't contain the keyword "${keyword}"`)
   if (h2.length === 0) issues.push('No H2 subheadings — add H2s to structure content and include keyword variants')
   if (!h2HasKw && h2.length > 0) issues.push(`None of the ${h2.length} H2s include the keyword — add it to at least one`)
   if (h2.length > 0 && h3.length === 0) issues.push('No H3 headings — consider adding H3s for better content hierarchy')
 
-  const score = h1.length === 1 && h1HasKw && h2.length >= 2 && h2HasKw
+  const score = h1.length === 1 && hasKeywordInH1 && h2.length >= 2 && h2HasKw
     ? 100
     : h1.length === 1 && h2.length >= 1
     ? 70
@@ -80,7 +80,7 @@ function analyzeHeaders(content: string, keyword: string) {
     ? 40
     : 10
 
-  return { h1, h2, h3, h1HasKw, h2HasKw, issues, score }
+  return { h1, h2, h3, hasKeywordInH1, h2HasKw, issues, score }
 }
 
 function analyzeMeta(content: string, keyword: string, pageTitle?: string) {
@@ -91,28 +91,30 @@ function analyzeMeta(content: string, keyword: string, pageTitle?: string) {
 
   const title = titleMatch?.[1] ?? pageTitle ?? ''
   const description = descMatch?.[1] ?? ''
+  const titleHasKeyword = title.toLowerCase().includes(kw)
+  const descHasKeyword = description.toLowerCase().includes(kw)
 
   const issues: string[] = []
   if (!title) issues.push('No <title> tag found — add a title tag with your keyword')
   else {
-    if (!title.toLowerCase().includes(kw)) issues.push(`Title "${title}" doesn't contain keyword "${keyword}"`)
+    if (!titleHasKeyword) issues.push(`Title "${title}" doesn't contain keyword "${keyword}"`)
     if (title.length < 30) issues.push(`Title is too short (${title.length} chars) — aim for 50–60 characters`)
     if (title.length > 65) issues.push(`Title is too long (${title.length} chars) — Google truncates after ~60 characters`)
   }
   if (!description) issues.push('No meta description found — add one (150–160 chars) with your keyword')
   else {
-    if (!description.toLowerCase().includes(kw)) issues.push(`Meta description doesn't include keyword "${keyword}"`)
+    if (!descHasKeyword) issues.push(`Meta description doesn't include keyword "${keyword}"`)
     if (description.length < 100) issues.push(`Meta description is too short (${description.length} chars) — aim for 150–160 characters`)
     if (description.length > 165) issues.push(`Meta description is too long (${description.length} chars) — will be truncated in SERPs`)
   }
 
   const score = !title && !description ? 0
-    : title && description && title.toLowerCase().includes(kw) && description.toLowerCase().includes(kw) && title.length >= 30 && title.length <= 65 ? 100
+    : title && description && titleHasKeyword && descHasKeyword && title.length >= 30 && title.length <= 65 ? 100
     : title && description ? 65
     : title ? 35
     : 20
 
-  return { title, titleLength: title.length, description, descriptionLength: description.length, issues, score }
+  return { title, titleLength: title.length, description, descriptionLength: description.length, titleHasKeyword, descHasKeyword, issues, score }
 }
 
 function analyzeImages(content: string, keyword: string) {
@@ -127,23 +129,24 @@ function analyzeImages(content: string, keyword: string) {
 
   const total = images.length
   const missingAlt = images.filter(i => !i.hasAlt || i.alt === '').length
-  const withKeyword = images.filter(i => i.alt?.toLowerCase().includes(kw)).length
+  const withAlt = total - missingAlt
+  const withKeywordInAlt = images.filter(i => i.alt?.toLowerCase().includes(kw)).length
 
   const issues: string[] = []
   if (total === 0) issues.push('No images found — add relevant images to improve engagement and visual SEO')
   else {
     if (missingAlt > 0) issues.push(`${missingAlt} of ${total} images missing alt text — add descriptive alt text to all images`)
-    if (withKeyword === 0 && total > 0) issues.push(`No image has alt text containing "${keyword}" — add keyword to at least one image's alt text`)
+    if (withKeywordInAlt === 0 && total > 0) issues.push(`No image has alt text containing "${keyword}" — add keyword to at least one image's alt text`)
     if (total < 2) issues.push('Only 1 image found — add more images (aim for 1 per 300 words)')
   }
 
   const score = total === 0 ? 30
-    : missingAlt === 0 && withKeyword > 0 ? 100
+    : missingAlt === 0 && withKeywordInAlt > 0 ? 100
     : missingAlt === 0 ? 75
     : missingAlt < total ? 50
     : 20
 
-  return { total, missingAlt, withKeyword, images: images.slice(0, 10), issues, score }
+  return { total, missingAlt, withAlt, withKeywordInAlt, images: images.slice(0, 10), issues, score }
 }
 
 function analyzeLinks(content: string) {
@@ -197,14 +200,17 @@ function analyzeReadability(content: string) {
     : fkClamped >= 40 ? 50
     : 30
 
-  return { wordCount, sentenceCount, avgWordsPerSentence, fleschScore: fkClamped, longSentences, longParagraphs, issues, score }
+  return {
+    wordCount, sentenceCount, avgWordsPerSentence, avgSentenceLength: avgWordsPerSentence,
+    paragraphCount: paragraphs.length, fleschScore: fkClamped, longSentences, longParagraphs, issues, score,
+  }
 }
 
 interface AIFix {
   category: string
   priority: 'high' | 'medium' | 'low'
   issue: string
-  fix: string
+  suggestion: string
   before?: string
   after?: string
   impact: number
@@ -274,7 +280,7 @@ Return a JSON array of up to 8 fix objects:
     "category": "keyword|headers|meta|images|links|readability",
     "priority": "high|medium|low",
     "issue": "specific problem description",
-    "fix": "exactly what to do",
+    "suggestion": "exactly what to do",
     "before": "exact text that needs changing (copy from content above)",
     "after": "improved version with keyword naturally included",
     "impact": 15
@@ -298,11 +304,11 @@ Rules:
         category: issue.split(']')[0].replace('[', '').toLowerCase(),
         priority: i < 2 ? 'high' : i < 4 ? 'medium' : 'low',
         issue: issue.replace(/^\[\w+\]\s*/, ''),
-        fix: 'Address this issue to improve your SEO score',
+        suggestion: 'Address this issue to improve your SEO score',
         before: '',
         after: '',
         impact: 10 - i * 2,
-      }))
+      } as AIFix))
     }
 
     // Fetch previous score if re-analyzing
