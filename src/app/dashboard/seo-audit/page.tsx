@@ -76,6 +76,7 @@ export default function SeoAuditPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [showManual, setShowManual] = useState(false)
   const [savingCheck, setSavingCheck] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -181,7 +182,7 @@ export default function SeoAuditPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-slate-900">🩺 SEO Audit</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Enterprise technical, content & AI-search audit across {AUDIT_FRAMEWORK.length} categories and {TOTAL_CHECKS} checks</p>
+            <p className="text-sm text-slate-500 mt-0.5">{AUTO_CHECK_IDS.size} automated checks + AI scoring across {AUDIT_FRAMEWORK.length} categories, with a {TOTAL_CHECKS}-point expert checklist</p>
           </div>
           <button onClick={startNew} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
             + New Audit
@@ -304,8 +305,11 @@ export default function SeoAuditPage() {
 
   // ── RESULT VIEW ────────────────────────────────────────────────────────────
   if (!current) return null
-  const naCount = Object.values(current.checklistState).filter(s => s === 'na').length
+  const naCount = Object.values(current.checklistState).filter(s => s === 'na').length +
+    Object.values(current.autoResults).filter(a => a.status === 'na').length
   const evaluated = current.passedChecks + current.failedChecks + current.warnChecks + naCount
+  const autoRun = Object.keys(current.autoResults).length
+  const manualDone = Object.keys(current.checklistState).length
   const sortedCats = [...AUDIT_FRAMEWORK].sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority])
 
   return (
@@ -347,15 +351,18 @@ export default function SeoAuditPage() {
             </div>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <div className="text-sm font-semibold text-slate-700 mb-2">Coverage</div>
+            <div className="text-sm font-semibold text-slate-700 mb-2">Verified Coverage</div>
             <div className="flex items-end gap-2 mb-2">
-              <span className="text-3xl font-black text-slate-800">{evaluated}</span>
-              <span className="text-slate-400 text-sm mb-1">/ {current.totalChecks} checks evaluated</span>
+              <span className="text-3xl font-black text-slate-800">{autoRun}</span>
+              <span className="text-slate-400 text-sm mb-1">checks verified automatically</span>
             </div>
             <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
               <div className="h-full rounded-full bg-blue-500" style={{ width: `${(evaluated / current.totalChecks) * 100}%` }} />
             </div>
-            <p className="text-[11px] text-slate-400 mt-2">Auto-detected checks run instantly. Work through the rest as a manual checklist below.</p>
+            <p className="text-[11px] text-slate-400 mt-2">
+              Your score is built from these verified checks plus AI assessments.
+              {manualDone > 0 ? ` You've reviewed ${manualDone} expert-checklist items.` : ` An optional expert checklist of ${current.totalChecks - autoRun} agency-audit items is available in each category.`}
+            </p>
           </div>
         </div>
 
@@ -365,10 +372,13 @@ export default function SeoAuditPage() {
             const catScore = current.categoryScores[cat.key]
             const ai = current.aiResults[cat.key]
             const isOpen = expanded === cat.key
+            const isEvaluated = (c: { id: string; auto?: boolean }) =>
+              (c.auto && current.autoResults[c.id]) || current.checklistState[c.id]
+            const hiddenManual = cat.subCategories.flatMap(s => s.checks).filter(c => !isEvaluated(c)).length
             return (
               <div key={cat.key} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
                 <button
-                  onClick={() => setExpanded(isOpen ? null : cat.key)}
+                  onClick={() => { setExpanded(isOpen ? null : cat.key); setShowManual(false) }}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-left"
                 >
                   <span className="text-slate-300 text-xs w-5">{cat.num}</span>
@@ -404,11 +414,14 @@ export default function SeoAuditPage() {
                       </div>
                     )}
 
-                    {cat.subCategories.map(scat => (
+                    {cat.subCategories.map(scat => {
+                      const visibleChecks = showManual ? scat.checks : scat.checks.filter(isEvaluated)
+                      if (visibleChecks.length === 0) return null
+                      return (
                       <div key={scat.name} className="mb-3 last:mb-0">
                         <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1.5">{scat.name}</div>
                         <div className="space-y-1">
-                          {scat.checks.map(check => {
+                          {visibleChecks.map(check => {
                             const auto = check.auto ? current.autoResults[check.id] : undefined
                             const manual = current.checklistState[check.id]
                             return (
@@ -442,7 +455,19 @@ export default function SeoAuditPage() {
                           })}
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
+
+                    {hiddenManual > 0 && (
+                      <button
+                        onClick={() => setShowManual(s => !s)}
+                        className="w-full mt-1 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+                      >
+                        {showManual
+                          ? '− Hide expert checklist'
+                          : `+ Expert checklist — ${hiddenManual} manual review item${hiddenManual === 1 ? '' : 's'} (optional, for full agency audits)`}
+                      </button>
+                    )}
 
                     {cat.key === 'backlinks' && current.backlinkData?.oprScore != null && (
                       <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100">

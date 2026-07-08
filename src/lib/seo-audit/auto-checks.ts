@@ -183,6 +183,7 @@ function jsonLdTypes(html: string): { types: string[]; topLevelTypes: string[]; 
 const pass = (detail: string): AutoCheckResult => ({ status: 'pass', detail })
 const fail = (detail: string): AutoCheckResult => ({ status: 'fail', detail })
 const warn = (detail: string): AutoCheckResult => ({ status: 'warn', detail })
+const na = (detail: string): AutoCheckResult => ({ status: 'na', detail })
 
 function originOf(url: string): string {
   try { const u = new URL(url); return `${u.protocol}//${u.host}` } catch { return '' }
@@ -489,45 +490,69 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   r['schema.0.2'] = dupType
     ? warn(`Duplicate schema block of type "${dupType}" — consolidate into one`)
     : pass('No duplicate schema blocks')
-  const missingSchema = (id: string, label: string, ...names: string[]) => {
+  // Applicability signals — only warn about schema types this page plausibly needs.
+  // Everything else is N/A: recorded but excluded from the score, so a SaaS page
+  // is never penalised for missing MedicalClinic or Event markup.
+  const isHome = pathname === '/' || pathname === ''
+  const ogTypeVal = metas.find(m => m.property === 'og:type')?.content?.toLowerCase() ?? ''
+  const isArticlePage = hasType(ldTypes, 'Article', 'BlogPosting', 'NewsArticle') ||
+    ogTypeVal === 'article' || /<article[\s>]/i.test(html)
+  const medicalSignals = (text.match(/\b(clinic|hospital|doctors?|physicians?|patients?|dentists?|dental|surgery|diagnosis)\b/gi) ?? []).length >= 3
+  const videoSignals = /<video\b/i.test(html) || /youtube(-nocookie)?\.com\/embed|player\.vimeo\.com|fast\.wistia/i.test(html)
+  const reviewSignals = /testimonial|customer review|aggregate rating|★|⭐/i.test(html)
+  const headingTexts = [...getBody(html).matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi)].map(m => m[1].replace(/<[^>]+>/g, ' '))
+  const faqSignals = /faq|frequently asked/i.test(text) || headingTexts.filter(t => t.includes('?')).length >= 2
+  const localSignals = /href=["']tel:/i.test(html) && /\b(address|directions|opening hours|hours of operation|visit us|our location)\b/i.test(text)
+
+  const missingSchema = (id: string, label: string, applicable: boolean, ...names: string[]) => {
     r[id] = hasType(ldTypes, ...names)
       ? pass(`${label} schema present`)
-      : warn(`${label} schema not found`)
+      : applicable
+        ? warn(`${label} schema not found`)
+        : na(`${label} schema not applicable to this page type`)
   }
-  missingSchema('schema.1.0', 'Organization/LocalBusiness', 'Organization', 'LocalBusiness')
-  missingSchema('schema.1.1', 'MedicalClinic/Hospital', 'MedicalClinic', 'Hospital', 'MedicalOrganization')
-  missingSchema('schema.1.2', 'Person', 'Person')
-  missingSchema('schema.1.3', 'BreadcrumbList', 'BreadcrumbList')
-  missingSchema('schema.1.4', 'FAQPage', 'FAQPage')
-  missingSchema('schema.1.5', 'Article/MedicalWebPage', 'Article', 'MedicalWebPage', 'BlogPosting', 'NewsArticle')
-  missingSchema('schema.1.6', 'Review/AggregateRating', 'Review', 'AggregateRating')
-  missingSchema('schema.1.7', 'Service', 'Service')
-  missingSchema('schema.1.8', 'Video', 'VideoObject')
-  missingSchema('schema.1.9', 'Event', 'Event')
-  missingSchema('schema.1.10', 'Speakable', 'SpeakableSpecification')
-  missingSchema('schema.1.11', 'SiteNavigationElement', 'SiteNavigationElement')
+  missingSchema('schema.1.0', 'Organization/LocalBusiness', true, 'Organization', 'LocalBusiness')
+  missingSchema('schema.1.1', 'MedicalClinic/Hospital', medicalSignals, 'MedicalClinic', 'Hospital', 'MedicalOrganization')
+  missingSchema('schema.1.2', 'Person', isArticlePage || medicalSignals, 'Person')
+  missingSchema('schema.1.3', 'BreadcrumbList', !isHome, 'BreadcrumbList')
+  missingSchema('schema.1.4', 'FAQPage', faqSignals, 'FAQPage')
+  missingSchema('schema.1.5', 'Article/BlogPosting', isArticlePage, 'Article', 'MedicalWebPage', 'BlogPosting', 'NewsArticle')
+  missingSchema('schema.1.6', 'Review/AggregateRating', reviewSignals, 'Review', 'AggregateRating')
+  missingSchema('schema.1.7', 'Service', false, 'Service')
+  missingSchema('schema.1.8', 'Video', videoSignals, 'VideoObject')
+  missingSchema('schema.1.9', 'Event', false, 'Event')
+  missingSchema('schema.1.10', 'Speakable', false, 'SpeakableSpecification')
+  missingSchema('schema.1.11', 'SiteNavigationElement', false, 'SiteNavigationElement')
   r['eeat.2.3'] = hasType(ldTypes, 'Organization', 'LocalBusiness', 'MedicalOrganization')
     ? pass('Organization entity present in schema')
     : warn('No Organization entity in structured data')
   r['aiSeo.0.0'] = hasType(ldTypes, 'Person')
     ? pass('Person entities present in schema')
-    : warn('No Person entity in schema (e.g. doctors/authors not marked up)')
+    : isArticlePage || medicalSignals
+      ? warn('No Person entity in schema (authors/experts not marked up)')
+      : na('Person entities not required for this page type')
   r['aiSeo.1.4'] = hasType(ldTypes, 'SpeakableSpecification')
     ? pass('Speakable schema present')
-    : warn('No Speakable schema for voice-search answer extraction')
+    : na('Speakable schema is optional (limited search-engine support)')
   r['localSeo.1.2'] = hasType(ldTypes, 'LocalBusiness', 'MedicalClinic', 'Hospital', 'MedicalOrganization')
     ? pass('LocalBusiness-type schema present')
-    : warn('No LocalBusiness schema found')
+    : localSignals
+      ? warn('Local-business signals found but no LocalBusiness schema')
+      : na('No local-business signals on this page — LocalBusiness schema not required')
 
   // ── Breadcrumbs ──
   const breadcrumbVisible = /aria-label=["']breadcrumb["']/i.test(html) ||
     /class=["'][^"']*breadcrumb/i.test(html)
   r['breadcrumbs.0.0'] = breadcrumbVisible
     ? pass('Breadcrumb navigation markup detected')
-    : warn('No visible breadcrumb navigation detected')
+    : isHome
+      ? na('Breadcrumbs are not needed on the homepage')
+      : warn('No visible breadcrumb navigation detected')
   r['breadcrumbs.0.2'] = hasType(ldTypes, 'BreadcrumbList')
     ? pass('BreadcrumbList schema present')
-    : warn('BreadcrumbList schema missing')
+    : isHome
+      ? na('BreadcrumbList schema not needed on the homepage')
+      : warn('BreadcrumbList schema missing')
   const breadcrumbSchemaCount = ldTopTypes.filter(t => t.toLowerCase() === 'breadcrumblist').length
   r['breadcrumbs.0.5'] = breadcrumbSchemaCount > 1
     ? warn(`${breadcrumbSchemaCount} BreadcrumbList schemas — keep only one`)
@@ -604,13 +629,12 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
     ? warn(`Missing Open Graph tags: ${missingOg.join(', ')}`)
     : pass('og:title, og:description and og:image are all set')
   // 0.3: specifically checks article/blog pages — these must have OG article type + tags
-  const isArticlePage = hasType(ldTypes, 'Article', 'BlogPosting', 'NewsArticle') || ogType === 'article'
   if (isArticlePage) {
     r['social.0.3'] = missingOg.length > 0
       ? fail(`Article page is missing Open Graph tags: ${missingOg.join(', ')} — required for social sharing of blog content`)
       : pass('Article/blog page has all required OG tags')
   } else {
-    r['social.0.3'] = pass('Not identified as an article/blog page — OG article tags not required')
+    r['social.0.3'] = na('Not an article/blog page — OG article tags not required')
   }
   const twitterCard = metas.find(m => m.name === 'twitter:card')?.content ?? ''
   r['social.0.2'] = twitterCard
