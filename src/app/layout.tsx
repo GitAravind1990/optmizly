@@ -4,6 +4,7 @@ import { CookieBanner } from '@/components/cookie-banner'
 import { PHProvider } from '@/components/posthog-provider'
 import { PostHogUserIdentity } from '@/components/posthog-user-identity'
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Inter } from 'next/font/google'
 import { headers } from 'next/headers'
 import './globals.css'
@@ -74,6 +75,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </ClerkProviderWrapper>
         </PHProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
