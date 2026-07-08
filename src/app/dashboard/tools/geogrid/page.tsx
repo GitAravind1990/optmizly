@@ -7,6 +7,7 @@ import { GridStats } from '@/components/geogrid/GridStats'
 import { ReviewVelocity, type ReviewData } from '@/components/geogrid/ReviewVelocity'
 import { getRankColor } from '@/components/geogrid/GridMap'
 import { LockedState, Spinner } from '@/components/ui'
+import { UpgradeModal } from '@/components/upgrade-modal'
 import type { RankedGridPoint, GridStats as GridStatsType } from '@/lib/geogrid'
 
 type Tab = 'geogrid' | 'review-velocity'
@@ -107,6 +108,7 @@ function GridMapInline({ grid, center, businessName }: { grid: RankedGridPoint[]
 function GeogridContent() {
   const searchParams = useSearchParams()
   const [plan, setPlan] = useState<string | null>(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [tab, setTab] = useState<Tab>(() =>
     searchParams.get('tab') === 'review-velocity' ? 'review-velocity' : 'geogrid'
   )
@@ -160,6 +162,7 @@ function GeogridContent() {
         body: JSON.stringify({ businessName: biz, keyword, centerLat: lat, centerLng: lng, gridSize, spacing, unit }),
       })
       const d = await r.json()
+      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error)
       setGridProgress(100)
       setGridResult(d)
@@ -182,6 +185,7 @@ function GeogridContent() {
         body: JSON.stringify({ placeId: placeId.trim(), businessName: rvBiz }),
       })
       const d = await r.json()
+      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error)
       setRvResult(d)
     } catch (e) {
@@ -232,6 +236,7 @@ function GeogridContent() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
       {/* Tabs */}
       <div className="flex gap-1 px-6 pt-4 border-b border-slate-200 bg-white shrink-0">
         {(['geogrid', 'review-velocity'] as Tab[]).map(t => (

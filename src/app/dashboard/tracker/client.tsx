@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button, Card, EmptyState, LockedState } from '@/components/ui'
 import { exportTrackerCSV, exportTrackerPDF } from '@/lib/export'
+import { UpgradeModal } from '@/components/upgrade-modal'
 
 export function TrackerClient({ unlocked = true }: { unlocked?: boolean }) {
   const [pageUrl, setPageUrl] = useState('')
@@ -13,6 +14,7 @@ export function TrackerClient({ unlocked = true }: { unlocked?: boolean }) {
     results: Array<{ query: string; simulated_ai_response: string; citation_likelihood: number; citation_verdict: string; reasons_for_citation: string[]; reasons_against_citation: string[]; what_would_increase_citation: string; chatgpt_vs_perplexity: string }>
   } | null>(null)
   const [error, setError] = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   if (!unlocked) return <LockedState tool="Cite Tracker" plan="Agency" />
 
@@ -36,6 +38,7 @@ export function TrackerClient({ unlocked = true }: { unlocked?: boolean }) {
         body: JSON.stringify({ content, pageUrl, queries: queryList }),
       })
       const d = await r.json()
+      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error)
       setResult(d)
     } catch (e) {
@@ -47,6 +50,8 @@ export function TrackerClient({ unlocked = true }: { unlocked?: boolean }) {
   const overallColor = overall >= 70 ? 'text-emerald-600' : overall >= 45 ? 'text-amber-600' : 'text-red-600'
 
   return (
+    <>
+    {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-3xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
@@ -137,5 +142,6 @@ export function TrackerClient({ unlocked = true }: { unlocked?: boolean }) {
         {!result && !loading && <EmptyState icon="🎯" title="Cite Tracker" desc="Paste your content, add your target queries, and run to see if ChatGPT and Perplexity would cite you." />}
       </div>
     </div>
+    </>
   )
 }

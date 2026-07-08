@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { UpgradeModal } from '@/components/upgrade-modal'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -675,6 +676,7 @@ export function RankingEngineClient({ unlocked }: { unlocked: boolean }) {
   const [result, setResult] = useState<RankingResult | null>(null)
   const [tab, setTab] = useState<Tab>('Overview')
   const [error, setError] = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   async function analyze() {
     if (!form.keyword.trim() || !form.domain.trim()) {
@@ -690,6 +692,7 @@ export function RankingEngineClient({ unlocked }: { unlocked: boolean }) {
         body: JSON.stringify(form),
       })
       const d = await r.json()
+      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error || 'Analysis failed')
       setResult(d as RankingResult)
       setTab('Overview')
@@ -733,6 +736,7 @@ export function RankingEngineClient({ unlocked }: { unlocked: boolean }) {
 
   return (
     <div className="p-6 max-w-5xl mx-auto w-full">
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
       {/* Header */}
       <div className="mb-5">
         <h1 className="text-xl font-black text-slate-900">Ranking Possibility Engine</h1>

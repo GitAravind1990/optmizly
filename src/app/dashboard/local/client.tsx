@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button, Card, Badge, Spinner } from '@/components/ui'
 import { exportLocalCSV, exportLocalPDF } from '@/lib/export'
+import { UpgradeModal } from '@/components/upgrade-modal'
 
 const SUB_TOOLS = [
   { id: 'entities', label: 'Local Entities', desc: 'Missing hyperlocal entities, neighborhoods, landmarks' },
@@ -17,6 +18,7 @@ export function LocalClient() {
   const [loading, setLoading] = useState<string | null>(null)
   const [results, setResults] = useState<Record<string, Record<string, unknown>>>({})
   const [error, setError] = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   async function runSubTool(subTool: string) {
     const content = (document.getElementById('local-content') as HTMLTextAreaElement)?.value ?? ''
@@ -31,6 +33,7 @@ export function LocalClient() {
         body: JSON.stringify({ content, subTool, ...fields }),
       })
       const d = await r.json()
+      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error)
       setResults(prev => ({ ...prev, [subTool]: d }))
     } catch (e) {
@@ -42,6 +45,7 @@ export function LocalClient() {
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-6">
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
       <div className="max-w-3xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
           <div><h1 className="text-base font-black">Local SEO Suite</h1>

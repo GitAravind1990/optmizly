@@ -3,6 +3,7 @@
 import { useState, useCallback, ReactNode } from 'react'
 import { Button, Card, Spinner, EmptyState, LockedState } from '@/components/ui'
 import { useContent } from '@/context/ContentContext'
+import { UpgradeModal } from '@/components/upgrade-modal'
 
 interface ProToolPageProps {
   toolId: string
@@ -24,6 +25,7 @@ export function ProToolPage({
   const { content, analysisResult, toolResults, setToolResult } = useContent()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const cached = toolResults[toolId] as Record<string, unknown> | undefined
 
@@ -38,6 +40,7 @@ export function ProToolPage({
         body: JSON.stringify(getBody(content, summary)),
       })
       const d = await r.json()
+      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error)
       setToolResult(toolId, d)
     } catch (e) {
@@ -48,6 +51,8 @@ export function ProToolPage({
   if (!unlocked) return <LockedState tool={title} plan={plan} />
 
   return (
+    <>
+    {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-3xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
@@ -80,5 +85,6 @@ export function ProToolPage({
         )}
       </div>
     </div>
+    </>
   )
 }

@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { exportCitationCSV, exportCitationPDF, exportQueriesCSV, exportQueriesPDF } from '@/lib/export'
 import { Card, Badge, Button, Spinner, EmptyState, LockedState } from '@/components/ui'
 import { useContent } from '@/context/ContentContext'
+import { UpgradeModal } from '@/components/upgrade-modal'
 
 type Tab = 'citation' | 'queries'
 
@@ -15,6 +16,7 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
   const [tab, setTab]       = useState<Tab>('citation')
   const [loading, setLoading] = useState(false)
   const [error, setError]   = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const citationData = toolResults['citation'] as CitationData | undefined
   const queriesData  = toolResults['queries']  as QueriesData  | undefined
@@ -30,6 +32,7 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
         fetch('/api/queries',  { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }),
       ])
       const [citData, qData] = await Promise.all([citRes.json(), qRes.json()])
+      if ([citRes.status, qRes.status].some(s => s === 403 || s === 429)) { setShowUpgradeModal(true); return }
       if (!citRes.ok) throw new Error(citData.error)
       if (!qRes.ok)   throw new Error(qData.error)
       setToolResult('citation', citData)
@@ -44,6 +47,8 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
   const hasResults = citationData || queriesData
 
   return (
+    <>
+    {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-3xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
@@ -124,5 +129,6 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
         )}
       </div>
     </div>
+    </>
   )
 }

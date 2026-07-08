@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { exportContentOptimizerCSV, exportContentOptimizerPDF } from '@/lib/export';
+import { UpgradeModal } from '@/components/upgrade-modal';
 
 interface Entity {
   name: string;
@@ -136,6 +137,7 @@ export default function ContentOptimizerPage() {
   const [result, setResult]         = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab]   = useState<TabId>('overview');
   const [error, setError]           = useState('');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Rewrite mode state
   const [rwLoading, setRwLoading]   = useState(false);
@@ -155,6 +157,7 @@ export default function ContentOptimizerPage() {
       const r = await fetch('/api/rewrite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }) });
       setRwStep('Step 2/2: Rewriting with framework…');
       const d = await r.json();
+      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error);
       setRwResult(d);
     } catch (e) { setRwError(e instanceof Error ? e.message : 'Rewrite failed'); }
@@ -179,7 +182,9 @@ export default function ContentOptimizerPage() {
         body: JSON.stringify({ content, targetKeyword: keyword, contentUrl }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.status === 403 || res.status === 429) {
+        setShowUpgradeModal(true);
+      } else if (res.ok) {
         setResult(data);
         setActiveTab('overview');
       } else {
@@ -192,6 +197,7 @@ export default function ContentOptimizerPage() {
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header + mode toggle */}
         <div className="flex items-start justify-between gap-4 flex-wrap">

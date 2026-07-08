@@ -56,7 +56,17 @@ export async function POST(req: NextRequest) {
 
     const domain = cleanDomain(rawDomain.trim())
 
-    const opr = await fetchOPRScore(domain)
+    let opr
+    try {
+      opr = await fetchOPRScore(domain)
+    } catch (oprErr) {
+      console.error('OpenPageRank lookup failed:', oprErr)
+      return apiError({
+        message: 'Could not retrieve domain authority data right now. Please try again in a few minutes.',
+        status: 422,
+        name: 'FetchError',
+      })
+    }
 
     const analysis = await prisma.backlinkDomainAnalysis.create({
       data: {

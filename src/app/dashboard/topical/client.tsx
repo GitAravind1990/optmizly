@@ -32,7 +32,7 @@ export function TopicalClient() {
         body: JSON.stringify({ niche, urls }),
       })
       const d = await r.json()
-      if (r.status === 403) { setShowUpgradeModal(true); return }
+      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error)
       setResult(d)
     } catch (e) {
