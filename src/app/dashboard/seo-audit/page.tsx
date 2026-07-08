@@ -95,7 +95,7 @@ export default function SeoAuditPage() {
     try {
       const r = await fetch(`/api/tools/seo-audit?id=${id}`)
       const d = await r.json()
-      if (d.data) { setCurrent(d.data); setExpanded(null); setView('result') }
+      if (d.data) { setCurrent(d.data); setExpanded(null); setError(''); setView('result') }
     } catch {
       // network error — stay on current view
     }
@@ -115,7 +115,7 @@ export default function SeoAuditPage() {
         body: JSON.stringify(body),
       })
       const d = await r.json()
-      if (r.status === 403) { setShowUpgradeModal(true); return }
+      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error || 'Audit failed')
       setCurrent(d.data)
       setExpanded(null)
@@ -137,16 +137,23 @@ export default function SeoAuditPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ auditId: current.id, checkId, status }),
       })
-      const d = await r.json()
-      if (d.data) {
-        setCurrent(prev => prev ? {
-          ...prev,
-          checklistState: d.data.checklistState,
-          passedChecks: d.data.passedChecks,
-          failedChecks: d.data.failedChecks,
-          warnChecks: d.data.warnChecks,
-        } : prev)
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok || !d.data) {
+        setError(typeof d.error === 'string' ? d.error : 'Could not save that check — please try again.')
+        return
       }
+      setError('')
+      setCurrent(prev => prev ? {
+        ...prev,
+        checklistState: d.data.checklistState,
+        passedChecks: d.data.passedChecks,
+        failedChecks: d.data.failedChecks,
+        warnChecks: d.data.warnChecks,
+        categoryScores: d.data.categoryScores ?? prev.categoryScores,
+        overallScore: d.data.overallScore ?? prev.overallScore,
+      } : prev)
+    } catch {
+      setError('Network error — could not save that check.')
     } finally {
       setSavingCheck(null)
     }
@@ -174,7 +181,7 @@ export default function SeoAuditPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-slate-900">🩺 SEO Audit</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Enterprise technical, content & AI-search audit across 34 categories and {TOTAL_CHECKS}+ checks</p>
+            <p className="text-sm text-slate-500 mt-0.5">Enterprise technical, content & AI-search audit across {AUDIT_FRAMEWORK.length} categories and {TOTAL_CHECKS} checks</p>
           </div>
           <button onClick={startNew} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
             + New Audit
@@ -228,6 +235,8 @@ export default function SeoAuditPage() {
   // ── NEW AUDIT VIEW ─────────────────────────────────────────────────────────
   if (view === 'new') {
     return (
+      <>
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
       <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto w-full">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => setView('list')} className="text-slate-400 hover:text-slate-600">←</button>
@@ -289,12 +298,14 @@ export default function SeoAuditPage() {
           </div>
         </div>
       </div>
+      </>
     )
   }
 
   // ── RESULT VIEW ────────────────────────────────────────────────────────────
   if (!current) return null
-  const evaluated = current.passedChecks + current.failedChecks + current.warnChecks
+  const naCount = Object.values(current.checklistState).filter(s => s === 'na').length
+  const evaluated = current.passedChecks + current.failedChecks + current.warnChecks + naCount
   const sortedCats = [...AUDIT_FRAMEWORK].sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority])
 
   return (
@@ -319,6 +330,8 @@ export default function SeoAuditPage() {
       </div>
 
       <div className="p-6 max-w-5xl mx-auto space-y-6">
+        {error && <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>}
+
         {/* Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`rounded-xl border-2 p-5 text-center ${scoreBg(current.overallScore)}`}>

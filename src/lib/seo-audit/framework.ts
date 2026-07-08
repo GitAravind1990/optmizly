@@ -326,7 +326,7 @@ export const AUDIT_FRAMEWORK: AuditCategory[] = [
     subCategories: [
       sub('Pagination Errors', [
         ['No canonical to paginated pages (or incorrect)'],
-        ['rel=next/prev not implemented', true],
+        ['rel=next/prev not implemented'],
         ['Infinite scroll with no crawlable URL version'],
         ['Paginated pages blocked from indexing incorrectly'],
         ['Paginated URLs in sitemap unnecessarily'],
@@ -485,7 +485,7 @@ export const AUDIT_FRAMEWORK: AuditCategory[] = [
         ['Location pages with identical content (thin/duplicate)'],
         ['Missing LocalBusiness schema on location pages', true],
         ['GMB URL not matching website branch URL'],
-        ['Missing city/area in page title and H1', true],
+        ['Missing city/area in page title and H1'],
       ], 'localSeo', 1),
       sub('GMB Signals', [
         ['GMB profile incomplete (missing hours, categories)'],
@@ -730,4 +730,60 @@ export const AI_CATEGORY_KEYS = AUDIT_FRAMEWORK.filter(c => c.ai).map(c => c.key
 
 export const PRIORITY_RANK: Record<AuditPriority, number> = {
   Critical: 0, High: 1, Medium: 2, Advanced: 3, Low: 4,
+}
+
+export const STATUS_SCORE: Record<CheckStatus, number | null> = { pass: 100, warn: 50, fail: 0, na: null }
+
+export interface AuditScoreInput {
+  autoResults: Record<string, { status: CheckStatus }>
+  aiResults: Record<string, { score: number }>
+  checklistState: Record<string, CheckStatus>
+}
+
+/**
+ * Single source of truth for audit scoring, shared by the analyze route (empty
+ * checklist) and the PATCH route (after manual toggles). Auto results win for
+ * auto checks; manual checklist state covers the rest. AI category scores are
+ * blended in with the same weighting in both paths.
+ */
+export function computeAuditScores({ autoResults, aiResults, checklistState }: AuditScoreInput) {
+  const categoryScores: Record<string, number> = {}
+  let passedChecks = 0, failedChecks = 0, warnChecks = 0, naChecks = 0
+
+  for (const cat of AUDIT_FRAMEWORK) {
+    const scores: number[] = []
+    for (const scat of cat.subCategories) {
+      for (const check of scat.checks) {
+        const effective: CheckStatus | undefined =
+          AUTO_CHECK_IDS.has(check.id) && autoResults[check.id]
+            ? autoResults[check.id].status
+            : checklistState[check.id]
+        if (!effective) continue
+        if (effective === 'pass') passedChecks++
+        else if (effective === 'fail') failedChecks++
+        else if (effective === 'warn') warnChecks++
+        else naChecks++
+        const s = STATUS_SCORE[effective]
+        if (s !== null) scores.push(s)
+      }
+    }
+    const checkAvg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null
+    const aiScore = aiResults[cat.key]?.score ?? null
+
+    let final: number | null = null
+    if (checkAvg !== null && aiScore !== null) {
+      // AI categories: Claude's holistic score carries more weight than 1-2 auto signals
+      const aiWeight = cat.ai ? 0.75 : 0.5
+      final = Math.round(checkAvg * (1 - aiWeight) + aiScore * aiWeight)
+    } else if (checkAvg !== null) {
+      final = Math.round(checkAvg)
+    } else if (aiScore !== null) {
+      final = aiScore
+    }
+    if (final !== null) categoryScores[cat.key] = final
+  }
+
+  const scored = Object.values(categoryScores)
+  const overallScore = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : 0
+  return { categoryScores, overallScore, passedChecks, failedChecks, warnChecks, naChecks }
 }

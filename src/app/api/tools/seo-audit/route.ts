@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
-import { ALL_CHECKS, AUTO_CHECK_IDS, type CheckStatus } from '@/lib/seo-audit/framework'
+import { computeAuditScores, type CheckStatus } from '@/lib/seo-audit/framework'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
@@ -84,29 +84,30 @@ export async function PATCH(req: NextRequest) {
     if (status === null || status === undefined) delete state[checkId]
     else state[checkId] = status as CheckStatus
 
-    // Recompute combined counts: auto results + manual checklist (manual wins for non-auto checks)
+    // Recompute counts AND scores: auto results + manual checklist (auto wins for auto checks)
     const auto = parse<Record<string, { status: CheckStatus }>>(audit.autoResults, {})
-    let passed = 0, failed = 0, warn = 0
-    for (const check of ALL_CHECKS) {
-      const manual = state[check.id]
-      const effective: CheckStatus | undefined =
-        AUTO_CHECK_IDS.has(check.id) && auto[check.id] ? auto[check.id].status : manual
-      if (effective === 'pass') passed++
-      else if (effective === 'fail') failed++
-      else if (effective === 'warn') warn++
-    }
+    const ai = parse<Record<string, { score: number }>>(audit.aiResults, {})
+    const { categoryScores, overallScore, passedChecks, failedChecks, warnChecks } =
+      computeAuditScores({ autoResults: auto, aiResults: ai, checklistState: state })
 
-    const updated = await prisma.seoAudit.update({
+    await prisma.seoAudit.update({
       where: { id: auditId },
-      data: { checklistState: JSON.stringify(state), passedChecks: passed, failedChecks: failed, warnChecks: warn },
+      data: {
+        checklistState: JSON.stringify(state),
+        passedChecks, failedChecks, warnChecks,
+        categoryScores: JSON.stringify(categoryScores),
+        overallScore,
+      },
     })
 
     return apiSuccess({
       data: {
         checklistState: state,
-        passedChecks: updated.passedChecks,
-        failedChecks: updated.failedChecks,
-        warnChecks: updated.warnChecks,
+        passedChecks,
+        failedChecks,
+        warnChecks,
+        categoryScores,
+        overallScore,
       },
     })
   } catch (e) {

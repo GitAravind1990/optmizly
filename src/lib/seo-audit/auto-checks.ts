@@ -29,6 +29,10 @@ export interface AutoCheckContext {
   redirects: RedirectHop[]
   oprScore?: number | null
   domainRank?: number | null
+  /** false when HTML was pasted — skips checks that need real response headers/status */
+  fetched?: boolean
+  /** false when no real URL was provided (pasted HTML with placeholder URL) — skips URL-based checks */
+  urlKnown?: boolean
 }
 
 type ResultMap = Record<string, AutoCheckResult>
@@ -135,31 +139,43 @@ function anchors(html: string, origin: string): Anchor[] {
   })
 }
 
-function jsonLdTypes(html: string): { types: string[]; invalid: boolean } {
+function jsonLdTypes(html: string): { types: string[]; topLevelTypes: string[]; invalid: boolean } {
   const blocks = [...html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)]
   const types: string[] = []
+  const topLevelTypes: string[] = []
   let invalid = false
+  const pushTypes = (node: unknown, out: string[]) => {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) return
+    const t = (node as Record<string, unknown>)['@type']
+    if (typeof t === 'string') out.push(t)
+    else if (Array.isArray(t)) t.forEach(x => typeof x === 'string' && out.push(x))
+  }
+  // Deep walk: nested entities (author Person, publisher Organization, mainEntity
+  // FAQ items…) count for presence checks, so well-marked-up pages aren't flagged.
+  const collectDeep = (node: unknown) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(collectDeep)
+    pushTypes(node, types)
+    for (const v of Object.values(node as Record<string, unknown>)) collectDeep(v)
+  }
   for (const b of blocks) {
     const raw = b[1].trim()
     try {
       const parsed = JSON.parse(raw)
-      const collect = (node: unknown) => {
-        if (!node) return
-        if (Array.isArray(node)) return node.forEach(collect)
-        if (typeof node === 'object') {
-          const obj = node as Record<string, unknown>
-          const t = obj['@type']
-          if (typeof t === 'string') types.push(t)
-          else if (Array.isArray(t)) t.forEach(x => typeof x === 'string' && types.push(x))
-          if (obj['@graph']) collect(obj['@graph'])
-        }
+      collectDeep(parsed)
+      // Top-level types (block roots + direct @graph members) feed the
+      // duplicate-block checks, where nested repeats are expected and fine.
+      const roots = Array.isArray(parsed) ? parsed : [parsed]
+      for (const root of roots) {
+        pushTypes(root, topLevelTypes)
+        const graph = root && typeof root === 'object' ? (root as Record<string, unknown>)['@graph'] : null
+        if (Array.isArray(graph)) graph.forEach(n => pushTypes(n, topLevelTypes))
       }
-      collect(parsed)
     } catch {
       invalid = true
     }
   }
-  return { types, invalid }
+  return { types, topLevelTypes, invalid }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -189,7 +205,9 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   const imgs = imgTags(html)
   const origin = originOf(finalUrl)
   const links_a = anchors(html, origin)
-  const { types: ldTypes, invalid: ldInvalid } = jsonLdTypes(html)
+  const fetched = ctx.fetched !== false
+  const urlKnown = ctx.urlKnown !== false
+  const { types: ldTypes, topLevelTypes: ldTopTypes, invalid: ldInvalid } = jsonLdTypes(html)
   const text = plainText(html)
   const wordCount = text ? text.split(/\s+/).length : 0
   const isHttps = /^https:/i.test(finalUrl)
@@ -245,14 +263,16 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   r['indexing.0.1'] = hasNoindexMeta
     ? warn('A noindex directive is present — confirm this is intentional and not a leftover from development')
     : pass('No stray noindex directive found')
-  if (hasNoindexHeader || hasNoindexMeta) {
-    r['indexing.0.2'] = hasNoindexHeader && hasNoindexMeta
-      ? warn('noindex set in BOTH the X-Robots-Tag header and meta robots — redundant/conflicting')
-      : hasNoindexHeader
-        ? warn('noindex set via X-Robots-Tag HTTP header')
-        : pass('No conflicting X-Robots-Tag header')
-  } else {
-    r['indexing.0.2'] = pass('No conflicting noindex header')
+  if (fetched) {
+    if (hasNoindexHeader || hasNoindexMeta) {
+      r['indexing.0.2'] = hasNoindexHeader && hasNoindexMeta
+        ? warn('noindex set in BOTH the X-Robots-Tag header and meta robots — redundant/conflicting')
+        : hasNoindexHeader
+          ? warn('noindex set via X-Robots-Tag HTTP header')
+          : pass('No conflicting X-Robots-Tag header')
+    } else {
+      r['indexing.0.2'] = pass('No conflicting noindex header')
+    }
   }
 
   // ── Indexing — canonical ──
@@ -284,19 +304,21 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
     : pass(`~${wordCount} words of body content`)
 
   // ── Architecture — URL ──
-  let qParamCount = 0
-  try { qParamCount = [...new URL(finalUrl).searchParams.keys()].length } catch {}
-  r['architecture.0.0'] = qParamCount >= 2
-    ? warn(`URL has ${qParamCount} query parameters — dynamic parameterised URLs risk duplication`)
-    : pass('URL has at most one query parameter')
-  r['architecture.0.1'] = finalUrl.length > 75
-    ? warn(`URL is ${finalUrl.length} characters — aim for under 75 for cleaner, more crawlable URLs`)
-    : pass(`URL length is ${finalUrl.length} characters`)
   let pathname = ''
   try { pathname = new URL(finalUrl).pathname } catch {}
-  r['architecture.0.5'] = /[A-Z]/.test(pathname)
-    ? warn('URL path contains uppercase characters — use lowercase to avoid duplicate-URL issues')
-    : pass('URL path is lowercase')
+  if (urlKnown) {
+    let qParamCount = 0
+    try { qParamCount = [...new URL(finalUrl).searchParams.keys()].length } catch {}
+    r['architecture.0.0'] = qParamCount >= 2
+      ? warn(`URL has ${qParamCount} query parameters — dynamic parameterised URLs risk duplication`)
+      : pass('URL has at most one query parameter')
+    r['architecture.0.1'] = finalUrl.length > 75
+      ? warn(`URL is ${finalUrl.length} characters — aim for under 75 for cleaner, more crawlable URLs`)
+      : pass(`URL length is ${finalUrl.length} characters`)
+    r['architecture.0.5'] = /[A-Z]/.test(pathname)
+      ? warn('URL path contains uppercase characters — use lowercase to avoid duplicate-URL issues')
+      : pass('URL path is lowercase')
+  }
 
   // ── Architecture / link-equity — internal linking ──
   const internalLinks = links_a.filter(a => a.href && !a.external && !/^(mailto:|tel:|javascript:|#)/i.test(a.href))
@@ -352,9 +374,11 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   r['cwv.3.7'] = imgs.length > 3 && imgsNoLazy.length === imgs.length
     ? warn('No images use loading="lazy" — lazy-load below-the-fold images')
     : pass('Lazy loading is used on images')
-  r['cwv.3.4'] = headerLc['cache-control']
-    ? pass(`Cache-Control header present (${headerLc['cache-control']})`)
-    : warn('No Cache-Control header on the document response')
+  if (fetched) {
+    r['cwv.3.4'] = headerLc['cache-control']
+      ? pass(`Cache-Control header present (${headerLc['cache-control']})`)
+      : warn('No Cache-Control header on the document response')
+  }
 
   // third-party scripts
   const extScripts = scripts.filter(s => /^https?:\/\//i.test(s.src) && !s.src.toLowerCase().startsWith(origin.toLowerCase()))
@@ -399,41 +423,49 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
     : pass('No fixed-width viewport')
 
   // ── HTTPS & security ──
-  const httpAssets = [...html.matchAll(/(?:src|href)=["']http:\/\/[^"']+["']/gi)]
-    .filter(m => !/http:\/\/(www\.)?w3\.org/i.test(m[0]))
-  const mixed = isHttps && httpAssets.length > 0
-  r['https.0.0'] = mixed
-    ? fail(`${httpAssets.length} resources loaded over HTTP on an HTTPS page — mixed content`)
-    : pass(isHttps ? 'No mixed content detected' : 'Page is not served over HTTPS')
-  r['eeat.3.3'] = r['https.0.0']
-  r['https.0.1'] = isHttps && status > 0 && status < 400
-    ? pass('HTTPS connection succeeded with a valid certificate')
-    : isHttps
-      ? warn('HTTPS responded with a non-2xx/3xx status — verify the certificate')
-      : fail('Page is not served over HTTPS')
-  r['https.0.2'] = isHttps
-    ? pass('Page is served over HTTPS')
-    : fail('Page is served over HTTP — redirect all traffic to HTTPS')
-  r['https.0.3'] = headerLc['strict-transport-security']
-    ? pass('HSTS header is set')
-    : warn('No Strict-Transport-Security (HSTS) header')
+  if (urlKnown) {
+    const httpAssets = [...html.matchAll(/(?:src|href)=["']http:\/\/[^"']+["']/gi)]
+      .filter(m => !/http:\/\/(www\.)?w3\.org/i.test(m[0]))
+    const mixed = isHttps && httpAssets.length > 0
+    r['https.0.0'] = mixed
+      ? fail(`${httpAssets.length} resources loaded over HTTP on an HTTPS page — mixed content`)
+      : pass(isHttps ? 'No mixed content detected' : 'Page is not served over HTTPS')
+    r['eeat.3.3'] = r['https.0.0']
+    r['https.0.2'] = isHttps
+      ? pass('Page is served over HTTPS')
+      : fail('Page is served over HTTP — redirect all traffic to HTTPS')
+  }
+  if (fetched) {
+    r['https.0.1'] = isHttps && status > 0 && status < 400
+      ? pass('HTTPS connection succeeded with a valid certificate')
+      : isHttps
+        ? warn('HTTPS responded with a non-2xx/3xx status — verify the certificate')
+        : fail('Page is not served over HTTPS')
+    r['https.0.3'] = headerLc['strict-transport-security']
+      ? pass('HSTS header is set')
+      : warn('No Strict-Transport-Security (HSTS) header')
+  }
 
   // ── Status codes / redirects ──
-  r['statusCodes.0.2'] = status >= 500
-    ? fail(`Server returned ${status} — fix the server error`)
-    : pass(`Status ${status}`)
-  r['statusCodes.0.3'] = status === 503
-    ? warn('503 Service Unavailable — ensure maintenance mode is removed')
-    : pass('No 503 status')
+  if (fetched) {
+    r['statusCodes.0.2'] = status >= 500
+      ? fail(`Server returned ${status} — fix the server error`)
+      : pass(`Status ${status}`)
+    r['statusCodes.0.3'] = status === 503
+      ? warn('503 Service Unavailable — ensure maintenance mode is removed')
+      : pass('No 503 status')
+  }
   const metaRefresh = metas.some(m => m.httpEquiv === 'refresh')
   r['statusCodes.0.4'] = metaRefresh
     ? warn('Page uses a meta-refresh redirect — use a server-side 301 instead')
     : pass('No meta-refresh redirect')
   const has302 = ctx.redirects.some(h => h.status === 302)
   const has307 = ctx.redirects.some(h => h.status === 307)
-  r['statusCodes.0.5'] = has302
-    ? warn('A 302 (temporary) redirect was followed — use 301 for permanent moves')
-    : pass('No 302 redirects in the chain')
+  if (fetched) {
+    r['statusCodes.0.5'] = has302
+      ? warn('A 302 (temporary) redirect was followed — use 301 for permanent moves')
+      : pass('No 302 redirects in the chain')
+  }
   if (ctx.redirects.length > 0) {
     r['redirects.0.0'] = ctx.redirects.length > 1
       ? warn(`Redirect chain of ${ctx.redirects.length} hops — point the first URL straight to the final one`)
@@ -453,7 +485,7 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   } else {
     r['schema.0.0'] = warn('No JSON-LD structured data found')
   }
-  const dupType = ldTypes.find((t, i) => ldTypes.indexOf(t) !== i)
+  const dupType = ldTopTypes.find((t, i) => ldTopTypes.indexOf(t) !== i)
   r['schema.0.2'] = dupType
     ? warn(`Duplicate schema block of type "${dupType}" — consolidate into one`)
     : pass('No duplicate schema blocks')
@@ -493,10 +525,10 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   r['breadcrumbs.0.0'] = breadcrumbVisible
     ? pass('Breadcrumb navigation markup detected')
     : warn('No visible breadcrumb navigation detected')
-  const breadcrumbSchemaCount = ldTypes.filter(t => t.toLowerCase() === 'breadcrumblist').length
-  r['breadcrumbs.0.2'] = breadcrumbSchemaCount > 0
+  r['breadcrumbs.0.2'] = hasType(ldTypes, 'BreadcrumbList')
     ? pass('BreadcrumbList schema present')
     : warn('BreadcrumbList schema missing')
+  const breadcrumbSchemaCount = ldTopTypes.filter(t => t.toLowerCase() === 'breadcrumblist').length
   r['breadcrumbs.0.5'] = breadcrumbSchemaCount > 1
     ? warn(`${breadcrumbSchemaCount} BreadcrumbList schemas — keep only one`)
     : pass('At most one BreadcrumbList schema')
@@ -597,16 +629,18 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   r['wordpress.0.1'] = descMetas.length > 1
     ? warn(`${descMetas.length} meta description tags — likely a theme + plugin conflict`)
     : pass('Single meta description tag')
-  r['wordpress.2.1'] = /\/category\//i.test(pathname)
-    ? warn('URL contains /category/ base — consider removing it for cleaner permalinks')
-    : pass('No /category/ base in the URL')
+  if (urlKnown) {
+    r['wordpress.2.1'] = /\/category\//i.test(pathname)
+      ? warn('URL contains /category/ base — consider removing it for cleaner permalinks')
+      : pass('No /category/ base in the URL')
+  }
 
   // ── Sitemap ──
   if (ctx.sitemapStatus != null) {
     const found = ctx.sitemapStatus >= 200 && ctx.sitemapStatus < 300 && !!ctx.sitemapXml
     r['sitemap.0.0'] = found
-      ? pass('XML sitemap found at /sitemap.xml')
-      : fail('No XML sitemap found at /sitemap.xml')
+      ? pass('XML sitemap found')
+      : fail('No XML sitemap found (checked /sitemap.xml, the robots.txt Sitemap: directive, and /sitemap_index.xml)')
     if (found && ctx.sitemapXml) {
       const locs = (ctx.sitemapXml.match(/<loc>/gi) ?? []).length
       r['sitemap.0.5'] = locs > 50000
@@ -616,21 +650,21 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   }
 
   // ── Backlinks / Domain Authority ──
+  // Only score backlink checks when the OPR lookup actually succeeded — a missing
+  // API key, failed fetch, or pasted-HTML audit must not penalise the site.
   if (ctx.oprScore != null) {
     r['backlinks.0.0'] = ctx.oprScore >= 3
       ? pass(`Domain has established page rank (OPR score: ${ctx.oprScore.toFixed(1)}/10)`)
       : ctx.oprScore >= 1
         ? warn(`Domain has low page rank (OPR score: ${ctx.oprScore.toFixed(1)}/10 — target ≥ 3)`)
         : fail('Domain has no established page rank (OPR score: 0)')
-  }
-  if (ctx.domainRank != null && ctx.domainRank > 0) {
-    r['backlinks.0.1'] = ctx.domainRank < 1_000_000
-      ? pass(`Domain is globally ranked (#${ctx.domainRank.toLocaleString()})`)
-      : ctx.domainRank < 5_000_000
-        ? warn(`Domain rank is outside top 1M (#${ctx.domainRank.toLocaleString()})`)
-        : fail(`Domain rank is very low (#${ctx.domainRank.toLocaleString()})`)
-  } else {
-    r['backlinks.0.1'] = fail('Domain global rank unknown (not indexed by OPR)')
+    r['backlinks.0.1'] = ctx.domainRank != null && ctx.domainRank > 0
+      ? ctx.domainRank < 1_000_000
+        ? pass(`Domain is globally ranked (#${ctx.domainRank.toLocaleString()})`)
+        : ctx.domainRank < 5_000_000
+          ? warn(`Domain rank is outside top 1M (#${ctx.domainRank.toLocaleString()})`)
+          : fail(`Domain rank is very low (#${ctx.domainRank.toLocaleString()})`)
+      : fail('Domain has no global rank (not indexed by OpenPageRank)')
   }
 
   return r

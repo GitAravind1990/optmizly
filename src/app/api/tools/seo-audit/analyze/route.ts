@@ -3,8 +3,8 @@ import { requireAuth } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { validateUrl } from '@/lib/ssrf-guard'
-import { runAutoChecks, type AutoCheckContext, type RedirectHop, type AutoCheckResult } from '@/lib/seo-audit/auto-checks'
-import { AUDIT_FRAMEWORK, AI_CATEGORY_KEYS, TOTAL_CHECKS, type CheckStatus } from '@/lib/seo-audit/framework'
+import { runAutoChecks, type AutoCheckContext, type RedirectHop } from '@/lib/seo-audit/auto-checks'
+import { AI_CATEGORY_KEYS, TOTAL_CHECKS, computeAuditScores } from '@/lib/seo-audit/framework'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { prisma } from '@/lib/prisma'
 import { captureServerException } from '@/lib/posthog-server'
@@ -77,8 +77,6 @@ function plainText(html: string): string {
     .trim()
 }
 
-const STATUS_SCORE: Record<CheckStatus, number | null> = { pass: 100, warn: 50, fail: 0, na: null }
-
 interface AICategoryResult { score: number; issues: string[]; fixes: string[] }
 
 export async function POST(req: NextRequest) {
@@ -95,11 +93,18 @@ export async function POST(req: NextRequest) {
     let sitemapStatus: number | null = null
     let oprScore: number | null = null
     let domainRank: number | null = null
+    let fetched = true
+    let urlKnown = true
 
     if (pastedHtml && typeof pastedHtml === 'string' && pastedHtml.length > 100) {
       // Paste-HTML fallback: no outbound fetch
-      auditUrl = (url && typeof url === 'string' ? url : 'pasted-html').trim()
-      page = { finalUrl: auditUrl.startsWith('http') ? auditUrl : 'https://example.com/', html: pastedHtml, status: 200, headers: {}, redirects: [] }
+      fetched = false
+      let normalized = url && typeof url === 'string' ? url.trim() : ''
+      if (normalized && !/^https?:\/\//i.test(normalized)) normalized = 'https://' + normalized
+      try { if (normalized) new URL(normalized) } catch { normalized = '' }
+      urlKnown = !!normalized
+      auditUrl = normalized || 'pasted-html'
+      page = { finalUrl: normalized || 'https://example.com/', html: pastedHtml, status: 200, headers: {}, redirects: [] }
     } else {
       if (!url || typeof url !== 'string') {
         return apiError({ message: 'A url or pasted html is required', status: 400, name: 'ValidationError' })
@@ -111,7 +116,22 @@ export async function POST(req: NextRequest) {
         return apiError({ message: e instanceof Error ? e.message : 'Invalid URL', status: 400, name: 'ValidationError' })
       }
 
-      page = await fetchWithRedirects(auditUrl)
+      try {
+        page = await fetchWithRedirects(auditUrl)
+      } catch (fetchErr) {
+        const msg = fetchErr instanceof Error ? fetchErr.message : ''
+        const cause = fetchErr instanceof Error && fetchErr.cause instanceof Error ? fetchErr.cause.message : ''
+        const full = `${msg} ${cause}`
+        if (/not allowed/i.test(full)) {
+          return apiError({ message: msg, status: 400, name: 'ValidationError' })
+        }
+        const reason = (fetchErr instanceof Error && fetchErr.name === 'AbortError') || /abort/i.test(full)
+          ? 'The site took too long to respond'
+          : /certificate|cert_|ssl|tls/i.test(full)
+            ? 'The site has an SSL certificate problem'
+            : 'Could not reach that URL'
+        return apiError({ message: `${reason}. Try the paste-HTML option instead.`, status: 422, name: 'FetchError' })
+      }
       if (!page.html || page.html.length < 50) {
         return apiError({ message: 'Could not retrieve HTML from that URL. Try the paste-HTML option.', status: 422, name: 'FetchError' })
       }
@@ -125,6 +145,22 @@ export async function POST(req: NextRequest) {
       ])
       robotsTxt = robots && robots.status < 400 ? robots.body : (robots ? '' : null)
       if (sitemap) { sitemapStatus = sitemap.status; sitemapXml = sitemap.status < 400 ? sitemap.body : null }
+      if (!sitemapXml) {
+        // Fall back to the robots.txt Sitemap: directive, then /sitemap_index.xml (Yoast et al.)
+        const robotsSitemap = robotsTxt?.match(/^\s*sitemap:\s*(\S+)/im)?.[1] ?? null
+        const candidates = [robotsSitemap, `${origin}/sitemap_index.xml`]
+          .filter((u): u is string => !!u && u !== `${origin}/sitemap.xml`)
+        for (const candidate of candidates) {
+          try { await validateUrl(candidate) } catch { continue }
+          const alt = await fetchText(candidate)
+          if (alt && alt.status < 400 && alt.body) {
+            sitemapStatus = alt.status
+            sitemapXml = alt.body
+            break
+          }
+        }
+        if (sitemapStatus == null) sitemapStatus = 404
+      }
       if (opr) {
         oprScore = opr.page_rank_decimal ?? null
         domainRank = opr.rank ? parseInt(opr.rank, 10) : null
@@ -144,6 +180,8 @@ export async function POST(req: NextRequest) {
       redirects: page.redirects,
       oprScore,
       domainRank,
+      fetched,
+      urlKnown,
     }
     const autoResults = runAutoChecks(ctx)
 
@@ -202,45 +240,9 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
       aiResults = {}
     }
 
-    // ── Category + overall scoring ──
-    const categoryScores: Record<string, number> = {}
-    let passedChecks = 0, failedChecks = 0, warnChecks = 0
-    // Track globally-counted IDs to avoid double-counting cross-category aliases
-    const globalCounted = new Set<string>()
-
-    for (const cat of AUDIT_FRAMEWORK) {
-      const checkIds = cat.subCategories.flatMap(s => s.checks.map(c => c.id))
-      const scores: number[] = []
-      for (const id of checkIds) {
-        const res = autoResults[id]
-        if (!res) continue
-        if (!globalCounted.has(id)) {
-          globalCounted.add(id)
-          if (res.status === 'pass') passedChecks++
-          else if (res.status === 'fail') failedChecks++
-          else if (res.status === 'warn') warnChecks++
-        }
-        const s = STATUS_SCORE[res.status]
-        if (s !== null) scores.push(s)
-      }
-      const autoAvg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null
-      const aiScore = aiResults[cat.key]?.score ?? null
-
-      let final: number | null = null
-      if (autoAvg !== null && aiScore !== null) {
-        // AI categories: Claude's holistic score carries more weight than 1-2 auto signals
-        const aiWeight = cat.ai ? 0.75 : 0.5
-        final = Math.round(autoAvg * (1 - aiWeight) + aiScore * aiWeight)
-      } else if (autoAvg !== null) {
-        final = Math.round(autoAvg)
-      } else if (aiScore !== null) {
-        final = aiScore
-      }
-      if (final !== null) categoryScores[cat.key] = final
-    }
-
-    const scored = Object.values(categoryScores)
-    const overallScore = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : 0
+    // ── Category + overall scoring (shared with the PATCH recompute) ──
+    const { categoryScores, overallScore, passedChecks, failedChecks, warnChecks } =
+      computeAuditScores({ autoResults, aiResults, checklistState: {} })
 
     // ── Persist ──
     const audit = await prisma.seoAudit.create({
