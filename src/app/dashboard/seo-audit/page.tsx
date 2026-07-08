@@ -368,7 +368,7 @@ export default function SeoAuditPage() {
 
         {/* Category accordion */}
         <div className="space-y-2">
-          {sortedCats.map(cat => {
+          {sortedCats.map((cat, catIdx) => {
             const catScore = current.categoryScores[cat.key]
             const ai = current.aiResults[cat.key]
             const isOpen = expanded === cat.key
@@ -381,7 +381,7 @@ export default function SeoAuditPage() {
                   onClick={() => { setExpanded(isOpen ? null : cat.key); setShowManual(false) }}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-left"
                 >
-                  <span className="text-slate-300 text-xs w-5">{cat.num}</span>
+                  <span className="text-slate-300 text-xs w-5">{catIdx + 1}</span>
                   <span className="flex-1 font-semibold text-sm text-slate-800">{cat.title}</span>
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${PRIORITY_BADGE[cat.priority]}`}>{cat.priority}</span>
                   {typeof catScore === 'number' && (
