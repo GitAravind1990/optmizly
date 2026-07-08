@@ -54,6 +54,14 @@ const PRIORITY_BADGE: Record<AuditPriority, string> = {
   Low: 'bg-slate-100 text-slate-600',
   Advanced: 'bg-purple-100 text-purple-700',
 }
+// Priority is a fixed "how much this matters if broken" label, independent of this
+// audit's outcome — bold color only when the category score says it's actually broken;
+// otherwise recede to neutral so it doesn't read as "critical problem found".
+const MUTED_PRIORITY_BADGE = 'bg-slate-50 text-slate-400'
+function priorityBadgeClass(priority: AuditPriority, score: number | undefined): string {
+  if (typeof score === 'number' && score >= 70) return MUTED_PRIORITY_BADGE
+  return PRIORITY_BADGE[priority]
+}
 
 const STATUS_BADGE: Record<CheckStatus, string> = {
   pass: 'bg-green-100 text-green-700',
@@ -383,7 +391,7 @@ export default function SeoAuditPage() {
                 >
                   <span className="text-slate-300 text-xs w-5">{catIdx + 1}</span>
                   <span className="flex-1 font-semibold text-sm text-slate-800">{cat.title}</span>
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${PRIORITY_BADGE[cat.priority]}`}>{cat.priority}</span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${priorityBadgeClass(cat.priority, catScore)}`}>{cat.priority}</span>
                   {typeof catScore === 'number' && (
                     <span className={`text-sm font-bold w-9 text-right ${scoreColor(catScore)}`}>{catScore}</span>
                   )}
