@@ -5,6 +5,7 @@ import { apiError, apiSuccess } from '@/lib/api'
 import { validateUrl } from '@/lib/ssrf-guard'
 import { runAutoChecks, type AutoCheckContext, type RedirectHop } from '@/lib/seo-audit/auto-checks'
 import { AI_CATEGORY_KEYS, TOTAL_CHECKS, computeAuditScores } from '@/lib/seo-audit/framework'
+import { aiCheckPromptLines, mergeAICheckVerdicts } from '@/lib/seo-audit/ai-checks'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { prisma } from '@/lib/prisma'
 import { captureServerException } from '@/lib/posthog-server'
@@ -67,6 +68,22 @@ async function fetchText(url: string, timeoutMs = 8000): Promise<{ status: numbe
   }
 }
 
+// Uses redirect:'manual' so a 3xx status is visible to the caller, unlike fetchText()
+// which follows redirects — needed to tell "redirects to the permalink" (good) apart
+// from "serves content directly" (bad) for the ?p=1 default-URL check.
+async function fetchStatusOnly(url: string, timeoutMs = 6000): Promise<number | null> {
+  const controller = new AbortController()
+  const t = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': UA }, redirect: 'manual' })
+    return res.status
+  } catch {
+    return null
+  } finally {
+    clearTimeout(t)
+  }
+}
+
 function plainText(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -95,6 +112,9 @@ export async function POST(req: NextRequest) {
     let domainRank: number | null = null
     let fetched = true
     let urlKnown = true
+    let wpXmlrpcStatus: number | null = null
+    let wpReadmeStatus: number | null = null
+    let wpDefaultUrlStatus: number | null = null
 
     if (pastedHtml && typeof pastedHtml === 'string' && pastedHtml.length > 100) {
       // Paste-HTML fallback: no outbound fetch
@@ -165,6 +185,19 @@ export async function POST(req: NextRequest) {
         oprScore = opr.page_rank_decimal ?? null
         domainRank = opr.rank ? parseInt(opr.rank, 10) : null
       }
+
+      // WordPress-specific technical checks — only fire the extra fetches when the
+      // page actually looks like WordPress, so other sites don't pay for 3 wasted calls.
+      if (/wp-content\/|wp-includes\//i.test(page.html)) {
+        const [xmlrpcStatus, readmeStatus, defaultUrlStatus] = await Promise.all([
+          fetchStatusOnly(`${origin}/xmlrpc.php`),
+          fetchStatusOnly(`${origin}/readme.html`),
+          fetchStatusOnly(`${origin}/?p=1`),
+        ])
+        wpXmlrpcStatus = xmlrpcStatus
+        wpReadmeStatus = readmeStatus
+        wpDefaultUrlStatus = defaultUrlStatus
+      }
     }
 
     // ── Automated checks ──
@@ -182,6 +215,9 @@ export async function POST(req: NextRequest) {
       domainRank,
       fetched,
       urlKnown,
+      wpXmlrpcStatus,
+      wpReadmeStatus,
+      wpDefaultUrlStatus,
     }
     const autoResults = runAutoChecks(ctx)
 
@@ -195,7 +231,7 @@ export async function POST(req: NextRequest) {
       const schemaTypes = [...page.html.matchAll(/"@type"\s*:\s*"([^"]+)"/g)].map(m => m[1])
       const raw = await callClaude(
         'You are an expert enterprise SEO auditor. Return ONLY valid JSON — no markdown, no backticks.',
-        `Audit this web page for four SEO dimensions and score each 0-100 (higher = better).
+        `Audit this web page for four SEO dimensions (score 0-100, higher = better) AND a specific checklist.
 
 URL: ${page.finalUrl}
 Title: ${pageTitle ?? '(none)'}
@@ -213,18 +249,22 @@ Score these dimensions:
 - "cannibalization": keyword cannibalization risk for this page (intent clarity, focus, title/H1 uniqueness)
 - "localSeo": local SEO technical factors (NAP signals, location targeting, LocalBusiness signals) — score "na" as 100 if clearly not a local business page
 
+Also judge these specific checklist items strictly from the page content above — no assumptions or external knowledge. For each, return "pass" if clearly satisfied, "fail" if it's a real, specific gap, or "na" if the item genuinely does not apply to this page's topic or type (e.g. a disclaimer isn't needed on content with no medical/financial/legal claims):
+${aiCheckPromptLines()}
+
 Return JSON exactly:
 {
   "eeat":            { "score": 0-100, "issues": ["..."], "fixes": ["..."] },
   "aiSeo":           { "score": 0-100, "issues": ["..."], "fixes": ["..."] },
   "cannibalization": { "score": 0-100, "issues": ["..."], "fixes": ["..."] },
-  "localSeo":        { "score": 0-100, "issues": ["..."], "fixes": ["..."] }
+  "localSeo":        { "score": 0-100, "issues": ["..."], "fixes": ["..."] },
+  "checks": { "<id>": { "status": "pass|fail|na", "detail": "one specific sentence grounded in the page content" }, ... one entry for every id listed above }
 }
 Each issues/fixes array: 2-4 concise, specific items grounded in the actual page content.`,
-        1800,
+        2600,
         'claude-haiku-4-5-20251001'
       )
-      const parsed = extractJSON<Record<string, AICategoryResult>>(raw)
+      const parsed = extractJSON<Record<string, AICategoryResult> & { checks?: unknown }>(raw)
       for (const key of AI_CATEGORY_KEYS) {
         const v = parsed?.[key]
         if (v && typeof v.score === 'number') {
@@ -235,6 +275,7 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
           }
         }
       }
+      mergeAICheckVerdicts(autoResults, parsed?.checks)
     } catch (e) {
       console.error('SEO audit AI scoring failed:', e)
       aiResults = {}

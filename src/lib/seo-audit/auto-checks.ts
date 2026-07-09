@@ -33,6 +33,10 @@ export interface AutoCheckContext {
   fetched?: boolean
   /** false when no real URL was provided (pasted HTML with placeholder URL) — skips URL-based checks */
   urlKnown?: boolean
+  /** HTTP status of /xmlrpc.php, /readme.html, /?p=1 — only fetched when the page looks like WordPress */
+  wpXmlrpcStatus?: number | null
+  wpReadmeStatus?: number | null
+  wpDefaultUrlStatus?: number | null
 }
 
 type ResultMap = Record<string, AutoCheckResult>
@@ -658,6 +662,59 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
       ? warn('URL contains /category/ base — consider removing it for cleaner permalinks')
       : pass('No /category/ base in the URL')
   }
+
+  // ── WordPress technical fetches (only present when the page looked like WordPress) ──
+  // xmlrpc.php/readme.html "exist" if the server answers at all without a hard block —
+  // WordPress typically returns 405 (Method Not Allowed) for a GET to xmlrpc.php, which
+  // still confirms the endpoint is live and postable, not a safe "not found".
+  if (ctx.wpXmlrpcStatus != null) {
+    const blocked = ctx.wpXmlrpcStatus === 403 || ctx.wpXmlrpcStatus === 404
+    r['wordpress.2.3'] = !blocked
+      ? warn('xmlrpc.php is publicly accessible — consider blocking it (security + crawl risk)')
+      : pass('xmlrpc.php is blocked or not found')
+  }
+  if (ctx.wpReadmeStatus != null) {
+    const blocked = ctx.wpReadmeStatus === 403 || ctx.wpReadmeStatus === 404
+    r['wordpress.2.4'] = !blocked
+      ? warn('readme.html is publicly accessible — it can leak your WordPress version to attackers')
+      : pass('readme.html is blocked or not found')
+  }
+  // Fetched with redirect:'manual' — a 3xx means it correctly redirects to the real
+  // permalink (good); a 200 means it served content directly without redirecting (bad).
+  if (ctx.wpDefaultUrlStatus != null) {
+    const servesDirectly = ctx.wpDefaultUrlStatus >= 200 && ctx.wpDefaultUrlStatus < 300
+    r['wordpress.2.2'] = servesDirectly
+      ? warn('Default WordPress URL (?p=1) serves content directly instead of redirecting to the permalink')
+      : pass('Default WordPress URL (?p=1) does not serve content directly')
+  }
+
+  // ── Content-judgeable checks (regex/heuristic — no AI call needed) ──
+  const hasPrivacyOrTerms = /\/(privacy|privacy-policy|terms|tos|terms-of-service)(\/|\.|$|["'?])/i.test(html) ||
+    links_a.some(a => /privacy policy|terms of service|terms\s*&\s*conditions/i.test(a.text))
+  r['eeat.3.1'] = hasPrivacyOrTerms
+    ? pass('Privacy policy or terms of service link found')
+    : warn('No privacy policy or terms of service link found on this page')
+
+  const hasContactSignal = /href=["']tel:/i.test(html) || /href=["']mailto:/i.test(html) ||
+    /\/contact(-us)?(\/|\.|$|["'?])/i.test(html) ||
+    links_a.some(a => /contact us|^contact$/i.test(a.text))
+  r['eeat.3.2'] = hasContactSignal
+    ? pass('Contact information (phone, email, or contact link) found')
+    : warn('No clear contact information (phone, email, or contact link) found on this page')
+
+  r['aiSeo.1.0'] = faqSignals
+    ? pass('FAQ-style content detected on the page')
+    : warn('No FAQ content detected — add a common-questions section for AI/voice search visibility')
+
+  const hasReviewedDate = /\b(last reviewed|last updated|reviewed on|updated on)\b[^.\n]{0,40}(19|20)\d{2}/i.test(text) ||
+    /(19|20)\d{2}[^.\n]{0,20}\b(last reviewed|last updated)\b/i.test(text)
+  r['aiSeo.3.1'] = hasReviewedDate
+    ? pass("A 'last reviewed/updated' date was found in the content")
+    : warn("No 'last reviewed' or 'last updated' date found — add one for freshness and citation signals")
+
+  r['aiSeo.3.3'] = wordCount >= 300
+    ? pass(`~${wordCount} words — long enough to be a useful citation source`)
+    : warn(`Only ~${wordCount} words — likely too short to be cited as a source`)
 
   // ── Sitemap ──
   if (ctx.sitemapStatus != null) {
