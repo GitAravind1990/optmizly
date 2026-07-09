@@ -2,8 +2,24 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { UserButton, useUser } from '@clerk/nextjs'
 import { Card, Badge, Button, Spinner, ScoreBar } from '@/components/ui'
+
+type GSCStatus = {
+  connected: boolean
+  sites?: { siteUrl: string; permissionLevel: string }[] | null
+  connectedAt?: string
+}
+
+const GSC_ERROR_MESSAGES: Record<string, string> = {
+  denied: 'You cancelled the Search Console connection.',
+  invalid_state: 'Something went wrong verifying the request — please try connecting again.',
+  missing_code: 'Google did not return an authorization code — please try again.',
+  exchange_failed: 'Could not complete the connection with Google — please try again.',
+  not_configured: 'Search Console connection is not configured yet.',
+  plan: 'Search Console requires the Agency plan.',
+}
 
 type UsageData = {
   plan: string; count: number; limit: number; remaining: number
@@ -26,19 +42,60 @@ const ALL_TOOLS = [
   { label: 'More tools coming soon', plans: ['AGENCY'] },
 ]
 
-type Tab = 'account' | 'plan' | 'billing'
+type Tab = 'account' | 'plan' | 'billing' | 'integrations'
 
 export default function SettingsPage() {
   const { user } = useUser()
+  const searchParams = useSearchParams()
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [portalLoading, setPortalLoading] = useState(false)
   const [tab, setTab] = useState<Tab>('account')
   const [copied, setCopied] = useState(false)
 
+  const [gscStatus, setGscStatus] = useState<GSCStatus | null>(null)
+  const [gscLoading, setGscLoading] = useState(false)
+  const [gscDisconnecting, setGscDisconnecting] = useState(false)
+  const [gscBanner, setGscBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
   useEffect(() => {
     fetch('/api/user').then(r => r.json()).then(d => { setUsage(d); setLoading(false) }).catch(() => setLoading(false))
   }, [])
+
+  // Land on the Integrations tab and show a status banner when redirected back from
+  // the Search Console OAuth callback (?tab=integrations&connected=1 or &error=...)
+  useEffect(() => {
+    if (searchParams.get('tab') === 'integrations') setTab('integrations')
+    if (searchParams.get('connected') === '1') {
+      setGscBanner({ type: 'success', message: 'Search Console connected successfully.' })
+    } else {
+      const code = searchParams.get('error')
+      if (code) setGscBanner({ type: 'error', message: GSC_ERROR_MESSAGES[code] ?? 'Could not connect Search Console — please try again.' })
+    }
+  }, [searchParams])
+
+  const plan = usage?.plan ?? 'FREE'
+
+  useEffect(() => {
+    if (!loading && tab === 'integrations' && plan === 'AGENCY' && !gscStatus && !gscLoading) {
+      setGscLoading(true)
+      fetch('/api/integrations/search-console')
+        .then(r => r.json())
+        .then(d => setGscStatus(d.data))
+        .catch(() => setGscStatus({ connected: false }))
+        .finally(() => setGscLoading(false))
+    }
+  }, [loading, tab, plan, gscStatus, gscLoading])
+
+  async function disconnectGsc() {
+    setGscDisconnecting(true)
+    try {
+      await fetch('/api/integrations/search-console', { method: 'DELETE' })
+      setGscStatus({ connected: false })
+    } finally {
+      setGscDisconnecting(false)
+    }
+  }
 
   async function openPortal() {
     setPortalLoading(true)
@@ -57,7 +114,6 @@ export default function SettingsPage() {
     navigator.clipboard.writeText(email).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
   }
 
-  const plan = usage?.plan ?? 'FREE'
   const meta = PLAN_META[plan] ?? PLAN_META.FREE
   const pct = usage ? Math.min(100, (usage.count / usage.limit) * 100) : 0
   const sub = usage?.subscription
@@ -69,9 +125,10 @@ export default function SettingsPage() {
   const avatar = user?.firstName?.[0] ?? user?.emailAddresses[0]?.emailAddress?.[0]?.toUpperCase() ?? '?'
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: 'account', label: '👤 Account' },
-    { id: 'plan',    label: '📊 Plan & Usage' },
-    { id: 'billing', label: '💳 Billing' },
+    { id: 'account',      label: '👤 Account' },
+    { id: 'plan',         label: '📊 Plan & Usage' },
+    { id: 'billing',      label: '💳 Billing' },
+    { id: 'integrations', label: '🔗 Integrations' },
   ]
 
   return (
@@ -352,6 +409,82 @@ export default function SettingsPage() {
               </a>
               <p className="text-xs text-slate-400 mt-1">We respond within 24 hours</p>
             </Card>
+          </div>
+        )}
+
+        {/* ── INTEGRATIONS TAB ── */}
+        {!loading && tab === 'integrations' && (
+          <div className="space-y-4">
+            {gscBanner && (
+              <div className={`rounded-xl p-4 text-sm font-medium ${
+                gscBanner.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}>
+                {gscBanner.message}
+              </div>
+            )}
+
+            {plan !== 'AGENCY' ? (
+              <div className="rounded-2xl p-5 bg-amber-500 text-white">
+                <div className="font-black text-base mb-1">Connect Search Console — Agency feature</div>
+                <div className="text-sm opacity-80 mb-4">
+                  Link your Google Search Console account to unlock real indexed-page data, sitemap status, and keyword cannibalization detection in SEO Audit — $49/mo
+                </div>
+                <Link href="/pricing"
+                  className="inline-block bg-white text-sm font-black px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
+                  style={{ color: '#d97706' }}>
+                  See Agency Plan →
+                </Link>
+              </div>
+            ) : (
+              <Card>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Google Search Console</div>
+
+                {gscLoading ? (
+                  <div className="flex justify-center py-8"><Spinner /></div>
+                ) : gscStatus?.connected ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                      <div>
+                        <div className="text-sm font-medium">Status</div>
+                        <div className="text-xs text-slate-400">
+                          {gscStatus.sites === null
+                            ? 'Connected — could not reach Google right now'
+                            : `Connected · ${gscStatus.sites?.length ?? 0} propert${gscStatus.sites?.length === 1 ? 'y' : 'ies'}`}
+                        </div>
+                      </div>
+                      <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Connected</span>
+                    </div>
+
+                    {gscStatus.sites && gscStatus.sites.length > 0 && (
+                      <div className="space-y-1.5">
+                        {gscStatus.sites.map(s => (
+                          <div key={s.siteUrl} className="text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2 truncate">{s.siteUrl}</div>
+                        ))}
+                      </div>
+                    )}
+
+                    <button onClick={disconnectGsc} disabled={gscDisconnecting}
+                      className="text-xs text-red-500 hover:text-red-700 font-bold border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50">
+                      {gscDisconnecting ? 'Disconnecting…' : 'Disconnect'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl mx-auto mb-4">🔍</div>
+                    <p className="text-sm font-black text-slate-800 mb-1">Not connected</p>
+                    <p className="text-xs text-slate-400 mb-6 max-w-xs mx-auto">
+                      Connect Search Console to unlock indexed-page data, sitemap status, and cannibalization checks in SEO Audit
+                    </p>
+                    <a href="/api/integrations/search-console/connect"
+                      className="inline-block rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
+                      Connect Google Search Console →
+                    </a>
+                  </div>
+                )}
+              </Card>
+            )}
           </div>
         )}
 

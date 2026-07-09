@@ -25,17 +25,25 @@ const IS_PROD = process.env.NODE_ENV === 'production'
 const REPORT_URI = '/api/csp-report'
 
 function buildCSP(nonce: string): string {
+  // Local dev uses Clerk's own *.clerk.accounts.dev test instance domain (there's no
+  // custom Clerk domain locally); production uses the clerk.optmizly.com custom domain
+  // already allowlisted below. Keep this out of the production policy — no need to
+  // widen it there since prod never talks to accounts.dev.
+  const devClerk = IS_PROD ? '' : ' https://*.clerk.accounts.dev wss://*.clerk.accounts.dev'
+  // next dev's webpack Fast Refresh uses eval() for dev-only source maps — harmless in
+  // dev, never present in a `next build` output, so this must never leak into prod CSP.
+  const devEval = IS_PROD ? '' : " 'unsafe-eval'"
   return [
     "default-src 'self'",
     // Modern browsers: 'nonce-...' + 'strict-dynamic' enforces nonce; 'unsafe-inline' is ignored.
     // Older browsers: 'unsafe-inline' acts as fallback (strict-dynamic not understood).
     // Host sources: last-resort fallback for browsers that understand neither.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https://cdn.clerk.com https://*.clerk.com https://clerk.optmizly.com https://us-assets.i.posthog.com https://maps.googleapis.com`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline'${devEval} https://cdn.clerk.com https://*.clerk.com https://clerk.optmizly.com https://us-assets.i.posthog.com https://maps.googleapis.com${devClerk}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://img.clerk.com https://maps.gstatic.com https://maps.googleapis.com https://*.google.com",
     "font-src 'self' data:",
-    "connect-src 'self' https://api.clerk.com https://*.clerk.com wss://*.clerk.com https://clerk.optmizly.com wss://clerk.optmizly.com https://us.i.posthog.com https://us-assets.i.posthog.com https://maps.googleapis.com",
-    "frame-src 'self' https://*.clerk.com https://clerk.optmizly.com",
+    `connect-src 'self' https://api.clerk.com https://*.clerk.com wss://*.clerk.com https://clerk.optmizly.com wss://clerk.optmizly.com https://us.i.posthog.com https://us-assets.i.posthog.com https://maps.googleapis.com${devClerk}`,
+    `frame-src 'self' https://*.clerk.com https://clerk.optmizly.com${devClerk}`,
     "worker-src blob:",
     "object-src 'none'",
     "base-uri 'self'",

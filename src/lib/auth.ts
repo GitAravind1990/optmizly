@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from './prisma'
 import { PLAN_LIMITS, PLAN_TOOLS, getMonthKey } from './plans'
-import { Plan } from '@prisma/client'
+import { Plan, Prisma } from '@prisma/client'
 import { setTrackingUser } from './anthropic'
 import { captureServerEvent } from './posthog-server'
 import { sendLimitWarningEmail, sendLimitReachedEmail } from './email'
@@ -32,9 +32,34 @@ export class AuthError extends Error {
   }
 }
 
+async function getOrCreateUser(clerkId: string) {
+  let user = await prisma.user.findUnique({ where: { clerkId } })
+  if (!user) {
+    // New user — create with FREE plan
+    const clerkUser = await fetch(`https://api.clerk.com/v1/users/${clerkId}`, {
+      headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
+    }).then(r => r.json())
+    const email = clerkUser.email_addresses?.[0]?.email_address ?? ''
+
+    try {
+      user = await prisma.user.create({ data: { clerkId, email, plan: Plan.FREE } })
+    } catch (e) {
+      // A row with this email already exists under a different clerkId — this happens
+      // when the same person authenticates through a different Clerk instance (e.g.
+      // local dev's separate test instance vs production, both sharing one database).
+      // Treat it as the same user rather than crashing; never overwrite the existing
+      // row's clerkId, or the real account under the original instance would break.
+      const isEmailCollision = e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002'
+      user = isEmailCollision ? await prisma.user.findUnique({ where: { email } }) : null
+      if (!user) throw e
+    }
+  }
+  return user
+}
+
 /**
  * Validate auth, check tool access, enforce quota.
- * Call this at the top of every API route.
+ * Call this at the top of every API route that performs a billable analysis.
  */
 export async function requireAuth(tool: string): Promise<AuthedUser> {
   const { userId: clerkId } = await auth()
@@ -42,22 +67,7 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
     throw new AuthError(401, 'Not authenticated')
   }
 
-  // Get or create user in DB
-  let user = await prisma.user.findUnique({ where: { clerkId } })
-  if (!user) {
-    // New user — create with FREE plan
-    const clerkUser = await fetch(`https://api.clerk.com/v1/users/${clerkId}`, {
-      headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
-    }).then(r => r.json())
-
-    user = await prisma.user.create({
-      data: {
-        clerkId,
-        email: clerkUser.email_addresses?.[0]?.email_address ?? '',
-        plan: Plan.FREE,
-      },
-    })
-  }
+  const user = await getOrCreateUser(clerkId)
 
   // Check tool access
   if (!PLAN_TOOLS[user.plan]?.includes(tool)) {
@@ -117,36 +127,42 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
 }
 
 /**
+ * Validate auth and check tool access WITHOUT touching the monthly analysis quota.
+ * Use this for actions that aren't a billable "analysis" — e.g. connecting/checking/
+ * disconnecting a third-party integration.
+ */
+export async function requireToolAccess(tool: string): Promise<AuthedUser> {
+  const { userId: clerkId } = await auth()
+  if (!clerkId) {
+    throw new AuthError(401, 'Not authenticated')
+  }
+
+  const user = await getOrCreateUser(clerkId)
+
+  if (!PLAN_TOOLS[user.plan]?.includes(tool)) {
+    throw new AuthError(403, `This requires a higher plan. Your plan: ${user.plan}`)
+  }
+
+  return {
+    userId: user.id,
+    clerkId,
+    email: user.email,
+    plan: user.plan,
+  }
+}
+
+/**
  * Get current user's usage stats (for dashboard)
  */
 export async function getUserUsage() {
   const { userId: clerkId } = await auth()
   if (!clerkId) throw new AuthError(401, 'Not authenticated')
 
-  let user = await prisma.user.findUnique({
-    where: { clerkId },
-    include: {
-      usage: {
-        where: { month: getMonthKey() },
-      },
-      subscription: true,
-    },
+  const baseUser = await getOrCreateUser(clerkId)
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: baseUser.id },
+    include: { usage: { where: { month: getMonthKey() } }, subscription: true },
   })
-
-  if (!user) {
-    const clerkUser = await fetch(`https://api.clerk.com/v1/users/${clerkId}`, {
-      headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
-    }).then(r => r.json())
-
-    user = await prisma.user.create({
-      data: {
-        clerkId,
-        email: clerkUser.email_addresses?.[0]?.email_address ?? '',
-        plan: Plan.FREE,
-      },
-      include: { usage: { where: { month: getMonthKey() } }, subscription: true },
-    })
-  }
 
   const month = getMonthKey()
   const count = user.usage.find(u => u.month === month)?.count ?? 0

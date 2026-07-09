@@ -51,6 +51,7 @@ model User {
   seoAudits            SeoAudit[]            @relation("SEOAudits")
   drippedEmails        DrippedEmail[]
   analysisHistory      AnalysisHistory[]
+  searchConsoleConnection SearchConsoleConnection?
 
   @@index([clerkId])
 }
@@ -954,6 +955,25 @@ model SeoAudit {
   aiResults      String @db.Text // JSON: { [categoryKey]: { score, issues, fixes } }
   checklistState String @db.Text // JSON: { [checkId]: 'pass'|'fail'|'na' }
   backlinkData   String? @db.Text // JSON: { oprScore, domainRank }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model SearchConsoleConnection {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessTokenEnc  String   @db.Text // encrypted, see src/lib/crypto.ts
+  refreshTokenEnc String   @db.Text // encrypted, see src/lib/crypto.ts
+  scope           String
+  tokenExpiresAt  DateTime
+
+  sitesCache     String?   @db.Text // JSON string[] from the last sites.list call
+  sitesFetchedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
