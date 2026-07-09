@@ -6,12 +6,15 @@ import { validateUrl } from '@/lib/ssrf-guard'
 import { runAutoChecks, type AutoCheckContext, type RedirectHop } from '@/lib/seo-audit/auto-checks'
 import { AI_CATEGORY_KEYS, TOTAL_CHECKS, computeAuditScores } from '@/lib/seo-audit/framework'
 import { aiCheckPromptLines, mergeAICheckVerdicts } from '@/lib/seo-audit/ai-checks'
+import { fetchPSIMetrics, applyPSIOverrides } from '@/lib/seo-audit/psi'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { prisma } from '@/lib/prisma'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+// Real-Lighthouse PSI runs (~15-40s) execute in parallel with the Claude call, but need
+// headroom beyond the page-fetch/robots/sitemap/WP-check time that precedes them.
+export const maxDuration = 90
 
 const UA = 'Mozilla/5.0 (compatible; Optmizly-Audit/1.0; +https://Optmizly.com)'
 
@@ -225,6 +228,11 @@ export async function POST(req: NextRequest) {
     const bodyText = plainText(page.html)
     const wordCount = bodyText ? bodyText.split(/\s+/).length : 0
 
+    // Kick off the PSI (real Lighthouse) run now so it executes concurrently with the
+    // Claude call below, rather than adding its ~15-40s on top sequentially. Skipped
+    // for paste-HTML audits, which have no real URL for PSI to crawl.
+    const psiPromise = (fetched && urlKnown) ? fetchPSIMetrics(page.finalUrl) : Promise.resolve(null)
+
     // ── AI scoring for judgement categories ──
     let aiResults: Record<string, AICategoryResult> = {}
     try {
@@ -280,6 +288,11 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
       console.error('SEO audit AI scoring failed:', e)
       aiResults = {}
     }
+
+    // Real Core Web Vitals — overwrites the affected checks' regex-derived results with
+    // measured Lighthouse data wherever PSI succeeded; never blocks or fails the audit.
+    const psiMetrics = await psiPromise
+    applyPSIOverrides(autoResults, psiMetrics)
 
     // ── Category + overall scoring (shared with the PATCH recompute) ──
     const { categoryScores, overallScore, passedChecks, failedChecks, warnChecks } =

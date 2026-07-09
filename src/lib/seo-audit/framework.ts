@@ -168,7 +168,7 @@ export const AUDIT_FRAMEWORK: AuditCategory[] = [
         ['Too many active plugins'],
         ['No browser caching headers', true],
         ['No CDN'],
-        ['Slow TTFB (>600ms)'],
+        ['Slow TTFB (>600ms)', true],
         ['No lazy loading on below-fold images', true],
       ], 'cwv', 3),
     ],
