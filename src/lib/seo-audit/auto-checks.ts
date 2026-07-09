@@ -728,6 +728,43 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
         ? warn(`Sitemap lists ${locs} URLs — split into multiple sitemaps (50k max each)`)
         : pass(`Sitemap lists ${locs} URLs`)
     }
+
+    // ── Index bloat — low-value URL patterns visible directly in the sitemap, no
+    // extra fetches needed. Skipped for sitemap INDEX files (<sitemapindex>), whose
+    // <loc> entries point at other sitemap files, not real pages.
+    if (found && ctx.sitemapXml && !/<sitemapindex[\s>]/i.test(ctx.sitemapXml)) {
+      const sitemapLocs = [...ctx.sitemapXml.matchAll(/<loc>([^<]+)<\/loc>/gi)].map(m => m[1].trim())
+      const matchAny = (re: RegExp) => sitemapLocs.filter(u => re.test(u))
+
+      const tagArchives = matchAny(/\/tag\//i)
+      r['indexBloat.0.0'] = tagArchives.length > 0
+        ? warn(`${tagArchives.length} WordPress tag archive URL(s) in the sitemap — usually low-value, thin pages`)
+        : pass('No WordPress tag archive URLs found in the sitemap')
+
+      const authorArchives = matchAny(/\/author\//i)
+      r['indexBloat.0.1'] = authorArchives.length > 0
+        ? warn(`${authorArchives.length} author archive URL(s) in the sitemap — usually low-value on single-author sites`)
+        : pass('No author archive URLs found in the sitemap')
+
+      const searchResults = matchAny(/[?&](s|q)=|\/search\//i)
+      r['indexBloat.0.3'] = searchResults.length > 0
+        ? warn(`${searchResults.length} internal search result URL(s) in the sitemap — these should not be indexed`)
+        : pass('No internal search result URLs found in the sitemap')
+
+      const deepPagination = sitemapLocs.filter(u => {
+        const m = u.match(/\/page\/(\d+)\/?(?:$|[?#])/i) ?? u.match(/[?&]paged=(\d+)/i)
+        const n = m ? parseInt(m[1], 10) : null
+        return n != null && n >= 4
+      })
+      r['indexBloat.0.5'] = deepPagination.length > 0
+        ? warn(`${deepPagination.length} paginated URL(s) beyond page 3 in the sitemap — consider noindexing deep archive pages`)
+        : pass('No deep-pagination URLs (page 4+) found in the sitemap')
+
+      const trackingParams = matchAny(/[?&](utm_[a-z]+|fbclid|gclid|msclkid)=/i)
+      r['indexBloat.0.7'] = trackingParams.length > 0
+        ? warn(`${trackingParams.length} URL(s) with tracking parameters in the sitemap — these create duplicate-content risk`)
+        : pass('No tracking-parameter URLs found in the sitemap')
+    }
   }
 
   // ── Backlinks / Domain Authority ──

@@ -7,6 +7,7 @@ import { runAutoChecks, type AutoCheckContext, type RedirectHop } from '@/lib/se
 import { AI_CATEGORY_KEYS, TOTAL_CHECKS, computeAuditScores } from '@/lib/seo-audit/framework'
 import { aiCheckPromptLines, mergeAICheckVerdicts } from '@/lib/seo-audit/ai-checks'
 import { fetchPSIMetrics, applyPSIOverrides } from '@/lib/seo-audit/psi'
+import { crawlSitemapSample } from '@/lib/seo-audit/crawler'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { prisma } from '@/lib/prisma'
 import { captureServerException } from '@/lib/posthog-server'
@@ -228,10 +229,11 @@ export async function POST(req: NextRequest) {
     const bodyText = plainText(page.html)
     const wordCount = bodyText ? bodyText.split(/\s+/).length : 0
 
-    // Kick off the PSI (real Lighthouse) run now so it executes concurrently with the
-    // Claude call below, rather than adding its ~15-40s on top sequentially. Skipped
-    // for paste-HTML audits, which have no real URL for PSI to crawl.
+    // Kick off the PSI (real Lighthouse) run and the bounded sitemap crawl now so they
+    // execute concurrently with the Claude call below, rather than adding their latency
+    // on top sequentially. Both skipped for paste-HTML audits (no real URL to work from).
     const psiPromise = (fetched && urlKnown) ? fetchPSIMetrics(page.finalUrl) : Promise.resolve(null)
+    const crawlPromise = (fetched && urlKnown) ? crawlSitemapSample(sitemapXml, page.finalUrl) : Promise.resolve({})
 
     // ── AI scoring for judgement categories ──
     let aiResults: Record<string, AICategoryResult> = {}
@@ -293,6 +295,10 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
     // measured Lighthouse data wherever PSI succeeded; never blocks or fails the audit.
     const psiMetrics = await psiPromise
     applyPSIOverrides(autoResults, psiMetrics)
+
+    // Bounded sitemap health crawl — merges in sitemap.0.3/0.4 results wherever the
+    // sample could actually be checked; leaves them manual if nothing was reachable.
+    Object.assign(autoResults, await crawlPromise)
 
     // ── Category + overall scoring (shared with the PATCH recompute) ──
     const { categoryScores, overallScore, passedChecks, failedChecks, warnChecks } =
