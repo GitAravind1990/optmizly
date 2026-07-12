@@ -316,22 +316,6 @@ export function HomeHero() {
         maxWidth: 1100, margin: '0 auto', padding: '96px 32px 0', textAlign: 'center',
         overflow: 'hidden',
       }}>
-        {/* Badge */}
-        <div className="opt-badge" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 7,
-          padding: '5px 12px', borderRadius: 999, marginBottom: 26,
-          background: T.blueSoft, color: T.blueDark,
-          border: `1px solid ${T.blueBorder}`,
-          fontFamily: T.sans, fontSize: 13, fontWeight: 500,
-          maxWidth: '100%', boxSizing: 'border-box',
-        }}>
-          <span style={{ width: 7, height: 7, borderRadius: 4, background: T.blue, flexShrink: 0 }} />
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Now optimizing for ChatGPT, Gemini, Claude &amp; Perplexity
-          </span>
-          <Icon name="arrow" size={13} color={T.blue} />
-        </div>
-
         {/* Headline */}
         <h1 style={{
           fontFamily: T.sans, fontSize: 'clamp(44px, 6.5vw, 76px)',
@@ -351,7 +335,7 @@ export function HomeHero() {
           fontSize: 'clamp(16px, 1.8vw, 20px)', lineHeight: 1.55, color: T.body,
           maxWidth: 640, margin: '0 auto 36px',
         }}>
-          Optimize your website for Google Search, AI search engines, answer engines, and generative platforms — one intelligent platform for SEO, GEO &amp; AEO.
+          Optimize your website for Google Search and AI search engines like ChatGPT, Gemini, Claude &amp; Perplexity — one intelligent platform for SEO, GEO &amp; AEO.
         </p>
 
         {/* CTAs */}
