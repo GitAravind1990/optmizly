@@ -8,6 +8,7 @@ import { AI_CATEGORY_KEYS, TOTAL_CHECKS, computeAuditScores } from '@/lib/seo-au
 import { aiCheckPromptLines, mergeAICheckVerdicts } from '@/lib/seo-audit/ai-checks'
 import { fetchPSIMetrics, applyPSIOverrides } from '@/lib/seo-audit/psi'
 import { crawlSitemapSample } from '@/lib/seo-audit/crawler'
+import { fetchGSCAuditData, applyGSCOverrides } from '@/lib/seo-audit/gsc'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { prisma } from '@/lib/prisma'
 import { captureServerException } from '@/lib/posthog-server'
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest) {
     let page: FetchedPage
     let robotsTxt: string | null = null
     let sitemapXml: string | null = null
+    let sitemapUrl: string | null = null
     let sitemapStatus: number | null = null
     let oprScore: number | null = null
     let domainRank: number | null = null
@@ -168,7 +170,11 @@ export async function POST(req: NextRequest) {
         fetchOPRScore(hostname).catch(() => null),
       ])
       robotsTxt = robots && robots.status < 400 ? robots.body : (robots ? '' : null)
-      if (sitemap) { sitemapStatus = sitemap.status; sitemapXml = sitemap.status < 400 ? sitemap.body : null }
+      if (sitemap) {
+        sitemapStatus = sitemap.status
+        sitemapXml = sitemap.status < 400 ? sitemap.body : null
+        if (sitemapXml) sitemapUrl = `${origin}/sitemap.xml`
+      }
       if (!sitemapXml) {
         // Fall back to the robots.txt Sitemap: directive, then /sitemap_index.xml (Yoast et al.)
         const robotsSitemap = robotsTxt?.match(/^\s*sitemap:\s*(\S+)/im)?.[1] ?? null
@@ -180,6 +186,7 @@ export async function POST(req: NextRequest) {
           if (alt && alt.status < 400 && alt.body) {
             sitemapStatus = alt.status
             sitemapXml = alt.body
+            sitemapUrl = candidate
             break
           }
         }
@@ -299,6 +306,13 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
     // Bounded sitemap health crawl — merges in sitemap.0.3/0.4 results wherever the
     // sample could actually be checked; leaves them manual if nothing was reachable.
     Object.assign(autoResults, await crawlPromise)
+
+    // Real Search Console data — overrides sitemap submission, indexing, and
+    // cannibalization checks when the user has a connected, matching GSC property.
+    if (fetched && urlKnown) {
+      const gscData = await fetchGSCAuditData(user.userId, page.finalUrl, sitemapUrl)
+      applyGSCOverrides(autoResults, gscData)
+    }
 
     // ── Category + overall scoring (shared with the PATCH recompute) ──
     const { categoryScores, overallScore, passedChecks, failedChecks, warnChecks } =

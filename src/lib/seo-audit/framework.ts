@@ -213,7 +213,7 @@ export const AUDIT_FRAMEWORK: AuditCategory[] = [
     subCategories: [
       sub('Sitemap Errors', [
         ['Missing XML sitemap', true],
-        ['Sitemap not submitted to GSC'],
+        ['Sitemap not submitted to GSC', true],
         ['Non-indexable URLs included (noindex pages)'],
         ['Redirect URLs in sitemap', true],
         ['404 URLs in sitemap', true],
@@ -287,7 +287,7 @@ export const AUDIT_FRAMEWORK: AuditCategory[] = [
         ['x-default not set', true],
       ], 'international', 0),
       sub('Geo-Targeting', [
-        ['Wrong country targeting in GSC'],
+        ["Missing hreflang/ccTLD geo signals — GSC's manual country-targeting setting was removed in 2022; Google now infers targeting automatically"],
         ['Missing regional signals (local addresses, currency)'],
         ['Duplicate content across regional versions'],
         ['Incorrect ccTLD or subdirectory structure'],
@@ -349,7 +349,7 @@ export const AUDIT_FRAMEWORK: AuditCategory[] = [
         ['Filter URLs indexed unnecessarily'],
         ['No robots.txt or noindex on facet parameters'],
         ['Internal links to every filter combination (crawl waste)'],
-        ['No URL parameter handling set in GSC'],
+        ["No robots.txt/canonical/noindex handling on facet parameters — GSC's manual URL Parameters tool was removed in 2022"],
         ['Conflicting canonicals across filter pages'],
         ['Faceted pages with no unique content getting indexed'],
       ], 'faceted', 0),
@@ -362,7 +362,7 @@ export const AUDIT_FRAMEWORK: AuditCategory[] = [
         ['Tracking parameters (utm_source, fbclid) creating duplicate pages'],
         ['Session IDs in URLs indexed by Google'],
         ['Sort/filter parameters not consolidated via canonical'],
-        ['Parameters not declared in GSC URL Parameters tool'],
+        ["Parameterized URLs not consolidated via canonical tags — GSC's URL Parameters tool was removed in 2022, canonicals are now the only lever"],
         ['Inconsistent parameter order creating duplicates'],
         ['Internal links including unnecessary parameters'],
       ], 'urlParams', 0),
@@ -457,7 +457,7 @@ export const AUDIT_FRAMEWORK: AuditCategory[] = [
     num: 22, key: 'cannibalization', title: 'Content Cannibalization', tag: 'NEW', priority: 'High', ai: true,
     subCategories: [
       sub('Detection Signals', [
-        ['Multiple URLs ranking for the same keyword in GSC'],
+        ['Multiple URLs ranking for the same keyword in GSC', true],
         ['Keyword ranking fluctuating between two URLs'],
         ['Similar meta titles/H1s across multiple pages'],
         ['Blog posts and service pages targeting same term'],

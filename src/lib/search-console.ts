@@ -78,3 +78,60 @@ export async function listSearchConsoleSites(userId: string): Promise<GSCSite[] 
     return null
   }
 }
+
+export interface GSCPropertyMatch {
+  siteUrl: string
+  type: 'domain' | 'url-prefix'
+}
+
+/**
+ * Matches an audited URL to the most specific GSC property that covers it.
+ * URL-prefix properties (scheme+host+path, scheme-sensitive) win over domain
+ * properties (`sc-domain:`, scheme-agnostic, matches subdomains) when both apply,
+ * since they're more specific; longest-prefix wins among multiple prefix matches.
+ * `siteUnverifiedUser` entries are excluded — that permission level can't back real
+ * read calls. Pure function, no network.
+ */
+export function matchGSCProperty(auditedUrl: string, sites: GSCSite[]): GSCPropertyMatch | null {
+  let parsed: URL
+  try {
+    parsed = new URL(auditedUrl)
+  } catch {
+    return null
+  }
+
+  const hostname = parsed.hostname.toLowerCase()
+  const normalizedAudited = `${parsed.protocol}//${hostname}${parsed.pathname}${parsed.search}`
+  const verified = sites.filter(s => s.permissionLevel !== 'siteUnverifiedUser')
+
+  const urlPrefixCandidates = verified
+    .filter(s => !s.siteUrl.startsWith('sc-domain:'))
+    .map(s => {
+      let propUrl: URL
+      try {
+        propUrl = new URL(s.siteUrl)
+      } catch {
+        return null
+      }
+      const normalizedProp = `${propUrl.protocol}//${propUrl.hostname.toLowerCase()}${propUrl.pathname}`
+      return normalizedAudited.startsWith(normalizedProp) ? { siteUrl: s.siteUrl, matchLen: normalizedProp.length } : null
+    })
+    .filter((x): x is { siteUrl: string; matchLen: number } => x !== null)
+    .sort((a, b) => b.matchLen - a.matchLen)
+
+  if (urlPrefixCandidates.length > 0) {
+    return { siteUrl: urlPrefixCandidates[0].siteUrl, type: 'url-prefix' }
+  }
+
+  const domainCandidates = verified
+    .filter(s => s.siteUrl.startsWith('sc-domain:'))
+    .map(s => ({ siteUrl: s.siteUrl, domain: s.siteUrl.slice('sc-domain:'.length).toLowerCase() }))
+    .filter(s => hostname === s.domain || hostname.endsWith(`.${s.domain}`))
+    .sort((a, b) => b.domain.length - a.domain.length)
+
+  if (domainCandidates.length > 0) {
+    return { siteUrl: domainCandidates[0].siteUrl, type: 'domain' }
+  }
+
+  return null
+}
