@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 }
 
 const perks = [
-  '3 free analyses every month — no card needed',
+  '3 free analyses every month, no card needed',
   'Rank on Google, ChatGPT, Gemini, Claude & Perplexity',
   'E-E-A-T scoring built for Google quality signals',
   'AI-powered content optimizer & full rewriter',
@@ -27,7 +27,7 @@ export default function SignUpPage() {
 
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/40 bg-blue-400/10 px-4 py-1.5 text-xs font-bold text-blue-300 mb-6">
-            Free plan — no credit card required
+            Free plan, no credit card required
           </div>
           <h1 className="text-4xl font-black leading-tight mb-4">
             Rank higher everywhere<br />
@@ -36,7 +36,7 @@ export default function SignUpPage() {
             </span>
           </h1>
           <p className="text-slate-300 text-lg mb-10 leading-relaxed max-w-sm">
-            17 AI-powered tools for SEO, GEO & AEO — optimize once, rank everywhere.
+            17 AI-powered tools for SEO, GEO & AEO. Optimize once, rank everywhere.
           </p>
 
           <ul className="space-y-4">

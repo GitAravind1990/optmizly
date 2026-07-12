@@ -168,14 +168,14 @@ export default function PerformanceFixerPage() {
               <ul className="space-y-2 text-sm text-slate-600">
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> All PageSpeed Insights metrics (20+)</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> AI-Generated Code Fixes (Claude AI)</li>
-                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> ROI Calculator — revenue impact analysis</li>
+                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> ROI Calculator: revenue impact analysis</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> Industry Benchmarks</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> 50 audits / month</li>
               </ul>
             </div>
             <div className="flex gap-3 justify-center">
               <button onClick={() => router.push('/pricing')} className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-colors">
-                Upgrade to Agency — $49/mo
+                Upgrade to Agency ($49/mo)
               </button>
               <button onClick={() => router.push('/dashboard')} className="border border-slate-200 hover:bg-slate-50 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors">
                 Back to Dashboard
@@ -211,7 +211,7 @@ export default function PerformanceFixerPage() {
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-slate-600 mb-1.5 block">Industry <span className="font-normal text-slate-400">(optional — enables benchmarks)</span></label>
+            <label className="text-xs font-bold text-slate-600 mb-1.5 block">Industry <span className="font-normal text-slate-400">(optional, enables benchmarks)</span></label>
             <select value={industry} onChange={e => setIndustry(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
               <option value="">Select industry…</option>
               <option value="ecommerce">E-commerce</option>

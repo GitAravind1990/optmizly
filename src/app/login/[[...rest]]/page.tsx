@@ -33,7 +33,7 @@ export default function SignInPage() {
             </span>
           </h1>
           <p className="text-slate-300 text-lg mb-10 leading-relaxed max-w-sm">
-            17 AI-powered tools for SEO, GEO & AEO — optimize once, rank everywhere.
+            17 AI-powered tools for SEO, GEO & AEO. Optimize once, rank everywhere.
           </p>
 
           <ul className="space-y-4">

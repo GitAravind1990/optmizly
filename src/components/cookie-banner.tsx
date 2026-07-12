@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
-const sans = "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
+const sans = "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
 const grad = 'linear-gradient(118deg, #0000FF 0%, #3B5BFF 45%, #4DEEFF 100%)'
 
 export function CookieBanner() {

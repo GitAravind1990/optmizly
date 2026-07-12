@@ -32,11 +32,11 @@ export function LimitReachedEmail({
               </Heading>
               <Text className="text-slate-600 text-base leading-relaxed mb-5">
                 Hi {firstName}, you've used all <strong>{limit} free {limit === 1 ? 'analysis' : 'analyses'}</strong> for this month.
-                Your analyses reset on the 1st — or upgrade now to keep going.
+                Your analyses reset on the 1st, or upgrade now to keep going.
               </Text>
 
               <Section className="bg-blue-50 rounded-xl border border-blue-100 px-5 py-4 mb-6">
-                <Text className="text-sm font-bold text-blue-900 m-0 mb-1">Upgrade to Pro — $19/month</Text>
+                <Text className="text-sm font-bold text-blue-900 m-0 mb-1">Upgrade to Pro ($19/month)</Text>
                 <Text className="text-sm text-blue-700 m-0">
                   50 analyses/month plus E-E-A-T analysis, AI rewriter, content gap finder, rank tracker, backlink finder and more.
                 </Text>

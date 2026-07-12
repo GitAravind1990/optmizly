@@ -5,8 +5,8 @@ import { useState } from 'react'
 import { SignedIn, SignedOut } from './clerk-provider'
 
 const T = {
-  sans: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
-  mono: "'Geist Mono', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace",
+  sans: "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  mono: "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace",
   blue: '#0000FF',
   blueMid: '#3B5BFF',
   cyan: '#4DEEFF',
@@ -29,7 +29,7 @@ const plans = [
     color: 'gray',
     featured: false,
     features: [
-      'AI SEO audit — 1 project',
+      'AI SEO audit (1 project)',
       'SEO + GEO + AEO scores',
       '3 analyses / month',
       '8-dimension content score',
@@ -379,23 +379,23 @@ const COMPARISON_ROWS: Array<
 const FAQS = [
   {
     q: 'Is there a free plan?',
-    a: 'Yes. The Free plan is free forever — no credit card required. You get 3 analyses per month and full access to content scoring, so you can see Optmizly\'s value before committing.',
+    a: 'Yes. The Free plan is free forever, no credit card required. You get 3 analyses per month and full access to content scoring, so you can see Optmizly\'s value before committing.',
   },
   {
     q: 'What counts as one analysis?',
-    a: 'Each time you submit content or a URL for scoring — whether that\'s a content analysis, E-E-A-T check, SERP audit, or other tool — it uses one analysis credit. Credits reset at the start of each billing month.',
+    a: 'Each time you submit content or a URL for scoring (whether that\'s a content analysis, E-E-A-T check, SERP audit, or other tool), it uses one analysis credit. Credits reset at the start of each billing month.',
   },
   {
     q: 'Can I cancel anytime?',
-    a: 'Yes. Cancel from your account settings at any time — no hoops, no waiting. You keep full access until the end of your current billing period.',
+    a: 'Yes. Cancel from your account settings at any time, no hoops, no waiting. You keep full access until the end of your current billing period.',
   },
   {
     q: 'What is the refund policy?',
-    a: 'All paid plans come with a 14-day money-back guarantee. If you\'re not satisfied within the first 14 days, contact us for a full refund — no questions asked.',
+    a: 'All paid plans come with a 14-day money-back guarantee. If you\'re not satisfied within the first 14 days, contact us for a full refund, no questions asked.',
   },
   {
     q: 'Do I need API keys or anything installed?',
-    a: 'No. Optmizly is fully hosted. All AI analysis is included in your plan — you don\'t need an Anthropic key, Google Search Console access, or any third-party setup.',
+    a: 'No. Optmizly is fully hosted. All AI analysis is included in your plan. You don\'t need an Anthropic key, Google Search Console access, or any third-party setup.',
   },
   {
     q: 'What AI model powers Optmizly?',
@@ -403,7 +403,7 @@ const FAQS = [
   },
   {
     q: 'Can I upgrade or downgrade?',
-    a: 'Yes. Upgrade instantly from your dashboard settings — the new limits apply immediately. Downgrades take effect at the start of your next billing cycle.',
+    a: 'Yes. Upgrade instantly from your dashboard settings. The new limits apply immediately. Downgrades take effect at the start of your next billing cycle.',
   },
 ]
 

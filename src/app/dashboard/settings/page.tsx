@@ -14,9 +14,9 @@ type GSCStatus = {
 
 const GSC_ERROR_MESSAGES: Record<string, string> = {
   denied: 'You cancelled the Search Console connection.',
-  invalid_state: 'Something went wrong verifying the request — please try connecting again.',
-  missing_code: 'Google did not return an authorization code — please try again.',
-  exchange_failed: 'Could not complete the connection with Google — please try again.',
+  invalid_state: 'Something went wrong verifying the request. Please try connecting again.',
+  missing_code: 'Google did not return an authorization code. Please try again.',
+  exchange_failed: 'Could not complete the connection with Google. Please try again.',
   not_configured: 'Search Console connection is not configured yet.',
   plan: 'Search Console requires the Agency plan.',
 }
@@ -70,7 +70,7 @@ export default function SettingsPage() {
       setGscBanner({ type: 'success', message: 'Search Console connected successfully.' })
     } else {
       const code = searchParams.get('error')
-      if (code) setGscBanner({ type: 'error', message: GSC_ERROR_MESSAGES[code] ?? 'Could not connect Search Console — please try again.' })
+      if (code) setGscBanner({ type: 'error', message: GSC_ERROR_MESSAGES[code] ?? 'Could not connect Search Console. Please try again.' })
     }
   }, [searchParams])
 
@@ -199,7 +199,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between py-2 border-b border-slate-100">
                 <div>
                   <div className="text-sm font-medium">Password</div>
-                  <div className="text-xs text-slate-400">Managed via Clerk — click your avatar to update</div>
+                  <div className="text-xs text-slate-400">Managed via Clerk. Click your avatar to update</div>
                 </div>
                 <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Protected</span>
               </div>
@@ -295,12 +295,12 @@ export default function SettingsPage() {
             {plan !== 'AGENCY' && (
               <div className={`rounded-2xl p-5 ${plan === 'FREE' ? 'bg-blue-600' : 'bg-amber-500'} text-white`}>
                 <div className="font-black text-base mb-1">
-                  {plan === 'FREE' ? 'Unlock Content Optimizer with Pro' : 'Get Agency — more capacity'}
+                  {plan === 'FREE' ? 'Unlock Content Optimizer with Pro' : 'Get Agency for more capacity'}
                 </div>
                 <div className="text-sm opacity-80 mb-4">
                   {plan === 'FREE'
-                    ? 'Auto-fix your content issues with AI — starting at $19/mo'
-                    : '200 analyses / month + priority support — $49/mo'}
+                    ? 'Auto-fix your content issues with AI, starting at $19/mo'
+                    : '200 analyses / month + priority support ($49/mo)'}
                 </div>
                 <Link href="/pricing"
                   className="inline-block bg-white text-sm font-black px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
@@ -378,7 +378,7 @@ export default function SettingsPage() {
                   <p className="text-xs text-slate-400 mb-6">You're on the Free plan · 3 analyses per month</p>
                   <Link href="/pricing"
                     className="inline-block rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
-                    Upgrade to Pro — $19/mo →
+                    Upgrade to Pro ($19/mo) →
                   </Link>
                 </div>
               )}
@@ -427,9 +427,9 @@ export default function SettingsPage() {
 
             {plan !== 'AGENCY' ? (
               <div className="rounded-2xl p-5 bg-amber-500 text-white">
-                <div className="font-black text-base mb-1">Connect Search Console — Agency feature</div>
+                <div className="font-black text-base mb-1">Connect Search Console (Agency feature)</div>
                 <div className="text-sm opacity-80 mb-4">
-                  Link your Google Search Console account to unlock real indexed-page data, sitemap status, and keyword cannibalization detection in SEO Audit — $49/mo
+                  Link your Google Search Console account to unlock real indexed-page data, sitemap status, and keyword cannibalization detection in SEO Audit ($49/mo)
                 </div>
                 <Link href="/pricing"
                   className="inline-block bg-white text-sm font-black px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
@@ -450,7 +450,7 @@ export default function SettingsPage() {
                         <div className="text-sm font-medium">Status</div>
                         <div className="text-xs text-slate-400">
                           {gscStatus.sites === null
-                            ? 'Connected — could not reach Google right now'
+                            ? 'Connected, but could not reach Google right now'
                             : `Connected · ${gscStatus.sites?.length ?? 0} propert${gscStatus.sites?.length === 1 ? 'y' : 'ies'}`}
                         </div>
                       </div>

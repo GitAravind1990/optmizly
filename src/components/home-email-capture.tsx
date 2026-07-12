@@ -4,7 +4,7 @@ import { useState } from 'react'
 import posthog from 'posthog-js'
 
 const T = {
-  sans: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  sans: "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
   blue: '#0000FF',
   blueSoft: '#EEF1FF',
   blueBorder: '#CBD4FF',
@@ -48,7 +48,7 @@ export function HomeEmailCapture() {
           Free newsletter
         </p>
         <h2 style={{ fontFamily: T.sans, fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, letterSpacing: -1, lineHeight: 1.1, color: T.ink, margin: '0 0 12px' }}>
-          Weekly SEO insights — straight to your inbox
+          Weekly SEO insights, straight to your inbox
         </h2>
         <p style={{ fontFamily: T.sans, fontSize: 16, color: T.body, margin: '0 0 32px', lineHeight: 1.5 }}>
           Practical tips on content optimisation, E-E-A-T, and AI search. No fluff, one email a week.

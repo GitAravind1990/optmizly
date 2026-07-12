@@ -29,7 +29,7 @@ export function DripDay7Email({ firstName = 'there', dashboardUrl, pricingUrl, i
                 Still working on your SEO, {firstName}?
               </Heading>
               <Text className="text-slate-600 text-base leading-relaxed mb-6">
-                It's been a week. Whether you've been using Optmizly every day or haven't had a chance yet — here's what tends to move the needle most:
+                It's been a week. Whether you've been using Optmizly every day or haven't had a chance yet, here's what tends to move the needle most:
               </Text>
 
               {[

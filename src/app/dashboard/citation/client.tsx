@@ -54,7 +54,7 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
         <div className="flex items-center gap-3">
           <div>
             <h1 className="text-base font-black">AI Visibility</h1>
-            <p className="text-xs text-slate-500">Citation strategy + AI query mapping — get cited by ChatGPT, Perplexity & Google AI Overviews</p>
+            <p className="text-xs text-slate-500">Citation strategy + AI query mapping to get cited by ChatGPT, Perplexity & Google AI Overviews</p>
           </div>
           <Button className="ml-auto" onClick={handleRun} loading={loading}>
             {loading ? 'Running…' : 'Run AI Visibility'}

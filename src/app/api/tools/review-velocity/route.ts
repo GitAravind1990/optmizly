@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     if (!data) {
       return apiError({
         status: 502,
-        message: 'Could not fetch review data. Verify the Place ID is correct, or try again — the review lookup can occasionally take longer than expected.',
+        message: 'Could not fetch review data. Verify the Place ID is correct, or try again. The review lookup can occasionally take longer than expected.',
         name: 'ExternalAPIError',
       })
     }

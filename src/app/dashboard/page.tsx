@@ -132,7 +132,7 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            <EmptyState icon="◈" title="Analyse your content" desc="Paste your content or enter a URL above and click Analyse — you'll get a score across 8 SEO dimensions in seconds." />
+            <EmptyState icon="◈" title="Analyse your content" desc="Paste your content or enter a URL above and click Analyse. You'll get a score across 8 SEO dimensions in seconds." />
           )
         ) : tab === 'scores' ? (
           <div className="max-w-3xl mx-auto fade-up space-y-5">
@@ -266,7 +266,7 @@ export default function DashboardPage() {
                   {gaps.map((e, i) => <Badge key={i} variant="purple">{e}</Badge>)}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400">No entity gaps found — good coverage.</p>
+                <p className="text-sm text-slate-400">No entity gaps found. Good coverage.</p>
               )}
             </Card>
             <Card>

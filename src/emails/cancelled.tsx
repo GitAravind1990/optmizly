@@ -46,7 +46,7 @@ export function CancelledEmail({
               )}
 
               <Text className="text-slate-600 text-sm leading-relaxed mb-5">
-                If you cancelled by mistake or want to reactivate, you can do so any time — your data and settings are preserved.
+                If you cancelled by mistake or want to reactivate, you can do so any time. Your data and settings are preserved.
               </Text>
 
               <Hr className="border-slate-100 mb-5" />

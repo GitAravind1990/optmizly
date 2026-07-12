@@ -78,7 +78,7 @@ export function TopicalClient() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
             <Spinner size="lg" />
-            <span className="text-sm">Building pillar & cluster map — this takes ~20 seconds…</span>
+            <span className="text-sm">Building pillar & cluster map. This takes ~20 seconds…</span>
           </div>
         )}
 

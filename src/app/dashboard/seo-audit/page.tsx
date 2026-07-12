@@ -148,7 +148,7 @@ export default function SeoAuditPage() {
       })
       const d = await r.json().catch(() => ({}))
       if (!r.ok || !d.data) {
-        setError(typeof d.error === 'string' ? d.error : 'Could not save that check — please try again.')
+        setError(typeof d.error === 'string' ? d.error : 'Could not save that check. Please try again.')
         return
       }
       setError('')
@@ -162,7 +162,7 @@ export default function SeoAuditPage() {
         overallScore: d.data.overallScore ?? prev.overallScore,
       } : prev)
     } catch {
-      setError('Network error — could not save that check.')
+      setError('Network error. Could not save that check.')
     } finally {
       setSavingCheck(null)
     }
@@ -473,7 +473,7 @@ export default function SeoAuditPage() {
                       >
                         {showManual
                           ? '− Hide expert checklist'
-                          : `+ Expert checklist — ${hiddenManual} manual review item${hiddenManual === 1 ? '' : 's'} (optional, for full agency audits)`}
+                          : `+ Expert checklist: ${hiddenManual} manual review item${hiddenManual === 1 ? '' : 's'} (optional, for full agency audits)`}
                       </button>
                     )}
 

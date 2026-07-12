@@ -40,7 +40,7 @@ export function LimitWarningEmail({
               </Text>
 
               <Section className="bg-blue-50 rounded-xl border border-blue-100 px-5 py-4 mb-6">
-                <Text className="text-sm font-bold text-blue-900 m-0 mb-1">Upgrade to Pro — 50 analyses/month</Text>
+                <Text className="text-sm font-bold text-blue-900 m-0 mb-1">Upgrade to Pro: 50 analyses/month</Text>
                 <Text className="text-sm text-blue-700 m-0">
                   Plus E-E-A-T analysis, AI rewriter, content gap finder, rank tracker, backlink finder and more.
                 </Text>

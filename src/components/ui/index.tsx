@@ -161,7 +161,7 @@ export function LockedState({ tool, plan }: { tool: string; plan: 'Pro' | 'Agenc
             tool_name: tool,
           })}
         >
-          Upgrade to {plan} — {price} →
+          Upgrade to {plan} ({price}) →
         </a>
       </div>
     </div>

@@ -30,7 +30,7 @@ export function SubscriptionEmail({
   return (
     <Html>
       <Head />
-      <Preview>You're now on Optmizly {plan} — {limit} analyses/month unlocked</Preview>
+      <Preview>You're now on Optmizly {plan}: {limit} analyses/month unlocked</Preview>
       <Tailwind>
         <Body className="bg-slate-50 font-sans">
           <Container className="mx-auto py-12 px-4 max-w-xl">
@@ -86,7 +86,7 @@ export function SubscriptionEmail({
             {/* Footer */}
             <Section className="text-center">
               <Text className="text-xs text-slate-400 m-0">
-                Questions? Reply to this email — we respond within 24 hours.
+                Questions? Reply to this email. We respond within 24 hours.
               </Text>
               <Text className="text-xs text-slate-400 mt-1">Optmizly · © 2025</Text>
             </Section>

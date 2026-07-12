@@ -104,7 +104,7 @@ export default function LocalSEOPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">Account Name</label>
-                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Acme Corp — Local SEO"
+                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Acme Corp: Local SEO"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>

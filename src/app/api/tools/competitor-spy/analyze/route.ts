@@ -86,7 +86,7 @@ function generateMockData(domainName: string) {
   }))
 
   const topPages = [
-    { title: `${domainName} — Home`, url: '/', traffic: Math.floor(traffic * 0.35) },
+    { title: `${domainName} (Home)`, url: '/', traffic: Math.floor(traffic * 0.35) },
     { title: 'Pricing', url: '/pricing', traffic: Math.floor(traffic * 0.15) },
     { title: 'How to improve SEO rankings', url: '/blog/seo-rankings', traffic: Math.floor(traffic * 0.12) },
     { title: 'Best SEO tools comparison', url: '/blog/best-seo-tools', traffic: Math.floor(traffic * 0.09) },
@@ -112,7 +112,7 @@ function generateMockData(domainName: string) {
   const contentOpps = [
     {
       title: 'AI-Powered SEO: Complete 2026 Guide',
-      opportunity: 'Competitor has thin content on AI SEO — high search demand unmet',
+      opportunity: 'Competitor has thin content on AI SEO. High search demand unmet',
       traffic: r(2000, 6000),
     },
     {

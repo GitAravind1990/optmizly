@@ -5,13 +5,22 @@ import { PHProvider } from '@/components/posthog-provider'
 import { PostHogUserIdentity } from '@/components/posthog-user-identity'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
-import { Inter } from 'next/font/google'
+import localFont from 'next/font/local'
 import { headers } from 'next/headers'
 import './globals.css'
 
 export const dynamic = 'force-dynamic'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
+const switzer = localFont({
+  src: [
+    { path: '../fonts/switzer/Switzer-Regular.woff2', weight: '400', style: 'normal' },
+    { path: '../fonts/switzer/Switzer-Medium.woff2', weight: '500', style: 'normal' },
+    { path: '../fonts/switzer/Switzer-SemiBold.woff2', weight: '600', style: 'normal' },
+    { path: '../fonts/switzer/Switzer-Bold.woff2', weight: '700', style: 'normal' },
+  ],
+  variable: '--font-sans',
+  display: 'swap',
+})
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://optmizly.com'
 
@@ -65,7 +74,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased bg-white text-slate-900`}>
+      <body className={`${switzer.variable} font-sans antialiased bg-white text-slate-900`}>
         <PHProvider>
           <ClerkProviderWrapper nonce={nonce}>
             {/* PostHogUserIdentity needs both Clerk context and PostHog initialised */}

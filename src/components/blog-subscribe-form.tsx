@@ -48,7 +48,7 @@ export function BlogSubscribeForm() {
       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Free newsletter</p>
       <h3 className="text-lg font-black text-slate-900 mb-1">Weekly SEO insights</h3>
       <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-        Practical tips on content optimisation, E-E-A-T, and AI search — no fluff, one email a week.
+        Practical tips on content optimisation, E-E-A-T, and AI search. No fluff, one email a week.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-3">
@@ -74,7 +74,7 @@ export function BlogSubscribeForm() {
           disabled={status === 'loading' || !email}
           className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 px-4 py-2.5 text-sm font-bold text-white transition-colors"
         >
-          {status === 'loading' ? 'Subscribing…' : 'Subscribe — it\'s free'}
+          {status === 'loading' ? 'Subscribing…' : 'Subscribe (it\'s free)'}
         </button>
         {status === 'error' && (
           <p className="text-xs text-red-500 text-center">Something went wrong. Please try again.</p>

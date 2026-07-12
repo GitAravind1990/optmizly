@@ -720,7 +720,7 @@ export function RankingEngineClient({ unlocked }: { unlocked: boolean }) {
           </div>
           <h2 className="text-xl font-bold text-slate-900 mb-2">Ranking Possibility Engine</h2>
           <p className="text-slate-500 text-sm mb-6 max-w-md mx-auto">
-            See your real chances of ranking for any keyword — with a weighted score, competitor gap analysis, and a step-by-step action plan.
+            See your real chances of ranking for any keyword: a weighted score, competitor gap analysis, and a step-by-step action plan.
           </p>
           <Link
             href="/pricing"
@@ -741,7 +741,7 @@ export function RankingEngineClient({ unlocked }: { unlocked: boolean }) {
       <div className="mb-5">
         <h1 className="text-xl font-black text-slate-900">Ranking Possibility Engine</h1>
         <p className="text-sm text-slate-500 mt-0.5">
-          Predict your chances of ranking for any keyword — weighted score, gap analysis, and a prioritized action plan.
+          Predict your chances of ranking for any keyword: weighted score, gap analysis, and a prioritized action plan.
         </p>
       </div>
 

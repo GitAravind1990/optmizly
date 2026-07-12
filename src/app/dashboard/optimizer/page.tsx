@@ -210,7 +210,7 @@ export default function ContentOptimizerPage() {
             </h1>
             <p className="text-sm text-slate-500 mt-1">
               {mode === 'analyze'
-                ? 'Intent · Entities · LSI Keywords · Schema · Topic Clusters · E-E-A-T · AI Fixes — all in one analysis'
+                ? 'Intent · Entities · LSI Keywords · Schema · Topic Clusters · E-E-A-T · AI Fixes: all in one analysis'
                 : 'Full content rewrite following Neil Patel & Brian Dean framework with E-E-A-T applied automatically'}
             </p>
           </div>
@@ -487,7 +487,7 @@ function IntentTab({ data }: { data: AnalysisResult['intent'] }) {
 function EntitiesTab({ data }: { data: AnalysisResult['entities'] }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-      <h3 className="text-sm font-bold text-slate-700">🔗 Entity Analysis — Score: {data.score}/100</h3>
+      <h3 className="text-sm font-bold text-slate-700">🔗 Entity Analysis · Score: {data.score}/100</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <h4 className="text-xs font-bold text-green-700 mb-2">✅ Found ({data.entities.length})</h4>
@@ -533,7 +533,7 @@ function EntitiesTab({ data }: { data: AnalysisResult['entities'] }) {
 function LsiTab({ data }: { data: AnalysisResult['lsi'] }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-      <h3 className="text-sm font-bold text-slate-700">📚 LSI Keywords — Score: {data.score}/100</h3>
+      <h3 className="text-sm font-bold text-slate-700">📚 LSI Keywords · Score: {data.score}/100</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <h4 className="text-xs font-bold text-green-700 mb-2">✅ Used ({data.found.length})</h4>

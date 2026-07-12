@@ -10,7 +10,7 @@ interface Props {
 export function ShareScoreButton({ score, grade }: Props) {
   const [copied, setCopied] = useState(false)
 
-  const text = `I just scored my content with @optmizly — ${score}/100 (Grade ${grade})\n\nFree AI SEO analyzer: E-E-A-T, entity gaps, LLM citation signals & more.\n\nTry it free → https://optmizly.com`
+  const text = `I just scored my content with @optmizly: ${score}/100 (Grade ${grade})\n\nFree AI SEO analyzer: E-E-A-T, entity gaps, LLM citation signals & more.\n\nTry it free → https://optmizly.com`
 
   function shareOnX() {
     window.open(

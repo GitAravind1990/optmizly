@@ -610,14 +610,14 @@ export default function OnPagePage() {
               <div className="text-xs text-slate-500 mb-1">Title tag</div>
               <div className="text-sm text-slate-800">{current.metaTags.title || <span className="text-slate-400 italic">Not found</span>}</div>
               {current.metaTags.title && (
-                <div className="text-xs text-slate-400 mt-1">{current.metaTags.title.length} chars — {current.metaTags.titleHasKeyword ? 'keyword present' : 'keyword missing'}</div>
+                <div className="text-xs text-slate-400 mt-1">{current.metaTags.title.length} chars, {current.metaTags.titleHasKeyword ? 'keyword present' : 'keyword missing'}</div>
               )}
             </div>
             <div className="rounded-lg bg-slate-50 p-3">
               <div className="text-xs text-slate-500 mb-1">Meta description</div>
               <div className="text-sm text-slate-800">{current.metaTags.description || <span className="text-slate-400 italic">Not found</span>}</div>
               {current.metaTags.description && (
-                <div className="text-xs text-slate-400 mt-1">{current.metaTags.description.length} chars — {current.metaTags.descHasKeyword ? 'keyword present' : 'keyword missing'}</div>
+                <div className="text-xs text-slate-400 mt-1">{current.metaTags.description.length} chars, {current.metaTags.descHasKeyword ? 'keyword present' : 'keyword missing'}</div>
               )}
             </div>
           </div>
@@ -677,7 +677,7 @@ export default function OnPagePage() {
           </div>
 
           {totalFixes === 0 ? (
-            <div className="text-center py-6 text-slate-400 text-sm">No fixes generated — content looks good!</div>
+            <div className="text-center py-6 text-slate-400 text-sm">No fixes generated. Content looks good!</div>
           ) : (
             <div className="space-y-3">
               {current.fixes.map((fix, i) => {

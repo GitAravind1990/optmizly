@@ -64,7 +64,7 @@ function MonthlyChart({ reviews }: { reviews: ReviewData['reviews'] }) {
 
   return (
     <div>
-      <div className="text-xs font-semibold text-slate-700 mb-4">Reviews per Month — last 6 months</div>
+      <div className="text-xs font-semibold text-slate-700 mb-4">Reviews per Month (last 6 months)</div>
       <svg width={totalW} height={chartH + 28} viewBox={`0 0 ${totalW} ${chartH + 28}`} overflow="visible">
         {months.map((m, i) => {
           const barH = Math.max(2, Math.round((m.count / max) * chartH))

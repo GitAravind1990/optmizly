@@ -102,7 +102,7 @@ Make searchVolume realistic (100-50000), difficulty 10-90, opportunityScore 30-9
       const project = await prisma.contentIdeaProject.create({
         data: {
           userId: user.id,
-          name: `${industry} — ${new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`,
+          name: `${industry} (${new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })})`,
           industry,
           targetAudience,
           seedKeywords: JSON.stringify(Array.isArray(seedKeywords) ? seedKeywords : [seedKeywords]),

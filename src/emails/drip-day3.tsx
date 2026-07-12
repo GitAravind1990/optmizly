@@ -24,17 +24,17 @@ export function DripDay3Email({ firstName = 'there', pricingUrl }: DripDay3Props
 
             <Section className="bg-white rounded-2xl border border-slate-200 p-8 mb-6">
               <Heading className="text-2xl font-black text-slate-900 mb-2 mt-0">
-                Hey {firstName} — here's what Pro unlocks
+                Hey {firstName}, here's what Pro unlocks
               </Heading>
               <Text className="text-slate-600 text-base leading-relaxed mb-6">
                 You've been on the Free plan for a few days. Here are the tools most Pro users run first:
               </Text>
 
               {[
-                ['📈', 'SERP Audit', "See exactly why you're not ranking — real competitor breakdown with a step-by-step recovery plan."],
+                ['📈', 'SERP Audit', "See exactly why you're not ranking: real competitor breakdown with a step-by-step recovery plan."],
                 ['🎯', 'Rank Tracker', 'Track keyword positions over time. Get alerts when you move up or drop.'],
                 ['⭐', 'E-E-A-T Analysis', 'Score your expertise and trust signals the way Google evaluates them.'],
-                ['📊', 'Ranking Engine', 'Enter a keyword and domain — get a probability score before you write a word.'],
+                ['📊', 'Ranking Engine', 'Enter a keyword and domain to get a probability score before you write a word.'],
               ].map(([icon, title, desc]) => (
                 <Section key={title} className="mb-5">
                   <Text className="m-0 text-sm font-bold text-slate-800">
@@ -47,14 +47,14 @@ export function DripDay3Email({ firstName = 'there', pricingUrl }: DripDay3Props
               <Hr className="border-slate-100 my-6" />
 
               <Text className="text-slate-600 text-sm mb-6">
-                All 17 tools. One flat price. <strong>Pro is $19/mo</strong> — cancel any time.
+                All 17 tools. One flat price. <strong>Pro is $19/mo</strong>, cancel any time.
               </Text>
 
               <Button
                 href={pricingUrl}
                 className="bg-blue-600 text-white font-bold text-sm px-8 py-3 rounded-xl no-underline block text-center"
               >
-                Upgrade to Pro — $19/mo →
+                Upgrade to Pro ($19/mo) →
               </Button>
             </Section>
 

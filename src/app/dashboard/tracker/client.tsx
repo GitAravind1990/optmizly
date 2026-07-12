@@ -57,7 +57,7 @@ export function TrackerClient({ unlocked = true }: { unlocked?: boolean }) {
         <div className="flex items-center gap-3">
           <div>
             <h1 className="text-base font-black">Cite Tracker</h1>
-            <p className="text-xs text-slate-500">Simulate ChatGPT & Perplexity responses — check if your content gets cited</p>
+            <p className="text-xs text-slate-500">Simulate ChatGPT & Perplexity responses to check if your content gets cited</p>
           </div>
           <Button className="ml-auto" onClick={handleRun} loading={loading}>Run Citation Check</Button>
         </div>

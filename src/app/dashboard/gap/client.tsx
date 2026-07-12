@@ -10,7 +10,7 @@ export function GapClient({ unlocked }: { unlocked: boolean }) {
       toolId="gap"
       title="Content Gap"
       icon="🕳️"
-      description="Identify topics your competitors cover that you don't — ranked by traffic opportunity"
+      description="Identify topics your competitors cover that you don't, ranked by traffic opportunity"
       plan="Pro"
       unlocked={unlocked}
       needsContent

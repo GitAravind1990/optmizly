@@ -24,7 +24,7 @@ export function BlogSubscribeEmail({ firstName, latestPostTitle, latestPostUrl }
               You're in, {name}!
             </Heading>
             <Text style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.6', margin: '0 0 24px' }}>
-              Thanks for subscribing. You'll get practical, no-fluff SEO tips covering content optimisation, E-E-A-T, AI search, and more — straight to your inbox.
+              Thanks for subscribing. You'll get practical, no-fluff SEO tips covering content optimisation, E-E-A-T, AI search, and more, straight to your inbox.
             </Text>
 
             {latestPostTitle && latestPostUrl && (
@@ -39,7 +39,7 @@ export function BlogSubscribeEmail({ firstName, latestPostTitle, latestPostUrl }
             )}
 
             <Text style={{ color: '#64748b', fontSize: '14px', lineHeight: '1.6', margin: '0 0 24px' }}>
-              While you're here — Optmizly's free plan lets you run 3 content analyses per month. No credit card required.
+              While you're here, Optmizly's free plan lets you run 3 content analyses per month. No credit card required.
             </Text>
 
             <Link

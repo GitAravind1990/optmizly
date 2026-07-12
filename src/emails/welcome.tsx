@@ -12,7 +12,7 @@ export function WelcomeEmail({ firstName = 'there', dashboardUrl }: WelcomeEmail
   return (
     <Html>
       <Head />
-      <Preview>Welcome to Optmizly — your AI content optimizer is ready</Preview>
+      <Preview>Welcome to Optmizly: your AI content optimizer is ready</Preview>
       <Tailwind>
         <Body className="bg-slate-50 font-sans">
           <Container className="mx-auto py-12 px-4 max-w-xl">
@@ -29,7 +29,7 @@ export function WelcomeEmail({ firstName = 'there', dashboardUrl }: WelcomeEmail
                 Welcome, {firstName}! 👋
               </Heading>
               <Text className="text-slate-600 text-base leading-relaxed mb-6">
-                Your Optmizly account is ready. You're on the <strong>Free plan</strong> with 3 analyses per month — enough to see exactly what the tool can do.
+                Your Optmizly account is ready. You're on the <strong>Free plan</strong> with 3 analyses per month, enough to see exactly what the tool can do.
               </Text>
 
               <Hr className="border-slate-100 mb-6" />
@@ -44,7 +44,7 @@ export function WelcomeEmail({ firstName = 'there', dashboardUrl }: WelcomeEmail
                 <Section key={title} className="mb-3">
                   <Text className="m-0 text-sm">
                     <span className="mr-2">{icon}</span>
-                    <strong>{title}</strong> — {desc}
+                    <strong>{title}</strong>: {desc}
                   </Text>
                 </Section>
               ))}
@@ -62,7 +62,7 @@ export function WelcomeEmail({ firstName = 'there', dashboardUrl }: WelcomeEmail
             {/* Tip */}
             <Section className="bg-blue-50 rounded-xl border border-blue-100 px-6 py-4 mb-6">
               <Text className="text-sm text-blue-800 m-0">
-                <strong>💡 Quick tip:</strong> Paste any article URL into the Fetch & Analyse box — Optmizly will fetch the content and score it automatically.
+                <strong>💡 Quick tip:</strong> Paste any article URL into the Fetch & Analyse box, and Optmizly will fetch the content and score it automatically.
               </Text>
             </Section>
 

@@ -24,13 +24,13 @@ export function DripDay1Email({ firstName = 'there', dashboardUrl }: DripDay1Pro
 
             <Section className="bg-white rounded-2xl border border-slate-200 p-8 mb-6">
               <Heading className="text-2xl font-black text-slate-900 mb-2 mt-0">
-                Hey {firstName} — quick tip
+                Hey {firstName}, quick tip
               </Heading>
               <Text className="text-slate-600 text-base leading-relaxed mb-4">
                 Most users paste content manually. Here's the faster way: <strong>drop a URL into the Fetch &amp; Analyse box</strong> and Optmizly fetches the live page and scores it automatically.
               </Text>
               <Text className="text-slate-600 text-base leading-relaxed mb-6">
-                You'll get a score across 8 dimensions in about 30 seconds — from On-Page SEO to LLM Citation potential, with a prioritised fix list at the end.
+                You'll get a score across 8 dimensions in about 30 seconds, from On-Page SEO to LLM Citation potential, with a prioritised fix list at the end.
               </Text>
 
               <Hr className="border-slate-100 mb-6" />
@@ -45,7 +45,7 @@ export function DripDay1Email({ firstName = 'there', dashboardUrl }: DripDay1Pro
                 <Section key={title} className="mb-2.5">
                   <Text className="m-0 text-sm text-slate-700">
                     <span className="mr-2">{icon}</span>
-                    <strong>{title}</strong> — {desc}
+                    <strong>{title}</strong>: {desc}
                   </Text>
                 </Section>
               ))}
@@ -71,7 +71,7 @@ export function DripDay1Email({ firstName = 'there', dashboardUrl }: DripDay1Pro
 
             <Section className="bg-blue-50 rounded-xl border border-blue-100 px-6 py-4 mb-6">
               <Text className="text-sm text-blue-800 m-0">
-                <strong>💡 Best first analysis:</strong> Run it on your most important page — homepage, a key service page, or your best blog post.
+                <strong>💡 Best first analysis:</strong> Run it on your most important page: homepage, a key service page, or your best blog post.
               </Text>
             </Section>
 

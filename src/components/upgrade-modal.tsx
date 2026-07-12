@@ -32,7 +32,7 @@ function copyForPlan(plan: string, limit: number | null): PlanCopy {
         'SEO Audit, Local SEO Suite, SERP & Topical Authority unlocked',
         'Geogrid, Review Velocity & white-label client reports',
       ],
-      cta: { label: 'Upgrade to Agency — $49/mo →', href: '/pricing' },
+      cta: { label: 'Upgrade to Agency ($49/mo) →', href: '/pricing' },
     }
   }
   return {
@@ -43,7 +43,7 @@ function copyForPlan(plan: string, limit: number | null): PlanCopy {
       'All Pro SEO tools unlocked (E-E-A-T, Gap, Rank Tracker…)',
       'Ranking Engine, Backlinks & AI citation optimiser',
     ],
-    cta: { label: 'Upgrade to Pro — $19/mo →', href: '/pricing' },
+    cta: { label: 'Upgrade to Pro ($19/mo) →', href: '/pricing' },
   }
 }
 

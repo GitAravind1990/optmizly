@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center p-8">
           <p className="text-lg font-bold text-slate-900 mb-2">Admin unavailable</p>
-          <p className="text-sm text-slate-500">Service error — check Vercel function logs.</p>
+          <p className="text-sm text-slate-500">Service error. Check Vercel function logs.</p>
         </div>
       </div>
     );

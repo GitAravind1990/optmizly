@@ -5,8 +5,8 @@ import { SignedIn, SignedOut } from './clerk-provider'
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 const T = {
-  sans: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
-  mono: "'Geist Mono', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace",
+  sans: "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  mono: "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace",
   blue: '#0000FF',
   blueMid: '#3B5BFF',
   cyan: '#4DEEFF',
@@ -335,7 +335,7 @@ export function HomeHero() {
           fontSize: 'clamp(16px, 1.8vw, 20px)', lineHeight: 1.55, color: T.body,
           maxWidth: 640, margin: '0 auto 36px',
         }}>
-          Optimize your website for Google Search and AI search engines like ChatGPT, Gemini, Claude &amp; Perplexity — one intelligent platform for SEO, GEO &amp; AEO.
+          Optimize your website for Google Search and AI search engines like ChatGPT, Gemini, Claude &amp; Perplexity, one intelligent platform for SEO, GEO &amp; AEO.
         </p>
 
         {/* CTAs */}

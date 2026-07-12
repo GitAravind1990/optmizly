@@ -66,7 +66,7 @@ export default clerkMiddleware(async (_auth, req: NextRequest) => {
       const { success } = await rateLimiter(ip)
       if (!success) {
         return NextResponse.json(
-          { error: 'Too many requests — slow down.' },
+          { error: 'Too many requests, slow down.' },
           { status: 429, headers: { 'Retry-After': '60' } }
         )
       }

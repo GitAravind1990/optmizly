@@ -8,7 +8,7 @@ const blue = '#0000FF'
 const blueMid = '#3B5BFF'
 const cyan = '#4DEEFF'
 const grad = `linear-gradient(118deg, ${blue} 0%, ${blueMid} 45%, ${cyan} 100%)`
-const sans = "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
+const sans = "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
 
 export function PageHeader() {
   const [open, setOpen] = useState(false)

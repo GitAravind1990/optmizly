@@ -36,10 +36,10 @@ function analyzeKeywords(content: string, keyword: string) {
 
   const issues: string[] = []
   if (count === 0) issues.push(`Keyword "${keyword}" not found in content`)
-  else if (density > 3) issues.push(`Keyword density ${density}% is too high (over-optimized) — aim for 1–2%`)
-  else if (density < 0.5) issues.push(`Keyword density ${density}% is too low — use keyword more naturally`)
-  if (!inFirstParagraph) issues.push('Keyword missing from opening paragraph — add it in first 100 words')
-  if (!inLastParagraph) issues.push('Keyword missing from conclusion — reinforce it in last paragraph')
+  else if (density > 3) issues.push(`Keyword density ${density}% is too high (over-optimized). Aim for 1–2%`)
+  else if (density < 0.5) issues.push(`Keyword density ${density}% is too low. Use keyword more naturally`)
+  if (!inFirstParagraph) issues.push('Keyword missing from opening paragraph. Add it in first 100 words')
+  if (!inLastParagraph) issues.push('Keyword missing from conclusion. Reinforce it in last paragraph')
 
   const score = count === 0 ? 0 : density > 3 ? 50 : density < 0.5 ? 40 : inFirstParagraph && inLastParagraph ? 100 : 70
 
@@ -65,12 +65,12 @@ function analyzeHeaders(content: string, keyword: string) {
   const h2HasKw = h2.some(h => h.toLowerCase().includes(kw))
 
   const issues: string[] = []
-  if (h1.length === 0) issues.push('No H1 found — add a single H1 with your primary keyword')
-  else if (h1.length > 1) issues.push(`${h1.length} H1 tags found — use only one H1 per page`)
+  if (h1.length === 0) issues.push('No H1 found. Add a single H1 with your primary keyword')
+  else if (h1.length > 1) issues.push(`${h1.length} H1 tags found. Use only one H1 per page`)
   if (!hasKeywordInH1 && h1.length > 0) issues.push(`H1 "${h1[0]}" doesn't contain the keyword "${keyword}"`)
-  if (h2.length === 0) issues.push('No H2 subheadings — add H2s to structure content and include keyword variants')
-  if (!h2HasKw && h2.length > 0) issues.push(`None of the ${h2.length} H2s include the keyword — add it to at least one`)
-  if (h2.length > 0 && h3.length === 0) issues.push('No H3 headings — consider adding H3s for better content hierarchy')
+  if (h2.length === 0) issues.push('No H2 subheadings. Add H2s to structure content and include keyword variants')
+  if (!h2HasKw && h2.length > 0) issues.push(`None of the ${h2.length} H2s include the keyword. Add it to at least one`)
+  if (h2.length > 0 && h3.length === 0) issues.push('No H3 headings. Consider adding H3s for better content hierarchy')
 
   const score = h1.length === 1 && hasKeywordInH1 && h2.length >= 2 && h2HasKw
     ? 100
@@ -95,17 +95,17 @@ function analyzeMeta(content: string, keyword: string, pageTitle?: string) {
   const descHasKeyword = description.toLowerCase().includes(kw)
 
   const issues: string[] = []
-  if (!title) issues.push('No <title> tag found — add a title tag with your keyword')
+  if (!title) issues.push('No <title> tag found. Add a title tag with your keyword')
   else {
     if (!titleHasKeyword) issues.push(`Title "${title}" doesn't contain keyword "${keyword}"`)
-    if (title.length < 30) issues.push(`Title is too short (${title.length} chars) — aim for 50–60 characters`)
-    if (title.length > 65) issues.push(`Title is too long (${title.length} chars) — Google truncates after ~60 characters`)
+    if (title.length < 30) issues.push(`Title is too short (${title.length} chars). Aim for 50–60 characters`)
+    if (title.length > 65) issues.push(`Title is too long (${title.length} chars). Google truncates after ~60 characters`)
   }
-  if (!description) issues.push('No meta description found — add one (150–160 chars) with your keyword')
+  if (!description) issues.push('No meta description found. Add one (150–160 chars) with your keyword')
   else {
     if (!descHasKeyword) issues.push(`Meta description doesn't include keyword "${keyword}"`)
-    if (description.length < 100) issues.push(`Meta description is too short (${description.length} chars) — aim for 150–160 characters`)
-    if (description.length > 165) issues.push(`Meta description is too long (${description.length} chars) — will be truncated in SERPs`)
+    if (description.length < 100) issues.push(`Meta description is too short (${description.length} chars). Aim for 150–160 characters`)
+    if (description.length > 165) issues.push(`Meta description is too long (${description.length} chars). Will be truncated in SERPs`)
   }
 
   const score = !title && !description ? 0
@@ -133,11 +133,11 @@ function analyzeImages(content: string, keyword: string) {
   const withKeywordInAlt = images.filter(i => i.alt?.toLowerCase().includes(kw)).length
 
   const issues: string[] = []
-  if (total === 0) issues.push('No images found — add relevant images to improve engagement and visual SEO')
+  if (total === 0) issues.push('No images found. Add relevant images to improve engagement and visual SEO')
   else {
-    if (missingAlt > 0) issues.push(`${missingAlt} of ${total} images missing alt text — add descriptive alt text to all images`)
-    if (withKeywordInAlt === 0 && total > 0) issues.push(`No image has alt text containing "${keyword}" — add keyword to at least one image's alt text`)
-    if (total < 2) issues.push('Only 1 image found — add more images (aim for 1 per 300 words)')
+    if (missingAlt > 0) issues.push(`${missingAlt} of ${total} images missing alt text. Add descriptive alt text to all images`)
+    if (withKeywordInAlt === 0 && total > 0) issues.push(`No image has alt text containing "${keyword}". Add keyword to at least one image's alt text`)
+    if (total < 2) issues.push('Only 1 image found. Add more images (aim for 1 per 300 words)')
   }
 
   const score = total === 0 ? 30
@@ -157,10 +157,10 @@ function analyzeLinks(content: string) {
   const hasNofollow = content.includes('rel="nofollow"') || content.includes("rel='nofollow'")
 
   const issues: string[] = []
-  if (internalLinks.length === 0) issues.push('No internal links found — add 2–5 internal links to related content')
-  else if (internalLinks.length < 2) issues.push('Only 1 internal link — add more to distribute link equity')
-  if (externalLinks.length === 0) issues.push('No external links — cite authoritative sources to build E-E-A-T')
-  else if (externalLinks.length > 10) issues.push(`${externalLinks.length} external links may dilute page authority — review and trim`)
+  if (internalLinks.length === 0) issues.push('No internal links found. Add 2–5 internal links to related content')
+  else if (internalLinks.length < 2) issues.push('Only 1 internal link. Add more to distribute link equity')
+  if (externalLinks.length === 0) issues.push('No external links. Cite authoritative sources to build E-E-A-T')
+  else if (externalLinks.length > 10) issues.push(`${externalLinks.length} external links may dilute page authority. Review and trim`)
 
   const score = internalLinks.length >= 2 && externalLinks.length >= 1 ? 100
     : internalLinks.length >= 1 && externalLinks.length >= 1 ? 80
@@ -188,12 +188,12 @@ function analyzeReadability(content: string) {
   const fkClamped = Math.max(0, Math.min(100, fkScore))
 
   const issues: string[] = []
-  if (avgWordsPerSentence > 20) issues.push(`Average sentence length is ${avgWordsPerSentence} words — aim for under 20 words per sentence`)
-  if (longSentences > 0) issues.push(`${longSentences} sentences exceed 25 words — break them up for better readability`)
-  if (longParagraphs > 0) issues.push(`${longParagraphs} paragraphs are too long — keep paragraphs under 150 words`)
-  if (fkClamped < 50) issues.push(`Readability score ${fkClamped}/100 is low — simplify language and shorten sentences`)
-  if (wordCount < 300) issues.push(`Content is very short (${wordCount} words) — aim for at least 800 words for competitive topics`)
-  if (wordCount < 800) issues.push(`Content is thin (${wordCount} words) — expand to 1500+ words for better rankings`)
+  if (avgWordsPerSentence > 20) issues.push(`Average sentence length is ${avgWordsPerSentence} words. Aim for under 20 words per sentence`)
+  if (longSentences > 0) issues.push(`${longSentences} sentences exceed 25 words. Break them up for better readability`)
+  if (longParagraphs > 0) issues.push(`${longParagraphs} paragraphs are too long. Keep paragraphs under 150 words`)
+  if (fkClamped < 50) issues.push(`Readability score ${fkClamped}/100 is low. Simplify language and shorten sentences`)
+  if (wordCount < 300) issues.push(`Content is very short (${wordCount} words). Aim for at least 800 words for competitive topics`)
+  if (wordCount < 800) issues.push(`Content is thin (${wordCount} words). Expand to 1500+ words for better rankings`)
 
   const score = fkClamped >= 60 && avgWordsPerSentence <= 20 && longParagraphs === 0 ? 100
     : fkClamped >= 50 && avgWordsPerSentence <= 25 ? 70
@@ -228,7 +228,7 @@ export async function POST(req: NextRequest) {
     if (!content || !targetKeyword) {
       throw new AuthError(400, 'content and targetKeyword are required')
     }
-    if (content.length < 50) throw new AuthError(400, 'Content too short — paste at least 50 characters')
+    if (content.length < 50) throw new AuthError(400, 'Content too short. Paste at least 50 characters')
 
     // Run all local analyses in parallel (no AI cost)
     const [keywords, headers, meta, images, links, readability] = await Promise.all([

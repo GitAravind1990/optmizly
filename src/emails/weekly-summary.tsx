@@ -33,7 +33,7 @@ export function WeeklySummaryEmail({
   const isFree = plan === 'FREE'
 
   const subject = isActive
-    ? `Your Optmizly week — ${weekAnalyses} ${weekAnalyses === 1 ? 'analysis' : 'analyses'} run`
+    ? `Your Optmizly week: ${weekAnalyses} ${weekAnalyses === 1 ? 'analysis' : 'analyses'} run`
     : `You still have ${remaining} free ${remaining === 1 ? 'analysis' : 'analyses'} this month`
 
   return (
@@ -66,7 +66,7 @@ export function WeeklySummaryEmail({
                     Quick win for this week, {firstName}
                   </Heading>
                   <Text className="text-slate-600 text-base leading-relaxed mb-6">
-                    You haven't run any analyses this week — but you still have{' '}
+                    You haven't run any analyses this week, but you still have{' '}
                     <strong>{remaining} {remaining === 1 ? 'analysis' : 'analyses'}</strong> left this month.
                     A 30-second content score could surface something worth fixing.
                   </Text>
@@ -76,7 +76,7 @@ export function WeeklySummaryEmail({
               {/* Monthly progress */}
               <Section className="bg-slate-50 rounded-xl p-5 mb-6">
                 <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider m-0 mb-3">
-                  Monthly usage — {plan} plan
+                  Monthly usage: {plan} plan
                 </Text>
                 <Text className="text-3xl font-black text-slate-900 m-0 mb-1">
                   {monthUsed}<span className="text-lg font-normal text-slate-400">/{monthLimit}</span>
@@ -126,7 +126,7 @@ export function WeeklySummaryEmail({
             <Section className="bg-blue-50 rounded-xl border border-blue-100 px-6 py-4 mb-6">
               <Text className="text-sm text-blue-800 m-0">
                 <strong>💡 This week's tip:</strong> Run your analysis on a page that{' '}
-                <em>already gets traffic</em> — improving a B+ page to an A is faster than building a new one from zero.
+                <em>already gets traffic</em>. Improving a B+ page to an A is faster than building a new one from zero.
               </Text>
             </Section>
 

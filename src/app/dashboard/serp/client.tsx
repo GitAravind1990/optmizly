@@ -186,9 +186,9 @@ export function SerpClient() {
               <Card>
                 <h2 className="text-sm font-black mb-4">Recovery Plan</h2>
                 {[
-                  { key: 'phase1', label: 'Phase 1 — Weeks 1–4: Quick Wins', color: 'border-blue-500 bg-blue-50 text-blue-700' },
-                  { key: 'phase2', label: 'Phase 2 — Weeks 5–10: Authority', color: 'border-emerald-500 bg-emerald-50 text-emerald-700' },
-                  { key: 'phase3', label: 'Phase 3 — Weeks 11–20: Content & Links', color: 'border-purple-500 bg-purple-50 text-purple-700' },
+                  { key: 'phase1', label: 'Phase 1 (Weeks 1–4): Quick Wins', color: 'border-blue-500 bg-blue-50 text-blue-700' },
+                  { key: 'phase2', label: 'Phase 2 (Weeks 5–10): Authority', color: 'border-emerald-500 bg-emerald-50 text-emerald-700' },
+                  { key: 'phase3', label: 'Phase 3 (Weeks 11–20): Content & Links', color: 'border-purple-500 bg-purple-50 text-purple-700' },
                 ].map(ph => {
                   const items = r.action_plan?.[ph.key as 'phase1'|'phase2'|'phase3'] ?? []
                   if (!items.length) return null

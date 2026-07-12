@@ -371,7 +371,7 @@ export default function ProjectDetailPage() {
           <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
             {project.alerts.length === 0 ? (
               <div className="text-center py-12 text-slate-400 text-sm">
-                No alerts yet — run a rank check to detect changes
+                No alerts yet. Run a rank check to detect changes
               </div>
             ) : (
               <div className="divide-y divide-slate-100">

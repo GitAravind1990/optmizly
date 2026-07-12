@@ -7,11 +7,11 @@ import { HomeEmailCapture } from '@/components/home-email-capture'
 
 export const metadata: Metadata = {
   title: 'Optmizly – AI Search Optimization Platform | SEO, GEO & AEO',
-  description: 'Rank on Google and get cited by ChatGPT, Perplexity & AI Overviews — one platform for SEO, GEO & AEO. 17 AI tools, free to start.',
+  description: 'Rank on Google and get cited by ChatGPT, Perplexity & AI Overviews. One platform for SEO, GEO & AEO. 17 AI tools, free to start.',
   alternates: { canonical: '/' },
   openGraph: {
     title: 'Optmizly – AI Search Optimization Platform',
-    description: 'Rank on Google and get cited by ChatGPT, Perplexity & AI Overviews — one platform for SEO, GEO & AEO. 17 AI tools, free to start.',
+    description: 'Rank on Google and get cited by ChatGPT, Perplexity & AI Overviews. One platform for SEO, GEO & AEO. 17 AI tools, free to start.',
     url: '/',
     images: [{ url: '/opengraph-image', width: 1200, height: 628, alt: 'Optmizly – AI Search Optimization Platform' }],
   },
@@ -19,8 +19,8 @@ export const metadata: Metadata = {
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
-  sans: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
-  mono: "'Geist Mono', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace",
+  sans: "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  mono: "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace",
   blue: '#0000FF',
   blueMid: '#3B5BFF',
   cyan: '#4DEEFF',
@@ -162,7 +162,7 @@ export default function HomePage() {
         <SectionHead
           kicker="The shift"
           title="Search has changed. Traditional SEO isn't enough."
-          body="Your customers now find answers across Google, AI assistants, and answer engines. Modern brands need visibility on every surface — not just the ten blue links."
+          body="Your customers now find answers across Google, AI assistants, and answer engines. Modern brands need visibility on every surface, not just the ten blue links."
         />
         <div className="opt-check-chips" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12, marginTop: 56 }}>
           {[
@@ -201,7 +201,7 @@ export default function HomePage() {
           <SectionHead
             kicker="The platform"
             title="One platform for the future of search."
-            body="SEO, GEO, and AEO working together — so you show up whether your customer types into Google or asks an AI."
+            body="SEO, GEO, and AEO working together, so you show up whether your customer types into Google or asks an AI."
           />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginTop: 60 }}>
             {[
@@ -291,7 +291,7 @@ export default function HomePage() {
             Future-proof your search strategy.
           </h2>
           <p style={{ fontSize: 19, color: 'rgba(255,255,255,0.72)', maxWidth: 540, margin: '0 auto 38px', lineHeight: 1.5 }}>
-            Optimize for Google and AI search platforms with Optmizly — the AI Search Optimization Platform.
+            Optimize for Google and AI search platforms with Optmizly, the AI Search Optimization Platform.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
             <Link href="/signup" style={{
@@ -329,7 +329,7 @@ export default function HomePage() {
                 </span>
               </div>
               <p style={{ fontFamily: T.sans, fontSize: 14, color: T.muted, lineHeight: 1.6, margin: 0 }}>
-                The AI Search Optimization Platform. Rank everywhere search happens — Google, AI overviews, and answer engines.
+                The AI Search Optimization Platform. Rank everywhere search happens: Google, AI overviews, and answer engines.
               </p>
             </div>
 
