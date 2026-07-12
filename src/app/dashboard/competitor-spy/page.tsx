@@ -25,6 +25,7 @@ type Analysis = {
   gapKeywords: string
   contentOpps: string
   aiInsights: string | null
+  dataQuality: string
   createdAt: string
 }
 
@@ -65,14 +66,16 @@ function AnalysisCard({ analysis, onDelete }: { analysis: Analysis; onDelete: ()
       {/* Metrics grid */}
       <div className="grid grid-cols-4 gap-3 mb-4">
         {[
-          { label: 'Monthly Traffic', value: analysis.estimatedTraffic.toLocaleString(), bg: 'bg-orange-50', text: 'text-orange-600' },
-          { label: 'Domain Authority', value: analysis.domainAuthority.toString(), bg: 'bg-blue-50', text: 'text-blue-600' },
-          { label: 'Backlinks', value: analysis.backlinksTotal.toLocaleString(), bg: 'bg-green-50', text: 'text-green-600' },
-          { label: 'Keywords Ranked', value: analysis.keywordCount.toLocaleString(), bg: 'bg-purple-50', text: 'text-purple-600' },
+          { label: 'Monthly Traffic', value: analysis.estimatedTraffic.toLocaleString(), bg: 'bg-orange-50', text: 'text-orange-600', real: false },
+          { label: 'Domain Authority', value: analysis.domainAuthority.toString(), bg: 'bg-blue-50', text: 'text-blue-600', real: analysis.dataQuality === 'partial-real' },
+          { label: 'Backlinks', value: analysis.backlinksTotal.toLocaleString(), bg: 'bg-green-50', text: 'text-green-600', real: false },
+          { label: 'Keywords Ranked', value: analysis.keywordCount.toLocaleString(), bg: 'bg-purple-50', text: 'text-purple-600', real: false },
         ].map(m => (
           <div key={m.label} className={`${m.bg} rounded-lg p-3 text-center`}>
             <div className={`text-xl font-black ${m.text}`}>{m.value}</div>
-            <div className="text-[10px] text-slate-500 font-medium mt-0.5">{m.label}</div>
+            <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+              {m.label}{!m.real && <span className="text-slate-400"> (est.)</span>}
+            </div>
           </div>
         ))}
       </div>

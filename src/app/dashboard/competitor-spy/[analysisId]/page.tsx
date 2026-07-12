@@ -30,6 +30,7 @@ type Analysis = {
   missingEntities: string[]
   contentOpps: ContentOpp[]
   aiInsights: AIInsights | null
+  dataQuality: string
   lastAnalyzedAt: string
 }
 
@@ -124,20 +125,28 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
           <div className="bg-white border border-slate-200 rounded-xl p-5">
             <h2 className="text-sm font-bold text-slate-800 mb-3">Quick Stats</h2>
             {[
-              ['Monthly Traffic', analysis.estimatedTraffic.toLocaleString()],
-              ['Domain Authority', `${analysis.domainAuthority}/100`],
-              ['Page Authority', `${analysis.pageAuthority}/100`],
-              ['Total Backlinks', analysis.backlinksTotal.toLocaleString()],
-              ['New Backlinks (30d)', `+${analysis.backlinksNew}`],
-              ['Keywords Ranked', analysis.keywordCount.toLocaleString()],
-              ['Content Pages', analysis.contentCount.toString()],
-              ['Avg Content Length', `${analysis.avgContentLength.toLocaleString()} words`],
-            ].map(([label, value]) => (
-              <div key={label} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
+              ['Monthly Traffic', analysis.estimatedTraffic.toLocaleString(), true],
+              ['Domain Authority', `${analysis.domainAuthority}/100`, analysis.dataQuality === 'partial-real'],
+              ['Page Authority', `${analysis.pageAuthority}/100`, analysis.dataQuality === 'partial-real'],
+              ['Total Backlinks', analysis.backlinksTotal.toLocaleString(), true],
+              ['New Backlinks (30d)', `+${analysis.backlinksNew}`, true],
+              ['Keywords Ranked', analysis.keywordCount.toLocaleString(), true],
+              ['Content Pages', analysis.contentCount.toString(), true],
+              ['Avg Content Length', `${analysis.avgContentLength.toLocaleString()} words`, true],
+            ].map(([label, value, estimated]) => (
+              <div key={label as string} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
                 <span className="text-xs text-slate-500">{label}</span>
-                <span className="text-xs font-bold text-slate-800">{value}</span>
+                <span className="text-xs font-bold text-slate-800">
+                  {value}
+                  {!estimated && <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}
+                </span>
               </div>
             ))}
+            <p className="text-[10px] text-slate-400 mt-2">
+              {analysis.dataQuality === 'partial-real'
+                ? 'Domain/Page Authority sourced from Open PageRank. Traffic, backlinks, and keyword data are estimated.'
+                : 'All metrics on this analysis are estimated, not measured.'}
+            </p>
           </div>
 
           {/* Top keywords */}

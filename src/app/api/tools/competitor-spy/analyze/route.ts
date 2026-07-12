@@ -6,6 +6,7 @@ import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
+import { fetchOPRScore } from '@/lib/openpagerank'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -166,6 +167,23 @@ export async function POST(req: NextRequest) {
 
     const data = generateMockData(domainName)
 
+    // Real authority signal from OpenPageRank, replacing the fabricated Domain/Page
+    // Authority numbers when available. OPR only scores at domain granularity (0-10),
+    // so both fields get the same real value rather than inventing a separate "page"
+    // score. Falls back to the estimated figures already in `data` if OPR fails or
+    // hasn't indexed the domain — never blocks the analysis.
+    const opr = await fetchOPRScore(domainName).catch(() => null)
+    // The batch endpoint returns 200 for the request itself even when a specific
+    // domain isn't in OPR's index (per-domain status_code 404, page_rank_decimal 0) —
+    // check the per-domain status so an unindexed domain falls back to the estimate
+    // instead of reporting a false, misleadingly-confident "0/100" authority score.
+    const authorityIsReal = !!opr && opr.status_code === 200 && typeof opr.page_rank_decimal === 'number'
+    if (authorityIsReal) {
+      const realAuthority = Math.round(Math.min(10, Math.max(0, opr!.page_rank_decimal)) * 10)
+      data.da = realAuthority
+      data.pa = realAuthority
+    }
+
     // AI insights
     let aiInsights: AIInsights = {}
     try {
@@ -222,7 +240,9 @@ Return ONLY this JSON object:
         missingEntities: JSON.stringify(data.missingEntities),
         contentOpps: JSON.stringify(data.contentOpps),
         aiInsights: JSON.stringify(aiInsights),
-        dataQuality: 'high',
+        // Authority is real (OpenPageRank) when available; traffic, keywords, and
+        // backlinks are still estimated pending a real SERP/backlink data source.
+        dataQuality: authorityIsReal ? 'partial-real' : 'estimated',
         lastAnalyzedAt: new Date(),
       },
     })
