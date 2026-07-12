@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
+import { getOrganicRank, isDataForSEOConfigured } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -17,30 +18,18 @@ async function getProUser() {
   return user
 }
 
-// Seeded rank simulation — consistent per domain+keyword, drifts slowly over time
-function simulateRank(domain: string, keyword: string, daysAgo = 0): number | null {
-  const seed = simpleHash(domain + '::' + keyword)
-  // Base rank 1-100, some keywords not ranking (return null ~15% of time)
-  if (seed % 7 === 0) return null
-  const baseRank = (seed % 95) + 1
-
-  // Daily drift: ±3 positions per day, seeded so it's deterministic
-  const drift = Math.round(((simpleHash(domain + keyword + String(daysAgo)) % 7) - 3))
-  const rank = Math.max(1, Math.min(100, baseRank + drift))
-  return rank
-}
-
-function simpleHash(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0
-  return Math.abs(h)
-}
-
-function rankUrl(domain: string, keyword: string): string {
-  const slug = keyword.toLowerCase().replace(/\s+/g, '-')
-  const paths = ['/', '/blog/' + slug, '/' + slug, '/guide/' + slug, '/resources/' + slug]
-  const idx = simpleHash(domain + keyword) % paths.length
-  return 'https://' + domain + paths[idx]
+// Closest real history point at or before N days ago — real check-ins don't land on
+// exact daily boundaries (skipped runs, off-schedule manual checks), so "on or before"
+// is the standard rank-tracker definition of "the rank N days ago."
+async function rankNDaysAgo(keywordId: string, daysAgo: number): Promise<number | null> {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - daysAgo)
+  cutoff.setHours(23, 59, 59, 999)
+  const row = await prisma.rankHistory.findFirst({
+    where: { keywordId, checkedDate: { lte: cutoff } },
+    orderBy: { checkedDate: 'desc' },
+  })
+  return row?.rank ?? null
 }
 
 function detectAlerts(
@@ -81,6 +70,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
     clerkId = user.clerkId
     const { projectId } = await params
 
+    if (!isDataForSEOConfigured()) {
+      throw new AuthError(503, 'Rank checking is temporarily unavailable. Please try again later.')
+    }
+
     const project = await prisma.rankTrackingProject.findUnique({
       where: { id: projectId },
       include: { keywords: true },
@@ -91,11 +84,29 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
     today.setHours(0, 0, 0, 0)
 
     const alerts: { projectId: string; keyword: string; alertType: string; oldRank: number | null; newRank: number | null; message: string }[] = []
+    let skipped = 0
 
-    for (const kw of project.keywords) {
-      const newRank = simulateRank(project.domain, kw.keyword, 0)
-      const rank7dAgo = simulateRank(project.domain, kw.keyword, 7)
-      const rank30dAgo = simulateRank(project.domain, kw.keyword, 30)
+    // Real per-keyword SERP lookups run concurrently — each is an independent paid
+    // DataForSEO call, well within its 2000/min rate limit at our scale.
+    const results = await Promise.allSettled(
+      project.keywords.map(kw => getOrganicRank(kw.keyword, project.domain, project.targetLocation, project.deviceType))
+    )
+
+    for (let i = 0; i < project.keywords.length; i++) {
+      const kw = project.keywords[i]
+      const result = results[i].status === 'fulfilled' ? (results[i] as PromiseFulfilledResult<Awaited<ReturnType<typeof getOrganicRank>>>).value : null
+
+      // null = the lookup itself failed (network/auth/parse) — skip this keyword this
+      // run rather than recording a false "lost ranking" over a transient API hiccup.
+      if (result === null) { skipped++; continue }
+
+      const newRank = result.found ? result.rank : null
+      const newUrl = result.found ? result.url : null
+
+      const [rank7dAgo, rank30dAgo] = await Promise.all([
+        rankNDaysAgo(kw.id, 7),
+        rankNDaysAgo(kw.id, 30),
+      ])
 
       const rankChange7d = (rank7dAgo !== null && newRank !== null) ? rank7dAgo - newRank : null
       const rankChange30d = (rank30dAgo !== null && newRank !== null) ? rank30dAgo - newRank : null
@@ -111,7 +122,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
         where: { id: kw.id },
         data: {
           currentRank: newRank,
-          currentUrl: newRank !== null ? rankUrl(project.domain, kw.keyword) : null,
+          currentUrl: newUrl,
           rankChange7d,
           rankChange30d,
           rankTrendPercent,
@@ -123,8 +134,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
       try {
         await prisma.rankHistory.upsert({
           where: { keywordId_checkedDate: { keywordId: kw.id, checkedDate: today } },
-          create: { projectId, keywordId: kw.id, rank: newRank, url: newRank ? rankUrl(project.domain, kw.keyword) : null, checkedDate: today },
-          update: { rank: newRank, url: newRank ? rankUrl(project.domain, kw.keyword) : null },
+          create: { projectId, keywordId: kw.id, rank: newRank, url: newUrl, checkedDate: today },
+          update: { rank: newRank, url: newUrl },
         })
       } catch {
         // skip duplicate
@@ -141,32 +152,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
       data: { lastUpdatedAt: new Date() },
     })
 
-    // Backfill 30 days of history for new projects with no history
-    const historyCount = await prisma.rankHistory.count({ where: { projectId } })
-    if (historyCount <= project.keywords.length) {
-      const backfillData: { projectId: string; keywordId: string; rank: number | null; checkedDate: Date }[] = []
-      for (const kw of project.keywords) {
-        for (let d = 30; d >= 1; d--) {
-          const date = new Date()
-          date.setDate(date.getDate() - d)
-          date.setHours(0, 0, 0, 0)
-          const rank = simulateRank(project.domain, kw.keyword, d)
-          backfillData.push({ projectId, keywordId: kw.id, rank, checkedDate: date })
-        }
-      }
-      // Insert ignoring conflicts
-      for (const entry of backfillData) {
-        try {
-          await prisma.rankHistory.create({ data: entry })
-        } catch {
-          // skip duplicate
-        }
-      }
-    }
-
     return apiSuccess({
       data: {
-        checked: project.keywords.length,
+        checked: project.keywords.length - skipped,
+        skipped,
         alerts: alerts.length,
         updatedAt: new Date(),
       },

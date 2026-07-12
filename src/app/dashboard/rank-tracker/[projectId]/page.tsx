@@ -139,7 +139,8 @@ export default function ProjectDetailPage() {
     setCheckMsg('')
     const r = await fetch(`/api/tools/rank-tracker/${projectId}/check`, { method: 'POST' })
     const d = await r.json()
-    if (d.data) setCheckMsg(`Updated ${d.data.checked} keywords${d.data.alerts > 0 ? `, ${d.data.alerts} new alert${d.data.alerts > 1 ? 's' : ''}` : ''}`)
+    if (d.data) setCheckMsg(`Updated ${d.data.checked} keywords${d.data.alerts > 0 ? `, ${d.data.alerts} new alert${d.data.alerts > 1 ? 's' : ''}` : ''}${d.data.skipped > 0 ? ` (${d.data.skipped} couldn't be checked, will retry next time)` : ''}`)
+    else setCheckMsg(typeof d.error === 'string' ? d.error : 'Could not check rankings right now.')
     await load()
     setChecking(false)
   }

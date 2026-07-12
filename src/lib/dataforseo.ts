@@ -1,5 +1,9 @@
 const DFS_BASE = 'https://api.dataforseo.com'
 
+export function isDataForSEOConfigured(): boolean {
+  return !!process.env.DATAFORSEO_LOGIN && !!process.env.DATAFORSEO_PASSWORD
+}
+
 function getAuth(): string {
   const login = process.env.DATAFORSEO_LOGIN
   const password = process.env.DATAFORSEO_PASSWORD
@@ -24,6 +28,83 @@ async function dfsPost<T>(path: string, body: unknown): Promise<T | null> {
   } catch {
     return null
   }
+}
+
+// ─── Organic rank (rank tracker) ──────────────────────────────────────────────
+
+// Google Ads geotargeting criteria IDs, which DataForSEO's location_code reuses.
+// Must match the country options offered in the Rank Tracker project form.
+const ORGANIC_LOCATION_CODES: Record<string, number> = {
+  US: 2840, GB: 2826, AU: 2036, CA: 2124, IN: 2356,
+  DE: 2276, FR: 2250, SG: 2702, NZ: 2554,
+}
+
+const ORGANIC_LANGUAGE_CODES: Record<string, string> = {
+  US: 'en', GB: 'en', AU: 'en', CA: 'en', IN: 'en',
+  DE: 'de', FR: 'fr', SG: 'en', NZ: 'en',
+}
+
+type OrganicRankResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      items: Array<{
+        type: string
+        rank_absolute: number
+        domain: string
+        url: string
+      }>
+    }>
+  }>
+}
+
+export type OrganicRankResult = {
+  found: boolean
+  rank: number | null
+  url: string | null
+}
+
+function normalizeHost(u: string): string {
+  return u.replace(/^https?:\/\//, '').replace(/^www\./, '').toLowerCase().split('/')[0]
+}
+
+/**
+ * Real Google organic rank for `domain` on `keyword` (top 100 results). Returns null
+ * (not `{found:false}`) when the lookup itself couldn't be completed — missing
+ * credentials, network failure, non-200 HTTP, or a task-level DataForSEO error — so
+ * callers can tell "couldn't check this time" apart from "confirmed not ranking" and
+ * avoid recording a false rank-lost alert over a transient API hiccup.
+ */
+export async function getOrganicRank(
+  keyword: string,
+  domain: string,
+  targetLocation: string,
+  deviceType: string
+): Promise<OrganicRankResult | null> {
+  const data = await dfsPost<OrganicRankResponse>('/v3/serp/google/organic/live/advanced', [
+    {
+      keyword,
+      location_code: ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US,
+      language_code: ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en',
+      device: deviceType === 'mobile' ? 'mobile' : 'desktop',
+      depth: 100,
+    },
+  ])
+
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return null
+
+  const targetHost = normalizeHost(domain)
+  const items = task.result?.[0]?.items ?? []
+  const match = items.find(i =>
+    i.type === 'organic' &&
+    typeof i.rank_absolute === 'number' &&
+    typeof i.domain === 'string' &&
+    (normalizeHost(i.domain) === targetHost || normalizeHost(i.domain).endsWith(`.${targetHost}`))
+  )
+
+  if (!match) return { found: false, rank: null, url: null }
+  return { found: true, rank: match.rank_absolute, url: match.url }
 }
 
 // ─── Local rank (geogrid) ─────────────────────────────────────────────────────
