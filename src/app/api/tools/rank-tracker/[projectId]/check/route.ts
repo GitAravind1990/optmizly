@@ -4,7 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { getOrganicRank, isDataForSEOConfigured } from '@/lib/dataforseo'
+import { getOrganicRank, isDataForSEOConfigured, settledOrNull } from '@/lib/dataforseo'
+import { rankNDaysAgo } from '@/lib/rank-history'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -16,20 +17,6 @@ async function getProUser() {
   if (!user) throw new AuthError(401, 'User not found')
   if (user.plan === 'FREE') throw new AuthError(403, 'PRO or AGENCY plan required')
   return user
-}
-
-// Closest real history point at or before N days ago — real check-ins don't land on
-// exact daily boundaries (skipped runs, off-schedule manual checks), so "on or before"
-// is the standard rank-tracker definition of "the rank N days ago."
-async function rankNDaysAgo(keywordId: string, daysAgo: number): Promise<number | null> {
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - daysAgo)
-  cutoff.setHours(23, 59, 59, 999)
-  const row = await prisma.rankHistory.findFirst({
-    where: { keywordId, checkedDate: { lte: cutoff } },
-    orderBy: { checkedDate: 'desc' },
-  })
-  return row?.rank ?? null
 }
 
 function detectAlerts(
@@ -94,7 +81,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
 
     for (let i = 0; i < project.keywords.length; i++) {
       const kw = project.keywords[i]
-      const result = results[i].status === 'fulfilled' ? (results[i] as PromiseFulfilledResult<Awaited<ReturnType<typeof getOrganicRank>>>).value : null
+      const result = settledOrNull(results[i])
 
       // null = the lookup itself failed (network/auth/parse) — skip this keyword this
       // run rather than recording a false "lost ranking" over a transient API hiccup.
@@ -104,8 +91,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
       const newUrl = result.found ? result.url : null
 
       const [rank7dAgo, rank30dAgo] = await Promise.all([
-        rankNDaysAgo(kw.id, 7),
-        rankNDaysAgo(kw.id, 30),
+        rankNDaysAgo(prisma.rankHistory, kw.id, 7),
+        rankNDaysAgo(prisma.rankHistory, kw.id, 30),
       ])
 
       const rankChange7d = (rank7dAgo !== null && newRank !== null) ? rank7dAgo - newRank : null
@@ -115,7 +102,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
         : null
 
       // Detect alerts vs previous rank
-      const alert = detectAlerts(kw.keyword, kw.currentRank ?? null, newRank)
+      const alert = detectAlerts(kw.keyword, kw.currentRank, newRank)
       if (alert) alerts.push({ projectId, keyword: kw.keyword, alertType: alert.alertType, oldRank: alert.oldRank, newRank: alert.newRank, message: alert.message })
 
       await prisma.rankTrackingKeyword.update({
@@ -126,7 +113,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
           rankChange7d,
           rankChange30d,
           rankTrendPercent,
-          lastRanked: new Date(),
+          // Only advance "last ranked" when a rank was actually observed this run —
+          // stamping today's date while the keyword is confirmed not ranking would
+          // misrepresent when it last really ranked (shown in the CSV export).
+          ...(newRank !== null ? { lastRanked: new Date() } : {}),
         },
       })
 

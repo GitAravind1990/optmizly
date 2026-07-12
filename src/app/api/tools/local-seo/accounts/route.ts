@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { resolveBusinessCoordinates } from '@/lib/dataforseo'
+import { resolveBusinessCoordinates, settledOrNull } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 
@@ -61,8 +61,24 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    for (const loc of locations) {
-      if (!loc.name || !loc.address || !loc.city || !loc.state || !loc.phone) continue
+    const validLocations = locations.filter(
+      (loc: { name?: string; address?: string; city?: string; state?: string; phone?: string }) =>
+        loc.name && loc.address && loc.city && loc.state && loc.phone
+    )
+
+    // Real rating/review count from each business's actual Google Business Profile,
+    // resolved the same way check-rankings resolves coordinates — run concurrently
+    // since each location's lookup is independent. Never blocks account creation;
+    // a failed/not-found lookup just leaves that location's rating/reviews null
+    // (shown as "—" in the UI).
+    const profileResults = await Promise.allSettled(
+      validLocations.map((loc: { name: string; city: string; state: string }) =>
+        resolveBusinessCoordinates(loc.name, loc.city, loc.state))
+    )
+
+    for (let i = 0; i < validLocations.length; i++) {
+      const loc = validLocations[i]
+      const profile = settledOrNull(profileResults[i])
 
       const industry = (loc.industry ?? 'business').toLowerCase()
 
@@ -72,12 +88,6 @@ export async function POST(req: NextRequest) {
         `${industry} near ${loc.city}`,
         `best ${industry} ${loc.city}`,
       ])
-
-      // Real rating/review count from the business's actual Google Business Profile,
-      // resolved the same way check-rankings resolves coordinates. Never blocks
-      // account creation — leaves these null (shown as "—" in the UI) if the lookup
-      // fails or the business isn't found under this name/city.
-      const profile = await resolveBusinessCoordinates(loc.name, loc.city, loc.state).catch(() => null)
 
       const location = await prisma.localSEOLocation.create({
         data: {

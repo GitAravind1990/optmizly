@@ -4,6 +4,13 @@ export function isDataForSEOConfigured(): boolean {
   return !!process.env.DATAFORSEO_LOGIN && !!process.env.DATAFORSEO_PASSWORD
 }
 
+/** Unwraps one Promise.allSettled result, treating a rejection the same as the
+ *  DataForSEO functions' own null-on-failure contract — a rejected lookup and a
+ *  `null` return both mean "couldn't check this one," so callers handle both alike. */
+export function settledOrNull<T>(result: PromiseSettledResult<T>): T | null {
+  return result.status === 'fulfilled' ? result.value : null
+}
+
 function getAuth(): string {
   const login = process.env.DATAFORSEO_LOGIN
   const password = process.env.DATAFORSEO_PASSWORD
@@ -339,6 +346,9 @@ export async function getReviewVelocity(placeId: string): Promise<ReviewResult |
       await sleep(REVIEWS_POLL_INTERVAL_MS)
       continue
     }
+    // A genuinely review-free business is a confirmed empty result, not a failed
+    // lookup — surfacing it as "could not fetch review data" would be misleading.
+    if (task?.status_code === DFS_NO_RESULTS) return { totalReviews: 0, rating: 0, reviews: [] }
     if (!task || task.status_code !== 20000) return null
 
     const result = task.result?.[0]

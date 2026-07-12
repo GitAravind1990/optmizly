@@ -4,7 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { getLocalPackRank, isDataForSEOConfigured, resolveBusinessCoordinates } from '@/lib/dataforseo'
+import { getLocalPackRank, isDataForSEOConfigured, resolveBusinessCoordinates, settledOrNull } from '@/lib/dataforseo'
+import { rankNDaysAgo } from '@/lib/rank-history'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -16,19 +17,6 @@ async function getAgencyUser() {
   if (!user) throw new AuthError(401, 'User not found')
   if (user.plan !== 'AGENCY') throw new AuthError(403, 'AGENCY plan required')
   return user
-}
-
-// Closest real history point at or before N days ago — real check-ins don't land on
-// exact daily boundaries (skipped runs, off-schedule manual checks).
-async function rankNDaysAgo(keywordId: string, daysAgo: number): Promise<number | null> {
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - daysAgo)
-  cutoff.setHours(23, 59, 59, 999)
-  const row = await prisma.localRankHistory.findFirst({
-    where: { keywordId, checkedDate: { lte: cutoff } },
-    orderBy: { checkedDate: 'desc' },
-  })
-  return row?.rank ?? null
 }
 
 export async function POST(req: NextRequest) {
@@ -73,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     for (let i = 0; i < location.keywords.length; i++) {
       const kw = location.keywords[i]
-      const result = results[i].status === 'fulfilled' ? (results[i] as PromiseFulfilledResult<Awaited<ReturnType<typeof getLocalPackRank>>>).value : null
+      const result = settledOrNull(results[i])
 
       // null = the lookup itself failed (network/auth/parse) — skip this keyword this
       // run rather than recording a false ranking-drop task over a transient API hiccup.
@@ -82,13 +70,13 @@ export async function POST(req: NextRequest) {
       const newRank = result.found ? result.rank : null
 
       const [rank7dAgo, rank30dAgo] = await Promise.all([
-        rankNDaysAgo(kw.id, 7),
-        rankNDaysAgo(kw.id, 30),
+        rankNDaysAgo(prisma.localRankHistory, kw.id, 7),
+        rankNDaysAgo(prisma.localRankHistory, kw.id, 30),
       ])
       const change7d = (rank7dAgo !== null && newRank !== null) ? rank7dAgo - newRank : null
       const change30d = (rank30dAgo !== null && newRank !== null) ? rank30dAgo - newRank : null
 
-      updates.push({ keyword: kw.keyword, old: kw.currentRank ?? null, new: newRank })
+      updates.push({ keyword: kw.keyword, old: kw.currentRank, new: newRank })
 
       if (kw.currentRank !== null && newRank === null) {
         newTasks.push({
