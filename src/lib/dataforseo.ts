@@ -273,6 +273,62 @@ export async function resolveBusinessCoordinates(
   }
 }
 
+// ─── Backlinks summary ─────────────────────────────────────────────────────────
+
+type BacklinksSummaryResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      backlinks?: number
+      referring_domains?: number
+    }> | null
+  }>
+}
+
+export interface BacklinksSummary {
+  totalBacklinks: number
+  referringDomains: number
+}
+
+/** Real backlink profile summary for a domain — live (synchronous), no polling needed. */
+export async function getBacklinksSummary(domain: string): Promise<BacklinksSummary | null> {
+  const data = await dfsPost<BacklinksSummaryResponse>('/v3/backlinks/summary/live', [
+    { target: domain, internal_list_limit: 10 },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return null
+  const result = task.result?.[0]
+  if (!result) return null
+  return {
+    totalBacklinks: result.backlinks ?? 0,
+    referringDomains: result.referring_domains ?? 0,
+  }
+}
+
+// ─── Traffic estimate ──────────────────────────────────────────────────────────
+
+type TrafficEstimateResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      items?: Array<{ target: string; metrics?: { organic?: { etv?: number } } }>
+    }> | null
+  }>
+}
+
+/** Real estimated monthly organic traffic (US, Google) for a domain — a genuine zero
+ *  (no ranking keywords) is a valid result, distinct from a failed lookup (null). */
+export async function getTrafficEstimate(domain: string): Promise<number | null> {
+  const data = await dfsPost<TrafficEstimateResponse>('/v3/dataforseo_labs/google/bulk_traffic_estimation/live', [
+    { targets: [domain], location_code: 2840, language_code: 'en' },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return null
+  const item = task.result?.[0]?.items?.[0]
+  if (!item) return null
+  return Math.round(item.metrics?.organic?.etv ?? 0)
+}
+
 // ─── Review velocity ──────────────────────────────────────────────────────────
 
 // Google Reviews has no synchronous "live" endpoint — only the async task_post/

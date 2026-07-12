@@ -89,13 +89,14 @@ model ClientReport {
   year  Int
 
   keywordRankings String @db.Text
-  trafficChange   Int
-  backlinksAdded  Int
+  trafficChange   Int?
+  trafficCurrent  Int?
+  backlinksAdded  Int?
   topPerformers   String @db.Text
 
-  domainAuthority Float @default(45)
-  pageAuthority   Float @default(52)
-  backlinksTotal  Int   @default(500)
+  domainAuthority Float?
+  pageAuthority   Float?
+  backlinksTotal  Int?
 
   reportHtml   String    @db.Text
   reportPdfUrl String?

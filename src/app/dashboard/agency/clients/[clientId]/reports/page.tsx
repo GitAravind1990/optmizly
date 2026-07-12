@@ -7,8 +7,8 @@ type Report = {
   id: string
   month: number
   year: number
-  trafficChange: number
-  backlinksAdded: number
+  trafficChange: number | null
+  backlinksAdded: number | null
   emailSent: boolean
   emailSentAt: string | null
   clientViewed: boolean
@@ -156,7 +156,7 @@ export default function ClientReportsPage({ params }: { params: Promise<{ client
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {reports.map(report => {
-                  const trafficPos = report.trafficChange >= 0
+                  const trafficPos = report.trafficChange !== null && report.trafficChange >= 0
                   return (
                     <tr key={report.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-5 py-4">
@@ -164,12 +164,14 @@ export default function ClientReportsPage({ params }: { params: Promise<{ client
                         <div className="text-xs text-slate-400 mt-0.5">Generated {new Date(report.generatedAt).toLocaleDateString()}</div>
                       </td>
                       <td className="px-5 py-4">
-                        <span className={`text-sm font-bold ${trafficPos ? 'text-green-600' : 'text-red-500'}`}>
-                          {trafficPos ? '+' : ''}{report.trafficChange}%
+                        <span className={`text-sm font-bold ${report.trafficChange === null ? 'text-slate-400' : trafficPos ? 'text-green-600' : 'text-red-500'}`}>
+                          {report.trafficChange === null ? '—' : `${trafficPos ? '+' : ''}${report.trafficChange}%`}
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        <span className="text-sm font-semibold text-slate-700">+{report.backlinksAdded}</span>
+                        <span className="text-sm font-semibold text-slate-700">
+                          {report.backlinksAdded === null ? '—' : `+${report.backlinksAdded}`}
+                        </span>
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex gap-1.5 flex-wrap">

@@ -9,9 +9,9 @@ interface AgencyReportProps {
   monthName: string
   year: number
   reportUrl: string
-  trafficChange: number
-  backlinksAdded: number
-  domainAuthority: number
+  trafficChange: number | null
+  backlinksAdded: number | null
+  domainAuthority: number | null
 }
 
 export function AgencyReportEmail({
@@ -24,7 +24,7 @@ export function AgencyReportEmail({
   backlinksAdded,
   domainAuthority,
 }: AgencyReportProps) {
-  const trafficUp = trafficChange >= 0
+  const trafficUp = trafficChange !== null && trafficChange >= 0
 
   return (
     <Html>
@@ -48,16 +48,16 @@ export function AgencyReportEmail({
               </Text>
 
               <Section className="bg-slate-50 rounded-xl p-5 mb-6">
-                <Text className={`text-3xl font-black m-0 mb-1 ${trafficUp ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {trafficUp ? '+' : ''}{trafficChange}%
+                <Text className={`text-3xl font-black m-0 mb-1 ${trafficChange === null ? 'text-slate-500' : trafficUp ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {trafficChange === null ? '—' : `${trafficUp ? '+' : ''}${trafficChange}%`}
                 </Text>
-                <Text className="text-sm text-slate-500 m-0 mb-3">traffic change</Text>
+                <Text className="text-sm text-slate-500 m-0 mb-3">{trafficChange === null ? 'traffic change (first report)' : 'traffic change'}</Text>
                 <Hr className="border-slate-200 my-3" />
                 <Text className="text-sm text-slate-700 m-0 mb-1">
-                  <strong>{backlinksAdded}</strong> new backlinks added
+                  <strong>{backlinksAdded === null ? '—' : backlinksAdded}</strong> new backlinks added
                 </Text>
                 <Text className="text-sm text-slate-700 m-0">
-                  Domain authority: <strong>{domainAuthority}</strong>
+                  Domain authority: <strong>{domainAuthority ?? '—'}</strong>
                 </Text>
               </Section>
 

@@ -230,9 +230,9 @@ export async function sendAgencyReportEmail(
     monthName: string
     year: number
     reportUrl: string
-    trafficChange: number
-    backlinksAdded: number
-    domainAuthority: number
+    trafficChange: number | null
+    backlinksAdded: number | null
+    domainAuthority: number | null
   }
 ) {
   if (!resend) {

@@ -1,10 +1,13 @@
-﻿import { NextRequest } from 'next/server'
+import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { callClaude, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError } from '@/lib/auth'
+import { fetchOPRScore } from '@/lib/openpagerank'
+import { getBacklinksSummary, getOrganicRank, getTrafficEstimate, isDataForSEOConfigured, settledOrNull } from '@/lib/dataforseo'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -19,51 +22,8 @@ async function getAgencyUser() {
   return user
 }
 
-function strHash(s: string): number {
-  let h = 2166136261
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i)
-    h = Math.imul(h, 16777619) >>> 0
-  }
-  return h
-}
-
-function seededRng(seed: number) {
-  let s = seed >>> 0
-  return () => {
-    s = Math.imul(s ^ (s >>> 15), s | 1)
-    s ^= s + Math.imul(s ^ (s >>> 7), s | 61)
-    return ((s ^ (s >>> 14)) >>> 0) / 0xffffffff
-  }
-}
-
-function generateMockRankings(keywords: string[], rng: () => number) {
-  const data: Record<string, number> = {}
-  for (const kw of keywords) {
-    data[kw] = Math.floor(rng() * 50) + 1
-  }
-  const sorted = Object.entries(data).sort((a, b) => a[1] - b[1])
-  const avgPosition = keywords.length
-    ? Math.round(Object.values(data).reduce((s, v) => s + v, 0) / keywords.length)
-    : 0
-  return {
-    data,
-    avgPosition,
-    topKeywords: sorted.slice(0, 5).map(([keyword, position]) => ({ keyword, position })),
-  }
-}
-
-function generateMockTraffic(rng: () => number) {
-  const current = Math.floor(rng() * 8000) + 2000
-  const change = Math.floor(rng() * 41) - 20
-  return { current, previous: Math.round(current / (1 + change / 100)), change }
-}
-
-function generateMockBacklinks(rng: () => number) {
-  return {
-    total: Math.floor(rng() * 4500) + 500,
-    new: Math.floor(rng() * 46) + 5,
-  }
+function cleanDomain(input: string): string {
+  return input.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase().split('/')[0]
 }
 
 const MONTH_NAMES = [
@@ -75,22 +35,27 @@ function generateReportHtml(data: {
   client: { name: string; website: string; brandColor: string }
   month: number
   year: number
-  rankings: ReturnType<typeof generateMockRankings>
-  traffic: ReturnType<typeof generateMockTraffic>
-  backlinks: ReturnType<typeof generateMockBacklinks>
+  avgPosition: number | null
+  topKeywords: Array<{ keyword: string; position: number }>
+  trafficCurrent: number | null
+  trafficChange: number | null
+  backlinksTotal: number | null
+  backlinksAdded: number | null
   aiSummary: string
-  domainAuthority: number
-  pageAuthority: number
+  domainAuthority: number | null
 }): string {
-  const { client, month, year, rankings, traffic, backlinks, aiSummary } = data
+  const { client, month, year, avgPosition, topKeywords, trafficCurrent, trafficChange, backlinksTotal, backlinksAdded, aiSummary, domainAuthority } = data
   const monthName = MONTH_NAMES[month - 1]
-  const trafficColor = traffic.change >= 0 ? '#22c55e' : '#ef4444'
-  const trafficSign = traffic.change >= 0 ? '+' : ''
   const brand = client.brandColor ?? '#6366f1'
 
-  const topKwRows = rankings.topKeywords
-    .map(
-      ({ keyword, position }) => `
+  const trafficColor = trafficChange === null ? '#64748b' : trafficChange >= 0 ? '#22c55e' : '#ef4444'
+  const trafficChangeText = trafficChange === null ? '—' : `${trafficChange >= 0 ? '+' : ''}${trafficChange}%`
+  const backlinksAddedText = backlinksAdded === null ? '—' : `${backlinksAdded >= 0 ? '+' : ''}${backlinksAdded}`
+
+  const topKwRows = topKeywords.length
+    ? topKeywords
+        .map(
+          ({ keyword, position }) => `
         <tr style="border-bottom:1px solid #f1f5f9">
           <td style="padding:10px 16px;font-size:14px;color:#334155">${keyword}</td>
           <td style="padding:10px 16px;font-size:14px;text-align:center">
@@ -99,8 +64,9 @@ function generateReportHtml(data: {
               padding:2px 10px;border-radius:9999px;font-weight:700;font-size:13px">#${position}</span>
           </td>
         </tr>`
-    )
-    .join('')
+        )
+        .join('')
+    : `<tr><td colspan="2" style="padding:16px;font-size:13px;color:#94a3b8;text-align:center">No tracked keywords ranked in the top 100 this period</td></tr>`
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -128,19 +94,19 @@ function generateReportHtml(data: {
     <!-- Metrics grid -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#e2e8f0;margin:0">
       <div style="background:#fff;padding:24px;text-align:center">
-        <div style="font-size:32px;font-weight:800;color:${brand}">${rankings.avgPosition}</div>
+        <div style="font-size:32px;font-weight:800;color:${brand}">${avgPosition ?? '—'}</div>
         <div style="font-size:12px;color:#64748b;margin-top:4px;font-weight:600">Avg. Position</div>
       </div>
       <div style="background:#fff;padding:24px;text-align:center">
-        <div style="font-size:32px;font-weight:800;color:${trafficColor}">${trafficSign}${traffic.change}%</div>
+        <div style="font-size:32px;font-weight:800;color:${trafficColor}">${trafficChangeText}</div>
         <div style="font-size:12px;color:#64748b;margin-top:4px;font-weight:600">Traffic Change</div>
       </div>
       <div style="background:#fff;padding:24px;text-align:center">
-        <div style="font-size:32px;font-weight:800;color:${brand}">${backlinks.new}</div>
+        <div style="font-size:32px;font-weight:800;color:${brand}">${backlinksAddedText}</div>
         <div style="font-size:12px;color:#64748b;margin-top:4px;font-weight:600">New Backlinks</div>
       </div>
       <div style="background:#fff;padding:24px;text-align:center">
-        <div style="font-size:32px;font-weight:800;color:${brand}">${data.domainAuthority}</div>
+        <div style="font-size:32px;font-weight:800;color:${brand}">${domainAuthority ?? '—'}</div>
         <div style="font-size:12px;color:#64748b;margin-top:4px;font-weight:600">Domain Authority</div>
       </div>
     </div>
@@ -169,12 +135,12 @@ function generateReportHtml(data: {
           <h3 style="font-size:15px;font-weight:700;color:#1e293b;margin:0 0 16px">Organic Traffic</h3>
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
-              <div style="font-size:28px;font-weight:800;color:#1e293b">${traffic.current.toLocaleString()}</div>
-              <div style="font-size:13px;color:#64748b">This month</div>
+              <div style="font-size:28px;font-weight:800;color:#1e293b">${trafficCurrent !== null ? trafficCurrent.toLocaleString() : '—'}</div>
+              <div style="font-size:13px;color:#64748b">Est. monthly visits</div>
             </div>
             <div style="text-align:right">
-              <div style="font-size:20px;font-weight:700;color:${trafficColor}">${trafficSign}${traffic.change}%</div>
-              <div style="font-size:13px;color:#64748b">vs last month</div>
+              <div style="font-size:20px;font-weight:700;color:${trafficColor}">${trafficChangeText}</div>
+              <div style="font-size:13px;color:#64748b">${trafficChange === null ? 'first report' : 'vs last month'}</div>
             </div>
           </div>
         </div>
@@ -182,12 +148,12 @@ function generateReportHtml(data: {
           <h3 style="font-size:15px;font-weight:700;color:#1e293b;margin:0 0 16px">Backlink Profile</h3>
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
-              <div style="font-size:28px;font-weight:800;color:#1e293b">${backlinks.total.toLocaleString()}</div>
+              <div style="font-size:28px;font-weight:800;color:#1e293b">${backlinksTotal !== null ? backlinksTotal.toLocaleString() : '—'}</div>
               <div style="font-size:13px;color:#64748b">Total backlinks</div>
             </div>
             <div style="text-align:right">
-              <div style="font-size:20px;font-weight:700;color:#22c55e">+${backlinks.new}</div>
-              <div style="font-size:13px;color:#64748b">New this month</div>
+              <div style="font-size:20px;font-weight:700;color:#22c55e">${backlinksAddedText}</div>
+              <div style="font-size:13px;color:#64748b">${backlinksAdded === null ? 'first report' : 'vs last month'}</div>
             </div>
           </div>
         </div>
@@ -205,27 +171,82 @@ function generateReportHtml(data: {
 }
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await getAgencyUser()
+    clerkId = user.clerkId
     const { clientId, month, year } = await req.json()
 
     if (!clientId || !month || !year) throw new AuthError(400, 'clientId, month, and year are required')
+
+    if (!isDataForSEOConfigured()) {
+      throw new AuthError(503, 'Report generation is temporarily unavailable. Please try again later.')
+    }
 
     const client = await prisma.client.findUnique({ where: { id: clientId } })
     if (!client || client.agencyId !== user.id) throw new AuthError(404, 'Client not found')
 
     const keywords: string[] = JSON.parse(client.trackKeywords || '[]')
+    const domain = cleanDomain(client.website)
 
-    const rng = seededRng(strHash(`${clientId}-${month}-${year}`))
-    const rankings = generateMockRankings(keywords, rng)
-    const traffic = generateMockTraffic(rng)
-    const backlinks = generateMockBacklinks(rng)
-    const domainAuthority = Math.round(rng() * 30 + 30)
-    const pageAuthority = Math.round(rng() * 30 + 35)
+    // Real per-keyword rank, run concurrently — one paid DataForSEO lookup each.
+    const rankResults = await Promise.allSettled(
+      keywords.map(kw => getOrganicRank(kw, domain, 'US', 'desktop'))
+    )
+    const rankings: Record<string, number> = {}
+    for (let i = 0; i < keywords.length; i++) {
+      const result = settledOrNull(rankResults[i])
+      if (result?.found && result.rank !== null) rankings[keywords[i]] = result.rank
+    }
+    const rankedEntries = Object.entries(rankings).sort((a, b) => a[1] - b[1])
+    const avgPosition = rankedEntries.length
+      ? Math.round(rankedEntries.reduce((s, [, v]) => s + v, 0) / rankedEntries.length)
+      : null
+    const topKeywords = rankedEntries.slice(0, 5).map(([keyword, position]) => ({ keyword, position }))
+
+    // Real domain/page authority via OpenPageRank — it only scores at domain
+    // granularity, so both fields get the same value (same approach as Competitor Spy).
+    let domainAuthority: number | null = null
+    try {
+      const opr = await fetchOPRScore(domain)
+      if (opr.status_code === 200 && typeof opr.page_rank_decimal === 'number') {
+        domainAuthority = Math.round(Math.min(10, Math.max(0, opr.page_rank_decimal)) * 10)
+      }
+    } catch { /* leave null — OPR not configured or lookup failed */ }
+    const pageAuthority = domainAuthority
+
+    // Real backlinks + traffic — independent of rank/authority and each other.
+    const [backlinksSummary, trafficCurrent] = await Promise.all([
+      getBacklinksSummary(domain),
+      getTrafficEstimate(domain),
+    ])
+    const backlinksTotal = backlinksSummary?.totalBacklinks ?? null
+
+    // Month-over-month deltas against this client's own most recent prior report —
+    // null (shown as "first report") when there's nothing real to compare against yet.
+    const priorReport = await prisma.clientReport.findFirst({
+      where: { clientId, OR: [{ year: { lt: year } }, { year, month: { lt: month } }] },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+    })
+    const backlinksAdded = (priorReport?.backlinksTotal != null && backlinksTotal !== null)
+      ? backlinksTotal - priorReport.backlinksTotal
+      : null
+    const trafficChange = (priorReport?.trafficCurrent != null && priorReport.trafficCurrent > 0 && trafficCurrent !== null)
+      ? Math.round(((trafficCurrent - priorReport.trafficCurrent) / priorReport.trafficCurrent) * 100)
+      : null
 
     const aiSummary = await callClaude(
-      'You are a professional SEO analyst writing concise monthly reports for agency clients. Be data-driven, specific, and encouraging. Write in third person about the client.',
-      `Generate a professional 150-200 word SEO executive summary for ${client.name} (${client.website}) for ${MONTH_NAMES[month - 1]} ${year}.\n\nData:\n- Average keyword position: ${rankings.avgPosition}\n- Top keywords: ${rankings.topKeywords.map(k => `"${k.keyword}" at #${k.position}`).join(', ')}\n- Organic traffic: ${traffic.current.toLocaleString()} visits (${traffic.change >= 0 ? '+' : ''}${traffic.change}% vs last month)\n- New backlinks: ${backlinks.new} (total: ${backlinks.total.toLocaleString()})\n- Domain authority: ${domainAuthority}\n\nWrite a professional summary highlighting wins, opportunities, and next steps.`,
+      'You are a professional SEO analyst writing concise monthly reports for agency clients. Be data-driven, specific, and encouraging. Write in third person about the client. Where a metric is noted as "not yet available", describe it as still being established rather than inventing a number.',
+      `Generate a professional 150-200 word SEO executive summary for ${client.name} (${client.website}) for ${MONTH_NAMES[month - 1]} ${year}.
+
+Data (values marked "not yet available" should be described as still being established, not stated as numbers):
+- Average keyword position: ${avgPosition ?? 'not yet available'}
+- Top keywords: ${topKeywords.length ? topKeywords.map(k => `"${k.keyword}" at #${k.position}`).join(', ') : 'no tracked keywords ranked in the top 100 this period'}
+- Estimated organic traffic: ${trafficCurrent !== null ? `${trafficCurrent.toLocaleString()} visits/month` : 'not yet available'}${trafficChange !== null ? ` (${trafficChange >= 0 ? '+' : ''}${trafficChange}% vs last month)` : ''}
+- Backlinks: ${backlinksTotal !== null ? backlinksTotal.toLocaleString() : 'not yet available'}${backlinksAdded !== null ? ` (${backlinksAdded >= 0 ? '+' : ''}${backlinksAdded} vs last month)` : ''}
+- Domain authority: ${domainAuthority ?? 'not yet available'}
+
+Write a professional summary highlighting wins, opportunities, and next steps.`,
       500,
       'claude-haiku-4-5-20251001'
     )
@@ -234,12 +255,14 @@ export async function POST(req: NextRequest) {
       client: { name: client.name, website: client.website, brandColor: client.brandColor },
       month,
       year,
-      rankings,
-      traffic,
-      backlinks,
+      avgPosition,
+      topKeywords,
+      trafficCurrent,
+      trafficChange,
+      backlinksTotal,
+      backlinksAdded,
       aiSummary,
       domainAuthority,
-      pageAuthority,
     })
 
     const report = await prisma.clientReport.create({
@@ -247,20 +270,21 @@ export async function POST(req: NextRequest) {
         clientId: client.id,
         month,
         year,
-        keywordRankings: JSON.stringify(rankings.data),
-        trafficChange: traffic.change,
-        backlinksAdded: backlinks.new,
-        topPerformers: JSON.stringify(rankings.topKeywords),
+        keywordRankings: JSON.stringify(rankings),
+        trafficChange,
+        trafficCurrent,
+        backlinksAdded,
+        topPerformers: JSON.stringify(topKeywords),
         domainAuthority,
         pageAuthority,
-        backlinksTotal: backlinks.total,
+        backlinksTotal,
         reportHtml,
       },
     })
 
     return apiSuccess({ id: report.id, success: true, reportUrl: `/agency/reports/${report.id}` }, 201)
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/agency/reports/generate' })
     return apiError(e)
   }
 }
-
