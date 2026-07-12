@@ -16,12 +16,6 @@ async function getAgencyUser() {
   return user
 }
 
-function hash(s: string) {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0
-  return Math.abs(h)
-}
-
 export async function POST(req: NextRequest, { params }: { params: Promise<{ locationId: string }> }) {
   let clerkId: string | null = null
   try {
@@ -48,17 +42,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ loc
 
     if (!newKws.length) return apiSuccess({ added: 0 })
 
+    // No rank/volume/difficulty here — those are only known once a real "Check
+    // Rankings" run populates them (see check-rankings/route.ts), same as a
+    // brand-new location's keywords seeded at account creation.
     await prisma.localKeywordRank.createMany({
-      data: newKws.map(kw => {
-        const seed = hash(kw + locationId)
-        return {
-          locationId,
-          keyword: kw,
-          currentRank: seed % 4 === 0 ? null : (seed % 49) + 1,
-          searchVolume: [100, 250, 500, 1000][seed % 4],
-          difficulty: 20 + (seed % 60),
-        }
-      }),
+      data: newKws.map(kw => ({ locationId, keyword: kw })),
       skipDuplicates: true,
     })
 
