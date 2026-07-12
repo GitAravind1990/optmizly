@@ -207,6 +207,7 @@ type MyBusinessInfoResponse = {
         latitude: number
         longitude: number
         place_id: string
+        rating?: { value?: number; votes_count?: number }
       }>
     }>
   }>
@@ -216,12 +217,17 @@ export interface BusinessCoordinates {
   lat: number
   lng: number
   placeId: string
+  /** Real Google Business Profile rating/review count, when Google reports them. */
+  rating: number | null
+  reviewCount: number | null
 }
 
 /**
- * Resolves a business's real Google Business Profile coordinates by name + city/state,
- * for local-pack rank checks where only a street address is on file (no stored lat/lng).
- * US-only for now, matching the Local SEO Suite's location schema (no country field).
+ * Resolves a business's real Google Business Profile data (coordinates, rating, review
+ * count) by name + city/state, for cases where only a street address is on file (no
+ * stored lat/lng) — used both for local-pack rank checks and to seed a new location
+ * with real starting stats instead of fabricated ones. US-only for now, matching the
+ * Local SEO Suite's location schema (no country field).
  */
 export async function resolveBusinessCoordinates(
   businessName: string,
@@ -241,7 +247,13 @@ export async function resolveBusinessCoordinates(
   if (!task || task.status_code !== 20000 || !item) return null
   if (typeof item.latitude !== 'number' || typeof item.longitude !== 'number') return null
 
-  return { lat: item.latitude, lng: item.longitude, placeId: item.place_id }
+  return {
+    lat: item.latitude,
+    lng: item.longitude,
+    placeId: item.place_id,
+    rating: typeof item.rating?.value === 'number' ? item.rating.value : null,
+    reviewCount: typeof item.rating?.votes_count === 'number' ? item.rating.votes_count : null,
+  }
 }
 
 // ─── Review velocity ──────────────────────────────────────────────────────────
