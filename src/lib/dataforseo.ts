@@ -30,6 +30,16 @@ async function dfsPost<T>(path: string, body: unknown): Promise<T | null> {
   }
 }
 
+async function dfsGet<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${DFS_BASE}${path}`, { headers: { Authorization: getAuth() } })
+    if (!res.ok) return null
+    return (await res.json()) as T
+  } catch {
+    return null
+  }
+}
+
 // ─── Organic rank (rank tracker) ──────────────────────────────────────────────
 
 // Google Ads geotargeting criteria IDs, which DataForSEO's location_code reuses.
@@ -258,19 +268,29 @@ export async function resolveBusinessCoordinates(
 
 // ─── Review velocity ──────────────────────────────────────────────────────────
 
-type ReviewsResponse = {
+// Google Reviews has no synchronous "live" endpoint — only the async task_post/
+// task_get pattern. A task in progress reports this status_code on task_get.
+const DFS_TASK_IN_QUEUE = 40602
+const REVIEWS_POLL_INTERVAL_MS = 1500
+const REVIEWS_POLL_BUDGET_MS = 45000
+
+type ReviewsTaskPostResponse = {
+  tasks: Array<{ id?: string; status_code: number }>
+}
+
+type ReviewsTaskGetResponse = {
   tasks: Array<{
     status_code: number
     result: Array<{
-      rating: { value: number; votes_count: number }
-      reviews_count: number
-      items: Array<{
+      rating?: { value?: number; votes_count?: number }
+      reviews_count?: number
+      items?: Array<{
         type: string
-        time_info: { datetime: string }
-        rating: { value: number }
-        review_text: string
+        timestamp?: string
+        rating?: { value?: number }
+        review_text?: string
       }>
-    }>
+    }> | null
   }>
 }
 
@@ -284,28 +304,58 @@ export type ReviewResult = {
   }>
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * Real reviews for a business by placeId. Submits an async task and polls for it to
+ * complete (typically a few seconds, scales with `depth`) within REVIEWS_POLL_BUDGET_MS
+ * — never blocks indefinitely. Returns null if the task fails, or doesn't finish within
+ * the poll budget (a real, if uncommon, possibility with this API's async model).
+ * location_name is a required field for this endpoint even when place_id already
+ * pins the exact listing — "United States" satisfies it without needing the
+ * business's city/state on hand.
+ */
 export async function getReviewVelocity(placeId: string): Promise<ReviewResult | null> {
-  const data = await dfsPost<ReviewsResponse>('/v3/business_data/google/reviews/live', [
+  const postData = await dfsPost<ReviewsTaskPostResponse>('/v3/business_data/google/reviews/task_post', [
     {
       place_id: placeId,
+      location_name: 'United States',
       language_code: 'en',
       sort_by: 'newest',
       depth: 100,
     },
   ])
 
-  const result = data?.tasks?.[0]?.result?.[0]
-  if (!result) return null
+  const taskId = postData?.tasks?.[0]?.id
+  if (!taskId || postData.tasks[0].status_code !== 20100) return null
 
-  return {
-    totalReviews: result.reviews_count ?? 0,
-    rating: result.rating?.value ?? 0,
-    reviews: (result.items ?? [])
-      .filter(item => item.type === 'review')
-      .map(item => ({
-        date: item.time_info?.datetime ?? '',
-        rating: item.rating?.value ?? 0,
-        text: item.review_text ?? '',
-      })),
+  const deadline = Date.now() + REVIEWS_POLL_BUDGET_MS
+  while (Date.now() < deadline) {
+    const getData = await dfsGet<ReviewsTaskGetResponse>(`/v3/business_data/google/reviews/task_get/${taskId}`)
+    const task = getData?.tasks?.[0]
+    if (task?.status_code === DFS_TASK_IN_QUEUE) {
+      await sleep(REVIEWS_POLL_INTERVAL_MS)
+      continue
+    }
+    if (!task || task.status_code !== 20000) return null
+
+    const result = task.result?.[0]
+    if (!result) return null
+
+    return {
+      totalReviews: result.reviews_count ?? 0,
+      rating: result.rating?.value ?? 0,
+      reviews: (result.items ?? [])
+        .filter(item => item.type === 'google_reviews_search')
+        .map(item => ({
+          date: item.timestamp ?? '',
+          rating: item.rating?.value ?? 0,
+          text: item.review_text ?? '',
+        })),
+    }
   }
+
+  return null
 }

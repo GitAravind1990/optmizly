@@ -5,6 +5,9 @@ import { getReviewVelocity } from '@/lib/dataforseo'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
+// Reviews have no synchronous DataForSEO endpoint — getReviewVelocity polls an async
+// task for up to 45s, so this needs more headroom than the platform default.
+export const maxDuration = 60
 
 function parseReviewDate(datetime: string): Date {
   // DataForSEO returns "2024-01-15 10:30:00 +00:00" or "2024-01-15 10:30:00"
@@ -34,7 +37,7 @@ export async function POST(req: NextRequest) {
     if (!data) {
       return apiError({
         status: 502,
-        message: 'Could not fetch review data. Verify the Place ID is correct and try again.',
+        message: 'Could not fetch review data. Verify the Place ID is correct, or try again — the review lookup can occasionally take longer than expected.',
         name: 'ExternalAPIError',
       })
     }
