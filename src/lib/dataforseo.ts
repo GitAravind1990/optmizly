@@ -68,6 +68,12 @@ function normalizeHost(u: string): string {
   return u.replace(/^https?:\/\//, '').replace(/^www\./, '').toLowerCase().split('/')[0]
 }
 
+// DataForSEO's task-level code for "the query ran fine, there's just nothing to
+// return" (e.g. a keyword with zero organic/local-pack results) — a real, confirmed
+// empty result, not a failed call. Distinct from 20000 (success with data) and from
+// genuine errors (auth, quota, malformed request, etc).
+const DFS_NO_RESULTS = 40102
+
 /**
  * Real Google organic rank for `domain` on `keyword` (top 100 results). Returns null
  * (not `{found:false}`) when the lookup itself couldn't be completed — missing
@@ -92,7 +98,9 @@ export async function getOrganicRank(
   ])
 
   const task = data?.tasks?.[0]
-  if (!task || task.status_code !== 20000) return null
+  if (!task) return null
+  if (task.status_code === DFS_NO_RESULTS) return { found: false, rank: null, url: null }
+  if (task.status_code !== 20000) return null
 
   const targetHost = normalizeHost(domain)
   const items = task.result?.[0]?.items ?? []
@@ -122,11 +130,17 @@ type MapsResponse = {
   }>
 }
 
-export async function getLocalRank(
+export interface LocalPackRankResult {
+  /** true if the business appeared in the local pack, false if confirmed absent. */
+  found: boolean
+  rank: number | null
+}
+
+async function fetchLocalPackRank(
   keyword: string,
   coords: { lat: number; lng: number },
   businessName: string
-): Promise<number | null> {
+): Promise<LocalPackRankResult | null> {
   const data = await dfsPost<MapsResponse>('/v3/serp/google/maps/live/advanced', [
     {
       keyword,
@@ -137,14 +151,86 @@ export async function getLocalRank(
     },
   ])
 
-  const items = data?.tasks?.[0]?.result?.[0]?.items
-  if (!items) return null
+  const task = data?.tasks?.[0]
+  if (!task) return null
+  if (task.status_code === DFS_NO_RESULTS) return { found: false, rank: null }
+  const items = task.result?.[0]?.items
+  if (task.status_code !== 20000 || !items) return null
 
   const nameLower = businessName.toLowerCase()
   const match = items.find(
     item => item.type === 'maps' && item.title.toLowerCase().includes(nameLower)
   )
-  return match?.rank_group ?? null
+  if (!match) return { found: false, rank: null }
+  return { found: true, rank: match.rank_group }
+}
+
+// Used by Geogrid, which treats "couldn't check this grid point" and "not ranked
+// there" the same (a blank spot on the heatmap either way) — collapses both to null.
+export async function getLocalRank(
+  keyword: string,
+  coords: { lat: number; lng: number },
+  businessName: string
+): Promise<number | null> {
+  const result = await fetchLocalPackRank(keyword, coords, businessName)
+  return result?.rank ?? null
+}
+
+// Used by Local SEO Suite's rank checker, which auto-creates "investigate ranking
+// drop" tasks and alerts — needs to tell a real drop apart from a failed API call.
+export async function getLocalPackRank(
+  keyword: string,
+  coords: { lat: number; lng: number },
+  businessName: string
+): Promise<LocalPackRankResult | null> {
+  return fetchLocalPackRank(keyword, coords, businessName)
+}
+
+type MyBusinessInfoResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      items: Array<{
+        type: string
+        title: string
+        latitude: number
+        longitude: number
+        place_id: string
+      }>
+    }>
+  }>
+}
+
+export interface BusinessCoordinates {
+  lat: number
+  lng: number
+  placeId: string
+}
+
+/**
+ * Resolves a business's real Google Business Profile coordinates by name + city/state,
+ * for local-pack rank checks where only a street address is on file (no stored lat/lng).
+ * US-only for now, matching the Local SEO Suite's location schema (no country field).
+ */
+export async function resolveBusinessCoordinates(
+  businessName: string,
+  city: string,
+  state: string
+): Promise<BusinessCoordinates | null> {
+  const data = await dfsPost<MyBusinessInfoResponse>('/v3/business_data/google/my_business_info/live', [
+    {
+      keyword: businessName,
+      location_name: `${city},${state},United States`,
+      language_code: 'en',
+    },
+  ])
+
+  const task = data?.tasks?.[0]
+  const item = task?.result?.[0]?.items?.[0]
+  if (!task || task.status_code !== 20000 || !item) return null
+  if (typeof item.latitude !== 'number' || typeof item.longitude !== 'number') return null
+
+  return { lat: item.latitude, lng: item.longitude, placeId: item.place_id }
 }
 
 // ─── Review velocity ──────────────────────────────────────────────────────────

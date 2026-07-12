@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
+import { getLocalPackRank, isDataForSEOConfigured, resolveBusinessCoordinates } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -17,21 +18,17 @@ async function getAgencyUser() {
   return user
 }
 
-function hash(s: string) {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0
-  return Math.abs(h)
-}
-
-function simulateNewRank(currentRank: number | null, keyword: string, day: number): number | null {
-  const seed = hash(keyword + String(day))
-  if (currentRank === null) {
-    return seed % 7 === 0 ? (seed % 50) + 1 : null
-  }
-  const drift = (seed % 7) - 3
-  const newRank = currentRank + drift
-  if (newRank > 100) return null
-  return Math.max(1, newRank)
+// Closest real history point at or before N days ago — real check-ins don't land on
+// exact daily boundaries (skipped runs, off-schedule manual checks).
+async function rankNDaysAgo(keywordId: string, daysAgo: number): Promise<number | null> {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - daysAgo)
+  cutoff.setHours(23, 59, 59, 999)
+  const row = await prisma.localRankHistory.findFirst({
+    where: { keywordId, checkedDate: { lte: cutoff } },
+    orderBy: { checkedDate: 'desc' },
+  })
+  return row?.rank ?? null
 }
 
 export async function POST(req: NextRequest) {
@@ -42,35 +39,53 @@ export async function POST(req: NextRequest) {
     const { locationId } = await req.json()
     if (!locationId) throw new AuthError(400, 'locationId required')
 
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    if (!isDataForSEOConfigured()) {
+      throw new AuthError(503, 'Rank checking is temporarily unavailable. Please try again later.')
+    }
+
     const location = await prisma.localSEOLocation.findUnique({
       where: { id: locationId },
-      include: {
-        account: true,
-        keywords: {
-          include: {
-            history: {
-              where: { checkedDate: { gte: thirtyDaysAgo } },
-              orderBy: { checkedDate: 'asc' },
-              take: 1,
-            },
-          },
-        },
-      },
+      include: { account: true, keywords: true },
     })
     if (!location || location.account.userId !== user.id) throw new AuthError(404, 'Location not found')
 
+    // Real local-pack rank checks need a lat/lng centroid, but the location only has a
+    // street address on file — resolve its real Google Business Profile coordinates
+    // once per check run (not stored, since geocoding is cheap and this avoids a
+    // schema migration for a coordinate cache).
+    const coords = await resolveBusinessCoordinates(location.name, location.city, location.state)
+    if (!coords) {
+      throw new AuthError(502, `Could not find "${location.name}" on Google in ${location.city}, ${location.state}. Verify the business name and city match its Google Business Profile.`)
+    }
+
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const dayNum = Math.floor(Date.now() / 86400000)
 
     const updates: { keyword: string; old: number | null; new: number | null }[] = []
     const newTasks: { accountId: string; locationId: string; title: string; category: string; priority: string; description: string }[] = []
+    let skipped = 0
 
-    for (const kw of location.keywords) {
-      const newRank = simulateNewRank(kw.currentRank ?? null, kw.keyword, dayNum)
-      const change7d = (kw.previousRank !== null && newRank !== null) ? kw.previousRank - newRank : null
-      const rank30dAgo = kw.history[0]?.rank ?? null
+    // Real per-keyword local-pack lookups run concurrently — each is an independent
+    // paid DataForSEO call.
+    const results = await Promise.allSettled(
+      location.keywords.map(kw => getLocalPackRank(kw.keyword, coords, location.name))
+    )
+
+    for (let i = 0; i < location.keywords.length; i++) {
+      const kw = location.keywords[i]
+      const result = results[i].status === 'fulfilled' ? (results[i] as PromiseFulfilledResult<Awaited<ReturnType<typeof getLocalPackRank>>>).value : null
+
+      // null = the lookup itself failed (network/auth/parse) — skip this keyword this
+      // run rather than recording a false ranking-drop task over a transient API hiccup.
+      if (result === null) { skipped++; continue }
+
+      const newRank = result.found ? result.rank : null
+
+      const [rank7dAgo, rank30dAgo] = await Promise.all([
+        rankNDaysAgo(kw.id, 7),
+        rankNDaysAgo(kw.id, 30),
+      ])
+      const change7d = (rank7dAgo !== null && newRank !== null) ? rank7dAgo - newRank : null
       const change30d = (rank30dAgo !== null && newRank !== null) ? rank30dAgo - newRank : null
 
       updates.push({ keyword: kw.keyword, old: kw.currentRank ?? null, new: newRank })
@@ -82,7 +97,7 @@ export async function POST(req: NextRequest) {
           title: `Investigate ranking drop: "${kw.keyword}"`,
           category: 'keywords',
           priority: 'high',
-          description: `"${kw.keyword}" dropped out of top 100 in ${location.city}. Review content and local signals.`,
+          description: `"${kw.keyword}" dropped out of the local pack in ${location.city}. Review content and local signals.`,
         })
       }
 
@@ -92,7 +107,7 @@ export async function POST(req: NextRequest) {
           previousRank: kw.currentRank,
           currentRank: newRank,
           rankChange7d: change7d,
-          rankChange30d: change30d ?? kw.rankChange30d,
+          rankChange30d: change30d,
         },
       })
 
@@ -109,7 +124,15 @@ export async function POST(req: NextRequest) {
       await prisma.localSEOTask.createMany({ data: newTasks })
     }
 
-    return apiSuccess({ data: { success: true, keywordsChecked: location.keywords.length, updates, newTasks: newTasks.length } })
+    return apiSuccess({
+      data: {
+        success: true,
+        keywordsChecked: location.keywords.length - skipped,
+        skipped,
+        updates,
+        newTasks: newTasks.length,
+      },
+    })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/local-seo/check-rankings' })
     return apiError(e)

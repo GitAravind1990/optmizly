@@ -45,6 +45,7 @@ export default function LocalSEOAccountPage() {
 
   const [checkingLoc, setCheckingLoc] = useState<string | null>(null)
   const [checkMsg, setCheckMsg] = useState('')
+  const [checkMsgIsError, setCheckMsgIsError] = useState(false)
   const [generatingReply, setGeneratingReply] = useState<string | null>(null)
   const [updatingTask, setUpdatingTask] = useState<string | null>(null)
   const [addKwText, setAddKwText] = useState('')
@@ -69,7 +70,7 @@ export default function LocalSEOAccountPage() {
   useEffect(() => { load() }, [load])
 
   async function checkRankings(locationId: string) {
-    setCheckingLoc(locationId); setCheckMsg('')
+    setCheckingLoc(locationId); setCheckMsg(''); setCheckMsgIsError(false)
     try {
       const r = await fetch('/api/tools/local-seo/check-rankings', {
         method: 'POST',
@@ -77,7 +78,12 @@ export default function LocalSEOAccountPage() {
         body: JSON.stringify({ locationId }),
       })
       const d = await r.json()
-      if (d.data) setCheckMsg(`Updated ${d.data.keywordsChecked} keywords`)
+      if (d.data) {
+        setCheckMsg(`Updated ${d.data.keywordsChecked} keywords${d.data.skipped > 0 ? ` (${d.data.skipped} couldn't be checked, will retry next time)` : ''}`)
+      } else {
+        setCheckMsg(typeof d.error === 'string' ? d.error : 'Could not check rankings right now.')
+        setCheckMsgIsError(true)
+      }
       await load()
     } finally {
       setCheckingLoc(null)
@@ -162,7 +168,7 @@ export default function LocalSEOAccountPage() {
               <div className="text-xs text-slate-400">{account.locations.length} locations · {account.accountType}</div>
             </div>
           </div>
-          {checkMsg && <span className="text-xs text-green-600 font-medium">{checkMsg}</span>}
+          {checkMsg && <span className={`text-xs font-medium ${checkMsgIsError ? 'text-red-600' : 'text-green-600'}`}>{checkMsg}</span>}
         </div>
       </div>
 
