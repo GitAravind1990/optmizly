@@ -125,20 +125,20 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
           <div className="bg-white border border-slate-200 rounded-xl p-5">
             <h2 className="text-sm font-bold text-slate-800 mb-3">Quick Stats</h2>
             {[
-              ['Monthly Traffic', analysis.estimatedTraffic.toLocaleString(), true],
+              ['Monthly Traffic', analysis.estimatedTraffic.toLocaleString(), false],
               ['Domain Authority', `${analysis.domainAuthority}/100`, analysis.dataQuality === 'partial-real'],
               ['Page Authority', `${analysis.pageAuthority}/100`, analysis.dataQuality === 'partial-real'],
-              ['Total Backlinks', analysis.backlinksTotal.toLocaleString(), true],
-              ['New Backlinks (30d)', `+${analysis.backlinksNew}`, true],
-              ['Keywords Ranked', analysis.keywordCount.toLocaleString(), true],
-              ['Content Pages', analysis.contentCount.toString(), true],
-              ['Avg Content Length', `${analysis.avgContentLength.toLocaleString()} words`, true],
-            ].map(([label, value, estimated]) => (
+              ['Total Backlinks', analysis.backlinksTotal.toLocaleString(), false],
+              ['New Backlinks (30d)', `+${analysis.backlinksNew}`, false],
+              ['Keywords Ranked', analysis.keywordCount.toLocaleString(), false],
+              ['Content Pages', analysis.contentCount.toString(), false],
+              ['Avg Content Length', `${analysis.avgContentLength.toLocaleString()} words`, false],
+            ].map(([label, value, isReal]) => (
               <div key={label as string} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
                 <span className="text-xs text-slate-500">{label}</span>
                 <span className="text-xs font-bold text-slate-800">
                   {value}
-                  {!estimated && <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}
+                  {!isReal && <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}
                 </span>
               </div>
             ))}
