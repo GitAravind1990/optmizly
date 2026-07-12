@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     // Real per-keyword local-pack lookups run concurrently — each is an independent
     // paid DataForSEO call.
     const results = await Promise.allSettled(
-      location.keywords.map(kw => getLocalPackRank(kw.keyword, coords, location.name))
+      location.keywords.map(kw => getLocalPackRank(kw.keyword, coords, location.name, coords.placeId))
     )
 
     for (let i = 0; i < location.keywords.length; i++) {

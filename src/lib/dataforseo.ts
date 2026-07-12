@@ -125,6 +125,7 @@ type MapsResponse = {
         type: string
         rank_group: number
         title: string
+        place_id?: string
       }>
     }>
   }>
@@ -136,10 +137,17 @@ export interface LocalPackRankResult {
   rank: number | null
 }
 
+/**
+ * `placeId`, when known, matches the exact listing — chain/franchise locations often
+ * share one generic display title (e.g. every "Starbucks" shows as "Starbucks Coffee
+ * Company" regardless of which specific store), so title-substring matching alone
+ * silently misses them. Falls back to title matching when no placeId is available.
+ */
 async function fetchLocalPackRank(
   keyword: string,
   coords: { lat: number; lng: number },
-  businessName: string
+  businessName: string,
+  placeId?: string
 ): Promise<LocalPackRankResult | null> {
   const data = await dfsPost<MapsResponse>('/v3/serp/google/maps/live/advanced', [
     {
@@ -157,10 +165,12 @@ async function fetchLocalPackRank(
   const items = task.result?.[0]?.items
   if (task.status_code !== 20000 || !items) return null
 
+  // DataForSEO's local-pack item type is "maps_search", not "maps".
   const nameLower = businessName.toLowerCase()
-  const match = items.find(
-    item => item.type === 'maps' && item.title.toLowerCase().includes(nameLower)
-  )
+  const match = items.find(item => {
+    if (item.type !== 'maps_search') return false
+    return placeId ? item.place_id === placeId : item.title.toLowerCase().includes(nameLower)
+  })
   if (!match) return { found: false, rank: null }
   return { found: true, rank: match.rank_group }
 }
@@ -181,9 +191,10 @@ export async function getLocalRank(
 export async function getLocalPackRank(
   keyword: string,
   coords: { lat: number; lng: number },
-  businessName: string
+  businessName: string,
+  placeId?: string
 ): Promise<LocalPackRankResult | null> {
-  return fetchLocalPackRank(keyword, coords, businessName)
+  return fetchLocalPackRank(keyword, coords, businessName, placeId)
 }
 
 type MyBusinessInfoResponse = {
