@@ -291,7 +291,7 @@ function SERPTab({ result }: { result: RankingResult }) {
         <h3 className="text-sm font-bold text-slate-800 mb-4">Competitor Averages</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {([
-            ['Avg Domain Authority', String(competitors.avg_da)],
+            ['Avg Domain Authority (Est.)', String(competitors.avg_da)],
             ['Avg Referring Domains', fmt(competitors.avg_rd)],
             ['Avg Word Count', fmt(competitors.avg_words)],
             ['Content Freshness', competitors.freshness],
@@ -312,10 +312,10 @@ function SERPTab({ result }: { result: RankingResult }) {
               <thead>
                 <tr className="text-xs text-slate-400 border-b border-slate-100">
                   <th className="text-left pb-2">Domain</th>
-                  <th className="text-right pb-2">DA</th>
+                  <th className="text-right pb-2">DA (Est.)</th>
                   <th className="text-right pb-2">Ref. Domains</th>
                   <th className="text-right pb-2">Words</th>
-                  <th className="text-right pb-2">vs Your DA</th>
+                  <th className="text-right pb-2">vs Your DA (Est.)</th>
                 </tr>
               </thead>
               <tbody>
@@ -443,7 +443,7 @@ function GapsTab({ result }: { result: RankingResult }) {
         <h3 className="text-sm font-bold text-slate-800 mb-3">Your Website Scores</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {([
-            ['Domain Authority', website.da_score],
+            ['Domain Authority (Est.)', website.da_score],
             ['Backlinks', website.backlink_score],
             ['Content', website.content_score],
             ['Topical', website.topical_score],
