@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
+import { getKeywordMetrics } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 
@@ -39,12 +40,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
 
     if (!newKeywords.length) return apiSuccess({ data: { added: 0, message: 'All keywords already tracked' } })
 
+    const metrics = await getKeywordMetrics(newKeywords, project.targetLocation)
+
     await prisma.rankTrackingKeyword.createMany({
       data: newKeywords.map(kw => ({
         projectId,
         keyword: kw,
-        searchVolume: estimateVolume(kw),
-        difficulty: estimateDifficulty(kw),
+        searchVolume: metrics.get(kw)?.searchVolume ?? null,
+        difficulty: metrics.get(kw)?.difficulty ?? null,
       })),
     })
 
@@ -53,21 +56,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]/keywords' })
     return apiError(e)
   }
-}
-
-function estimateVolume(keyword: string): number {
-  const hash = simpleHash(keyword)
-  const buckets = [100, 500, 1000, 2500, 5000, 10000, 25000, 50000]
-  return buckets[hash % buckets.length]
-}
-
-function estimateDifficulty(keyword: string): number {
-  const hash = simpleHash(keyword + 'diff')
-  return 20 + (hash % 65)
-}
-
-function simpleHash(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0
-  return Math.abs(h)
 }

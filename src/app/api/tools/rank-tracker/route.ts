@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
+import { getKeywordMetrics } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 
@@ -73,20 +74,23 @@ export async function POST(req: NextRequest) {
 
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
     const kwList: string[] = keywords.map((k: string) => k.trim()).filter(Boolean).slice(0, 100)
+    const resolvedLocation = targetLocation ?? 'US'
+
+    const metrics = await getKeywordMetrics(kwList, resolvedLocation)
 
     const project = await prisma.rankTrackingProject.create({
       data: {
         userId: user.id,
         name: name.trim(),
         domain: cleanDomain,
-        targetLocation: targetLocation ?? 'US',
+        targetLocation: resolvedLocation,
         deviceType: deviceType ?? 'desktop',
         trackKeywords: JSON.stringify(kwList),
         keywords: {
           create: kwList.map(kw => ({
             keyword: kw,
-            searchVolume: estimateVolume(kw),
-            difficulty: estimateDifficulty(kw),
+            searchVolume: metrics.get(kw)?.searchVolume ?? null,
+            difficulty: metrics.get(kw)?.difficulty ?? null,
           })),
         },
       },
@@ -98,21 +102,4 @@ export async function POST(req: NextRequest) {
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker' })
     return apiError(e)
   }
-}
-
-function estimateVolume(keyword: string): number {
-  const hash = simpleHash(keyword)
-  const buckets = [100, 500, 1000, 2500, 5000, 10000, 25000, 50000]
-  return buckets[hash % buckets.length]
-}
-
-function estimateDifficulty(keyword: string): number {
-  const hash = simpleHash(keyword + 'diff')
-  return 20 + (hash % 65)
-}
-
-function simpleHash(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0
-  return Math.abs(h)
 }

@@ -4,6 +4,11 @@ import Anthropic from '@anthropic-ai/sdk';
 import { canUseTool } from '@/lib/plans';
 import { NextRequest, NextResponse } from 'next/server';
 import { captureServerException } from '@/lib/posthog-server';
+import { getTrafficEstimate } from '@/lib/dataforseo';
+
+function extractDomain(url: string): string {
+  return url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase().split('/')[0];
+}
 
 export const maxDuration = 60;
 
@@ -39,7 +44,11 @@ export async function POST(req: NextRequest) {
     const metrics = audit.extendedMetrics ? JSON.parse(audit.extendedMetrics) : { overallScore: audit.overallScore };
     const fixes = await generateAIFixes(audit.url, metrics);
     const projectedScore = calculateProjectedScore(metrics.overallScore, fixes);
-    const roi = calculateROI(metrics.overallScore, projectedScore);
+
+    // ROI is only computed from a real measured traffic baseline — no traffic data
+    // means no ROI claim, rather than falling back to an invented visitor count.
+    const monthlyOrganicTraffic = await getTrafficEstimate(extractDomain(audit.url)).catch(() => null);
+    const roi = monthlyOrganicTraffic != null ? calculateROI(metrics.overallScore, projectedScore, monthlyOrganicTraffic) : null;
 
     await prisma.performanceFixerAudit.update({
       where: { id: auditId },
@@ -47,9 +56,9 @@ export async function POST(req: NextRequest) {
         fixes: JSON.stringify(fixes),
         totalFixes: fixes.length,
         projectedScore,
-        revenueLoss: roi.currentRevenueLoss,
-        potentialRevenue: roi.potentialRevenue,
-        fixTime: roi.fixTime,
+        revenueLoss: roi?.currentRevenueLoss ?? null,
+        potentialRevenue: roi?.potentialRevenue ?? null,
+        fixTime: roi?.fixTime ?? 0,
       },
     });
 
@@ -130,9 +139,15 @@ function calculateProjectedScore(currentScore: number, fixes: AIFix[]): number {
   return Math.min(100, Math.max(0, currentScore + Math.round(avgGain)));
 }
 
-function calculateROI(currentScore: number, projectedScore: number) {
+// Conversion rate (2.5%) and average order value ($30) are typical e-commerce
+// assumptions, not measurable per-site without a store integration — disclosed to
+// the user in the UI. Monthly traffic itself is real (DataForSEO organic estimate).
+const ASSUMED_CONVERSION_RATE = 0.025;
+const ASSUMED_AOV = 30;
+
+function calculateROI(currentScore: number, projectedScore: number, monthlyOrganicTraffic: number) {
   const improvement = projectedScore - currentScore;
-  const currentRevenue = 5000 * 0.025 * 30;
+  const currentRevenue = monthlyOrganicTraffic * ASSUMED_CONVERSION_RATE * ASSUMED_AOV;
   const potentialRevenue = currentRevenue * (1 + improvement * 0.005);
   return {
     currentRevenueLoss: Math.round((potentialRevenue - currentRevenue) * 0.5),

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { fetchOPRScore } from '@/lib/openpagerank'
+import { getBacklinksSummary } from '@/lib/dataforseo'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
@@ -68,12 +69,22 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Real backlink profile — independent of OPR, never blocks the analysis if it fails.
+    const backlinks = await getBacklinksSummary(domain).catch(() => null)
+
     const analysis = await prisma.backlinkDomainAnalysis.create({
       data: {
         userId: user.id,
         domain,
         oprScore:    opr.page_rank_decimal ?? 0,
         domainRank:  parseInt(opr.rank ?? '0', 10) || 0,
+        backlinksTotal:   backlinks?.totalBacklinks ?? 0,
+        dofollowLinks:    backlinks?.dofollowLinks ?? 0,
+        nofollowLinks:    backlinks?.nofollowLinks ?? 0,
+        referringDomains: backlinks?.referringDomains ?? 0,
+        referringIPs:     backlinks?.referringIPs ?? 0,
+        spamScore:        backlinks?.spamScore ?? 0,
+        brokenBacklinks:  backlinks?.brokenBacklinks ?? 0,
         topBacklinks:        '[]',
         topReferringDomains: '[]',
       },

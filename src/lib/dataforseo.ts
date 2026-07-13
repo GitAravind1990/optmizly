@@ -281,6 +281,11 @@ type BacklinksSummaryResponse = {
     result: Array<{
       backlinks?: number
       referring_domains?: number
+      referring_ips?: number
+      backlinks_spam_score?: number
+      broken_backlinks?: number
+      rank?: number
+      referring_links_attributes?: { nofollow?: number }
     }> | null
   }>
 }
@@ -288,9 +293,18 @@ type BacklinksSummaryResponse = {
 export interface BacklinksSummary {
   totalBacklinks: number
   referringDomains: number
+  referringIPs: number
+  spamScore: number
+  brokenBacklinks: number
+  dofollowLinks: number
+  nofollowLinks: number
 }
 
-/** Real backlink profile summary for a domain — live (synchronous), no polling needed. */
+/** Real backlink profile summary for a domain — live (synchronous), no polling needed.
+ *  DataForSEO doesn't return a direct dofollow/nofollow split of backlinks, only a
+ *  nofollow-attribute count among referring links — nofollowLinks uses that count,
+ *  dofollowLinks is the remainder of the total (both derived from real measured
+ *  fields, not estimated). */
 export async function getBacklinksSummary(domain: string): Promise<BacklinksSummary | null> {
   const data = await dfsPost<BacklinksSummaryResponse>('/v3/backlinks/summary/live', [
     { target: domain, internal_list_limit: 10 },
@@ -299,9 +313,16 @@ export async function getBacklinksSummary(domain: string): Promise<BacklinksSumm
   if (!task || task.status_code !== 20000) return null
   const result = task.result?.[0]
   if (!result) return null
+  const totalBacklinks = result.backlinks ?? 0
+  const nofollowLinks = Math.min(result.referring_links_attributes?.nofollow ?? 0, totalBacklinks)
   return {
-    totalBacklinks: result.backlinks ?? 0,
+    totalBacklinks,
     referringDomains: result.referring_domains ?? 0,
+    referringIPs: result.referring_ips ?? 0,
+    spamScore: result.backlinks_spam_score ?? 0,
+    brokenBacklinks: result.broken_backlinks ?? 0,
+    nofollowLinks,
+    dofollowLinks: totalBacklinks - nofollowLinks,
   }
 }
 
@@ -327,6 +348,67 @@ export async function getTrafficEstimate(domain: string): Promise<number | null>
   const item = task.result?.[0]?.items?.[0]
   if (!item) return null
   return Math.round(item.metrics?.organic?.etv ?? 0)
+}
+
+// ─── Keyword metrics (rank tracker) ───────────────────────────────────────────
+
+type SearchVolumeResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{ keyword: string; search_volume?: number | null }> | null
+  }>
+}
+
+type KeywordDifficultyResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      items?: Array<{ keyword: string; keyword_difficulty?: number | null }>
+    }> | null
+  }>
+}
+
+export interface KeywordMetrics {
+  searchVolume: number | null
+  difficulty: number | null
+}
+
+/** Real search volume + keyword difficulty for a batch of keywords — one call each,
+ *  not per-keyword. A keyword missing from the results (low-volume/unrecognized) maps
+ *  to null rather than a guessed number; a failed call leaves every keyword null. */
+export async function getKeywordMetrics(
+  keywords: string[],
+  targetLocation: string
+): Promise<Map<string, KeywordMetrics>> {
+  const locationCode = ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US
+  const languageCode = ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en'
+
+  const [volumeData, difficultyData] = await Promise.all([
+    dfsPost<SearchVolumeResponse>('/v3/keywords_data/google_ads/search_volume/live', [
+      { keywords, location_code: locationCode, language_code: languageCode },
+    ]),
+    dfsPost<KeywordDifficultyResponse>('/v3/dataforseo_labs/google/bulk_keyword_difficulty/live', [
+      { keywords, location_code: locationCode, language_code: languageCode },
+    ]),
+  ])
+
+  const result = new Map<string, KeywordMetrics>(keywords.map(kw => [kw, { searchVolume: null, difficulty: null }]))
+
+  const volumeTask = volumeData?.tasks?.[0]
+  if (volumeTask?.status_code === 20000) {
+    for (const row of volumeTask.result ?? []) {
+      if (result.has(row.keyword)) result.set(row.keyword, { ...result.get(row.keyword)!, searchVolume: row.search_volume ?? null })
+    }
+  }
+
+  const difficultyTask = difficultyData?.tasks?.[0]
+  if (difficultyTask?.status_code === 20000) {
+    for (const item of difficultyTask.result?.[0]?.items ?? []) {
+      if (result.has(item.keyword)) result.set(item.keyword, { ...result.get(item.keyword)!, difficulty: item.keyword_difficulty ?? null })
+    }
+  }
+
+  return result
 }
 
 // ─── Review velocity ──────────────────────────────────────────────────────────

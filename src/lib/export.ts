@@ -825,7 +825,7 @@ type PerformanceFixerData = {
   projectedScore: number
   fixes: Array<{ type: string; issue: string; beforeCode: string; afterCode: string; description: string; estimatedImpact: number; language: string }>
   roi?: { currentRevenueLoss: number; potentialRevenue: number; fixTime: number; estimatedCost: number } | null
-  industryData?: { avg: number; topPercent: number; rank: number } | null
+  industryData?: { avg: number; topPercent: number } | null
 }
 
 export function exportPerformanceFixerCSV(data: PerformanceFixerData) {
@@ -874,7 +874,6 @@ export function exportPerformanceFixerCSV(data: PerformanceFixerData) {
     rows.push(['INDUSTRY BENCHMARKS'])
     rows.push(['Industry Average', String(Math.round(data.industryData.avg))])
     rows.push(['Top 25% Performers', String(Math.round(data.industryData.topPercent))])
-    rows.push(['Your Rank', String(data.industryData.rank)])
     rows.push([''])
   }
 
@@ -947,7 +946,6 @@ export function exportPerformanceFixerPDF(data: PerformanceFixerData) {
     <table style="width:auto">
       <tr><td style="padding:4px 12px 4px 0"><strong>Industry Average</strong></td><td>${Math.round(data.industryData.avg)}</td></tr>
       <tr><td style="padding:4px 12px 4px 0"><strong>Top 25%</strong></td><td>${Math.round(data.industryData.topPercent)}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Your Rank</strong></td><td>${data.industryData.rank}</td></tr>
     </table>` : ''}`
 
   downloadPDF('Optmizly Performance Fixer Report', html)

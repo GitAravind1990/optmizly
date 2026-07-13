@@ -130,7 +130,6 @@ export async function POST(req: NextRequest) {
         fixCost: 0,
         totalFixes: 0,
         industryAvg: industryData?.avg ?? null,
-        industryRank: industryData?.rank ?? null,
         fixes: '[]',
         extendedMetrics: JSON.stringify(metrics),
       },

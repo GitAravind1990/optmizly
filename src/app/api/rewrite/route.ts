@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, AuthError } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 
@@ -117,6 +117,9 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth('rewrite')
     const { content, summary, cachedEeat } = await req.json()
+    if (!content || typeof content !== 'string' || !content.trim()) {
+      throw new AuthError(400, 'Content is required')
+    }
 
     // Step 1: E-E-A-T analysis (use cached if available)
     let eeatResult = cachedEeat

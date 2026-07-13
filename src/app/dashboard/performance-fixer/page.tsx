@@ -47,7 +47,6 @@ interface ROI {
 interface IndustryData {
   avg: number;
   topPercent: number;
-  rank: number;
 }
 
 interface AuditResult {
@@ -358,7 +357,10 @@ function ResultsDisplay({ result, loadingFixes, onBack }: { result: AuditResult;
       {/* ROI — only shown after fixes load */}
       {result.roi && (
         <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-100 rounded-xl p-6">
-          <h2 className="text-sm font-bold text-slate-700 mb-4">💰 ROI Calculator</h2>
+          <h2 className="text-sm font-bold text-slate-700 mb-1">💰 ROI Calculator</h2>
+          <p className="text-[11px] text-slate-500 mb-3">
+            Based on this domain&apos;s real estimated monthly organic search traffic, assuming a typical 2.5% conversion rate and $30 average order value.
+          </p>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <div className="text-2xl font-black text-red-500">${result.roi.currentRevenueLoss}</div>

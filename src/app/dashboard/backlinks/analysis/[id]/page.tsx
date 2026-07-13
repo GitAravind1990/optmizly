@@ -158,6 +158,34 @@ export default function BacklinkAnalysisPage({ params }: { params: Promise<{ id:
                 ))}
               </div>
             </div>
+
+            {/* Backlink profile */}
+            <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <div className="text-sm font-semibold text-slate-700 mb-3">Backlink Profile</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { label: 'Total Backlinks', value: analysis.backlinksTotal },
+                  { label: 'Referring Domains', value: analysis.referringDomains },
+                  { label: 'Referring IPs', value: analysis.referringIPs },
+                  { label: 'Broken Backlinks', value: analysis.brokenBacklinks },
+                  { label: 'Dofollow', value: analysis.dofollowLinks },
+                  { label: 'Nofollow', value: analysis.nofollowLinks },
+                  { label: 'Spam Score', value: analysis.spamScore, suffix: '/100' },
+                ].map(m => (
+                  <div key={m.label} className="bg-slate-50 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-slate-700">
+                      {m.value > 0 ? fmt(m.value) : '—'}{m.value > 0 ? m.suffix ?? '' : ''}
+                    </div>
+                    <div className="text-[10px] text-slate-500">{m.label}</div>
+                  </div>
+                ))}
+              </div>
+              {analysis.backlinksTotal === 0 && (
+                <p className="text-[11px] text-slate-400 mt-3">
+                  No backlink data available for this domain yet — could be a very new/low-authority domain, or the lookup couldn&apos;t complete.
+                </p>
+              )}
+            </div>
           </>
         )}
 
