@@ -6,6 +6,15 @@ import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
 import { captureServerException } from '@/lib/posthog-server'
+import { fetchOPRScores } from '@/lib/openpagerank'
+
+function extractDomain(input: string): string {
+  return input.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase().split('/')[0]
+}
+
+function daFromOPR(pageRankDecimal: number): string {
+  return pageRankDecimal >= 6 ? 'high' : pageRankDecimal >= 3 ? 'medium' : 'low'
+}
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -121,6 +130,34 @@ Generate highly specific opportunities. Research real publications in the ${nich
       }>
     }>(raw)
 
+    let opportunities = (parsed.opportunities ?? []).slice(0, 12)
+
+    // Claude names real-sounding publications from training data with no guarantee
+    // they exist — cross-check each against OpenPageRank and drop any that don't
+    // resolve to a real, indexed domain, rather than let a hallucinated site reach
+    // a user's outreach list. If the OPR call itself fails (outage/misconfigured),
+    // fail open and keep the AI's own opportunities unverified rather than discard
+    // real suggestions over an infrastructure hiccup.
+    try {
+      const oprDomains = opportunities.map(op => extractDomain(op.site_url ?? ''))
+      const oprResults = await fetchOPRScores(oprDomains)
+      opportunities = opportunities
+        .filter((op, i) => {
+          const opr = oprResults.get(oprDomains[i])
+          return !!opr && opr.status_code === 200
+        })
+        .map(op => {
+          const opr = oprResults.get(extractDomain(op.site_url ?? ''))!
+          return { ...op, domain_authority: daFromOPR(opr.page_rank_decimal) }
+        })
+    } catch (oprErr) {
+      console.error('OpenPageRank verification failed, keeping unverified opportunities:', oprErr)
+    }
+
+    if (!opportunities.length) {
+      throw new AuthError(422, 'Could not find verifiable backlink opportunities for this niche. Try a broader or different niche.')
+    }
+
     const project = await prisma.backlinkProject.create({
       data: {
         userId: user.id,
@@ -131,7 +168,7 @@ Generate highly specific opportunities. Research real publications in the ${nich
         contentBrief: contentBrief?.trim() ?? '',
         aiSummary: parsed.summary ?? '',
         opportunities: {
-          create: (parsed.opportunities ?? []).slice(0, 12).map(op => ({
+          create: opportunities.map(op => ({
             siteName: op.site_name ?? '',
             siteUrl: op.site_url ?? '',
             domainAuthority: op.domain_authority ?? 'medium',

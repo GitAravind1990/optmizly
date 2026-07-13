@@ -99,10 +99,16 @@ Generate a complete topical authority map with 3 pillars × 3 clusters each, plu
       const pcov = (urls as string[]).some(u => u.toLowerCase().includes(p.slug.split('-')[0]))
       if (pcov) coveredCount++
       clusters.forEach(c => { if (c.covered) coveredCount++ })
+      const clusterScores = clusters.map(c => c.ai_cite_score).filter((s): s is number => typeof s === 'number')
       return {
         ...p,
         covered: pcov,
-        ai_cite_score: p.clusters?.[0]?.ai_cite_score ?? Math.floor(45 + Math.random() * 40),
+        // Average of this pillar's own AI-scored clusters — a real derived value,
+        // not a random placeholder — falling back to the AI's overall readiness
+        // score only if the AI genuinely returned no clusters to average.
+        ai_cite_score: clusterScores.length
+          ? Math.round(clusterScores.reduce((sum, s) => sum + s, 0) / clusterScores.length)
+          : (data.ai_overview_readiness ?? 0),
         word_count_target: 2500,
         clusters,
       }
