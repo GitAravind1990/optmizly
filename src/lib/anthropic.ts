@@ -147,6 +147,16 @@ export async function callClaude(
   return text
 }
 
+/** Thrown when Claude's response can't be parsed as JSON — distinct from a real
+ *  server error so callers can surface a "please try again" message instead of
+ *  a generic 500. */
+export class AIResponseParseError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AIResponseParseError'
+  }
+}
+
 export function extractJSON<T = Record<string, unknown>>(text: string): T {
   // Strip code fences
   let clean = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
@@ -158,7 +168,7 @@ export function extractJSON<T = Record<string, unknown>>(text: string): T {
   const braceIdx = clean.indexOf('{')
   const bracketIdx = clean.indexOf('[')
   const start = braceIdx === -1 ? bracketIdx : bracketIdx === -1 ? braceIdx : Math.min(braceIdx, bracketIdx)
-  if (start === -1) throw new Error('No JSON found in response')
+  if (start === -1) throw new AIResponseParseError('No JSON found in response')
   clean = clean.slice(start)
   // Find matching closing brace/bracket
   let depth = 0, end = -1, inStr = false, esc = false
@@ -222,6 +232,6 @@ export function extractJSON<T = Record<string, unknown>>(text: string): T {
         try { return JSON.parse(clean.slice(0, i + 1)) as T } catch { continue }
       }
     }
-    throw new Error('Could not parse JSON response')
+    throw new AIResponseParseError('Could not parse JSON response')
   }
 }

@@ -86,7 +86,12 @@ async function searchAnalyticsQuery(
 function normalizeUrl(u: string): string {
   try {
     const p = new URL(u)
-    return `${p.protocol}//${p.hostname.toLowerCase()}${p.pathname.replace(/\/$/, '')}`
+    // Compare on host+path only: scheme and a leading "www." are the same page for
+    // this purpose, and GSC/the audited URL may disagree on either. Query/hash are
+    // dropped too, since GSC's page dimension is already the canonical page URL.
+    const host = p.hostname.toLowerCase().replace(/^www\./, '')
+    const path = p.pathname.replace(/\/$/, '')
+    return `${host}${path}`
   } catch {
     return u.toLowerCase()
   }
