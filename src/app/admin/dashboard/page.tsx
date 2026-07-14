@@ -11,13 +11,15 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin/stats')
+    const controller = new AbortController();
+    fetch('/api/admin/stats', { signal: controller.signal })
       .then(async r => {
         if (r.status === 403) { router.push('/'); return; }
         setStats(await r.json());
       })
-      .catch(console.error)
+      .catch(e => { if (e.name !== 'AbortError') console.error(e); })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [router]);
 
   if (loading) return <div className="p-12 text-center text-lg">Loading dashboard...</div>;
@@ -146,9 +148,13 @@ function AnalyticsTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin/analytics/content-optimizer')
+    const controller = new AbortController();
+    fetch('/api/admin/analytics/content-optimizer', { signal: controller.signal })
       .then(r => r.json())
-      .then(data => { setAnalytics(data); setLoading(false); });
+      .then(data => setAnalytics(data))
+      .catch(e => { if (e.name !== 'AbortError') console.error(e); })
+      .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
@@ -216,10 +222,14 @@ function UsersTab() {
 
   useEffect(() => {
     setLoading(true);
+    const controller = new AbortController();
     const url = `/api/admin/users${filter ? `?plan=${filter}` : ''}`;
-    fetch(url)
+    fetch(url, { signal: controller.signal })
       .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); });
+      .then(d => setData(d))
+      .catch(e => { if (e.name !== 'AbortError') console.error(e); })
+      .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [filter]);
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
@@ -304,9 +314,13 @@ function HealthTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin/health')
+    const controller = new AbortController();
+    fetch('/api/admin/health', { signal: controller.signal })
       .then(r => r.json())
-      .then(data => { setHealth(data); setLoading(false); });
+      .then(data => setHealth(data))
+      .catch(e => { if (e.name !== 'AbortError') console.error(e); })
+      .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
