@@ -8,7 +8,7 @@ import { getLocalPackRank, isDataForSEOConfigured, resolveBusinessCoordinates, s
 import { rankNDaysAgo } from '@/lib/rank-history'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 90
 
 async function getAgencyUser() {
   const { userId: clerkId } = await auth()
@@ -59,13 +59,17 @@ export async function POST(req: NextRequest) {
       location.keywords.map(kw => getLocalPackRank(kw.keyword, coords, location.name, coords.placeId))
     )
 
-    for (let i = 0; i < location.keywords.length; i++) {
-      const kw = location.keywords[i]
+    // The DB writes per keyword (history lookups + rank update + history upsert) used
+    // to run one keyword at a time in a sequential loop — with ~9 seeded keywords that
+    // was enough round-trips to blow past Vercel's function timeout on its own, on top
+    // of the DataForSEO latency. Running all keywords' post-processing concurrently
+    // instead cut this from O(keywords × db latency) to roughly one round's worth.
+    const perKeyword = await Promise.all(location.keywords.map(async (kw, i) => {
       const result = settledOrNull(results[i])
 
       // null = the lookup itself failed (network/auth/parse) — skip this keyword this
       // run rather than recording a false ranking-drop task over a transient API hiccup.
-      if (result === null) { skipped++; continue }
+      if (result === null) return { skipped: true as const }
 
       const newRank = result.found ? result.rank : null
 
@@ -75,37 +79,43 @@ export async function POST(req: NextRequest) {
       ])
       const change7d = (rank7dAgo !== null && newRank !== null) ? rank7dAgo - newRank : null
       const change30d = (rank30dAgo !== null && newRank !== null) ? rank30dAgo - newRank : null
+      const dropped = kw.currentRank !== null && newRank === null
 
-      updates.push({ keyword: kw.keyword, old: kw.currentRank, new: newRank })
+      await Promise.all([
+        prisma.localKeywordRank.update({
+          where: { id: kw.id },
+          data: {
+            previousRank: kw.currentRank,
+            currentRank: newRank,
+            rankChange7d: change7d,
+            rankChange30d: change30d,
+          },
+        }),
+        prisma.localRankHistory.upsert({
+          where: { keywordId_checkedDate: { keywordId: kw.id, checkedDate: today } },
+          create: { keywordId: kw.id, rank: newRank, checkedDate: today },
+          update: { rank: newRank },
+        }).catch(() => { /* skip duplicate */ }),
+      ])
 
-      if (kw.currentRank !== null && newRank === null) {
-        newTasks.push({
+      return {
+        skipped: false as const,
+        update: { keyword: kw.keyword, old: kw.currentRank, new: newRank },
+        newTask: dropped ? {
           accountId: location.accountId,
           locationId: location.id,
           title: `Investigate ranking drop: "${kw.keyword}"`,
           category: 'keywords',
           priority: 'high',
           description: `"${kw.keyword}" dropped out of the local pack in ${location.city}. Review content and local signals.`,
-        })
+        } : null,
       }
+    }))
 
-      await prisma.localKeywordRank.update({
-        where: { id: kw.id },
-        data: {
-          previousRank: kw.currentRank,
-          currentRank: newRank,
-          rankChange7d: change7d,
-          rankChange30d: change30d,
-        },
-      })
-
-      try {
-        await prisma.localRankHistory.upsert({
-          where: { keywordId_checkedDate: { keywordId: kw.id, checkedDate: today } },
-          create: { keywordId: kw.id, rank: newRank, checkedDate: today },
-          update: { rank: newRank },
-        })
-      } catch { /* skip duplicate */ }
+    for (const r of perKeyword) {
+      if (r.skipped) { skipped++; continue }
+      updates.push(r.update)
+      if (r.newTask) newTasks.push(r.newTask)
     }
 
     if (newTasks.length) {
