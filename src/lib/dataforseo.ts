@@ -246,6 +246,30 @@ export interface BusinessCoordinates {
  * with real starting stats instead of fabricated ones. US-only for now, matching the
  * Local SEO Suite's location schema (no country field).
  */
+// DataForSEO's location_name matches Google Ads' geo-target names exactly, which
+// spell out the full state name ("Washington") — a two-letter abbreviation ("WA",
+// what nearly every US address actually uses) is rejected outright as an invalid
+// field, not just a no-match. The Local SEO Suite's State field is free text with
+// no format hint, so real users overwhelmingly type the abbreviation.
+const US_STATE_NAMES: Record<string, string> = {
+  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
+  CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', FL: 'Florida', GA: 'Georgia',
+  HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa',
+  KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland',
+  MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri',
+  MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
+  NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio',
+  OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina',
+  SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont',
+  VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+  DC: 'District of Columbia',
+}
+
+function normalizeStateName(state: string): string {
+  const full = US_STATE_NAMES[state.trim().toUpperCase()]
+  return full ?? state.trim()
+}
+
 export async function resolveBusinessCoordinates(
   businessName: string,
   city: string,
@@ -254,7 +278,7 @@ export async function resolveBusinessCoordinates(
   const data = await dfsPost<MyBusinessInfoResponse>('/v3/business_data/google/my_business_info/live', [
     {
       keyword: businessName,
-      location_name: `${city},${state},United States`,
+      location_name: `${city},${normalizeStateName(state)},United States`,
       language_code: 'en',
     },
   ])
