@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { callClaude as callClaudeShared } from '@/lib/anthropic';
-import { requireAuth, AuthError } from '@/lib/auth';
+import { requireAuth, AuthError, getOrCreateUser } from '@/lib/auth';
 import { captureServerException } from '@/lib/posthog-server';
 
 export const maxDuration = 60;
@@ -124,8 +124,7 @@ export async function GET() {
   try {
     if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const user = await prisma.user.findUnique({ where: { clerkId } });
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    const user = await getOrCreateUser(clerkId);
 
     const optimizations = await prisma.contentOptimization.findMany({
       where: { userId: user.id },

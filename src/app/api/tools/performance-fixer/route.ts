@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { canUseTool } from '@/lib/plans';
+import { getOrCreateUser } from '@/lib/auth';
 import { captureServerException } from '@/lib/posthog-server';
 
 export const maxDuration = 60;
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
     const { url, industry } = await req.json();
     if (!url || !url.startsWith('http')) return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { clerkId } });
+    const user = await getOrCreateUser(clerkId);
     if (!user || !canUseTool(user.plan, 'performance-fixer')) {
       return NextResponse.json({ error: 'This tool is exclusive to Agency plan', requiredPlan: 'AGENCY', upgradeUrl: '/pricing' }, { status: 403 });
     }
@@ -148,7 +149,7 @@ export async function GET() {
   const { userId: clerkId } = await auth();
   try {
     if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const user = await prisma.user.findUnique({ where: { clerkId } });
+    const user = await getOrCreateUser(clerkId);
     if (!user || !canUseTool(user.plan, 'performance-fixer')) return NextResponse.json({ error: 'Agency only' }, { status: 403 });
     const audits = await prisma.performanceFixerAudit.findMany({
       where: { userId: user.id },

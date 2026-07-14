@@ -32,7 +32,7 @@ export class AuthError extends Error {
   }
 }
 
-async function getOrCreateUser(clerkId: string) {
+export async function getOrCreateUser(clerkId: string) {
   let user = await prisma.user.findUnique({ where: { clerkId } })
   if (!user) {
     // New user — create with FREE plan

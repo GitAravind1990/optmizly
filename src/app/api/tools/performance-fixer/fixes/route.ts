@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import Anthropic from '@anthropic-ai/sdk';
 import { canUseTool } from '@/lib/plans';
+import { getOrCreateUser } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { captureServerException } from '@/lib/posthog-server';
 import { getTrafficEstimate } from '@/lib/dataforseo';
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     const { auditId } = await req.json();
     if (!auditId) return NextResponse.json({ error: 'auditId required' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { clerkId } });
+    const user = await getOrCreateUser(clerkId);
     if (!user || !canUseTool(user.plan, 'performance-fixer')) return NextResponse.json({ error: 'Agency only' }, { status: 403 });
 
     const audit = await prisma.performanceFixerAudit.findFirst({

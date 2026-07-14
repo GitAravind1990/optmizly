@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { callClaude, setTrackingUser } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
-import { AuthError } from '@/lib/auth'
+import { AuthError, getOrCreateUser } from '@/lib/auth'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { getBacklinksSummary, getOrganicRank, getTrafficEstimate, isDataForSEOConfigured, settledOrNull } from '@/lib/dataforseo'
 import { captureServerException } from '@/lib/posthog-server'
@@ -15,8 +15,7 @@ export const maxDuration = 60
 async function getAgencyUser() {
   const { userId: clerkId } = await auth()
   if (!clerkId) throw new AuthError(401, 'Not authenticated')
-  const user = await prisma.user.findUnique({ where: { clerkId } })
-  if (!user) throw new AuthError(401, 'User not found')
+  const user = await getOrCreateUser(clerkId)
   if (user.plan !== Plan.AGENCY) throw new AuthError(403, 'Agency plan required')
   setTrackingUser(user.id)
   return user

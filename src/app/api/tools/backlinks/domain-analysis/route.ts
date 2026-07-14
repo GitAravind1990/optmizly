@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { getBacklinksSummary } from '@/lib/dataforseo'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError } from '@/lib/auth'
+import { AuthError, getOrCreateUser } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
 import { captureServerException } from '@/lib/posthog-server'
 
@@ -14,8 +14,7 @@ export const maxDuration = 30
 async function getProUser() {
   const { userId: clerkId } = await auth()
   if (!clerkId) throw new AuthError(401, 'Not authenticated')
-  const user = await prisma.user.findUnique({ where: { clerkId } })
-  if (!user) throw new AuthError(401, 'User not found')
+  const user = await getOrCreateUser(clerkId)
   if (!canUseTool(user.plan, 'backlinks')) throw new AuthError(403, 'PRO or AGENCY plan required')
   return user
 }

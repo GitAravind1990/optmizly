@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError } from '@/lib/auth'
+import { AuthError, getOrCreateUser } from '@/lib/auth'
 import { computeAuditScores, type CheckStatus } from '@/lib/seo-audit/framework'
 import { captureServerException } from '@/lib/posthog-server'
 
@@ -11,8 +11,7 @@ export const runtime = 'nodejs'
 async function getUser() {
   const { userId: clerkId } = await auth()
   if (!clerkId) throw new AuthError(401, 'Not authenticated')
-  const user = await prisma.user.findUnique({ where: { clerkId } })
-  if (!user) throw new AuthError(401, 'User not found')
+  const user = await getOrCreateUser(clerkId)
   return user
 }
 
