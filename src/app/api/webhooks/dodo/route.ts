@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
 
       if (userId) {
         await prisma.subscription.upsert({
-          where: { dodoSubscriptionId: sub.subscription_id },
+          where: { userId },
           create: {
             userId,
             dodoSubscriptionId: sub.subscription_id,
@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
             currentPeriodEnd: periodEnd,
           },
           update: {
+            dodoSubscriptionId: sub.subscription_id,
             dodoProductId: productId,
             dodoCustomerId: sub.customer?.customer_id ?? '',
             status,
