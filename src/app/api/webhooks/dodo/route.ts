@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
           const dbUser = await prisma.user.findUnique({ where: { id: userId } })
           if (dbUser) {
             if (dbUser.clerkId) {
-              captureServerEvent(dbUser.clerkId, 'subscription_activated', {
+              await captureServerEvent(dbUser.clerkId, 'subscription_activated', {
                 plan: planKey,
                 product_id: productId,
                 $set: { plan: planKey },
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
                 const nextBilling = periodEnd
                   ? periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
                   : undefined
-                sendSubscriptionEmail(
+                await sendSubscriptionEmail(
                   dbUser.email,
                   planKey === 'AGENCY' ? 'Agency' : 'Pro',
                   amount,
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
           const accessUntil = record.currentPeriodEnd
             ? record.currentPeriodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
             : undefined
-          sendCancelledEmail(cancelledUser.email, record.plan, firstName, accessUntil).catch(() => {})
+          await sendCancelledEmail(cancelledUser.email, record.plan, firstName, accessUntil).catch(() => {})
         }
       }
     } else {
