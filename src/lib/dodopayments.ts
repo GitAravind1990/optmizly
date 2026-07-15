@@ -32,13 +32,8 @@ export const DODO_PRODUCT_IDS = {
   AGENCY: process.env.NEXT_PUBLIC_DODO_AGENCY_PRODUCT_ID || '',
 } as const
 
-// TEMPORARY — real end-to-end AGENCY payment test only. Remove after testing.
-// $2 stand-in for AGENCY, so a completed test payment exercises the real
-// webhook -> plan upgrade -> email path.
-const DODO_TEST_AGENCY_PRODUCT_ID = 'pdt_0NjFU528812IJjVRBzG11'
-
 export function getPlanFromProductId(productId: string): 'PRO' | 'AGENCY' | 'FREE' {
-  if (productId === DODO_PRODUCT_IDS.AGENCY || productId === DODO_TEST_AGENCY_PRODUCT_ID) return 'AGENCY'
+  if (productId === DODO_PRODUCT_IDS.AGENCY) return 'AGENCY'
   if (productId === DODO_PRODUCT_IDS.PRO) return 'PRO'
   return 'FREE'
 }
