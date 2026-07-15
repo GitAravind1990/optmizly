@@ -23,9 +23,6 @@
     }
   ],
   "functions": {
-    "src/app/api/fixer/route.ts": {
-      "maxDuration": 60
-    },
     "src/app/api/rewrite/route.ts": {
       "maxDuration": 60
     },
@@ -45,9 +42,6 @@
       "maxDuration": 30
     },
     "src/app/api/eeat/route.ts": {
-      "maxDuration": 30
-    },
-    "src/app/api/backlinks/route.ts": {
       "maxDuration": 30
     },
     "src/app/api/gap/route.ts": {
