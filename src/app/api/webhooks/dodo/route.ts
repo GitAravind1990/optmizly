@@ -75,6 +75,9 @@ export async function POST(req: NextRequest) {
       )
 
       if (userId) {
+        const existingSub = await prisma.subscription.findUnique({ where: { userId } })
+        const isNewCycle = !existingSub || existingSub.dodoSubscriptionId !== sub.subscription_id
+
         await prisma.subscription.upsert({
           where: { userId },
           create: {
@@ -85,6 +88,7 @@ export async function POST(req: NextRequest) {
             status,
             plan,
             currentPeriodEnd: periodEnd,
+            welcomeEmailSent: false,
           },
           update: {
             dodoSubscriptionId: sub.subscription_id,
@@ -93,6 +97,7 @@ export async function POST(req: NextRequest) {
             status,
             plan,
             currentPeriodEnd: periodEnd,
+            ...(isNewCycle ? { welcomeEmailSent: false } : {}),
           },
         })
         await prisma.user.update({ where: { id: userId }, data: { plan } })
@@ -108,21 +113,34 @@ export async function POST(req: NextRequest) {
               $set: { plan: planKey },
             }).catch(() => {})
           }
-          // Only send email on initial creation (not on active status change or renewals)
-          if (eventType === 'subscription.created') {
-            const firstName = await getClerkFirstName(dbUser.clerkId, dbUser.email.split('@')[0])
-            const rawAmount = sub.recurring_pre_tax_amount
-            const amount = rawAmount ? `$${(rawAmount / 100).toFixed(0)}` : (planKey === 'PRO' ? '$19' : '$49')
-            const nextBilling = periodEnd
-              ? periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-              : undefined
-            sendSubscriptionEmail(
-              dbUser.email,
-              planKey === 'AGENCY' ? 'Agency' : 'Pro',
-              amount,
-              firstName,
-              nextBilling,
-            ).catch(() => {})
+          // Send the welcome email exactly once per activation. DoDo doesn't
+          // reliably emit `subscription.created` before the subscription goes
+          // active, and multiple subscription.* events can land within
+          // milliseconds of each other for the same activation -- so instead
+          // of gating on event type, atomically claim the send via a
+          // conditional update. Only the request that flips
+          // welcomeEmailSent false -> true (count === 1) sends the email,
+          // which is race-safe under concurrent webhook deliveries.
+          if (status === 'ACTIVE') {
+            const claimed = await prisma.subscription.updateMany({
+              where: { userId, welcomeEmailSent: false },
+              data: { welcomeEmailSent: true },
+            })
+            if (claimed.count === 1) {
+              const firstName = await getClerkFirstName(dbUser.clerkId, dbUser.email.split('@')[0])
+              const rawAmount = sub.recurring_pre_tax_amount
+              const amount = rawAmount ? `$${(rawAmount / 100).toFixed(0)}` : (planKey === 'PRO' ? '$19' : '$49')
+              const nextBilling = periodEnd
+                ? periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                : undefined
+              sendSubscriptionEmail(
+                dbUser.email,
+                planKey === 'AGENCY' ? 'Agency' : 'Pro',
+                amount,
+                firstName,
+                nextBilling,
+              ).catch(() => {})
+            }
           }
         }
       } else {
