@@ -398,10 +398,6 @@ const FAQS = [
     a: 'No. Optmizly is fully hosted. All AI analysis is included in your plan. You don\'t need an Anthropic key, Google Search Console access, or any third-party setup.',
   },
   {
-    q: 'What AI model powers Optmizly?',
-    a: 'Optmizly uses Claude by Anthropic for all content analysis, scoring, and recommendations. Claude is one of the most capable AI models available, which is why our analysis goes well beyond surface-level keyword checks.',
-  },
-  {
     q: 'Can I upgrade or downgrade?',
     a: 'Yes. Upgrade instantly from your dashboard settings. The new limits apply immediately. Downgrades take effect at the start of your next billing cycle.',
   },
