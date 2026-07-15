@@ -143,6 +143,7 @@ model Subscription {
   currentPeriodEnd     DateTime?
   cancelledAt          DateTime?
   welcomeEmailSent     Boolean            @default(false)
+  lastWebhookEventAt   DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
