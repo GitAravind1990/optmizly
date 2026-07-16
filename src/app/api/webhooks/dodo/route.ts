@@ -62,10 +62,10 @@ export async function POST(req: NextRequest) {
       const productId: string = sub.product_id ?? ''
       const planKey = getPlanFromProductId(productId)
       const plan = Plan[planKey]
-      const status = mapStatus(sub.status)
       const periodEnd: Date | null = sub.next_billing_date
         ? new Date(sub.next_billing_date)
         : null
+      const trialPeriodDays: number = sub.trial_period_days ?? 0
 
       const userId = await resolveUserId(
         metadata?.userId,
@@ -93,6 +93,30 @@ export async function POST(req: NextRequest) {
         } else {
           const isNewCycle = !existingSub || existingSub.dodoSubscriptionId !== sub.subscription_id
           const wasTrialing = existingSub?.status === 'TRIALING'
+
+          // DoDo does not report a literal "trialing" status via the API in
+          // practice (confirmed via live testing on 2026-07-16 -- status
+          // stays "active" throughout, and trial_period_days is a static
+          // config field that never changes even after conversion, so it
+          // can't be used alone to tell "still trialing" from "already
+          // converted"). Detect trial state ourselves: a fresh trial
+          // subscription's first-ever webhook is TRIALING; later events on
+          // the same subscription stay TRIALING only while the billing
+          // cycle hasn't advanced past the trial-end date we stored: once
+          // it has, that's the real conversion charge, and status is left
+          // as ACTIVE (the mapStatus result) so the conversion-email branch
+          // below fires correctly.
+          const billingCycleAdvanced = Boolean(
+            wasTrialing && existingSub?.currentPeriodEnd && periodEnd && periodEnd > existingSub.currentPeriodEnd,
+          )
+          let status = mapStatus(sub.status)
+          if (trialPeriodDays > 0 && status === 'ACTIVE') {
+            if (!existingSub) {
+              status = 'TRIALING'
+            } else if (wasTrialing && !billingCycleAdvanced) {
+              status = 'TRIALING'
+            }
+          }
 
           await prisma.subscription.upsert({
             where: { userId },
