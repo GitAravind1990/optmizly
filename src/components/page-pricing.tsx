@@ -83,42 +83,57 @@ const plans = [
 ]
 
 function CheckoutButton({ productId, cta, featured }: { productId: string; cta: string; featured: boolean }) {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState<'trial' | 'now' | null>(null)
 
-  async function handleCheckout() {
-    setLoading(true)
+  async function handleCheckout(skipTrial: boolean) {
+    setLoading(skipTrial ? 'now' : 'trial')
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({ productId, skipTrial }),
       })
       const data = await res.json()
       if (data.url) window.location.href = data.url
     } finally {
-      setLoading(false)
+      setLoading(null)
     }
   }
 
   return (
-    <button
-      onClick={handleCheckout}
-      disabled={loading}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        width: '100%', height: 52, borderRadius: 14, cursor: 'pointer',
-        fontFamily: T.sans, fontSize: 15, fontWeight: 600, letterSpacing: -0.2,
-        background: featured ? T.grad : '#fff',
-        color: featured ? '#fff' : T.ink,
-        boxShadow: featured
-          ? '0 8px 24px -8px rgba(0,0,255,0.45), inset 0 1px 0 rgba(255,255,255,0.2)'
-          : '0 1px 3px rgba(11,17,32,0.08)',
-        border: featured ? '1px solid transparent' : `1px solid ${T.line}`,
-        opacity: loading ? 0.6 : 1,
-      }}
-    >
-      {loading ? 'Redirecting…' : cta} {!loading && '→'}
-    </button>
+    <div>
+      <button
+        onClick={() => handleCheckout(false)}
+        disabled={loading !== null}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          width: '100%', height: 52, borderRadius: 14, cursor: 'pointer',
+          fontFamily: T.sans, fontSize: 15, fontWeight: 600, letterSpacing: -0.2,
+          background: featured ? T.grad : '#fff',
+          color: featured ? '#fff' : T.ink,
+          boxShadow: featured
+            ? '0 8px 24px -8px rgba(0,0,255,0.45), inset 0 1px 0 rgba(255,255,255,0.2)'
+            : '0 1px 3px rgba(11,17,32,0.08)',
+          border: featured ? '1px solid transparent' : `1px solid ${T.line}`,
+          opacity: loading !== null ? 0.6 : 1,
+        }}
+      >
+        {loading === 'trial' ? 'Redirecting…' : cta} {loading !== 'trial' && '→'}
+      </button>
+      <button
+        onClick={() => handleCheckout(true)}
+        disabled={loading !== null}
+        style={{
+          display: 'block', width: '100%', marginTop: 10, padding: '4px 0',
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontFamily: T.sans, fontSize: 13, fontWeight: 500,
+          color: featured ? 'rgba(255,255,255,0.6)' : T.muted,
+          opacity: loading !== null ? 0.6 : 1,
+        }}
+      >
+        {loading === 'now' ? 'Redirecting…' : 'Skip trial, pay now'}
+      </button>
+    </div>
   )
 }
 

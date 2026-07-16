@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const { userId: clerkId } = await auth()
     if (!clerkId) return apiError({ message: 'Not authenticated', status: 401, name: 'AuthError' })
 
-    const { productId } = await req.json()
+    const { productId, skipTrial } = await req.json()
     if (!productId) return apiError(new Error('productId is required'))
 
     const clerkUser = await currentUser()
@@ -27,9 +27,10 @@ export async function POST(req: NextRequest) {
 
     // One free trial per account, ever: only offered when this account has
     // never had a subscription (a Subscription row is never deleted except
-    // via cascade-on-account-deletion, so this can't be gamed).
+    // via cascade-on-account-deletion, so this can't be gamed). skipTrial lets
+    // a would-be-eligible user opt out and be charged immediately instead.
     const existingSub = await prisma.subscription.findUnique({ where: { userId: user.id } })
-    const isTrialEligible = !existingSub && getPlanFromProductId(productId) !== 'FREE'
+    const isTrialEligible = !existingSub && getPlanFromProductId(productId) !== 'FREE' && !skipTrial
 
     const session = await dodo.checkoutSessions.create({
       product_cart: [{ product_id: productId, quantity: 1 }],
