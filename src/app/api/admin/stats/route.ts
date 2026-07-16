@@ -11,12 +11,25 @@ export async function GET(_req: NextRequest) {
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const endDate = new Date();
 
-    // REVENUE METRICS
-    const subscriptions = await prisma.subscription.findMany({
-      where: { status: 'ACTIVE' },
-      select: { plan: true },
-    });
+    const [
+      subscriptions,
+      totalUsers,
+      usersByPlan,
+      newUsersThisMonth,
+      contentOptimizerCount,
+      canceledThisMonth,
+      tokenTotals,
+    ] = await Promise.all([
+      prisma.subscription.findMany({ where: { status: 'ACTIVE' }, select: { plan: true } }),
+      prisma.user.count(),
+      prisma.user.groupBy({ by: ['plan'], _count: true }),
+      prisma.user.count({ where: { createdAt: { gte: startDate } } }),
+      prisma.contentOptimization.count({ where: { analyzedAt: { gte: startDate, lte: endDate } } }),
+      prisma.subscription.count({ where: { status: 'CANCELLED', updatedAt: { gte: startDate } } }),
+      prisma.user.aggregate({ _sum: { totalInputTokens: true, totalOutputTokens: true } }),
+    ]);
 
+    // REVENUE METRICS
     const proCount = subscriptions.filter(s => s.plan === 'PRO').length;
     const agencyCount = subscriptions.filter(s => s.plan === 'AGENCY').length;
 
@@ -28,42 +41,20 @@ export async function GET(_req: NextRequest) {
     const totalMRR = mrrByPlan.pro + mrrByPlan.agency;
 
     // USER METRICS
-    const totalUsers = await prisma.user.count();
-
-    const usersByPlan = await prisma.user.groupBy({
-      by: ['plan'],
-      _count: true,
-    });
-
     const usersByPlanMap = {
       FREE: usersByPlan.find(u => u.plan === 'FREE')?._count || 0,
       PRO: usersByPlan.find(u => u.plan === 'PRO')?._count || 0,
       AGENCY: usersByPlan.find(u => u.plan === 'AGENCY')?._count || 0,
     };
 
-    const newUsersThisMonth = await prisma.user.count({
-      where: { createdAt: { gte: startDate } },
-    });
-
     // FEATURE USAGE
-    const contentOptimizerCount = await prisma.contentOptimization.count({
-      where: { analyzedAt: { gte: startDate, lte: endDate } },
-    });
-
     const toolUsage = { 'Content Optimizer': contentOptimizerCount };
 
     // CHURN
-    const canceledThisMonth = await prisma.subscription.count({
-      where: { status: 'CANCELLED', updatedAt: { gte: startDate } },
-    });
-
     const paidUsers = usersByPlanMap.PRO + usersByPlanMap.AGENCY;
     const churnRate = paidUsers > 0 ? (canceledThisMonth / paidUsers) * 100 : 0;
 
     // TOKEN USAGE
-    const tokenTotals = await prisma.user.aggregate({
-      _sum: { totalInputTokens: true, totalOutputTokens: true },
-    });
     const totalInputTokens = tokenTotals._sum.totalInputTokens ?? 0;
     const totalOutputTokens = tokenTotals._sum.totalOutputTokens ?? 0;
     const totalTokens = totalInputTokens + totalOutputTokens;

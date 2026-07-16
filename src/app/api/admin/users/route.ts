@@ -15,33 +15,34 @@ export async function GET(req: NextRequest) {
     const where: Record<string, unknown> = {};
     if (plan) where.plan = plan;
 
-    const users = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        clerkId: true,
-        email: true,
-        plan: true,
-        createdAt: true,
-        totalInputTokens: true,
-        totalOutputTokens: true,
-        subscription: {
-          select: {
-            plan: true,
-            status: true,
-            currentPeriodEnd: true,
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          clerkId: true,
+          email: true,
+          plan: true,
+          createdAt: true,
+          totalInputTokens: true,
+          totalOutputTokens: true,
+          subscription: {
+            select: {
+              plan: true,
+              status: true,
+              currentPeriodEnd: true,
+            },
+          },
+          contentOptimizations: {
+            select: { id: true },
           },
         },
-        contentOptimizations: {
-          select: { id: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      skip: offset,
-      take: limit,
-    });
-
-    const total = await prisma.user.count({ where });
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.user.count({ where }),
+    ]);
 
     return NextResponse.json({
       users: users.map(u => ({

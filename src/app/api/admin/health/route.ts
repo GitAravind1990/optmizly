@@ -7,18 +7,23 @@ export async function GET(_req: NextRequest) {
     const admin = await requireAdmin();
     if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
-    const monthlyAnalyses = await prisma.contentOptimization.count({
-      where: { analyzedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-    });
+    const [monthlyAnalyses, totalUsers, totalContentOptimizations, totalSubscriptions] = await Promise.all([
+      prisma.contentOptimization.count({
+        where: { analyzedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+      }),
+      prisma.user.count(),
+      prisma.contentOptimization.count(),
+      prisma.subscription.count(),
+    ]);
 
     const claudeCostPerAnalysis = 0.15;
     const totalClaudeCost = monthlyAnalyses * claudeCostPerAnalysis;
     const googleCallsMonthly = monthlyAnalyses * 2;
 
     const dbStats = {
-      users: await prisma.user.count(),
-      contentOptimizations: await prisma.contentOptimization.count(),
-      subscriptions: await prisma.subscription.count(),
+      users: totalUsers,
+      contentOptimizations: totalContentOptimizations,
+      subscriptions: totalSubscriptions,
     };
 
     return NextResponse.json({
