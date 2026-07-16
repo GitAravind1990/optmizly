@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from './prisma'
-import { PLAN_LIMITS, PLAN_TOOLS, getMonthKey } from './plans'
+import { PLAN_LIMITS, TRIAL_LIMITS, PLAN_TOOLS, getMonthKey } from './plans'
 import { Plan, Prisma } from '@prisma/client'
 import { setTrackingUser } from './anthropic'
 import { captureServerEvent } from './posthog-server'
@@ -76,7 +76,8 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
 
   // Atomically increment first, then check — prevents concurrent requests bypassing quota
   const month = getMonthKey()
-  const limit = PLAN_LIMITS[user.plan]
+  const sub = await prisma.subscription.findUnique({ where: { userId: user.id }, select: { status: true } })
+  const limit = sub?.status === 'TRIALING' ? TRIAL_LIMITS[user.plan] : PLAN_LIMITS[user.plan]
 
   const updated = await prisma.usage.upsert({
     where: { userId_month: { userId: user.id, month } },
@@ -170,7 +171,7 @@ export async function getUserUsage() {
 
   const month = getMonthKey()
   const count = user.usage.find(u => u.month === month)?.count ?? 0
-  const limit = PLAN_LIMITS[user.plan]
+  const limit = user.subscription?.status === 'TRIALING' ? TRIAL_LIMITS[user.plan] : PLAN_LIMITS[user.plan]
 
   return {
     plan: user.plan,

@@ -244,7 +244,9 @@ export default function SettingsPage() {
                 <div>
                   <div className="text-xs font-bold opacity-60 uppercase tracking-wider mb-1">Current Plan</div>
                   <div className="text-4xl font-black">{meta.label}</div>
-                  <div className="text-sm opacity-75 mt-1">{meta.price} · {meta.limit} analyses / month</div>
+                  <div className="text-sm opacity-75 mt-1">
+                    {meta.price} · {sub?.status === 'TRIALING' ? `${usage?.limit ?? meta.limit} analyses during trial` : `${meta.limit} analyses / month`}
+                  </div>
                 </div>
                 {plan !== 'AGENCY' && (
                   <Link href="/pricing"

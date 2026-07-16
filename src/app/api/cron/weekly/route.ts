@@ -2,11 +2,10 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendWeeklySummaryEmail } from '@/lib/email'
 import { getClerkFirstName } from '@/lib/auth'
+import { PLAN_LIMITS, TRIAL_LIMITS } from '@/lib/plans'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-const PLAN_LIMITS: Record<string, number> = { FREE: 3, PRO: 50, AGENCY: 200 }
 
 function getMondayKey(date: Date): string {
   const d = new Date(date)
@@ -39,15 +38,16 @@ export async function GET(req: NextRequest) {
 
   for (const user of users) {
     try {
-      const limit = PLAN_LIMITS[user.plan] ?? 3
-
-      const [usageRecord, weekActivity] = await Promise.all([
+      const [usageRecord, weekActivity, sub] = await Promise.all([
         prisma.usage.findUnique({ where: { userId_month: { userId: user.id, month: monthKey } } }),
         prisma.contentOptimization.findMany({
           where: { userId: user.id, createdAt: { gte: sevenDaysAgo } },
           select: { overallScore: true },
         }),
+        prisma.subscription.findUnique({ where: { userId: user.id }, select: { status: true } }),
       ])
+
+      const limit = (sub?.status === 'TRIALING' ? TRIAL_LIMITS[user.plan] : PLAN_LIMITS[user.plan]) ?? 3
 
       const monthUsed = usageRecord?.count ?? 0
       const weekAnalyses = weekActivity.length
