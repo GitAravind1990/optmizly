@@ -84,14 +84,27 @@ export async function POST(req: NextRequest) {
         const isStaleEvent = Boolean(
           existingSub?.lastWebhookEventAt && eventTimestamp < existingSub.lastWebhookEventAt,
         )
+        const isNewCycle = !existingSub || existingSub.dodoSubscriptionId !== sub.subscription_id
+
+        // A subscription.cancelled event can be delivered around the same
+        // moment as a subscription.updated/active/renewed event for the same
+        // underlying subscription (observed live during trial testing). If
+        // this account is already cancelled in our DB and this event is for
+        // that same DoDo subscription (not a fresh resubscription), don't
+        // let it resurrect access -- the cancellation handler is the source
+        // of truth once cancelled.
+        const isAlreadyCancelled = existingSub?.status === 'CANCELLED' && !isNewCycle
 
         if (isStaleEvent) {
           console.log(
             `[Dodo Webhook] Ignoring stale event for subscription ${sub.subscription_id} ` +
             `(event ${eventTimestamp.toISOString()} older than last-applied ${existingSub!.lastWebhookEventAt!.toISOString()})`,
           )
+        } else if (isAlreadyCancelled) {
+          console.log(
+            `[Dodo Webhook] Ignoring ${eventType} for already-cancelled subscription ${sub.subscription_id}`,
+          )
         } else {
-          const isNewCycle = !existingSub || existingSub.dodoSubscriptionId !== sub.subscription_id
           const wasTrialing = existingSub?.status === 'TRIALING'
 
           // DoDo does not report a literal "trialing" status via the API in
