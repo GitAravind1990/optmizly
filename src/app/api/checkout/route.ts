@@ -1,9 +1,10 @@
 ﻿import { NextRequest } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { dodo } from '@/lib/dodopayments'
+import { dodo, getPlanFromProductId } from '@/lib/dodopayments'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerEvent } from '@/lib/posthog-server'
+import { TRIAL_PERIOD_DAYS } from '@/lib/plans'
 
 export const runtime = 'nodejs'
 
@@ -24,19 +25,27 @@ export async function POST(req: NextRequest) {
       user = await prisma.user.create({ data: { clerkId, email } })
     }
 
+    // One free trial per account, ever: only offered when this account has
+    // never had a subscription (a Subscription row is never deleted except
+    // via cascade-on-account-deletion, so this can't be gamed).
+    const existingSub = await prisma.subscription.findUnique({ where: { userId: user.id } })
+    const isTrialEligible = !existingSub && getPlanFromProductId(productId) !== 'FREE'
+
     const session = await dodo.checkoutSessions.create({
       product_cart: [{ product_id: productId, quantity: 1 }],
       customer: { email, name },
       metadata: { userId: user.id, clerkId },
       return_url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://Optmizly.com'}/dashboard/settings`,
+      ...(isTrialEligible ? { subscription_data: { trial_period_days: TRIAL_PERIOD_DAYS } } : {}),
     } as any)
 
     const checkoutUrl = (session as any).checkout_url ?? (session as any).url
     if (!checkoutUrl) throw new Error('Checkout URL not returned')
 
-    captureServerEvent(clerkId, 'checkout_started', {
+    await captureServerEvent(clerkId, 'checkout_started', {
       product_id: productId,
       from_plan: user?.plan ?? 'FREE',
+      is_trial: isTrialEligible,
     }).catch(() => {})
 
     return apiSuccess({ url: checkoutUrl })

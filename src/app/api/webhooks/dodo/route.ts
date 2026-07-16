@@ -4,7 +4,7 @@ import { getPlanFromProductId } from '@/lib/dodopayments'
 import { prisma } from '@/lib/prisma'
 import { Plan } from '@prisma/client'
 import { captureServerEvent } from '@/lib/posthog-server'
-import { sendSubscriptionEmail, sendCancelledEmail } from '@/lib/email'
+import { sendSubscriptionEmail, sendCancelledEmail, sendTrialStartedEmail } from '@/lib/email'
 import { getClerkFirstName } from '@/lib/auth'
 
 export const runtime = 'nodejs'
@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
           )
         } else {
           const isNewCycle = !existingSub || existingSub.dodoSubscriptionId !== sub.subscription_id
+          const wasTrialing = existingSub?.status === 'TRIALING'
 
           await prisma.subscription.upsert({
             where: { userId },
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest) {
               plan,
               currentPeriodEnd: periodEnd,
               welcomeEmailSent: false,
+              trialConvertedEmailSent: false,
               lastWebhookEventAt: eventTimestamp,
             },
             update: {
@@ -114,7 +116,7 @@ export async function POST(req: NextRequest) {
               plan,
               currentPeriodEnd: periodEnd,
               lastWebhookEventAt: eventTimestamp,
-              ...(isNewCycle ? { welcomeEmailSent: false } : {}),
+              ...(isNewCycle ? { welcomeEmailSent: false, trialConvertedEmailSent: false } : {}),
             },
           })
           await prisma.user.update({ where: { id: userId }, data: { plan } })
@@ -130,29 +132,59 @@ export async function POST(req: NextRequest) {
                 $set: { plan: planKey },
               }).catch(() => {})
             }
-            // Send the welcome email exactly once per activation. DoDo doesn't
-            // reliably emit `subscription.created` before the subscription goes
-            // active, and multiple subscription.* events can land within
-            // milliseconds of each other for the same activation -- so instead
-            // of gating on event type, atomically claim the send via a
-            // conditional update. Only the request that flips
-            // welcomeEmailSent false -> true (count === 1) sends the email,
+            // Send the activation email exactly once per lifecycle stage. DoDo
+            // doesn't reliably emit `subscription.created` before the
+            // subscription goes active/trialing, and multiple subscription.*
+            // events can land within milliseconds of each other for the same
+            // activation -- so instead of gating on event type, atomically
+            // claim each send via a conditional update. Only the request that
+            // flips the flag false -> true (count === 1) sends the email,
             // which is race-safe under concurrent webhook deliveries.
-            if (status === 'ACTIVE') {
+            const firstName = await getClerkFirstName(dbUser.clerkId, dbUser.email.split('@')[0])
+            const rawAmount = sub.recurring_pre_tax_amount
+            const amount = rawAmount ? `$${(rawAmount / 100).toFixed(0)}` : (planKey === 'PRO' ? '$19' : '$49')
+            const nextBilling = periodEnd
+              ? periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+              : undefined
+            const planLabel = planKey === 'AGENCY' ? 'Agency' : 'Pro'
+
+            if (status === 'TRIALING') {
               const claimed = await prisma.subscription.updateMany({
                 where: { userId, welcomeEmailSent: false },
                 data: { welcomeEmailSent: true },
               })
               if (claimed.count === 1) {
-                const firstName = await getClerkFirstName(dbUser.clerkId, dbUser.email.split('@')[0])
-                const rawAmount = sub.recurring_pre_tax_amount
-                const amount = rawAmount ? `$${(rawAmount / 100).toFixed(0)}` : (planKey === 'PRO' ? '$19' : '$49')
-                const nextBilling = periodEnd
-                  ? periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                  : undefined
+                await sendTrialStartedEmail(
+                  dbUser.email,
+                  planLabel,
+                  amount,
+                  firstName,
+                  nextBilling,
+                ).catch(() => {})
+              }
+            } else if (status === 'ACTIVE' && wasTrialing) {
+              const claimed = await prisma.subscription.updateMany({
+                where: { userId, trialConvertedEmailSent: false },
+                data: { trialConvertedEmailSent: true },
+              })
+              if (claimed.count === 1) {
                 await sendSubscriptionEmail(
                   dbUser.email,
-                  planKey === 'AGENCY' ? 'Agency' : 'Pro',
+                  planLabel,
+                  amount,
+                  firstName,
+                  nextBilling,
+                ).catch(() => {})
+              }
+            } else if (status === 'ACTIVE') {
+              const claimed = await prisma.subscription.updateMany({
+                where: { userId, welcomeEmailSent: false },
+                data: { welcomeEmailSent: true },
+              })
+              if (claimed.count === 1) {
+                await sendSubscriptionEmail(
+                  dbUser.email,
+                  planLabel,
                   amount,
                   firstName,
                   nextBilling,
@@ -198,15 +230,15 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true })
 }
 
-function mapStatus(dodoStatus: string): 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'PAST_DUE' | 'PAUSED' {
-  const map: Record<string, 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'PAST_DUE' | 'PAUSED'> = {
+function mapStatus(dodoStatus: string): 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'PAST_DUE' | 'PAUSED' | 'TRIALING' {
+  const map: Record<string, 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'PAST_DUE' | 'PAUSED' | 'TRIALING'> = {
     active: 'ACTIVE',
     cancelled: 'CANCELLED',
     expired: 'EXPIRED',
     past_due: 'PAST_DUE',
     paused: 'PAUSED',
     on_hold: 'PAST_DUE',
-    trialing: 'ACTIVE',
+    trialing: 'TRIALING',
   }
   return map[dodoStatus] ?? 'ACTIVE'
 }

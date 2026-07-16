@@ -19,3 +19,9 @@ export function canUseTool(plan: Plan, tool: string): boolean {
 export function getMonthKey(): string {
   return new Date().toISOString().slice(0, 7)
 }
+
+// One trial per account, ever -- gated in the checkout route by whether a
+// Subscription row already exists for the user (never deleted except via
+// cascade-on-account-deletion, so this can't be gamed by re-triggering it).
+export const TRIAL_PERIOD_DAYS = 14
+export const TRIAL_REMINDER_DAYS_BEFORE = 3

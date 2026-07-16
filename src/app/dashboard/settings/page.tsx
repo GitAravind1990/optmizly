@@ -117,7 +117,7 @@ export default function SettingsPage() {
   const meta = PLAN_META[plan] ?? PLAN_META.FREE
   const pct = usage ? Math.min(100, (usage.count / usage.limit) * 100) : 0
   const sub = usage?.subscription
-  const isActive = sub?.status === 'ACTIVE'
+  const isActive = sub?.status === 'ACTIVE' || sub?.status === 'TRIALING'
   const nextBilling = sub?.currentPeriodEnd
     ? new Date(sub.currentPeriodEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : null
@@ -330,14 +330,14 @@ export default function SettingsPage() {
                     </div>
                     <div className="bg-slate-50 rounded-xl p-3.5">
                       <div className="text-xs text-slate-400 mb-1">Status</div>
-                      <Badge variant={isActive ? 'green' : sub.status === 'CANCELLED' ? 'amber' : 'red'}>
-                        {sub.status}
+                      <Badge variant={sub.status === 'TRIALING' ? 'blue' : isActive ? 'green' : sub.status === 'CANCELLED' ? 'amber' : 'red'}>
+                        {sub.status === 'TRIALING' ? 'Trial' : sub.status}
                       </Badge>
                     </div>
                     {nextBilling && (
                       <div className="bg-slate-50 rounded-xl p-3.5">
                         <div className="text-xs text-slate-400 mb-1">
-                          {sub.status === 'CANCELLED' ? 'Access until' : 'Next billing'}
+                          {sub.status === 'CANCELLED' ? 'Access until' : sub.status === 'TRIALING' ? 'Trial ends' : 'Next billing'}
                         </div>
                         <div className="font-bold text-sm">{nextBilling}</div>
                       </div>
@@ -347,6 +347,16 @@ export default function SettingsPage() {
                       <div className="font-mono text-xs text-slate-500 truncate">{sub.dodoSubscriptionId}</div>
                     </div>
                   </div>
+
+                  {/* Trial notice */}
+                  {sub.status === 'TRIALING' && (
+                    <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
+                      <div className="text-xs font-bold text-blue-800 mb-1">You're on a free trial</div>
+                      <p className="text-xs text-blue-700">
+                        Your card will be charged {meta.price} on {nextBilling ?? 'your trial end date'}. Cancel anytime before then from the billing portal below and you won't be charged.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Cancellation notice */}
                   {sub.status === 'CANCELLED' && (
