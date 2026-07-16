@@ -38,12 +38,15 @@ function buildCSP(nonce: string): string {
     // Modern browsers: 'nonce-...' + 'strict-dynamic' enforces nonce; 'unsafe-inline' is ignored.
     // Older browsers: 'unsafe-inline' acts as fallback (strict-dynamic not understood).
     // Host sources: last-resort fallback for browsers that understand neither.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline'${devEval} https://cdn.clerk.com https://*.clerk.com https://clerk.optmizly.com https://us-assets.i.posthog.com https://maps.googleapis.com${devClerk}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline'${devEval} https://cdn.clerk.com https://*.clerk.com https://clerk.optmizly.com https://us-assets.i.posthog.com https://maps.googleapis.com https://challenges.cloudflare.com${devClerk}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://img.clerk.com https://maps.gstatic.com https://maps.googleapis.com https://*.google.com",
     "font-src 'self' data:",
-    `connect-src 'self' https://api.clerk.com https://*.clerk.com wss://*.clerk.com https://clerk.optmizly.com wss://clerk.optmizly.com https://us.i.posthog.com https://us-assets.i.posthog.com https://maps.googleapis.com${devClerk}`,
-    `frame-src 'self' https://*.clerk.com https://clerk.optmizly.com${devClerk}`,
+    `connect-src 'self' https://api.clerk.com https://*.clerk.com wss://*.clerk.com https://clerk.optmizly.com wss://clerk.optmizly.com https://us.i.posthog.com https://us-assets.i.posthog.com https://maps.googleapis.com https://challenges.cloudflare.com${devClerk}`,
+    // Clerk's bot-protection (Cloudflare Turnstile) renders an invisible challenge iframe from
+    // this origin before letting sign-in/sign-up (incl. OAuth) proceed — without it here the
+    // iframe is silently blocked and the "Continue with Google" button spins forever.
+    `frame-src 'self' https://*.clerk.com https://clerk.optmizly.com https://challenges.cloudflare.com${devClerk}`,
     "worker-src blob:",
     "object-src 'none'",
     "base-uri 'self'",
