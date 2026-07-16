@@ -1,4 +1,4 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import { PageHeader } from '@/components/page-header'
 
@@ -6,24 +6,24 @@ export const metadata: Metadata = { title: 'Refund Policy – Optmizly' }
 
 const sections = [
   {
-    title: '1. 14-Day Money-Back Guarantee',
-    body: `We offer a 14-day money-back guarantee on all new paid subscriptions (Pro and Agency plans). If you are not satisfied with Optmizly for any reason within 14 days of your first payment, contact us at support@Optmizly.com and we will issue a full refund – no questions asked. The 14-day window begins on the date of your first payment.`,
+    title: '1. How the Free Trial Works',
+    body: `Pro and Agency plans include a 14-day free trial. A payment method is required to start the trial, but you will not be charged until the trial period ends. You have full access to your plan's features for the entire trial.`,
   },
   {
-    title: '2. Eligibility',
-    body: `To be eligible for a refund under the money-back guarantee: (a) the refund request must be submitted within 14 days of your first payment; (b) you must not have previously received a refund for a Optmizly subscription; (c) your account must not have been terminated for a violation of our Terms of Service. Annual plan upgrades and plan changes within an existing subscription are assessed on a case-by-case basis.`,
+    title: '2. Cancelling During Your Trial',
+    body: `You may cancel at any time during your 14-day trial from your account settings. If you cancel before the trial ends, you will not be charged. Your access continues until the end of the trial period even after cancelling.`,
   },
   {
-    title: '3. How to Request a Refund',
-    body: `To request a refund, email us at support@Optmizly.com with the subject line "Refund Request" and include: your registered email address, the date of your payment, and a brief reason for the refund (optional but appreciated). We aim to process all eligible refund requests within 3–5 business days. Refunds are returned to the original payment method. Depending on your bank or card issuer, it may take an additional 5–10 business days for the funds to appear.`,
+    title: '3. After Your Trial Converts to a Paid Subscription',
+    body: `If you do not cancel before your trial ends, your payment method will be automatically charged for the plan you selected, and your subscription will continue on a recurring monthly basis. Charges after your trial converts are non-refundable except where required by applicable law or as described below.`,
   },
   {
     title: '4. Renewals',
-    body: `The 14-day money-back guarantee applies to the first payment only and does not apply to subsequent renewal charges. If you do not wish to be charged for a renewal, you must cancel your subscription before the renewal date. You can cancel at any time from your account settings – cancellation takes effect at the end of the current billing period and you retain access to paid features until then.`,
+    body: `Subscriptions automatically renew at the end of each billing period. If you do not wish to be charged for a renewal, you must cancel before the renewal date. Cancelling takes effect at the end of your current billing period, and you retain access to paid features until then. No partial refunds are issued for unused time within a billing period.`,
   },
   {
-    title: '5. Non-Refundable Situations',
-    body: `We are unable to offer refunds in the following circumstances: (a) refund requests made more than 14 days after the first payment; (b) accounts that have already received a refund under the money-back guarantee; (c) accounts terminated for violation of our Terms of Service; (d) charges for periods already consumed beyond the 14-day window; (e) one-time purchases or add-ons (if offered in the future). We reserve the right to decline refund requests that appear to be made in bad faith or to abuse the guarantee.`,
+    title: '5. Billing Errors',
+    body: `If you believe you were charged in error – for example, a duplicate charge, or a charge after you cancelled – contact us at support@Optmizly.com with your registered email address and the date of the charge. We will investigate and issue a refund if a billing error is confirmed. We aim to process confirmed refunds within 3–5 business days; depending on your bank or card issuer, it may take an additional 5–10 business days for funds to appear.`,
   },
   {
     title: '6. Chargebacks',
@@ -31,11 +31,11 @@ const sections = [
   },
   {
     title: '7. Consumer Rights',
-    body: `Nothing in this Refund Policy limits your statutory rights under applicable consumer protection law. If you are based in the EU or UK, you may have additional rights under the Consumer Rights Directive or Consumer Contracts Regulations, including a statutory 14-day cooling-off period for digital services. If you have begun using the Service within the cooling-off period and you subsequently request a cancellation, a proportional deduction may apply under applicable law.`,
+    body: `Nothing in this Refund Policy limits your statutory rights under applicable consumer protection law. If you are based in the EU or UK, you may have additional rights under the Consumer Rights Directive or Consumer Contracts Regulations, including a statutory cooling-off period for digital services. If you have begun using the Service and subsequently request a cancellation, a proportional deduction may apply under applicable law.`,
   },
   {
     title: '8. Contact',
-    body: `For refund requests or billing questions, contact us at support@Optmizly.com. We aim to respond within 1 business day.`,
+    body: `For billing questions or refund requests, contact us at support@Optmizly.com. We aim to respond within 1 business day.`,
   },
 ]
 
@@ -46,11 +46,11 @@ export default function RefundPolicyPage() {
 
       <div className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-4xl font-black mb-2">Refund Policy</h1>
-        <p className="text-slate-400 text-sm mb-4">Last updated: April 2025</p>
+        <p className="text-slate-400 text-sm mb-4">Last updated: July 2026</p>
 
-        <div className="bg-green-50 border border-green-200 rounded-xl px-6 py-4 mb-12">
-          <p className="text-green-800 font-semibold text-sm">
-            14-Day Money-Back Guarantee – If you&apos;re not satisfied within 14 days of your first payment, we&apos;ll refund you in full. No questions asked.
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-6 py-4 mb-12">
+          <p className="text-blue-800 font-semibold text-sm">
+            14-Day Free Trial – Try Pro or Agency free for 14 days. Cancel anytime before your trial ends and you won&apos;t be charged.
           </p>
         </div>
 
@@ -69,4 +69,3 @@ export default function RefundPolicyPage() {
     </div>
   )
 }
-

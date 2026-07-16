@@ -278,7 +278,7 @@ export function PagePricing() {
         textAlign: 'center', marginTop: 36,
         fontSize: 14, color: T.muted, fontFamily: T.sans,
       }}>
-        14-day money-back on paid plans · Cancel anytime · No credit card to start
+        14-day free trial on Pro & Agency · Cancel anytime · Card required to start trial
       </div>
 
       {/* ── FEATURE COMPARISON TABLE ── */}
@@ -390,8 +390,8 @@ const FAQS = [
     a: 'Yes. Cancel from your account settings at any time, no hoops, no waiting. You keep full access until the end of your current billing period.',
   },
   {
-    q: 'What is the refund policy?',
-    a: 'All paid plans come with a 14-day money-back guarantee. If you\'re not satisfied within the first 14 days, contact us for a full refund, no questions asked.',
+    q: 'How does the free trial work?',
+    a: 'Pro and Agency plans include a 14-day free trial. We ask for a card to start, but you won\'t be charged until the trial ends. Cancel anytime before then from your account settings and you won\'t be charged at all.',
   },
   {
     q: 'Do I need API keys or anything installed?',

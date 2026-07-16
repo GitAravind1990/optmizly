@@ -23,11 +23,11 @@ const sections = [
   },
   {
     title: '5. Payments and Billing',
-    body: `Paid plans are billed monthly or annually via Lemon Squeezy. By subscribing, you authorise recurring charges to your payment method. All prices are in USD. Taxes may apply depending on your location and will be added at checkout. Subscriptions auto-renew at the end of each billing period. You may cancel at any time – you retain access to paid features until the end of your current billing period. No partial refunds are issued for unused time within a billing period, except as outlined in our Refund Policy.`,
+    body: `Paid plans are billed monthly or annually via DoDo Payments. By subscribing, you authorise recurring charges to your payment method. All prices are in USD. Taxes may apply depending on your location and will be added at checkout. Subscriptions auto-renew at the end of each billing period. You may cancel at any time – you retain access to paid features until the end of your current billing period. No partial refunds are issued for unused time within a billing period, except as outlined in our Refund Policy.`,
   },
   {
     title: '6. Refund Policy',
-    body: `We offer a 14-day money-back guarantee for all new paid subscriptions. If you are not satisfied within 14 days of your first payment, contact us at support@Optmizly.com for a full refund. After 14 days, all payments are non-refundable except where required by applicable law. Annual plans that have received a refund are not eligible for a second refund on a new subscription. See our full Refund Policy at /refund-policy.`,
+    body: `Pro and Agency plans include a 14-day free trial. A payment method is required to start the trial, but you will not be charged until the trial period ends. You may cancel at any time during the trial from your account settings and you will not be charged. Once a trial converts to a paid subscription (or for renewal charges on an existing subscription), charges are non-refundable except where required by applicable law. See our full Refund Policy at /refund-policy.`,
   },
   {
     title: '7. Intellectual Property',
@@ -70,7 +70,7 @@ export default function TermsPage() {
 
       <div className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-4xl font-black mb-2">Terms of Service</h1>
-        <p className="text-slate-400 text-sm mb-12">Last updated: April 2025</p>
+        <p className="text-slate-400 text-sm mb-12">Last updated: July 2026</p>
 
         {sections.map(s => (
           <section key={s.title} className="mb-10">
