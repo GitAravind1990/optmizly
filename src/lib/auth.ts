@@ -85,10 +85,12 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
   })
 
   // Warn when they've just used their second-to-last analysis (fires exactly once per month)
+  // Awaited (not fire-and-forget): on Vercel's serverless runtime, an un-awaited
+  // promise has no guarantee of completing once the surrounding request finishes —
+  // see the identical bug found and fixed in the DoDo webhook (session_jul15).
   if (updated.count === limit - 1 && limit - 1 > 0) {
-    getClerkFirstName(clerkId, user.email.split('@')[0])
-      .then(firstName => sendLimitWarningEmail(user.email, updated.count, limit, firstName))
-      .catch(() => {})
+    const firstName = await getClerkFirstName(clerkId, user.email.split('@')[0])
+    await sendLimitWarningEmail(user.email, updated.count, limit, firstName).catch(() => {})
   }
 
   if (updated.count > limit) {
@@ -97,18 +99,20 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
       where: { userId_month: { userId: user.id, month } },
       data: { count: { decrement: 1 } },
     })
-    // Send exactly once per month — atomically flip limitEmailSent false→true
-    prisma.usage.updateMany({
+    // Send exactly once per month — atomically flip limitEmailSent false→true.
+    // Awaited before the throw below, for the same reason as above: this used
+    // to be a fire-and-forget chain immediately followed by a synchronous
+    // throw, giving it almost no chance to complete before the response
+    // returned and the function could be frozen.
+    const { count: flagged } = await prisma.usage.updateMany({
       where: { userId: user.id, month, limitEmailSent: false },
       data: { limitEmailSent: true },
-    }).then(({ count: flagged }) => {
-      if (flagged > 0) {
-        getClerkFirstName(clerkId, user.email.split('@')[0])
-          .then(firstName => sendLimitReachedEmail(user.email, limit, firstName))
-          .catch(() => {})
-      }
-    }).catch(() => {})
-    captureServerEvent(clerkId, 'free_limit_hit', {
+    }).catch(() => ({ count: 0 }))
+    if (flagged > 0) {
+      const firstName = await getClerkFirstName(clerkId, user.email.split('@')[0])
+      await sendLimitReachedEmail(user.email, limit, firstName).catch(() => {})
+    }
+    await captureServerEvent(clerkId, 'free_limit_hit', {
       tool,
       plan: user.plan,
       limit,

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       const posts = await getAllPosts()
       const latest = posts[0]
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://optmizly.com'
-      sendBlogSubscribeEmail(
+      await sendBlogSubscribeEmail(
         email,
         firstName?.trim() || undefined,
         latest?.title,
