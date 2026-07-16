@@ -17,7 +17,8 @@ export async function GET(_req: NextRequest) {
       usersByPlan,
       newUsersThisMonth,
       contentOptimizerCount,
-      canceledThisMonth,
+      activeAtPeriodStart,
+      churnedInPeriod,
       tokenTotals,
     ] = await Promise.all([
       prisma.subscription.findMany({ where: { status: 'ACTIVE' }, select: { plan: true } }),
@@ -25,7 +26,19 @@ export async function GET(_req: NextRequest) {
       prisma.user.groupBy({ by: ['plan'], _count: true }),
       prisma.user.count({ where: { createdAt: { gte: startDate } } }),
       prisma.contentOptimization.count({ where: { analyzedAt: { gte: startDate, lte: endDate } } }),
-      prisma.subscription.count({ where: { status: 'CANCELLED', updatedAt: { gte: startDate } } }),
+      // Subscriptions that already existed and hadn't cancelled as of startDate -- the
+      // correct denominator for a churn rate. Using *current* paid-user count instead
+      // double-punishes churn: a cancelled subscriber leaves that count the moment they
+      // also join the numerator, which can push the "rate" past 100%.
+      prisma.subscription.count({
+        where: {
+          createdAt: { lt: startDate },
+          OR: [{ cancelledAt: null }, { cancelledAt: { gte: startDate } }],
+        },
+      }),
+      prisma.subscription.count({
+        where: { createdAt: { lt: startDate }, cancelledAt: { gte: startDate, lte: endDate } },
+      }),
       prisma.user.aggregate({ _sum: { totalInputTokens: true, totalOutputTokens: true } }),
     ]);
 
@@ -51,8 +64,7 @@ export async function GET(_req: NextRequest) {
     const toolUsage = { 'Content Optimizer': contentOptimizerCount };
 
     // CHURN
-    const paidUsers = usersByPlanMap.PRO + usersByPlanMap.AGENCY;
-    const churnRate = paidUsers > 0 ? (canceledThisMonth / paidUsers) * 100 : 0;
+    const churnRate = activeAtPeriodStart > 0 ? (churnedInPeriod / activeAtPeriodStart) * 100 : 0;
 
     // TOKEN USAGE
     const totalInputTokens = tokenTotals._sum.totalInputTokens ?? 0;
