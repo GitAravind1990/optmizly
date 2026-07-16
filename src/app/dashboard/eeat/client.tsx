@@ -9,7 +9,6 @@ export function EEATClient({ unlocked }: { unlocked: boolean }) {
     <ProToolPage
       toolId="eeat"
       title="E-E-A-T Analysis"
-      icon="🏆"
       description="Deep analysis of Experience, Expertise, Authoritativeness and Trustworthiness signals"
       plan="Pro"
       unlocked={unlocked}
@@ -45,8 +44,8 @@ export function EEATClient({ unlocked }: { unlocked: boolean }) {
               ))}
             </Card>
             <div style={{display:'flex',gap:'8px',marginTop:'4px',flexWrap:'wrap'}}>
-              <button onClick={() => exportEEATCSV(d)} style={{padding:'7px 14px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>⬇ CSV</button>
-              <button onClick={() => exportEEATPDF(d)} style={{padding:'7px 14px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>⬇ PDF</button>
+              <button onClick={() => exportEEATCSV(d)} style={{padding:'7px 14px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>↓ CSV</button>
+              <button onClick={() => exportEEATPDF(d)} style={{padding:'7px 14px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'#f8fafc',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>↓ PDF</button>
             </div>
             {d.recommendations?.length > 0 && (
               <Card>

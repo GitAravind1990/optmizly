@@ -18,7 +18,7 @@ export function DripDay1Email({ firstName = 'there', dashboardUrl }: DripDay1Pro
           <Container className="mx-auto py-12 px-4 max-w-xl">
 
             <Section className="text-center mb-8">
-              <Text className="text-2xl font-black text-slate-900 m-0">◈ Optmizly</Text>
+              <Text className="text-2xl font-black text-slate-900 m-0">Optmizly</Text>
               <Text className="text-sm text-slate-500 m-0">AI Content Optimizer</Text>
             </Section>
 

@@ -92,14 +92,6 @@ function MiniSparkline({ history }: { history: HistoryPoint[] }) {
   )
 }
 
-function alertIcon(type: string) {
-  const map: Record<string, string> = {
-    top_3: '🥇', first_page: '📄', position_gain: '🚀', position_drop: '📉',
-    new_ranking: '🆕', lost_ranking: '⚠️',
-  }
-  return map[type] ?? '🔔'
-}
-
 function difficultyColor(d: number | null) {
   if (d === null) return 'text-slate-400'
   if (d <= 30) return 'text-green-600'
@@ -377,7 +369,6 @@ export default function ProjectDetailPage() {
               <div className="divide-y divide-slate-100">
                 {project.alerts.map(a => (
                   <div key={a.id} className={`flex items-start gap-3 px-4 py-3 ${a.read ? 'opacity-60' : 'bg-amber-50/40'}`}>
-                    <span className="text-xl mt-0.5">{alertIcon(a.alertType)}</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-slate-800">{a.message}</div>
                       <div className="text-xs text-slate-400 mt-0.5">

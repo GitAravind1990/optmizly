@@ -125,7 +125,7 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
         ) : loading ? (
           <div className="flex items-center justify-center py-20 gap-3 text-slate-400"><Spinner /><span className="text-sm">Running both analyses…</span></div>
         ) : (
-          <EmptyState icon="🔭" title="Run AI Visibility" desc='Click "Run AI Visibility" above to get your citation strategy and AI query map in one go.' />
+          <EmptyState title="Run AI Visibility" desc='Click "Run AI Visibility" above to get your citation strategy and AI query map in one go.' />
         )}
       </div>
     </div>

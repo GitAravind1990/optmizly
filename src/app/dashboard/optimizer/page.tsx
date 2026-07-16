@@ -116,14 +116,14 @@ interface AnalysisResult {
 type TabId = 'overview' | 'intent' | 'entities' | 'lsi' | 'schema' | 'topics' | 'eeat' | 'fixes';
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'overview', label: '📊 Overview' },
-  { id: 'intent',   label: '🎯 Intent' },
-  { id: 'entities', label: '🔗 Entities' },
-  { id: 'lsi',      label: '📚 LSI Keywords' },
-  { id: 'schema',   label: '📋 Schema' },
-  { id: 'topics',   label: '🌐 Topics' },
-  { id: 'eeat',     label: '⭐ E-E-A-T' },
-  { id: 'fixes',    label: '🔧 AI Fixes' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'intent',   label: 'Intent' },
+  { id: 'entities', label: 'Entities' },
+  { id: 'lsi',      label: 'LSI Keywords' },
+  { id: 'schema',   label: 'Schema' },
+  { id: 'topics',   label: 'Topics' },
+  { id: 'eeat',     label: 'E-E-A-T' },
+  { id: 'fixes',    label: 'AI Fixes' },
 ];
 
 type Mode = 'analyze' | 'rewrite';
@@ -203,7 +203,7 @@ export default function ContentOptimizerPage() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-black flex items-center gap-2">
-              🚀 Content Optimizer
+              Content Optimizer
               <span className="text-[10px] bg-gradient-to-r from-purple-500 to-blue-500 text-white px-2.5 py-0.5 rounded-full font-bold">
                 SEMANTIC SEO
               </span>
@@ -217,11 +217,11 @@ export default function ContentOptimizerPage() {
           <div className="flex rounded-xl border border-slate-200 overflow-hidden text-xs shrink-0">
             <button onClick={() => setMode('analyze')}
               className={`px-4 py-2 font-bold transition-colors ${mode === 'analyze' ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}>
-              🔍 Analyze
+              Analyze
             </button>
             <button onClick={() => setMode('rewrite')}
               className={`px-4 py-2 font-bold transition-colors ${mode === 'rewrite' ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}>
-              ✍️ Full Rewrite
+              Full Rewrite
             </button>
           </div>
         </div>
@@ -251,7 +251,7 @@ export default function ContentOptimizerPage() {
               {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
               <button onClick={handleAnalyze} disabled={loading || !content || !keyword}
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 text-white py-3 rounded-lg text-sm font-bold transition-all">
-                {loading ? '🔍 Running 7 analyses in parallel… (~30 sec)' : '🚀 Analyze Everything'}
+                {loading ? 'Running 7 analyses in parallel… (~30 sec)' : 'Analyze Everything'}
               </button>
             </div>
             {result && <ResultsDisplay result={result} activeTab={activeTab} setActiveTab={setActiveTab} />}
@@ -268,7 +268,7 @@ export default function ContentOptimizerPage() {
               {rwError && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{rwError}</p>}
               <button onClick={handleRewrite} disabled={rwLoading || content.length < 50}
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 text-white py-3 rounded-lg text-sm font-bold transition-all">
-                {rwLoading ? rwStep || 'Rewriting…' : '✍️ Rewrite Content'}
+                {rwLoading ? rwStep || 'Rewriting…' : 'Rewrite Content'}
               </button>
             </div>
 
@@ -300,7 +300,7 @@ export default function ContentOptimizerPage() {
                         <button onClick={() => setRwViewMode('preview')} className={`px-3 py-1.5 font-bold transition-colors ${rwViewMode === 'preview' ? 'bg-slate-900 text-white' : 'bg-white text-slate-500'}`}>Preview</button>
                         <button onClick={() => setRwViewMode('html')} className={`px-3 py-1.5 font-bold transition-colors ${rwViewMode === 'html' ? 'bg-slate-900 text-white' : 'bg-white text-slate-500'}`}>HTML</button>
                       </div>
-                      <button onClick={rwCopy} className="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-bold">{rwCopied ? '✓ Copied!' : '📋 Copy'}</button>
+                      <button onClick={rwCopy} className="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-bold">{rwCopied ? '✓ Copied!' : 'Copy'}</button>
                     </div>
                   </div>
                   {rwViewMode === 'preview' ? (
@@ -439,12 +439,12 @@ function MiniScore({ label, score, detail }: { label: string; score: number; det
 function OverviewTab({ result }: { result: AnalysisResult }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <MiniScore label="🎯 Search Intent"  score={result.intent.matchScore}         detail={result.intent.intent} />
-      <MiniScore label="🔗 Entity Score"   score={result.entities.score}            detail={`${result.entities.entities.length} entities found`} />
-      <MiniScore label="📚 LSI Keywords"   score={result.lsi.score}                 detail={`${result.lsi.found.length} used · ${result.lsi.missing.length} missing`} />
-      <MiniScore label="🌐 Topic Coverage" score={result.topics.score}              detail={`${result.topics.covered.length} covered · ${result.topics.missing.length} missing`} />
-      <MiniScore label="⭐ E-E-A-T"        score={result.eeat.overall}              detail="Experience · Expertise · Authority · Trust" />
-      <MiniScore label="🔧 Content Score"  score={result.improvements.contentScore} detail={`${result.improvements.fixes.length} fixes suggested`} />
+      <MiniScore label="Search Intent"  score={result.intent.matchScore}         detail={result.intent.intent} />
+      <MiniScore label="Entity Score"   score={result.entities.score}            detail={`${result.entities.entities.length} entities found`} />
+      <MiniScore label="LSI Keywords"   score={result.lsi.score}                 detail={`${result.lsi.found.length} used · ${result.lsi.missing.length} missing`} />
+      <MiniScore label="Topic Coverage" score={result.topics.score}              detail={`${result.topics.covered.length} covered · ${result.topics.missing.length} missing`} />
+      <MiniScore label="E-E-A-T"        score={result.eeat.overall}              detail="Experience · Expertise · Authority · Trust" />
+      <MiniScore label="Content Score"  score={result.improvements.contentScore} detail={`${result.improvements.fixes.length} fixes suggested`} />
     </div>
   );
 }
@@ -470,7 +470,7 @@ function SuggestionList({ suggestions }: { suggestions: Suggestion[] }) {
 function IntentTab({ data }: { data: AnalysisResult['intent'] }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6">
-      <h3 className="text-sm font-bold text-slate-700 mb-4">🎯 Search Intent Analysis</h3>
+      <h3 className="text-sm font-bold text-slate-700 mb-4">Search Intent Analysis</h3>
       <div className="flex items-center gap-6 mb-4">
         <ScoreBadge score={data.matchScore} />
         <div>
@@ -487,10 +487,10 @@ function IntentTab({ data }: { data: AnalysisResult['intent'] }) {
 function EntitiesTab({ data }: { data: AnalysisResult['entities'] }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-      <h3 className="text-sm font-bold text-slate-700">🔗 Entity Analysis · Score: {data.score}/100</h3>
+      <h3 className="text-sm font-bold text-slate-700">Entity Analysis · Score: {data.score}/100</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <h4 className="text-xs font-bold text-green-700 mb-2">✅ Found ({data.entities.length})</h4>
+          <h4 className="text-xs font-bold text-green-700 mb-2">✓ Found ({data.entities.length})</h4>
           <div className="flex flex-wrap gap-1.5">
             {data.entities.map((e, i) => (
               <span key={i} className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -502,7 +502,7 @@ function EntitiesTab({ data }: { data: AnalysisResult['entities'] }) {
           </div>
         </div>
         <div>
-          <h4 className="text-xs font-bold text-red-600 mb-2">❌ Missing ({data.missing.length})</h4>
+          <h4 className="text-xs font-bold text-red-600 mb-2">✗ Missing ({data.missing.length})</h4>
           <div className="space-y-2">
             {data.missing.map((m, i) => (
               <div key={i} className="bg-red-50 border border-red-100 rounded-lg p-2">
@@ -533,10 +533,10 @@ function EntitiesTab({ data }: { data: AnalysisResult['entities'] }) {
 function LsiTab({ data }: { data: AnalysisResult['lsi'] }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-      <h3 className="text-sm font-bold text-slate-700">📚 LSI Keywords · Score: {data.score}/100</h3>
+      <h3 className="text-sm font-bold text-slate-700">LSI Keywords · Score: {data.score}/100</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <h4 className="text-xs font-bold text-green-700 mb-2">✅ Used ({data.found.length})</h4>
+          <h4 className="text-xs font-bold text-green-700 mb-2">✓ Used ({data.found.length})</h4>
           <div className="flex flex-wrap gap-1.5">
             {data.found.map((k, i) => (
               <span key={i} className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">{k}</span>
@@ -544,7 +544,7 @@ function LsiTab({ data }: { data: AnalysisResult['lsi'] }) {
           </div>
         </div>
         <div>
-          <h4 className="text-xs font-bold text-red-600 mb-2">❌ Missing ({data.missing.length})</h4>
+          <h4 className="text-xs font-bold text-red-600 mb-2">✗ Missing ({data.missing.length})</h4>
           <div className="flex flex-wrap gap-1.5">
             {data.missing.map((k, i) => (
               <span key={i} className="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">{k}</span>
@@ -566,7 +566,7 @@ function SchemaTab({ data }: { data: AnalysisResult['schema'] }) {
   };
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-      <h3 className="text-sm font-bold text-slate-700">📋 Schema Markup Generator</h3>
+      <h3 className="text-sm font-bold text-slate-700">Schema Markup Generator</h3>
       <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
         <div className="text-xs font-bold text-blue-700">Recommended: {data.type} Schema</div>
         {data.reasoning && <div className="text-xs text-slate-600 mt-1">{data.reasoning}</div>}
@@ -579,7 +579,7 @@ function SchemaTab({ data }: { data: AnalysisResult['schema'] }) {
             onClick={copy}
             className="mt-3 text-xs bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
           >
-            {copied ? '✅ Copied!' : '📋 Copy Schema Code'}
+            {copied ? '✓ Copied!' : 'Copy Schema Code'}
           </button>
         </div>
       )}
@@ -591,12 +591,12 @@ function TopicsTab({ data }: { data: AnalysisResult['topics'] }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-700">🌐 Topic Coverage & Clusters</h3>
+        <h3 className="text-sm font-bold text-slate-700">Topic Coverage & Clusters</h3>
         <span className={`text-sm font-bold ${ScoreColor(data.score)}`}>{data.score}/100</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <h4 className="text-xs font-bold text-green-700 mb-2">✅ Covered ({data.covered.length})</h4>
+          <h4 className="text-xs font-bold text-green-700 mb-2">✓ Covered ({data.covered.length})</h4>
           <ul className="space-y-1">
             {data.covered.map((c, i) => (
               <li key={i} className="text-xs text-slate-600 flex items-center gap-1.5">
@@ -606,7 +606,7 @@ function TopicsTab({ data }: { data: AnalysisResult['topics'] }) {
           </ul>
         </div>
         <div>
-          <h4 className="text-xs font-bold text-red-600 mb-2">❌ Missing ({data.missing.length})</h4>
+          <h4 className="text-xs font-bold text-red-600 mb-2">✗ Missing ({data.missing.length})</h4>
           <ul className="space-y-1">
             {data.missing.map((m, i) => (
               <li key={i} className="text-xs text-slate-600 flex items-center gap-1.5">
@@ -619,13 +619,13 @@ function TopicsTab({ data }: { data: AnalysisResult['topics'] }) {
       </div>
       {data.pillarSuggestion && (
         <div className="bg-purple-50 border border-purple-100 rounded-lg p-3">
-          <div className="text-xs font-bold text-purple-700 mb-1">💡 Pillar Page Suggestion</div>
+          <div className="text-xs font-bold text-purple-700 mb-1">Pillar Page Suggestion</div>
           <div className="text-xs text-slate-600">{data.pillarSuggestion}</div>
         </div>
       )}
       {data.clusterSuggestions?.length > 0 && (
         <div>
-          <h4 className="text-xs font-bold text-slate-600 mb-2">🌐 Cluster Page Ideas</h4>
+          <h4 className="text-xs font-bold text-slate-600 mb-2">Cluster Page Ideas</h4>
           <div className="space-y-1">
             {data.clusterSuggestions.map((c, i) => (
               <div key={i} className="text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded px-3 py-2 flex items-center justify-between">
@@ -643,14 +643,14 @@ function TopicsTab({ data }: { data: AnalysisResult['topics'] }) {
 
 function EEATTab({ data }: { data: AnalysisResult['eeat'] }) {
   const dims = [
-    { label: '🌟 Experience', score: data.experience, key: 'experience' },
-    { label: '🎓 Expertise',  score: data.expertise,  key: 'expertise' },
-    { label: '👑 Authority',  score: data.authority,  key: 'authority' },
-    { label: '🛡️ Trust',     score: data.trust,       key: 'trust' },
+    { label: 'Experience', score: data.experience, key: 'experience' },
+    { label: 'Expertise',  score: data.expertise,  key: 'expertise' },
+    { label: 'Authority',  score: data.authority,  key: 'authority' },
+    { label: 'Trust',      score: data.trust,       key: 'trust' },
   ];
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-      <h3 className="text-sm font-bold text-slate-700">⭐ E-E-A-T Analysis</h3>
+      <h3 className="text-sm font-bold text-slate-700">E-E-A-T Analysis</h3>
       <div className="grid grid-cols-2 gap-4">
         {dims.map(d => (
           <div key={d.key} className="border border-slate-100 rounded-xl p-4">
@@ -676,7 +676,7 @@ function FixesTab({ data }: { data: AnalysisResult['improvements'] }) {
   return (
     <div className="space-y-4">
       <div className="bg-white border border-slate-200 rounded-xl p-6">
-        <h3 className="text-sm font-bold text-slate-700 mb-4">🔧 AI-Powered Improvements</h3>
+        <h3 className="text-sm font-bold text-slate-700 mb-4">AI-Powered Improvements</h3>
         <div className="space-y-3">
           {data.fixes.map((fix, i) => (
             <div key={i} className="border border-slate-100 rounded-xl p-4">
@@ -704,7 +704,7 @@ function FixesTab({ data }: { data: AnalysisResult['improvements'] }) {
 
       {data.rewrites?.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-xl p-6">
-          <h3 className="text-sm font-bold text-slate-700 mb-4">✍️ AI Rewrite Suggestions</h3>
+          <h3 className="text-sm font-bold text-slate-700 mb-4">AI Rewrite Suggestions</h3>
           <div className="space-y-4">
             {data.rewrites.map((r, i) => (
               <div key={i} className="border border-slate-100 rounded-xl p-4">

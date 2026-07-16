@@ -27,7 +27,7 @@ export function LimitWarningEmail({
           <Container className="mx-auto py-12 px-4 max-w-xl">
 
             <Section className="text-center mb-8">
-              <Text className="text-2xl font-black text-slate-900 m-0">◈ Optmizly</Text>
+              <Text className="text-2xl font-black text-slate-900 m-0">Optmizly</Text>
             </Section>
 
             <Section className="bg-white rounded-2xl border border-slate-200 p-8 mb-6">

@@ -39,12 +39,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   rejected:    { label: 'Rejected',    color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-300' },
 }
 
-const LINK_TYPE_ICONS: Record<string, string> = {
-  guest_post: '✍️', resource_page: '📋', journalist_pitch: '📰',
-  directory: '📁', podcast: '🎙️', broken_link: '🔗', partnership: '🤝',
-  interview: '🎤', roundup: '📊',
-}
-
 const DIFFICULTY_COLOR: Record<string, string> = {
   easy: 'text-green-600 bg-green-50',
   medium: 'text-amber-600 bg-amber-50',
@@ -106,7 +100,6 @@ function OpportunityCard({
     <div className={`rounded-xl border p-4 ${opp.status === 'secured' ? 'bg-green-50 border-green-200' : opp.status === 'rejected' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200'}`}>
       {/* Header */}
       <div className="flex items-start gap-3 mb-3">
-        <span className="text-xl mt-0.5">{LINK_TYPE_ICONS[opp.linkType] ?? '🔗'}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-slate-800 text-sm">{opp.siteName}</span>
@@ -145,7 +138,7 @@ function OpportunityCard({
       {/* Angle */}
       {opp.angle && (
         <div className="text-xs text-slate-700 mb-2">
-          <span className="font-semibold">📝 Angle: </span>{opp.angle}
+          <span className="font-semibold">Angle: </span>{opp.angle}
         </div>
       )}
 
@@ -159,7 +152,7 @@ function OpportunityCard({
       {/* Contact approach */}
       {opp.contactApproach && (
         <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700 mb-3">
-          📬 {opp.contactApproach}
+          {opp.contactApproach}
         </div>
       )}
 
@@ -187,7 +180,7 @@ function OpportunityCard({
           onClick={() => setEditing(true)}
           className="mb-3 text-xs text-slate-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 cursor-pointer hover:bg-amber-100 transition-colors"
         >
-          📝 {opp.notes}
+          {opp.notes}
         </div>
       ) : null}
 
@@ -209,7 +202,7 @@ function OpportunityCard({
           onClick={() => setEditing(true)}
           className="ml-auto text-[10px] text-slate-400 hover:text-slate-600 transition-colors"
         >
-          {opp.notes ? '✏️ Edit notes' : '+ Add notes'}
+          {opp.notes ? 'Edit notes' : '+ Add notes'}
         </button>
       </div>
     </div>
@@ -319,9 +312,9 @@ export default function BacklinkProjectPage({ params }: { params: Promise<{ proj
               <div className="h-full bg-blue-400 transition-all" style={{ width: `${((statusCounts.contacted ?? 0) / total) * 100}%` }} />
             </div>
             <div className="flex gap-3 text-[10px] text-slate-400 mt-1">
-              <span>🟢 Secured {Math.round((secured / total) * 100)}%</span>
-              <span>🟡 Replied {Math.round(((statusCounts.replied ?? 0) / total) * 100)}%</span>
-              <span>🔵 Contacted {Math.round(((statusCounts.contacted ?? 0) / total) * 100)}%</span>
+              <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />Secured {Math.round((secured / total) * 100)}%</span>
+              <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400" />Replied {Math.round(((statusCounts.replied ?? 0) / total) * 100)}%</span>
+              <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-400" />Contacted {Math.round(((statusCounts.contacted ?? 0) / total) * 100)}%</span>
             </div>
           </div>
         )}
@@ -347,7 +340,7 @@ export default function BacklinkProjectPage({ params }: { params: Promise<{ proj
         {/* AI Summary */}
         {project.aiSummary && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <div className="text-xs font-bold text-blue-700 mb-1">💡 Strategy Overview</div>
+            <div className="text-xs font-bold text-blue-700 mb-1">Strategy Overview</div>
             <p className="text-sm text-blue-800">{project.aiSummary}</p>
           </div>
         )}

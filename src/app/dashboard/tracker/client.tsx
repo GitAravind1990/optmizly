@@ -139,7 +139,7 @@ export function TrackerClient({ unlocked = true }: { unlocked?: boolean }) {
             <button onClick={() => exportTrackerPDF(result)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export PDF</button>
           </div>
         )}
-        {!result && !loading && <EmptyState icon="🎯" title="Cite Tracker" desc="Paste your content, add your target queries, and run to see if ChatGPT and Perplexity would cite you." />}
+        {!result && !loading && <EmptyState title="Cite Tracker" desc="Paste your content, add your target queries, and run to see if ChatGPT and Perplexity would cite you." />}
       </div>
     </div>
     </>

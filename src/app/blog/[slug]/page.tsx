@@ -139,7 +139,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
         <div className="mt-8 rounded-2xl bg-blue-50 p-8">
           <div className="flex items-center gap-2 mb-3">
-            <span className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs">◈</span>
+            <img src="/logo.png" alt="Optmizly" className="w-7 h-7 rounded-lg object-contain" />
             <span className="font-bold text-slate-900">Optmizly</span>
           </div>
           <p className="text-slate-600 text-sm mb-5 leading-relaxed">

@@ -198,13 +198,13 @@ export default function LocalSEOPage() {
 
                   <div className="flex gap-6 mb-3">
                     {[
-                      { label: 'Avg Rating', value: avgRating(a.locations), icon: '⭐' },
-                      { label: 'Reviews', value: a._count.reviews, icon: '💬' },
-                      { label: 'Citations', value: a._count.citations, icon: '📋' },
-                      { label: 'Open Tasks', value: a._count.tasks, icon: '✅' },
+                      { label: 'Avg Rating', value: avgRating(a.locations) },
+                      { label: 'Reviews', value: a._count.reviews },
+                      { label: 'Citations', value: a._count.citations },
+                      { label: 'Open Tasks', value: a._count.tasks },
                     ].map(s => (
                       <div key={s.label} className="text-center">
-                        <div className="text-sm font-black text-slate-800">{s.icon} {s.value}</div>
+                        <div className="text-sm font-black text-slate-800">{s.value}</div>
                         <div className="text-[10px] text-slate-500">{s.label}</div>
                       </div>
                     ))}
@@ -214,7 +214,7 @@ export default function LocalSEOPage() {
                     {a.locations.map(l => (
                       <span key={l.id} className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-medium">
                         {l.name} · {l.city}, {l.state}
-                        {l.averageRating && ` · ⭐ ${l.averageRating}`}
+                        {l.averageRating && ` · ${l.averageRating}★`}
                       </span>
                     ))}
                   </div>

@@ -132,7 +132,7 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            <EmptyState icon="◈" title="Analyse your content" desc="Paste your content or enter a URL above and click Analyse. You'll get a score across 8 SEO dimensions in seconds." />
+            <EmptyState title="Analyse your content" desc="Paste your content or enter a URL above and click Analyse. You'll get a score across 8 SEO dimensions in seconds." />
           )
         ) : tab === 'scores' ? (
           <div className="max-w-3xl mx-auto fade-up space-y-5">

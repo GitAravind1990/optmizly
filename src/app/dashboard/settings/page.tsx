@@ -125,10 +125,10 @@ export default function SettingsPage() {
   const avatar = user?.firstName?.[0] ?? user?.emailAddresses[0]?.emailAddress?.[0]?.toUpperCase() ?? '?'
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: 'account',      label: '👤 Account' },
-    { id: 'plan',         label: '📊 Plan & Usage' },
-    { id: 'billing',      label: '💳 Billing' },
-    { id: 'integrations', label: '🔗 Integrations' },
+    { id: 'account',      label: 'Account' },
+    { id: 'plan',         label: 'Plan & Usage' },
+    { id: 'billing',      label: 'Billing' },
+    { id: 'integrations', label: 'Integrations' },
   ]
 
   return (
@@ -383,7 +383,13 @@ export default function SettingsPage() {
                 </div>
               ) : (
                 <div className="text-center py-10">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl mx-auto mb-4">💳</div>
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-blue-400">
+                      <rect x="3" y="3" width="16" height="16" rx="2"/>
+                      <line x1="7" y1="8" x2="15" y2="8"/>
+                      <line x1="7" y1="11" x2="15" y2="11"/>
+                    </svg>
+                  </div>
                   <p className="text-sm font-black text-slate-800 mb-1">No active subscription</p>
                   <p className="text-xs text-slate-400 mb-6">You're on the Free plan · 3 analyses per month</p>
                   <Link href="/pricing"
@@ -482,7 +488,12 @@ export default function SettingsPage() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl mx-auto mb-4">🔍</div>
+                    <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
+                      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-blue-400">
+                        <circle cx="9.5" cy="9.5" r="6"/>
+                        <line x1="14" y1="14" x2="19" y2="19"/>
+                      </svg>
+                    </div>
                     <p className="text-sm font-black text-slate-800 mb-1">Not connected</p>
                     <p className="text-xs text-slate-400 mb-6 max-w-xs mx-auto">
                       Connect Search Console to unlock indexed-page data, sitemap status, and cannibalization checks in SEO Audit

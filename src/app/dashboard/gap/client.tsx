@@ -9,7 +9,6 @@ export function GapClient({ unlocked }: { unlocked: boolean }) {
     <ProToolPage
       toolId="gap"
       title="Content Gap"
-      icon="🕳️"
       description="Identify topics your competitors cover that you don't, ranked by traffic opportunity"
       plan="Pro"
       unlocked={unlocked}
@@ -31,8 +30,8 @@ export function GapClient({ unlocked }: { unlocked: boolean }) {
               </Card>
             ))}
             <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-              <button onClick={() => exportGapCSV(d)} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>⬇ CSV</button>
-              <button onClick={() => exportGapPDF(d)} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>⬇ PDF</button>
+              <button onClick={() => exportGapCSV(d)} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>↓ CSV</button>
+              <button onClick={() => exportGapPDF(d)} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>↓ PDF</button>
             </div>
           </div>
         )

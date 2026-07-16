@@ -93,7 +93,7 @@ export default function BacklinkAnalysisPage({ params }: { params: Promise<{ id:
       <div className="px-6 pt-5 pb-4 border-b border-slate-200 bg-white sticky top-0 z-10">
         <div className="flex items-center gap-3 mb-1">
           <Link href="/dashboard/backlinks" className="text-sm text-slate-400 hover:text-slate-600">← Back</Link>
-          <h1 className="text-xl font-black text-slate-800">📊 {analysis.domain}</h1>
+          <h1 className="text-xl font-black text-slate-800">{analysis.domain}</h1>
           <span className="text-xs text-slate-400 ml-auto">
             Data fetched {new Date(analysis.createdAt).toLocaleDateString()}
           </span>

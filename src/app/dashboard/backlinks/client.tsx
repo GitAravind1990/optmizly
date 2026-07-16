@@ -102,7 +102,7 @@ function AnalysisCard({ a, onDelete }: { a: DomainAnalysis; onDelete: (id: strin
           href={`/dashboard/backlinks/analysis/${a.id}`}
           className="flex-1 text-center text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
         >
-          📊 Full Report
+          Full Report
         </Link>
         <button onClick={handleDelete} disabled={deleting}
           className="text-xs px-3 py-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors">
@@ -144,7 +144,7 @@ function ProjectCard({ p, onDelete }: { p: ProjectSummary; onDelete: (id: string
       <div className="flex gap-2">
         <Link href={`/dashboard/backlinks/${p.id}`}
           className="flex-1 text-center text-xs px-3 py-1.5 rounded-lg bg-slate-700 text-white hover:bg-slate-800 transition-colors font-medium">
-          🔗 Manage Outreach
+          Manage Outreach
         </Link>
         <button onClick={handleDelete} disabled={deleting}
           className="text-xs px-3 py-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors">
@@ -258,7 +258,7 @@ export function BacklinksClient() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-black text-slate-800 flex items-center gap-2">
-          🔗 Backlinks
+          Backlinks
           <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">PRO</span>
         </h1>
         <p className="text-sm text-slate-500 mt-1">Domain authority checker · AI outreach planner with status tracking</p>
@@ -268,11 +268,11 @@ export function BacklinksClient() {
       <div className="flex gap-1 mb-6 bg-slate-100 rounded-xl p-1 w-fit">
         <button onClick={() => setTab('data')}
           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === 'data' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-          📊 Domain Authority
+          Domain Authority
         </button>
         <button onClick={() => setTab('outreach')}
           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === 'outreach' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-          🤖 AI Outreach Planner
+          AI Outreach Planner
         </button>
       </div>
 
@@ -292,7 +292,7 @@ export function BacklinksClient() {
               />
               <button onClick={runAnalysis} disabled={analyzing}
                 className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-colors min-w-[130px]">
-                {analyzing ? '⏳ Fetching...' : '🔍 Analyze'}
+                {analyzing ? 'Fetching...' : 'Analyze'}
               </button>
             </div>
             {analyzeError && <p className="text-xs text-red-500 mt-2">{analyzeError}</p>}
@@ -373,7 +373,7 @@ export function BacklinksClient() {
               <div className="flex gap-3 items-center">
                 <button onClick={generateProject} disabled={generating}
                   className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-colors">
-                  {generating ? '⏳ Generating...' : '🤖 Generate 12 Opportunities'}
+                  {generating ? 'Generating...' : 'Generate 12 Opportunities'}
                 </button>
                 {generating && <span className="text-xs text-slate-400">Claude is researching real sites (~20 sec)</span>}
               </div>

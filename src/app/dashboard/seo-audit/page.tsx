@@ -189,7 +189,7 @@ export default function SeoAuditPage() {
       <div className="flex-1 overflow-y-auto p-6 max-w-5xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">🩺 SEO Audit</h1>
+            <h1 className="text-xl font-bold text-slate-900">SEO Audit</h1>
             <p className="text-sm text-slate-500 mt-0.5">{AUTO_CHECK_IDS.size} automated checks + AI scoring across {AUDIT_FRAMEWORK.length} categories, with a {TOTAL_CHECKS}-point expert checklist</p>
           </div>
           <button onClick={startNew} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
@@ -408,7 +408,7 @@ export default function SeoAuditPage() {
 
                     {ai && (ai.issues.length > 0 || ai.fixes.length > 0) && (
                       <div className="rounded-lg bg-brand-50 border border-brand-100 p-3 mb-3">
-                        <div className="text-[11px] font-bold uppercase text-brand-600 mb-1.5">🤖 AI Assessment</div>
+                        <div className="text-[11px] font-bold uppercase text-brand-600 mb-1.5">AI Assessment</div>
                         {ai.issues.length > 0 && (
                           <ul className="space-y-1 mb-2">
                             {ai.issues.map((iss, i) => <li key={i} className="text-xs text-slate-700 flex gap-1.5"><span className="text-amber-500">⚠</span>{iss}</li>)}

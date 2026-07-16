@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { exportPerformanceFixerCSV, exportPerformanceFixerPDF } from '@/lib/export';
+import { Spinner } from '@/components/ui';
 
 interface Metrics {
   lcp: number; lcpScore: number;
@@ -191,7 +192,7 @@ export default function PerformanceFixerPage() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-black flex items-center gap-2">
-            ⚡ AI Performance Fixer
+            AI Performance Fixer
             <span className="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded font-bold">AGENCY</span>
           </h1>
           <p className="text-sm text-slate-500 mt-1">Full PageSpeed Insights audit with AI-generated code fixes and ROI projections.</p>
@@ -225,7 +226,7 @@ export default function PerformanceFixerPage() {
             disabled={loading || loadingFixes || !url}
             className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm font-bold transition-colors"
           >
-            {loading ? '🔍 Fetching PageSpeed metrics…' : loadingFixes ? '🤖 Generating AI fixes…' : '⚡ Analyze + Get AI Code Fixes'}
+            {loading ? 'Fetching PageSpeed metrics…' : loadingFixes ? 'Generating AI fixes…' : 'Analyze + Get AI Code Fixes'}
           </button>
           {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">{error}</div>}
         </div>
@@ -335,10 +336,10 @@ function ResultsDisplay({ result, loadingFixes, onBack }: { result: AuditResult;
 
       {/* AI Fixes */}
       <div className="bg-white border border-slate-200 rounded-xl p-6">
-        <h2 className="text-sm font-bold text-slate-700 mb-4">🤖 AI-Generated Code Fixes {!loadingFixes && `(${result.fixes.length})`}</h2>
+        <h2 className="text-sm font-bold text-slate-700 mb-4">AI-Generated Code Fixes {!loadingFixes && `(${result.fixes.length})`}</h2>
         {loadingFixes ? (
           <div className="text-sm text-slate-500 text-center py-10 bg-slate-50 rounded-lg">
-            <div className="animate-spin text-2xl mb-3">⚙️</div>
+            <Spinner size="lg" className="text-slate-400 mb-3" />
             Generating AI fixes based on your metrics…
           </div>
         ) : result.fixes.length === 0 ? (
@@ -357,7 +358,7 @@ function ResultsDisplay({ result, loadingFixes, onBack }: { result: AuditResult;
       {/* ROI — only shown after fixes load */}
       {result.roi && (
         <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-100 rounded-xl p-6">
-          <h2 className="text-sm font-bold text-slate-700 mb-1">💰 ROI Calculator</h2>
+          <h2 className="text-sm font-bold text-slate-700 mb-1">ROI Calculator</h2>
           <p className="text-[11px] text-slate-500 mb-3">
             Based on this domain&apos;s real estimated monthly organic search traffic, assuming a typical 2.5% conversion rate and $30 average order value.
           </p>
@@ -381,7 +382,7 @@ function ResultsDisplay({ result, loadingFixes, onBack }: { result: AuditResult;
       {/* Industry Benchmark */}
       {result.industryData && (
         <div className="bg-white border border-slate-200 rounded-xl p-6">
-          <h2 className="text-sm font-bold text-slate-700 mb-4">📊 Industry Benchmark</h2>
+          <h2 className="text-sm font-bold text-slate-700 mb-4">Industry Benchmark</h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <div className={`text-3xl font-black ${scoreColor(m.overallScore)}`}>{m.overallScore}</div>

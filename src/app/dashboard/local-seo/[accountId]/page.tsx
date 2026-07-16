@@ -11,7 +11,7 @@ type Task = { id: string; title: string; description: string | null; category: s
 type Account = { id: string; name: string; accountType: string; locations: Location[]; reviews: Review[]; citations: Citation[]; tasks: Task[] }
 
 const PRIORITY_COLOR: Record<string, string> = { high: 'bg-red-100 text-red-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-slate-100 text-slate-600' }
-const CATEGORY_ICON: Record<string, string> = { gbp: '📍', citations: '📋', reviews: '💬', keywords: '🔑', content: '📝' }
+const CATEGORY_LABEL: Record<string, string> = { gbp: 'GBP', citations: 'Citations', reviews: 'Reviews', keywords: 'Keywords', content: 'Content' }
 
 function Stars({ rating }: { rating: number }) {
   return (
@@ -183,17 +183,17 @@ export default function LocalSEOAccountPage() {
             )}
             {negativeReviews.length > 0 && (
               <button onClick={() => setTab('reviews')} className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100">
-                ⭐ {negativeReviews.length} negative review{negativeReviews.length > 1 ? 's' : ''}
+                {negativeReviews.length} negative review{negativeReviews.length > 1 ? 's' : ''}
               </button>
             )}
             {unansweredReviews.length > 0 && (
               <button onClick={() => setTab('reviews')} className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">
-                💬 {unansweredReviews.length} unanswered review{unansweredReviews.length > 1 ? 's' : ''}
+                {unansweredReviews.length} unanswered review{unansweredReviews.length > 1 ? 's' : ''}
               </button>
             )}
             {openTasks.length > 0 && (
               <button onClick={() => setTab('tasks')} className="flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100">
-                ✅ {openTasks.length} open task{openTasks.length > 1 ? 's' : ''}
+                {openTasks.length} open task{openTasks.length > 1 ? 's' : ''}
               </button>
             )}
           </div>
@@ -232,7 +232,7 @@ export default function LocalSEOAccountPage() {
                 {/* Location stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
-                    { label: 'Avg Rating', value: currentLoc.averageRating ? `⭐ ${currentLoc.averageRating}` : '—' },
+                    { label: 'Avg Rating', value: currentLoc.averageRating ? `${currentLoc.averageRating}` : '—' },
                     { label: 'Reviews', value: currentLoc.reviewCount ?? '—' },
                     { label: 'Page Views', value: currentLoc.pageViews?.toLocaleString() ?? '—' },
                     { label: 'Citation Score', value: currentLoc.citationScore ? `${currentLoc.citationScore}/100` : '—' },
@@ -359,7 +359,7 @@ export default function LocalSEOAccountPage() {
                     {!review.responded && loc && (
                       <button onClick={() => generateReply(loc.id, review.id)} disabled={generatingReply === review.id}
                         className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50 flex-shrink-0">
-                        {generatingReply === review.id ? 'Writing...' : '✨ AI Reply'}
+                        {generatingReply === review.id ? 'Writing...' : 'AI Reply'}
                       </button>
                     )}
                     {review.responded && <span className="text-xs text-green-600 font-bold flex-shrink-0">✓ Replied</span>}
@@ -443,7 +443,8 @@ export default function LocalSEOAccountPage() {
                       <div className="flex items-start gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-semibold text-slate-800">{CATEGORY_ICON[task.category] ?? '📌'} {task.title}</span>
+                            <span className="text-sm font-semibold text-slate-800">{task.title}</span>
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{CATEGORY_LABEL[task.category] ?? task.category}</span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${PRIORITY_COLOR[task.priority] ?? 'bg-slate-100 text-slate-600'}`}>{task.priority}</span>
                           </div>
                           {task.description && <p className="text-xs text-slate-500">{task.description}</p>}

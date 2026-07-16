@@ -236,7 +236,7 @@ export function SerpClient() {
             <button onClick={() => exportSerpPDF(result as never)} className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Export PDF</button>
           </div>
         )}
-        {!result && !loading && <EmptyState icon="📈" title="SERP Audit" desc="Enter your target URL and keyword, then run the audit to get a full competitor breakdown and recovery plan." />}
+        {!result && !loading && <EmptyState title="SERP Audit" desc="Enter your target URL and keyword, then run the audit to get a full competitor breakdown and recovery plan." />}
       </div>
     </div>
     </>
