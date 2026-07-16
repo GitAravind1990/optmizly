@@ -278,7 +278,7 @@ export default function GutenbergEditor({ initial, mode }: Props) {
             <ToolBtn label="</> Code" title="Code Block" action={() => editor.chain().focus().toggleCodeBlock().run()} active={isActive('codeBlock')} cls="font-mono" />
             <ToolBtn label="`code`" title="Inline Code" action={() => editor.chain().focus().toggleCode().run()} active={isActive('code')} cls="font-mono" />
             <div className="w-px h-4 bg-slate-200 mx-1 flex-shrink-0" />
-            <ToolBtn label="🖼 Image" title="Insert Image" action={insertImage} />
+            <ToolBtn label="Image" title="Insert Image" action={insertImage} />
             <ToolBtn label="⊞ Table" title="Insert Table" action={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} />
             <ToolBtn label="— Rule" title="Horizontal Rule" action={() => editor.chain().focus().setHorizontalRule().run()} />
             <div className="w-px h-4 bg-slate-200 mx-1 flex-shrink-0" />
@@ -292,7 +292,7 @@ export default function GutenbergEditor({ initial, mode }: Props) {
                   className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs">Remove</button>
               </div>
             ) : (
-              <ToolBtn label="🔗 Link" title="Insert Link" action={() => setShowLinkInput(true)} active={isActive('link')} />
+              <ToolBtn label="Link" title="Insert Link" action={() => setShowLinkInput(true)} active={isActive('link')} />
             )}
             <div className="flex-1" />
             <button onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}
