@@ -278,7 +278,7 @@ export function PagePricing() {
         textAlign: 'center', marginTop: 36,
         fontSize: 14, color: T.muted, fontFamily: T.sans,
       }}>
-        14-day free trial on Pro & Agency · Cancel anytime · Card required to start trial
+        7-day free trial on Pro & Agency · Cancel anytime · Card required to start trial
       </div>
 
       {/* ── FEATURE COMPARISON TABLE ── */}
@@ -391,7 +391,7 @@ const FAQS = [
   },
   {
     q: 'How does the free trial work?',
-    a: 'Pro and Agency plans include a 14-day free trial. We ask for a card to start, but you won\'t be charged until the trial ends. Cancel anytime before then from your account settings and you won\'t be charged at all.',
+    a: 'Pro and Agency plans include a 7-day free trial. We ask for a card to start, but you won\'t be charged until the trial ends. Cancel anytime before then from your account settings and you won\'t be charged at all.',
   },
   {
     q: 'Do I need API keys or anything installed?',

@@ -30,7 +30,7 @@ export function TrialStartedEmail({
   return (
     <Html>
       <Head />
-      <Preview>Your 14-day Optmizly {plan} trial has started</Preview>
+      <Preview>Your 7-day Optmizly {plan} trial has started</Preview>
       <Tailwind>
         <Body className="bg-slate-50 font-sans">
           <Container className="mx-auto py-12 px-4 max-w-xl">
@@ -50,14 +50,14 @@ export function TrialStartedEmail({
                 Your {plan} trial has started!
               </Heading>
               <Text className="text-white/80 text-sm m-0">
-                {limit} analyses/month · full access for 14 days
+                {limit} analyses/month · full access for 7 days
               </Text>
             </Section>
 
             {/* Card */}
             <Section className="bg-white rounded-2xl border border-slate-200 p-8 mb-6">
               <Text className="text-slate-700 text-base leading-relaxed mb-5">
-                Hi {firstName}, you've got full {plan} access for the next 14 days. Here's what's unlocked:
+                Hi {firstName}, you've got full {plan} access for the next 7 days. Here's what's unlocked:
               </Text>
 
               {PLAN_TOOLS[plan].map(tool => (

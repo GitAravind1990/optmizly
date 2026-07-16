@@ -27,7 +27,7 @@ const sections = [
   },
   {
     title: '6. Refund Policy',
-    body: `Pro and Agency plans include a 14-day free trial. A payment method is required to start the trial, but you will not be charged until the trial period ends. You may cancel at any time during the trial from your account settings and you will not be charged. Once a trial converts to a paid subscription (or for renewal charges on an existing subscription), charges are non-refundable except where required by applicable law. See our full Refund Policy at /refund-policy.`,
+    body: `Pro and Agency plans include a 7-day free trial. A payment method is required to start the trial, but you will not be charged until the trial period ends. You may cancel at any time during the trial from your account settings and you will not be charged. Once a trial converts to a paid subscription (or for renewal charges on an existing subscription), charges are non-refundable except where required by applicable law. See our full Refund Policy at /refund-policy.`,
   },
   {
     title: '7. Intellectual Property',

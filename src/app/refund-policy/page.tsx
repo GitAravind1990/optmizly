@@ -7,11 +7,11 @@ export const metadata: Metadata = { title: 'Refund Policy – Optmizly' }
 const sections = [
   {
     title: '1. How the Free Trial Works',
-    body: `Pro and Agency plans include a 14-day free trial. A payment method is required to start the trial, but you will not be charged until the trial period ends. You have full access to your plan's features for the entire trial.`,
+    body: `Pro and Agency plans include a 7-day free trial. A payment method is required to start the trial, but you will not be charged until the trial period ends. You have full access to your plan's features for the entire trial.`,
   },
   {
     title: '2. Cancelling During Your Trial',
-    body: `You may cancel at any time during your 14-day trial from your account settings. If you cancel before the trial ends, you will not be charged. Your access continues until the end of the trial period even after cancelling.`,
+    body: `You may cancel at any time during your 7-day trial from your account settings. If you cancel before the trial ends, you will not be charged. Your access continues until the end of the trial period even after cancelling.`,
   },
   {
     title: '3. After Your Trial Converts to a Paid Subscription',
@@ -50,7 +50,7 @@ export default function RefundPolicyPage() {
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-6 py-4 mb-12">
           <p className="text-blue-800 font-semibold text-sm">
-            14-Day Free Trial – Try Pro or Agency free for 14 days. Cancel anytime before your trial ends and you won&apos;t be charged.
+            7-Day Free Trial – Try Pro or Agency free for 7 days. Cancel anytime before your trial ends and you won&apos;t be charged.
           </p>
         </div>
 

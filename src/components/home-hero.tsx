@@ -380,7 +380,7 @@ export function HomeHero() {
           justifyContent: 'center', gap: 22, flexWrap: 'wrap', marginBottom: 56,
           fontFamily: T.sans,
         }}>
-          {['14-day free trial', 'Free forever tier', 'Setup in 2 minutes'].map((s) => (
+          {['7-day free trial', 'Free forever tier', 'Setup in 2 minutes'].map((s) => (
             <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
               <Icon name="check" size={15} color={T.good} />{s}
             </span>
