@@ -23,45 +23,43 @@ type GeogridResult = {
 
 // ─── Address autocomplete ──────────────────────────────────────────────────────
 interface AddressProps {
-  value: string
   onChange: (v: string) => void
   onCoords: (lat: number, lng: number) => void
   className?: string
 }
 
-function AddressAutocomplete({ value, onChange, onCoords, className }: AddressProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const placesLib = useMapsLibrary('places')
+// google.maps.places.Autocomplete (legacy) is permanently unavailable to any Google
+// Cloud project created after 2025-03-01 — it 404s with LegacyApiNotActivatedMapError
+// regardless of which APIs are enabled. PlaceAutocompleteElement is the only widget
+// new projects can use; it requires the API loader's "beta" version channel (set on
+// APIProvider below) since it hasn't reached the stable channel yet.
+function AddressAutocomplete({ onChange, onCoords, className }: AddressProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const placesLib = useMapsLibrary('places') as any
 
   useEffect(() => {
-    if (!placesLib || !inputRef.current) return
-    const ac = new placesLib.Autocomplete(inputRef.current, {
-      fields: ['geometry', 'formatted_address'],
-    })
-    const listener = ac.addListener('place_changed', () => {
-      const place = ac.getPlace()
-      if (place.geometry?.location) {
-        const lat = place.geometry.location.lat()
-        const lng = place.geometry.location.lng()
-        onCoords(lat, lng)
-        onChange(place.formatted_address ?? '')
+    if (!placesLib || !containerRef.current) return
+
+    const placeAutocomplete = new placesLib.PlaceAutocompleteElement()
+    containerRef.current.appendChild(placeAutocomplete)
+
+    const handleSelect = async (event: any) => {
+      const place = event.placePrediction.toPlace()
+      await place.fetchFields({ fields: ['location', 'formattedAddress'] })
+      if (place.location) {
+        onCoords(place.location.lat(), place.location.lng())
+        onChange(place.formattedAddress ?? '')
       }
-    })
+    }
+    placeAutocomplete.addEventListener('gmp-select', handleSelect)
+
     return () => {
-      google.maps.event.removeListener(listener)
+      placeAutocomplete.removeEventListener('gmp-select', handleSelect)
+      containerRef.current?.removeChild(placeAutocomplete)
     }
   }, [placesLib])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  return (
-    <input
-      ref={inputRef}
-      type="text"
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder="Business address or city"
-      className={className}
-    />
-  )
+  return <div ref={containerRef} className={className} />
 }
 
 // ─── Grid map (inline, inside APIProvider) ─────────────────────────────────────
@@ -286,7 +284,6 @@ function GeogridContent() {
                 <div className="md:col-span-2">
                   <label className={LABEL}>Business Address</label>
                   <AddressAutocomplete
-                    value={address}
                     onChange={setAddress}
                     onCoords={(la, lo) => { setLat(la); setLng(lo) }}
                     className={INPUT}
@@ -483,7 +480,7 @@ export default function GeogridPage() {
   const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? ''
 
   return (
-    <APIProvider apiKey={mapsKey} libraries={['places']}>
+    <APIProvider apiKey={mapsKey} libraries={['places']} version="beta">
       <GeogridContent />
     </APIProvider>
   )
