@@ -14,7 +14,7 @@ const faqJsonLd = JSON.stringify({
     { '@type': 'Question', name: 'What counts as one analysis?', acceptedAnswer: { '@type': 'Answer', text: 'Each time you submit content or a URL for scoring (a content analysis, E-E-A-T check, SERP audit, or other tool), it uses one analysis credit. Credits reset at the start of each billing month.' } },
     { '@type': 'Question', name: 'Can I cancel anytime?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Cancel from your account settings at any time. You keep full access until the end of your current billing period.' } },
     { '@type': 'Question', name: 'How does the free trial work?', acceptedAnswer: { '@type': 'Answer', text: 'Pro and Agency plans include a 7-day free trial. We ask for a card to start, but you won\'t be charged until the trial ends. Cancel anytime before then and you won\'t be charged at all.' } },
-    { '@type': 'Question', name: 'Do I need API keys or anything installed?', acceptedAnswer: { '@type': 'Answer', text: 'No. Optmizly is fully hosted. All AI analysis is included in your plan. No third-party API keys or setup required.' } },
+    { '@type': 'Question', name: 'Do I need API keys or anything installed?', acceptedAnswer: { '@type': 'Answer', text: 'No. Optmizly is fully hosted and all AI analysis is included in your plan. Agency plan users can optionally connect Google Search Console for deeper SEO Audit insights, but no third-party API keys or setup are ever required.' } },
     { '@type': 'Question', name: 'Can I upgrade or downgrade my plan?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Upgrade instantly from your dashboard settings. Downgrades take effect at the start of your next billing cycle.' } },
   ],
 })
