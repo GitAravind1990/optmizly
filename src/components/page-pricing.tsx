@@ -291,7 +291,7 @@ export function PagePricing() {
 
       <div style={{
         textAlign: 'center', marginTop: 36,
-        fontSize: 14, color: T.muted, fontFamily: T.sans,
+        fontSize: 14, fontWeight: 600, color: T.muted, fontFamily: T.sans,
       }}>
         7-day free trial on Pro & Agency · Cancel anytime · Card required to start trial
       </div>
