@@ -47,17 +47,33 @@ function AddressAutocomplete({ onChange, onCoords, className }: AddressProps) {
     containerRef.current.appendChild(placeAutocomplete)
 
     const handleSelect = async (event: any) => {
-      const place = event.place
+      // TEMP DIAGNOSTIC: log the real event shape so we can see exactly what
+      // fires instead of guessing from docs. Remove once this is confirmed working.
+      // eslint-disable-next-line no-console
+      console.log('[geogrid-debug] event fired:', event.type, event)
+      const place = event.place ?? event.placePrediction?.toPlace()
+      if (!place) {
+        // eslint-disable-next-line no-console
+        console.log('[geogrid-debug] no place/placePrediction on event')
+        return
+      }
       await place.fetchFields({ fields: ['location', 'formattedAddress'] })
+      // eslint-disable-next-line no-console
+      console.log('[geogrid-debug] place after fetchFields:', place.location, place.formattedAddress)
       if (place.location) {
         onCoords(place.location.lat(), place.location.lng())
         onChange(place.formattedAddress ?? '')
       }
     }
-    placeAutocomplete.addEventListener('gmp-placeselect', handleSelect)
+    const candidateEvents = ['gmp-placeselect', 'gmp-select', 'gmp-error']
+    for (const evt of candidateEvents) {
+      placeAutocomplete.addEventListener(evt, handleSelect)
+    }
 
     return () => {
-      placeAutocomplete.removeEventListener('gmp-placeselect', handleSelect)
+      for (const evt of candidateEvents) {
+        placeAutocomplete.removeEventListener(evt, handleSelect)
+      }
       containerRef.current?.removeChild(placeAutocomplete)
     }
   }, [placesLib])  // eslint-disable-line react-hooks/exhaustive-deps
