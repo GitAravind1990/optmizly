@@ -32,7 +32,10 @@ interface AddressProps {
 // Cloud project created after 2025-03-01 — it 404s with LegacyApiNotActivatedMapError
 // regardless of which APIs are enabled. PlaceAutocompleteElement is the only widget
 // new projects can use; it requires the API loader's "beta" version channel (set on
-// APIProvider below) since it hasn't reached the stable channel yet.
+// APIProvider below) since it hasn't reached the stable channel yet. Its event name
+// differs by channel: "beta" fires the older `gmp-placeselect` (event.place, a Place
+// object directly) — `gmp-select` (event.placePrediction.toPlace()) only fires on the
+// "alpha" channel, which is less stable, so this stays on beta + gmp-placeselect.
 function AddressAutocomplete({ onChange, onCoords, className }: AddressProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const placesLib = useMapsLibrary('places') as any
@@ -44,17 +47,17 @@ function AddressAutocomplete({ onChange, onCoords, className }: AddressProps) {
     containerRef.current.appendChild(placeAutocomplete)
 
     const handleSelect = async (event: any) => {
-      const place = event.placePrediction.toPlace()
+      const place = event.place
       await place.fetchFields({ fields: ['location', 'formattedAddress'] })
       if (place.location) {
         onCoords(place.location.lat(), place.location.lng())
         onChange(place.formattedAddress ?? '')
       }
     }
-    placeAutocomplete.addEventListener('gmp-select', handleSelect)
+    placeAutocomplete.addEventListener('gmp-placeselect', handleSelect)
 
     return () => {
-      placeAutocomplete.removeEventListener('gmp-select', handleSelect)
+      placeAutocomplete.removeEventListener('gmp-placeselect', handleSelect)
       containerRef.current?.removeChild(placeAutocomplete)
     }
   }, [placesLib])  // eslint-disable-line react-hooks/exhaustive-deps
