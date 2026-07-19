@@ -103,7 +103,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => { setSidebarOpen(false) }, [pathname])
 
-  const plan = usage?.plan ?? 'FREE'
+  // Keep plan-dependent UI (locks, badges, upgrade CTAs) unrendered until the
+  // real plan is known — defaulting to 'FREE' here made every paid account
+  // flash as locked/Free on every page load until the fetch resolved.
+  const plan = usage?.plan ?? null
   const pct  = usage ? Math.min(100, (usage.count / usage.limit) * 100) : 0
 
   function isActive(tool: Tool) {
@@ -119,7 +122,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return pathname === tool.href
   }
 
-  const planLabel = plan === 'FREE' ? 'Free' : plan === 'PRO' ? 'Pro' : 'Agency'
+  const planLabel = plan === 'FREE' ? 'Free' : plan === 'PRO' ? 'Pro' : plan === 'AGENCY' ? 'Agency' : ''
   const barColor  = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-brand-500'
 
   return (
@@ -193,7 +196,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div key={group.label} className="mb-1">
                 <div className={`px-2 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest ${group.label === 'Free' ? 'text-emerald-600' : group.label === 'Pro' ? 'text-brand-500' : 'text-amber-600'}`}>{group.label}</div>
                 {group.tools.map(tool => {
-                  const unlocked = isUnlocked(tool.minPlan, plan)
+                  // Until the plan loads, treat every tool as unlocked so the sidebar
+                  // doesn't flash lock icons on a paid account's tools.
+                  const unlocked = !usage || isUnlocked(tool.minPlan, usage.plan)
                   const active   = isActive(tool)
                   return (
                     <Link
@@ -208,12 +213,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       }`}
                       onClick={() => {
                         if (unlocked && !active) posthog.capture('tool_opened', { tool_name: tool.id })
-                        else if (!unlocked) posthog.capture('upgrade_clicked', { from_plan: plan, target_plan: tool.minPlan, location: 'sidebar_locked_tool', tool_name: tool.id })
+                        else if (!unlocked) posthog.capture('upgrade_clicked', { from_plan: plan ?? 'FREE', target_plan: tool.minPlan, location: 'sidebar_locked_tool', tool_name: tool.id })
                       }}
                     >
                       <NavIcon id={tool.id} />
                       <span className="flex-1 truncate">{tool.label}</span>
-                      {!unlocked ? (
+                      {!usage ? null : !unlocked ? (
                         <NavIcon id="lock" />
                       ) : tool.minPlan !== 'FREE' && !active && (
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${TIER_BADGE[tool.minPlan] ?? ''}`}>
@@ -262,7 +267,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
             <div className="flex items-center gap-2.5 px-1">
               <UserButton />
-              <span className="text-xs text-slate-400 truncate">{planLabel} Plan</span>
+              {usage && <span className="text-xs text-slate-400 truncate">{planLabel} Plan</span>}
             </div>
           </div>
         </aside>
