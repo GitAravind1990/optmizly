@@ -39,10 +39,15 @@ function buildCSP(nonce: string): string {
     // Older browsers: 'unsafe-inline' acts as fallback (strict-dynamic not understood).
     // Host sources: last-resort fallback for browsers that understand neither.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline'${devEval} https://cdn.clerk.com https://*.clerk.com https://clerk.optmizly.com https://us-assets.i.posthog.com https://maps.googleapis.com https://challenges.cloudflare.com${devClerk}`,
-    "style-src 'self' 'unsafe-inline'",
+    // fonts.googleapis.com: the PlaceAutocompleteElement widget loads its own Google
+    // Sans/Roboto stylesheet for the suggestions dropdown.
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob: https://img.clerk.com https://maps.gstatic.com https://maps.googleapis.com https://*.google.com",
-    "font-src 'self' data:",
-    `connect-src 'self' https://api.clerk.com https://*.clerk.com wss://*.clerk.com https://clerk.optmizly.com wss://clerk.optmizly.com https://us.i.posthog.com https://us-assets.i.posthog.com https://maps.googleapis.com https://challenges.cloudflare.com${devClerk}`,
+    "font-src 'self' data: https://fonts.gstatic.com",
+    // places.googleapis.com (Places API "New", used by PlaceAutocompleteElement's
+    // AutocompletePlaces RPC) is a distinct domain from maps.googleapis.com — both
+    // are needed, they aren't interchangeable.
+    `connect-src 'self' https://api.clerk.com https://*.clerk.com wss://*.clerk.com https://clerk.optmizly.com wss://clerk.optmizly.com https://us.i.posthog.com https://us-assets.i.posthog.com https://maps.googleapis.com https://places.googleapis.com https://challenges.cloudflare.com${devClerk}`,
     // Clerk's bot-protection (Cloudflare Turnstile) renders an invisible challenge iframe from
     // this origin before letting sign-in/sign-up (incl. OAuth) proceed — without it here the
     // iframe is silently blocked and the "Continue with Google" button spins forever.
