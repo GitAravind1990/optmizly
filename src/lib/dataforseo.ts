@@ -154,6 +154,25 @@ export interface LocalPackRankResult {
   rank: number | null
 }
 
+// Generic filler words that shouldn't be required for a title match — real Google
+// Business Profile titles routinely append marketing taglines/qualifiers ("Best IVF
+// Centre in Coimbatore", "- Best in Maternity") that break contiguous substring
+// matching even when the actual business name is fully present, just not adjacent.
+const TITLE_MATCH_STOPWORDS = new Set(['the', 'and', 'of', 'in', 'at', 'for', 'a', 'an'])
+
+/** True if every significant word of `businessName` appears somewhere in `title`
+ *  (order/adjacency don't matter) — e.g. "Iswarya Fertility Centre" matches "Iswarya
+ *  IVF & Fertility Centre Coimbatore" even though "IVF &" breaks contiguity. */
+function titleMatchesBusinessName(title: string, businessName: string): boolean {
+  const titleLower = title.toLowerCase()
+  const words = businessName
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(w => w.length > 2 && !TITLE_MATCH_STOPWORDS.has(w))
+  if (words.length === 0) return titleLower.includes(businessName.toLowerCase())
+  return words.every(w => titleLower.includes(w))
+}
+
 /**
  * `placeId`, when known, matches the exact listing — chain/franchise locations often
  * share one generic display title (e.g. every "Starbucks" shows as "Starbucks Coffee
@@ -183,10 +202,9 @@ async function fetchLocalPackRank(
   if (task.status_code !== 20000 || !items) return null
 
   // DataForSEO's local-pack item type is "maps_search", not "maps".
-  const nameLower = businessName.toLowerCase()
   const match = items.find(item => {
     if (item.type !== 'maps_search') return false
-    return placeId ? item.place_id === placeId : item.title.toLowerCase().includes(nameLower)
+    return placeId ? item.place_id === placeId : titleMatchesBusinessName(item.title, businessName)
   })
   if (!match) return { found: false, rank: null }
   return { found: true, rank: match.rank_group }
