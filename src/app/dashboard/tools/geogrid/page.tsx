@@ -32,10 +32,11 @@ interface AddressProps {
 // Cloud project created after 2025-03-01 — it 404s with LegacyApiNotActivatedMapError
 // regardless of which APIs are enabled. PlaceAutocompleteElement is the only widget
 // new projects can use; it requires the API loader's "beta" version channel (set on
-// APIProvider below) since it hasn't reached the stable channel yet. Its event name
-// differs by channel: "beta" fires the older `gmp-placeselect` (event.place, a Place
-// object directly) — `gmp-select` (event.placePrediction.toPlace()) only fires on the
-// "alpha" channel, which is less stable, so this stays on beta + gmp-placeselect.
+// APIProvider below) since it hasn't reached the stable channel yet, and its
+// AutocompletePlaces calls hit places.googleapis.com (Places API "New") — a
+// separate domain from maps.googleapis.com that must be allowlisted in the CSP's
+// connect-src too. Confirmed live: this channel fires `gmp-select`, with the place
+// reached via event.placePrediction.toPlace() (not event.place).
 function AddressAutocomplete({ onChange, onCoords, className }: AddressProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const placesLib = useMapsLibrary('places') as any
@@ -47,33 +48,17 @@ function AddressAutocomplete({ onChange, onCoords, className }: AddressProps) {
     containerRef.current.appendChild(placeAutocomplete)
 
     const handleSelect = async (event: any) => {
-      // TEMP DIAGNOSTIC: log the real event shape so we can see exactly what
-      // fires instead of guessing from docs. Remove once this is confirmed working.
-      // eslint-disable-next-line no-console
-      console.log('[geogrid-debug] event fired:', event.type, event)
-      const place = event.place ?? event.placePrediction?.toPlace()
-      if (!place) {
-        // eslint-disable-next-line no-console
-        console.log('[geogrid-debug] no place/placePrediction on event')
-        return
-      }
+      const place = event.placePrediction.toPlace()
       await place.fetchFields({ fields: ['location', 'formattedAddress'] })
-      // eslint-disable-next-line no-console
-      console.log('[geogrid-debug] place after fetchFields:', place.location, place.formattedAddress)
       if (place.location) {
         onCoords(place.location.lat(), place.location.lng())
         onChange(place.formattedAddress ?? '')
       }
     }
-    const candidateEvents = ['gmp-placeselect', 'gmp-select', 'gmp-error']
-    for (const evt of candidateEvents) {
-      placeAutocomplete.addEventListener(evt, handleSelect)
-    }
+    placeAutocomplete.addEventListener('gmp-select', handleSelect)
 
     return () => {
-      for (const evt of candidateEvents) {
-        placeAutocomplete.removeEventListener(evt, handleSelect)
-      }
+      placeAutocomplete.removeEventListener('gmp-select', handleSelect)
       containerRef.current?.removeChild(placeAutocomplete)
     }
   }, [placesLib])  // eslint-disable-line react-hooks/exhaustive-deps
