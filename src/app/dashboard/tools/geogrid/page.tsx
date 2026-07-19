@@ -66,6 +66,42 @@ function AddressAutocomplete({ onChange, onCoords, className }: AddressProps) {
   return <div ref={containerRef} className={className} />
 }
 
+// Business-search variant of the same widget: resolves a Place ID + display name
+// instead of coordinates, so users pick their listing instead of copy-pasting a
+// ChIJ... string from Google's Place ID Finder page.
+interface PlaceIdProps {
+  onSelect: (placeId: string, name: string) => void
+  className?: string
+}
+
+function PlaceIdAutocomplete({ onSelect, className }: PlaceIdProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const placesLib = useMapsLibrary('places') as any
+
+  useEffect(() => {
+    if (!placesLib || !containerRef.current) return
+
+    const placeAutocomplete = new placesLib.PlaceAutocompleteElement()
+    containerRef.current.appendChild(placeAutocomplete)
+
+    const handleSelect = async (event: any) => {
+      const place = event.placePrediction.toPlace()
+      await place.fetchFields({ fields: ['id', 'displayName'] })
+      if (place.id) {
+        onSelect(place.id, place.displayName ?? '')
+      }
+    }
+    placeAutocomplete.addEventListener('gmp-select', handleSelect)
+
+    return () => {
+      placeAutocomplete.removeEventListener('gmp-select', handleSelect)
+      containerRef.current?.removeChild(placeAutocomplete)
+    }
+  }, [placesLib])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  return <div ref={containerRef} className={className} />
+}
+
 // ─── Grid map (inline, inside APIProvider) ─────────────────────────────────────
 function GridMapInline({ grid, center, businessName }: { grid: RankedGridPoint[]; center: { lat: number; lng: number }; businessName: string }) {
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? 'DEMO_MAP_ID'
@@ -132,6 +168,7 @@ function GeogridContent() {
   // Review velocity state
   const [rvBiz, setRvBiz]       = useState('')
   const [placeId, setPlaceId]   = useState('')
+  const [rvManualEntry, setRvManualEntry] = useState(false)
   const [rvLoading, setRvLoading] = useState(false)
   const [rvResult, setRvResult]   = useState<ReviewData | null>(null)
   const [rvError, setRvError]     = useState('')
@@ -432,24 +469,55 @@ function GeogridContent() {
                 </div>
 
                 <div>
-                  <label className={LABEL}>Google Place ID</label>
-                  <input
-                    value={placeId}
-                    onChange={e => setPlaceId(e.target.value)}
-                    placeholder="ChIJxxxxxxxxxxxxxxxx"
-                    className={INPUT}
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Find your Place ID at{' '}
-                    <a
-                      href="https://developers.google.com/maps/faq#how-do-i-get-a-place-id"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 underline"
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      {rvManualEntry ? 'Google Place ID' : 'Find Your Business'}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setRvManualEntry(v => !v)}
+                      className="text-[11px] font-semibold text-blue-500 hover:text-blue-700"
                     >
-                      developers.google.com/maps/faq
-                    </a>
-                  </p>
+                      {rvManualEntry ? 'Search instead' : 'Enter Place ID manually'}
+                    </button>
+                  </div>
+
+                  {rvManualEntry ? (
+                    <>
+                      <input
+                        value={placeId}
+                        onChange={e => setPlaceId(e.target.value)}
+                        placeholder="ChIJxxxxxxxxxxxxxxxx"
+                        className={INPUT}
+                      />
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Find your Place ID at{' '}
+                        <a
+                          href="https://developers.google.com/maps/faq#how-do-i-get-a-place-id"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 underline"
+                        >
+                          developers.google.com/maps/faq
+                        </a>
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <PlaceIdAutocomplete
+                        className={INPUT}
+                        onSelect={(id, name) => {
+                          setPlaceId(id)
+                          if (name && !rvBiz) setRvBiz(name)
+                        }}
+                      />
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        {placeId
+                          ? <>Place ID: <span className="font-mono text-slate-500">{placeId}</span></>
+                          : 'Start typing your business name and select it from the dropdown.'}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
 
