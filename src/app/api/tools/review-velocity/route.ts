@@ -6,8 +6,14 @@ import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 // Reviews have no synchronous DataForSEO endpoint — getReviewVelocity polls an async
-// task for up to 45s, so this needs more headroom than the platform default.
+// task for up to 54s, so this needs more headroom than the platform default.
 export const maxDuration = 60
+
+const FAILURE_MESSAGES: Record<string, string> = {
+  timeout: 'The review lookup is taking longer than usual for this business. This is usually transient — please try again in a moment.',
+  not_queued: 'Could not start the review lookup. Verify the Place ID is correct, or try again.',
+  task_error: 'Could not fetch review data for this Place ID. Verify it is correct, or try again.',
+}
 
 function parseReviewDate(datetime: string): Date {
   // DataForSEO returns "2024-01-15 10:30:00 +00:00" or "2024-01-15 10:30:00"
@@ -34,10 +40,10 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await getReviewVelocity(String(placeId))
-    if (!data) {
+    if ('reason' in data) {
       return apiError({
         status: 502,
-        message: 'Could not fetch review data. Verify the Place ID is correct, or try again. The review lookup can occasionally take longer than expected.',
+        message: FAILURE_MESSAGES[data.reason],
         name: 'ExternalAPIError',
       })
     }

@@ -459,7 +459,11 @@ export async function getKeywordMetrics(
 // task_get pattern. A task in progress reports this status_code on task_get.
 const DFS_TASK_IN_QUEUE = 40602
 const REVIEWS_POLL_INTERVAL_MS = 1500
-const REVIEWS_POLL_BUDGET_MS = 45000
+// Measured live: a depth=100 pull on a heavily-reviewed listing took ~55s end to
+// end (was previously timing out at 45s and getting misreported as a bad Place
+// ID). Route's maxDuration is 60s — this leaves ~5s headroom for the initial
+// task_post round trip and response serialization.
+const REVIEWS_POLL_BUDGET_MS = 54000
 
 type ReviewsTaskPostResponse = {
   tasks: Array<{ id?: string; status_code: number }>
@@ -468,6 +472,7 @@ type ReviewsTaskPostResponse = {
 type ReviewsTaskGetResponse = {
   tasks: Array<{
     status_code: number
+    status_message?: string
     result: Array<{
       rating?: { value?: number; votes_count?: number }
       reviews_count?: number
@@ -491,6 +496,13 @@ export type ReviewResult = {
   }>
 }
 
+// Distinguishes "the task never finished in time" (place ID was almost certainly
+// fine, DataForSEO's queue was just slow) from "DataForSEO rejected/failed the
+// task outright" (place ID is more likely actually wrong) — the two warrant
+// different user-facing messages, and previously both silently collapsed into a
+// bare `null` with zero server-side log line to tell them apart.
+export type ReviewFailure = { reason: 'timeout' | 'not_queued' | 'task_error'; detail: string }
+
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -504,7 +516,7 @@ function sleep(ms: number): Promise<void> {
  * pins the exact listing — "United States" satisfies it without needing the
  * business's city/state on hand.
  */
-export async function getReviewVelocity(placeId: string): Promise<ReviewResult | null> {
+export async function getReviewVelocity(placeId: string): Promise<ReviewResult | ReviewFailure> {
   const postData = await dfsPost<ReviewsTaskPostResponse>('/v3/business_data/google/reviews/task_post', [
     {
       place_id: placeId,
@@ -515,8 +527,13 @@ export async function getReviewVelocity(placeId: string): Promise<ReviewResult |
     },
   ])
 
-  const taskId = postData?.tasks?.[0]?.id
-  if (!taskId || postData.tasks[0].status_code !== 20100) return null
+  const postTask = postData?.tasks?.[0]
+  if (!postTask?.id || postTask.status_code !== 20100) {
+    const detail = `status_code=${postTask?.status_code ?? 'none'} (post request itself may have failed — no response body)`
+    console.error(`[getReviewVelocity] task_post did not queue for place_id=${placeId}: ${detail}`)
+    return { reason: 'not_queued', detail }
+  }
+  const taskId = postTask.id
 
   const deadline = Date.now() + REVIEWS_POLL_BUDGET_MS
   while (Date.now() < deadline) {
@@ -529,10 +546,17 @@ export async function getReviewVelocity(placeId: string): Promise<ReviewResult |
     // A genuinely review-free business is a confirmed empty result, not a failed
     // lookup — surfacing it as "could not fetch review data" would be misleading.
     if (task?.status_code === DFS_NO_RESULTS) return { totalReviews: 0, rating: 0, reviews: [] }
-    if (!task || task.status_code !== 20000) return null
+    if (!task || task.status_code !== 20000) {
+      const detail = `status_code=${task?.status_code ?? 'none'} status_message=${task?.status_message ?? 'n/a'}`
+      console.error(`[getReviewVelocity] task_get failed for place_id=${placeId} taskId=${taskId}: ${detail}`)
+      return { reason: 'task_error', detail }
+    }
 
     const result = task.result?.[0]
-    if (!result) return null
+    if (!result) {
+      console.error(`[getReviewVelocity] task_get returned status 20000 but no result for place_id=${placeId} taskId=${taskId}`)
+      return { reason: 'task_error', detail: 'empty result on success status' }
+    }
 
     return {
       totalReviews: result.reviews_count ?? 0,
@@ -547,5 +571,6 @@ export async function getReviewVelocity(placeId: string): Promise<ReviewResult |
     }
   }
 
-  return null
+  console.error(`[getReviewVelocity] poll budget (${REVIEWS_POLL_BUDGET_MS}ms) exceeded for place_id=${placeId} taskId=${taskId} — task never left queue`)
+  return { reason: 'timeout', detail: `exceeded ${REVIEWS_POLL_BUDGET_MS}ms poll budget` }
 }
