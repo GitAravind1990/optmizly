@@ -12,6 +12,22 @@ import type { RankedGridPoint, GridStats as GridStatsType } from '@/lib/geogrid'
 
 type Tab = 'geogrid' | 'review-velocity'
 
+// PlaceAutocompleteElement renders its own bordered/rounded input inside whatever
+// container it's mounted in — giving that container the same bordered-input classes
+// used for plain <input>s produces a visible box-inside-a-box. Only control layout
+// here; theme the widget's actual chrome via its documented CSS custom properties
+// (harmless no-ops if this beta component doesn't honor a given one) so it reads as
+// the same input style as its siblings instead of Google's default look.
+const AUTOCOMPLETE_WRAP = 'w-full'
+const AUTOCOMPLETE_THEME_VARS = {
+  '--gmpx-color-surface': '#f8fafc',
+  '--gmpx-color-on-surface': '#0f172a',
+  '--gmpx-color-on-surface-variant': '#64748b',
+  '--gmpx-color-primary': '#2563eb',
+  '--gmpx-font-family-base': 'inherit',
+  '--gmpx-font-size-base': '0.875rem',
+} as React.CSSProperties
+
 type GeogridResult = {
   grid: RankedGridPoint[]
   stats: GridStatsType
@@ -63,7 +79,7 @@ function AddressAutocomplete({ onChange, onCoords, className }: AddressProps) {
     }
   }, [placesLib])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={containerRef} className={className} />
+  return <div ref={containerRef} className={className} style={AUTOCOMPLETE_THEME_VARS} />
 }
 
 // Business-search variant of the same widget: resolves a Place ID + display name
@@ -99,7 +115,7 @@ function PlaceIdAutocomplete({ onSelect, className }: PlaceIdProps) {
     }
   }, [placesLib])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={containerRef} className={className} />
+  return <div ref={containerRef} className={className} style={AUTOCOMPLETE_THEME_VARS} />
 }
 
 // ─── Grid map (inline, inside APIProvider) ─────────────────────────────────────
@@ -328,7 +344,7 @@ function GeogridContent() {
                   <AddressAutocomplete
                     onChange={setAddress}
                     onCoords={(la, lo) => { setLat(la); setLng(lo) }}
-                    className={INPUT}
+                    className={AUTOCOMPLETE_WRAP}
                   />
                   {lat !== null && lng !== null && (
                     <p className="text-[11px] text-slate-400 mt-1">
@@ -506,7 +522,7 @@ function GeogridContent() {
                   ) : (
                     <>
                       <PlaceIdAutocomplete
-                        className={INPUT}
+                        className={AUTOCOMPLETE_WRAP}
                         onSelect={(id, name) => {
                           setPlaceId(id)
                           if (name && !rvBiz) setRvBiz(name)
