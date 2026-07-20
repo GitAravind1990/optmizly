@@ -6,8 +6,12 @@ import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 // Reviews have no synchronous DataForSEO endpoint — getReviewVelocity polls an async
-// task for up to 54s, so this needs more headroom than the platform default.
-export const maxDuration = 60
+// task for up to REVIEWS_POLL_BUDGET_MS. Measured live (2026-07-21): queue time for
+// this endpoint is genuinely variable and not tied to location_name or review volume
+// (tested directly against DataForSEO — same place_id completed in 22s vs 62s across
+// two back-to-back runs) — a 60s ceiling was getting legitimately hit, not just a
+// misconfigured budget. Raised well past it for headroom.
+export const maxDuration = 120
 
 const FAILURE_MESSAGES: Record<string, string> = {
   timeout: 'The review lookup is taking longer than usual for this business. This is usually transient — please try again in a moment.',

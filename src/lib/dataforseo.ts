@@ -464,11 +464,12 @@ export async function getKeywordMetrics(
 const DFS_TASK_IN_QUEUE = 40602
 const DFS_TASK_HANDED = 40601
 const REVIEWS_POLL_INTERVAL_MS = 1500
-// Measured live: a depth=100 pull on a heavily-reviewed listing took ~55s end to
-// end (was previously timing out at 45s and getting misreported as a bad Place
-// ID). Route's maxDuration is 60s — this leaves ~5s headroom for the initial
-// task_post round trip and response serialization.
-const REVIEWS_POLL_BUDGET_MS = 54000
+// Queue time for this DataForSEO endpoint is genuinely variable — measured live
+// completions ranging from ~22s to ~62s for the same place_id back-to-back, not
+// correlated with location_name or review volume. Route's maxDuration is 120s —
+// this leaves ~10s headroom for the initial task_post round trip and response
+// serialization.
+const REVIEWS_POLL_BUDGET_MS = 110000
 
 type ReviewsTaskPostResponse = {
   tasks: Array<{ id?: string; status_code: number }>
