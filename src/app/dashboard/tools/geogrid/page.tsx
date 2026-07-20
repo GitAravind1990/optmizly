@@ -214,6 +214,7 @@ function GeogridContent() {
   }, [biz, keyword, lat, lng, gridSize, spacing, unit])
 
   const handleRvRun = useCallback(async () => {
+    if (!rvBiz.trim()) { setRvError('Business name is required.'); return }
     if (!placeId.trim()) { setRvError('Place ID is required.'); return }
     setRvLoading(true)
     setRvError('')

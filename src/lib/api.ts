@@ -17,10 +17,13 @@ export function apiError(error: unknown): NextResponse {
     console.error('[API Error] AI response parse failure:', error.message)
     return NextResponse.json({ error: 'The AI response could not be processed. Please try again.' }, { status: 502 })
   }
-  // Plain validation objects: { message: string, status: 4xx } — used for user-facing route errors
+  // Plain validation/upstream-error objects: { message: string, status: 4xx|5xx } — used
+  // for user-facing route errors, including intentional 502s like "upstream API failed"
+  // (previously capped at <500, which silently downgraded those into a bare "Internal
+  // server error" and threw away the actual message).
   if (error !== null && typeof error === 'object' && !Array.isArray(error)) {
     const obj = error as Record<string, unknown>
-    if (typeof obj.status === 'number' && obj.status >= 400 && obj.status < 500 && typeof obj.message === 'string') {
+    if (typeof obj.status === 'number' && obj.status >= 400 && obj.status < 600 && typeof obj.message === 'string') {
       return NextResponse.json({ error: obj.message }, { status: obj.status })
     }
   }
