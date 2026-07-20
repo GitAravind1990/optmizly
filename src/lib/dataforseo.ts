@@ -456,8 +456,13 @@ export async function getKeywordMetrics(
 // ─── Review velocity ──────────────────────────────────────────────────────────
 
 // Google Reviews has no synchronous "live" endpoint — only the async task_post/
-// task_get pattern. A task in progress reports this status_code on task_get.
+// task_get pattern. A task in progress reports one of these two status_codes on
+// task_get — confirmed live (2026-07-21 prod logs) that "Task Handed" is a real,
+// distinct in-progress state, not an error: a real request got misreported as
+// "Could not fetch review data" because only 40602 was treated as "keep polling"
+// and 40601 fell through to the generic task_error branch instead.
 const DFS_TASK_IN_QUEUE = 40602
+const DFS_TASK_HANDED = 40601
 const REVIEWS_POLL_INTERVAL_MS = 1500
 // Measured live: a depth=100 pull on a heavily-reviewed listing took ~55s end to
 // end (was previously timing out at 45s and getting misreported as a bad Place
@@ -539,7 +544,7 @@ export async function getReviewVelocity(placeId: string): Promise<ReviewResult |
   while (Date.now() < deadline) {
     const getData = await dfsGet<ReviewsTaskGetResponse>(`/v3/business_data/google/reviews/task_get/${taskId}`)
     const task = getData?.tasks?.[0]
-    if (task?.status_code === DFS_TASK_IN_QUEUE) {
+    if (task?.status_code === DFS_TASK_IN_QUEUE || task?.status_code === DFS_TASK_HANDED) {
       await sleep(REVIEWS_POLL_INTERVAL_MS)
       continue
     }
