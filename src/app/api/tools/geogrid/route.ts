@@ -6,6 +6,14 @@ import { getLocalRank } from '@/lib/dataforseo'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
+// No maxDuration was ever set here, so this fell back to the platform's short
+// default even though it does the opposite of a quick request: up to 9 sequential
+// batches of 10 concurrent DataForSEO Maps live calls for a 9x9 grid, each batch
+// gated on its slowest call. Measured live against a real, busy 9x9 grid
+// (2026-07-21): individual calls ranged 8-22s under normal load, batches summed to
+// 115.7s total — comfortably past any short default, which is why this was likely
+// failing silently before getting an explicit budget.
+export const maxDuration = 180
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
 
