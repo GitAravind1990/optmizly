@@ -273,6 +273,13 @@ function GeogridContent() {
   const AUTOCOMPLETE_WRAP = INPUT.replace('bg-slate-50', 'bg-white').replace('px-4 py-2.5 ', '')
   const LABEL = 'block text-xs font-semibold text-slate-700 mb-1.5'
 
+  // Review Velocity fields only: more rounded corners, and Business Name/manual
+  // Place ID back to the default (smaller) height rather than grown to match the
+  // search widget — the widget's own fixed ~48px floor is left as-is since
+  // shrinking/clipping it breaks its suggestions dropdown (confirmed live).
+  const RV_INPUT = INPUT.replace('rounded-xl', 'rounded-2xl')
+  const RV_AUTOCOMPLETE_WRAP = AUTOCOMPLETE_WRAP.replace('rounded-xl', 'rounded-2xl')
+
   if (plan === null) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -472,16 +479,11 @@ function GeogridContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className={LABEL}>Business Name</label>
-                  {/* py-[13px] instead of the shared INPUT's py-2.5: matches the Places
-                      autocomplete widget's fixed ~48px intrinsic height (measured live)
-                      so the two fields in this row line up, without touching the widget
-                      itself — clipping it to force a match previously broke its
-                      suggestions dropdown. */}
                   <input
                     value={rvBiz}
                     onChange={e => setRvBiz(e.target.value)}
                     placeholder="e.g. Joe's Pizza"
-                    className={INPUT.replace('py-2.5', 'py-[13px]')}
+                    className={RV_INPUT}
                   />
                 </div>
 
@@ -505,7 +507,7 @@ function GeogridContent() {
                         value={placeId}
                         onChange={e => setPlaceId(e.target.value)}
                         placeholder="ChIJxxxxxxxxxxxxxxxx"
-                        className={INPUT}
+                        className={RV_INPUT}
                       />
                       <p className="text-[11px] text-slate-400 mt-1">
                         Find your Place ID at{' '}
@@ -522,7 +524,7 @@ function GeogridContent() {
                   ) : (
                     <>
                       <PlaceIdAutocomplete
-                        className={AUTOCOMPLETE_WRAP}
+                        className={RV_AUTOCOMPLETE_WRAP}
                         onSelect={(id, name) => {
                           setPlaceId(id)
                           if (name && !rvBiz) setRvBiz(name)
