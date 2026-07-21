@@ -143,7 +143,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
               ['Domain Authority', `${analysis.domainAuthority}/100`, !!quality.authority],
               ['Page Authority', `${analysis.pageAuthority}/100`, !!quality.authority],
               ['Total Backlinks', analysis.backlinksTotal.toLocaleString(), !!quality.backlinks],
-              ['New Backlinks (30d)', `+${analysis.backlinksNew}`, false],
+              ['New Backlinks (30d)', `+${analysis.backlinksNew}`, !!quality.backlinksNew],
               ['Keywords Ranked', analysis.keywordCount.toLocaleString(), !!quality.keywords],
               ['Content Pages', analysis.contentCount.toString(), false],
               ['Avg Content Length', `${analysis.avgContentLength.toLocaleString()} words`, false],

@@ -10,6 +10,10 @@ export type DataQuality = {
    *  (the individual referring-domains list), which is a separate endpoint. */
   backlinks?: boolean
   backlinksDetail?: boolean
+  /** True only when computed from two real backlinksTotal values (this run + a prior
+   *  real one for the same domain) — a delta against a mock number would be
+   *  meaningless, so this stays false rather than reusing the `backlinks` flag. */
+  backlinksNew?: boolean
   keywords?: boolean
   pages?: boolean
   gaps?: boolean

@@ -8,6 +8,7 @@ import { AuthError, getOrCreateUser } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { getTrafficEstimate, getBacklinksSummary, getRankedKeywords, getReferringDomains, getTopPagesByTraffic, getDomainIntersectionGaps, settledOrNull } from '@/lib/dataforseo'
+import { parseDataQuality } from '@/lib/competitor-spy-quality'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -101,31 +102,12 @@ function generateMockData(domainName: string) {
     { keyword: 'semantic seo guide', volume: r(600, 2500), difficulty: r(30, 55) },
   ]
 
-  const missingEntities = [
-    'Google Search Generative Experience',
-    'E-E-A-T Framework',
-    'Helpful Content Update',
-    'Core Web Vitals',
-    'Topical Authority',
-  ]
-
-  const contentOpps = [
-    {
-      title: 'AI-Powered SEO: Complete 2026 Guide',
-      opportunity: 'Competitor has thin content on AI SEO. High search demand unmet',
-      traffic: r(2000, 6000),
-    },
-    {
-      title: 'Topical Authority vs Domain Authority: What Matters More',
-      opportunity: 'Gap in comparison content for modern SEO metrics',
-      traffic: r(1000, 3500),
-    },
-    {
-      title: `Why ${domainName} Users Switch to Optmizly`,
-      opportunity: 'Comparison/alternative pages drive high-intent traffic',
-      traffic: r(500, 2000),
-    },
-  ]
+  // missingEntities/contentOpps are NOT generated here — they're always overwritten
+  // by the AI-insights block below (either Claude's real, domain-grounded output, or
+  // an honest generic fallback if that call fails). These typed-empty placeholders
+  // exist only so `data`'s shape is consistent before that block runs.
+  const missingEntities: string[] = []
+  const contentOpps: Array<{ title: string; opportunity: string; traffic: number }> = []
 
   return {
     traffic,
@@ -150,6 +132,12 @@ interface AIInsights {
   weaknesses?: string[]
   topOpportunity?: string
   threatLevel?: string
+  missingEntities?: string[]
+  // `keyword` is Claude's own output, used server-side to look up a real traffic
+  // number for the separate `contentOpps` DB column (which only has
+  // {title, opportunity, traffic}, no `keyword`) — stripped before `aiInsights`
+  // itself is persisted, see below.
+  contentOpps?: Array<{ title: string; opportunity: string; keyword?: string }>
 }
 
 export async function POST(req: NextRequest) {
@@ -177,7 +165,7 @@ export async function POST(req: NextRequest) {
     // actually succeeds, matching the original DA/PA precedent below rather than the
     // null-on-failure pattern used elsewhere (this model's numeric columns are
     // non-nullable, so "couldn't fetch" has to mean "keep the estimate," not null).
-    const quality = { authority: false, traffic: false, backlinks: false, backlinksDetail: false, keywords: false, pages: false, gaps: false }
+    const quality = { authority: false, traffic: false, backlinks: false, backlinksDetail: false, keywords: false, pages: false, gaps: false, backlinksNew: false }
 
     // Real signals from OpenPageRank and DataForSEO, fetched concurrently since none
     // of them depend on each other. A rejected promise here is treated the same as an
@@ -185,7 +173,7 @@ export async function POST(req: NextRequest) {
     // means "keep the mock estimate," never zero. Gap keywords only run when the user
     // supplied their own domain to compare against — skipped (not even attempted)
     // otherwise rather than calling with a garbage/empty target.
-    const [oprResult, trafficResult, backlinksResult, keywordsResult, referringDomainsResult, topPagesResult, gapsResult] = await Promise.allSettled([
+    const [oprResult, trafficResult, backlinksResult, keywordsResult, referringDomainsResult, topPagesResult, gapsResult, priorResult] = await Promise.allSettled([
       fetchOPRScore(domainName),
       getTrafficEstimate(domainName),
       getBacklinksSummary(domainName),
@@ -193,6 +181,9 @@ export async function POST(req: NextRequest) {
       getReferringDomains(domainName, 8),
       getTopPagesByTraffic(domainName, 5),
       userDomain ? getDomainIntersectionGaps(userDomain, domainName, 10) : Promise.resolve(null),
+      // For the backlinksNew delta below — independent of the DataForSEO calls, so it
+      // rides in the same batch rather than adding a sequential round trip.
+      prisma.competitorAnalysis.findFirst({ where: { userId: user.id, domainName }, orderBy: { createdAt: 'desc' } }),
     ])
 
     // OpenPageRank only scores at domain granularity (0-10), so both Domain and Page
@@ -247,31 +238,79 @@ export async function POST(req: NextRequest) {
       quality.gaps = true
     }
 
-    // AI insights
+    // "New backlinks" as a delta against the user's own most recent PRIOR analysis of
+    // this same domain (mirrors the same pattern Client Reports uses for its
+    // traffic/backlinks deltas) — only computed when BOTH this run's and the prior
+    // run's backlinksTotal are real; a delta between one real number and one mock
+    // number would be meaningless. No prior analysis, or either side estimated,
+    // means "first real check" — 0 is the honest answer, and the field can't be null
+    // (schema constraint), so it can't be left blank either.
+    const priorAnalysis = settledOrNull(priorResult)
+    if (quality.backlinks && priorAnalysis && parseDataQuality(priorAnalysis.dataQuality).backlinks) {
+      data.backlinksNew = Math.max(0, data.backlinksTotal - priorAnalysis.backlinksTotal)
+      quality.backlinksNew = true
+    } else {
+      data.backlinksNew = 0
+    }
+
+    // AI insights — inputs are qualified inline ("(measured)" vs "(rough estimate)")
+    // so Claude's own generated text doesn't state a mock number with false
+    // confidence. missingEntities/contentOpps moved here from generateMockData: they
+    // used to be the same 3 hardcoded ideas every single time regardless of domain;
+    // now they're grounded in this domain's actual gap/top keywords when available.
+    const qual = (isReal: boolean) => isReal ? '(measured)' : '(rough estimate)'
     let aiInsights: AIInsights = {}
     try {
       const raw = await callClaude(
         'You are an expert SEO competitive analyst. Return ONLY valid JSON — no markdown, no backticks.',
         `Analyze this competitor SEO data for ${domainName} and return JSON insights:
 
-Traffic: ${data.traffic.toLocaleString()} monthly visits
-Domain Authority: ${data.da}
-Backlinks: ${data.backlinksTotal.toLocaleString()} total, ${data.backlinksNew} new this month
-Top keywords: ${data.topKeywords.slice(0, 5).map(k => k.keyword).join(', ')}
-Content count: ${data.contentCount} pages, avg ${data.avgContentLength} words
-Top backlink sources: ${data.topBacklinks.slice(0, 4).map(b => b.domain).join(', ')}
+Traffic: ${data.traffic.toLocaleString()} monthly visits ${qual(quality.traffic)}
+Domain Authority: ${data.da} ${qual(quality.authority)}
+Backlinks: ${data.backlinksTotal.toLocaleString()} total ${qual(quality.backlinks)}, ${data.backlinksNew} new this month ${qual(quality.backlinksNew)}
+Top keywords they rank for: ${data.topKeywords.slice(0, 5).map(k => k.keyword).join(', ')} ${qual(quality.keywords)}
+Content count: ${data.contentCount} pages, avg ${data.avgContentLength} words (rough estimate)
+Top backlink sources: ${data.topBacklinks.slice(0, 4).map(b => b.domain).join(', ')} ${qual(quality.backlinksDetail)}
+${quality.gaps ? `Keywords they rank for that you (${userDomain}) don't: ${data.gapKeywords.slice(0, 8).map(g => g.keyword).join(', ')} (measured)` : ''}
 
 Return ONLY this JSON object:
 {
   "strengths": ["strength 1", "strength 2", "strength 3"],
   "weaknesses": ["weakness 1", "weakness 2", "weakness 3"],
   "topOpportunity": "single best actionable opportunity to beat them",
-  "threatLevel": "low|medium|high"
-}`,
-        600,
+  "threatLevel": "low|medium|high",
+  "missingEntities": ["topic/entity 1", "topic/entity 2", "topic/entity 3", "topic/entity 4", "topic/entity 5"],
+  "contentOpps": [
+    {"title": "specific content piece title", "opportunity": "why this is a gap worth filling", "keyword": "the exact gap/top keyword above this content piece would target, or empty string if none apply"}
+  ]
+}
+
+Rules: base "missingEntities" on topics implied by the competitor's top keywords that aren't obviously covered elsewhere in this data — don't invent generic SEO topics unrelated to what's actually here. Base "contentOpps" (exactly 3 items) on the supplied gap/top keywords when available — each "keyword" field should exactly match one of the keywords listed above, or be an empty string if you're using threatLevel/general reasoning instead. If no gap keywords were supplied, base contentOpps on the competitor's top keywords and content gaps you can infer instead.`,
+        700,
         'claude-haiku-4-5-20251001'
       )
       aiInsights = extractJSON<AIInsights>(raw)
+
+      // Claude can't reliably estimate real traffic numbers, so contentOpps' displayed
+      // "traffic" comes from the real gap-keyword volume it matched, not an AI guess —
+      // falls back to 0 (rendered as "estimated" via dataQuality either way) when it
+      // didn't match a real keyword.
+      const gapByKeyword = new Map(data.gapKeywords.map(g => [g.keyword, g.volume]))
+      if (aiInsights.contentOpps) {
+        data.contentOpps = aiInsights.contentOpps.map(o => ({
+          title: o.title,
+          opportunity: o.opportunity,
+          traffic: gapByKeyword.get(o.keyword ?? '') ?? 0,
+        }))
+      }
+      if (aiInsights.missingEntities) {
+        data.missingEntities = aiInsights.missingEntities
+      }
+      // Both were only needed to populate the separate `missingEntities`/`contentOpps`
+      // DB columns above — drop them before `aiInsights` itself is persisted below,
+      // since the frontend reads those from their own columns, not from this blob.
+      delete aiInsights.contentOpps
+      delete aiInsights.missingEntities
     } catch {
       aiInsights = {
         strengths: ['Established brand', 'Strong backlink profile', 'High content volume'],
@@ -279,6 +318,12 @@ Return ONLY this JSON object:
         topOpportunity: 'Target their low-competition keywords with better E-E-A-T content',
         threatLevel: data.da > 60 ? 'high' : data.da > 45 ? 'medium' : 'low',
       }
+      // AI generation failed entirely — fall back to generic, honestly-generic
+      // placeholders rather than domain-specific-sounding invented content.
+      data.missingEntities = ['Core Web Vitals', 'E-E-A-T signals', 'Topical authority']
+      data.contentOpps = [
+        { title: 'Re-run this analysis', opportunity: 'AI content suggestions were unavailable for this run — try analyzing again.', traffic: 0 },
+      ]
     }
 
     const analysis = await prisma.competitorAnalysis.create({
