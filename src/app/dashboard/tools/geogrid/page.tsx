@@ -273,11 +273,13 @@ function GeogridContent() {
   const AUTOCOMPLETE_WRAP = INPUT.replace('bg-slate-50', 'bg-white').replace('px-4 py-2.5 ', '')
   const LABEL = 'block text-xs font-semibold text-slate-700 mb-1.5'
 
-  // Review Velocity fields only: more rounded corners, and Business Name/manual
-  // Place ID back to the default (smaller) height rather than grown to match the
-  // search widget — the widget's own fixed ~48px floor is left as-is since
-  // shrinking/clipping it breaks its suggestions dropdown (confirmed live).
-  const RV_INPUT = INPUT.replace('rounded-xl', 'rounded-2xl')
+  // Review Velocity fields only: more rounded corners. Business Name/manual Place
+  // ID are grown to 48px (py-[13px], computed from text-sm's line-height) to match
+  // the search widget's fixed intrinsic height — confirmed via direct testing
+  // (padding, font-size, height+overflow-hidden clipping) that the widget itself
+  // cannot be shrunk without breaking its suggestions dropdown, so matching goes
+  // in this direction only.
+  const RV_INPUT = INPUT.replace('rounded-xl', 'rounded-2xl').replace('py-2.5', 'py-[13px]')
   const RV_AUTOCOMPLETE_WRAP = AUTOCOMPLETE_WRAP.replace('rounded-xl', 'rounded-2xl')
 
   if (plan === null) {
