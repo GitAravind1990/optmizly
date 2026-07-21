@@ -472,11 +472,16 @@ function GeogridContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className={LABEL}>Business Name</label>
+                  {/* py-[13px] instead of the shared INPUT's py-2.5: matches the Places
+                      autocomplete widget's fixed ~48px intrinsic height (measured live)
+                      so the two fields in this row line up, without touching the widget
+                      itself — clipping it to force a match previously broke its
+                      suggestions dropdown. */}
                   <input
                     value={rvBiz}
                     onChange={e => setRvBiz(e.target.value)}
                     placeholder="e.g. Joe's Pizza"
-                    className={INPUT}
+                    className={INPUT.replace('py-2.5', 'py-[13px]')}
                   />
                 </div>
 
