@@ -283,8 +283,11 @@ function GeogridContent() {
   const RV_AUTOCOMPLETE_WRAP = AUTOCOMPLETE_WRAP.replace('rounded-xl', 'rounded-[3px]')
   // py-[13px] -> 48px tall, matching the search widget's fixed height (it can't
   // grow/shrink via padding or font-size — confirmed live — so matching only works
-  // in this direction).
-  const RV_INPUT = INPUT.replace('rounded-xl', 'rounded-[3px]').replace('py-2.5', 'py-[13px]')
+  // in this direction). bg-white for the same reason: the widget always paints an
+  // opaque white fill internally (confirmed live, unaffected by any wrapper
+  // styling), so bg-slate-50 here was a real, visible gray-vs-white mismatch
+  // against its sibling — matched to white instead of fighting the widget.
+  const RV_INPUT = INPUT.replace('rounded-xl', 'rounded-[3px]').replace('py-2.5', 'py-[13px]').replace('bg-slate-50', 'bg-white')
 
   if (plan === null) {
     return (
