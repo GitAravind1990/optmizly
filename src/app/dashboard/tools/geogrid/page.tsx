@@ -281,9 +281,10 @@ function GeogridContent() {
   // ~1px-inset square fill. Matching rounded-[3px] everywhere in this row keeps it
   // visually consistent without touching the widget itself.
   const RV_AUTOCOMPLETE_WRAP = AUTOCOMPLETE_WRAP.replace('rounded-xl', 'rounded-[3px]')
-  // py-[17px] -> 56px tall (one step up from the search box's fixed 48px, which
-  // can't grow the same way — padding/font-size don't affect its intrinsic size).
-  const RV_INPUT = INPUT.replace('rounded-xl', 'rounded-[3px]').replace('py-2.5', 'py-[17px]')
+  // py-[13px] -> 48px tall, matching the search widget's fixed height (it can't
+  // grow/shrink via padding or font-size — confirmed live — so matching only works
+  // in this direction).
+  const RV_INPUT = INPUT.replace('rounded-xl', 'rounded-[3px]').replace('py-2.5', 'py-[13px]')
 
   if (plan === null) {
     return (
