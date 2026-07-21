@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { exportCompetitorSpyCSV, exportCompetitorSpyPDF } from '@/lib/export'
+import { parseDataQuality } from '@/lib/competitor-spy-quality'
 
 type Keyword = { keyword: string; position: number; volume: number; traffic: number }
 type BacklinkSource = { domain: string; links: number; da: number }
@@ -39,6 +40,12 @@ function diffBadge(d: number) {
   return <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${color}`}>KD {d}</span>
 }
 
+function qualityBadge(isReal: boolean) {
+  return isReal
+    ? <span className="ml-2 text-[9px] font-bold uppercase text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full align-middle">Live data</span>
+    : <span className="ml-2 text-[9px] font-bold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full align-middle">Estimated</span>
+}
+
 export default function CompetitorDetailPage({ params }: { params: Promise<{ analysisId: string }> }) {
   const { analysisId } = use(params)
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
@@ -55,6 +62,13 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
   if (!analysis) return <div className="flex items-center justify-center flex-1 py-24 text-slate-400 text-sm">Analysis not found.</div>
 
   const threatColor = analysis.aiInsights?.threatLevel === 'high' ? 'bg-red-100 text-red-700' : analysis.aiInsights?.threatLevel === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+  const quality = parseDataQuality(analysis.dataQuality)
+  const realLabels: string[] = []
+  const estimatedLabels: string[] = []
+  if (quality.traffic) realLabels.push('Traffic'); else estimatedLabels.push('Traffic')
+  if (quality.authority) realLabels.push('Domain/Page Authority'); else estimatedLabels.push('Domain/Page Authority')
+  if (quality.backlinks) realLabels.push('Backlinks'); else estimatedLabels.push('Backlinks')
+  if (quality.keywords) realLabels.push('Keyword data'); else estimatedLabels.push('Keyword data')
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
@@ -125,12 +139,12 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
           <div className="bg-white border border-slate-200 rounded-xl p-5">
             <h2 className="text-sm font-bold text-slate-800 mb-3">Quick Stats</h2>
             {[
-              ['Monthly Traffic', analysis.estimatedTraffic.toLocaleString(), false],
-              ['Domain Authority', `${analysis.domainAuthority}/100`, analysis.dataQuality === 'partial-real'],
-              ['Page Authority', `${analysis.pageAuthority}/100`, analysis.dataQuality === 'partial-real'],
-              ['Total Backlinks', analysis.backlinksTotal.toLocaleString(), false],
+              ['Monthly Traffic', analysis.estimatedTraffic.toLocaleString(), !!quality.traffic],
+              ['Domain Authority', `${analysis.domainAuthority}/100`, !!quality.authority],
+              ['Page Authority', `${analysis.pageAuthority}/100`, !!quality.authority],
+              ['Total Backlinks', analysis.backlinksTotal.toLocaleString(), !!quality.backlinks],
               ['New Backlinks (30d)', `+${analysis.backlinksNew}`, false],
-              ['Keywords Ranked', analysis.keywordCount.toLocaleString(), false],
+              ['Keywords Ranked', analysis.keywordCount.toLocaleString(), !!quality.keywords],
               ['Content Pages', analysis.contentCount.toString(), false],
               ['Avg Content Length', `${analysis.avgContentLength.toLocaleString()} words`, false],
             ].map(([label, value, isReal]) => (
@@ -143,15 +157,15 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
               </div>
             ))}
             <p className="text-[10px] text-slate-400 mt-2">
-              {analysis.dataQuality === 'partial-real'
-                ? 'Domain/Page Authority sourced from Open PageRank. Traffic, backlinks, and keyword data are estimated.'
+              {realLabels.length > 0
+                ? `${realLabels.join(', ')} sourced from live data. ${estimatedLabels.join(', ')} ${estimatedLabels.length === 1 ? 'is' : 'are'} estimated.`
                 : 'All metrics on this analysis are estimated, not measured.'}
             </p>
           </div>
 
           {/* Top keywords */}
           <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h2 className="text-sm font-bold text-slate-800 mb-3">Top 20 Keywords</h2>
+            <h2 className="text-sm font-bold text-slate-800 mb-3">Top 20 Keywords{qualityBadge(!!quality.keywords)}</h2>
             <div className="overflow-y-auto max-h-72 space-y-1 pr-1">
               {analysis.topKeywords.map((k, i) => (
                 <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
@@ -170,7 +184,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
 
           {/* Backlinks */}
           <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h2 className="text-sm font-bold text-slate-800 mb-3">Top Backlink Sources</h2>
+            <h2 className="text-sm font-bold text-slate-800 mb-3">Top Backlink Sources{qualityBadge(!!quality.backlinksDetail)}</h2>
             <div className="overflow-y-auto max-h-72 space-y-1 pr-1">
               {analysis.topBacklinks.map((b, i) => (
                 <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
@@ -187,7 +201,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
 
           {/* Top pages */}
           <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h2 className="text-sm font-bold text-slate-800 mb-3">Top Pages</h2>
+            <h2 className="text-sm font-bold text-slate-800 mb-3">Top Pages{qualityBadge(!!quality.pages)}</h2>
             <div className="overflow-y-auto max-h-72 space-y-1 pr-1">
               {analysis.topPages.map((p, i) => (
                 <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
@@ -205,7 +219,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
         {/* Keyword opportunities */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 mb-5">
           <h2 className="text-sm font-bold text-slate-800 mb-3">
-            Keyword Opportunities <span className="text-slate-400 font-normal">({analysis.gapKeywords.length})</span>
+            Keyword Opportunities <span className="text-slate-400 font-normal">({analysis.gapKeywords.length})</span>{qualityBadge(!!quality.gaps)}
           </h2>
           <table className="w-full">
             <thead>

@@ -7,6 +7,7 @@ import { Plan } from '@prisma/client'
 import { AuthError, getOrCreateUser } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { fetchOPRScore } from '@/lib/openpagerank'
+import { getTrafficEstimate, getBacklinksSummary, getRankedKeywords, getReferringDomains, getTopPagesByTraffic, settledOrNull } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -166,21 +167,71 @@ export async function POST(req: NextRequest) {
 
     const data = generateMockData(domainName)
 
-    // Real authority signal from OpenPageRank, replacing the fabricated Domain/Page
-    // Authority numbers when available. OPR only scores at domain granularity (0-10),
-    // so both fields get the same real value rather than inventing a separate "page"
-    // score. Falls back to the estimated figures already in `data` if OPR fails or
-    // hasn't indexed the domain — never blocks the analysis.
-    const opr = await fetchOPRScore(domainName).catch(() => null)
+    // Per-field real-vs-estimated tracking, stored as JSON in `dataQuality` (still a
+    // plain String column — no migration). Every field here starts as the seeded
+    // mock from generateMockData() and only gets overwritten when its real lookup
+    // actually succeeds, matching the original DA/PA precedent below rather than the
+    // null-on-failure pattern used elsewhere (this model's numeric columns are
+    // non-nullable, so "couldn't fetch" has to mean "keep the estimate," not null).
+    const quality = { authority: false, traffic: false, backlinks: false, backlinksDetail: false, keywords: false, pages: false }
+
+    // Real signals from OpenPageRank and DataForSEO, fetched concurrently since none
+    // of them depend on each other. A rejected promise here is treated the same as an
+    // in-band failure — settledOrNull() unwraps both cases to null, and null always
+    // means "keep the mock estimate," never zero.
+    const [oprResult, trafficResult, backlinksResult, keywordsResult, referringDomainsResult, topPagesResult] = await Promise.allSettled([
+      fetchOPRScore(domainName),
+      getTrafficEstimate(domainName),
+      getBacklinksSummary(domainName),
+      getRankedKeywords(domainName, 20),
+      getReferringDomains(domainName, 8),
+      getTopPagesByTraffic(domainName, 5),
+    ])
+
+    // OpenPageRank only scores at domain granularity (0-10), so both Domain and Page
+    // Authority get the same real value rather than inventing a separate "page" score.
     // The batch endpoint returns 200 for the request itself even when a specific
     // domain isn't in OPR's index (per-domain status_code 404, page_rank_decimal 0) —
     // check the per-domain status so an unindexed domain falls back to the estimate
     // instead of reporting a false, misleadingly-confident "0/100" authority score.
+    const opr = settledOrNull(oprResult)
     const authorityIsReal = !!opr && opr.status_code === 200 && typeof opr.page_rank_decimal === 'number'
     if (authorityIsReal) {
       const realAuthority = Math.round(Math.min(10, Math.max(0, opr!.page_rank_decimal)) * 10)
       data.da = realAuthority
       data.pa = realAuthority
+      quality.authority = true
+    }
+
+    const traffic = settledOrNull(trafficResult)
+    if (traffic !== null) {
+      data.traffic = traffic
+      quality.traffic = true
+    }
+
+    const backlinks = settledOrNull(backlinksResult)
+    if (backlinks !== null) {
+      data.backlinksTotal = backlinks.totalBacklinks
+      quality.backlinks = true
+    }
+
+    const keywords = settledOrNull(keywordsResult)
+    if (keywords !== null) {
+      data.topKeywords = keywords.items
+      data.keywordCount = keywords.totalCount
+      quality.keywords = true
+    }
+
+    const referringDomains = settledOrNull(referringDomainsResult)
+    if (referringDomains !== null) {
+      data.topBacklinks = referringDomains
+      quality.backlinksDetail = true
+    }
+
+    const topPages = settledOrNull(topPagesResult)
+    if (topPages !== null) {
+      data.topPages = topPages
+      quality.pages = true
     }
 
     // AI insights
@@ -239,9 +290,10 @@ Return ONLY this JSON object:
         missingEntities: JSON.stringify(data.missingEntities),
         contentOpps: JSON.stringify(data.contentOpps),
         aiInsights: JSON.stringify(aiInsights),
-        // Authority is real (OpenPageRank) when available; traffic, keywords, and
-        // backlinks are still estimated pending a real SERP/backlink data source.
-        dataQuality: authorityIsReal ? 'partial-real' : 'estimated',
+        // Per-field real/estimated flags (see `quality` above). Frontend parses this
+        // with a fallback for pre-existing rows that still hold the old
+        // 'partial-real' | 'estimated' string values.
+        dataQuality: JSON.stringify(quality),
         lastAnalyzedAt: new Date(),
       },
     })

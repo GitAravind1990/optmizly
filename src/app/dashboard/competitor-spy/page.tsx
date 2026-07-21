@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import { parseDataQuality } from '@/lib/competitor-spy-quality'
 
 type Keyword = { keyword: string; position: number; volume: number; traffic: number }
 type BacklinkSource = { domain: string; links: number; da: number }
@@ -43,6 +44,7 @@ function AnalysisCard({ analysis, onDelete }: { analysis: Analysis; onDelete: ()
   const gaps: GapKeyword[] = JSON.parse(analysis.gapKeywords || '[]')
   const opps: ContentOpp[] = JSON.parse(analysis.contentOpps || '[]')
   const insights = analysis.aiInsights ? JSON.parse(analysis.aiInsights) : null
+  const quality = parseDataQuality(analysis.dataQuality)
   const threatColor = insights?.threatLevel === 'high' ? 'text-red-600' : insights?.threatLevel === 'medium' ? 'text-amber-600' : 'text-green-600'
 
   return (
@@ -66,10 +68,10 @@ function AnalysisCard({ analysis, onDelete }: { analysis: Analysis; onDelete: ()
       {/* Metrics grid */}
       <div className="grid grid-cols-4 gap-3 mb-4">
         {[
-          { label: 'Monthly Traffic', value: analysis.estimatedTraffic.toLocaleString(), bg: 'bg-orange-50', text: 'text-orange-600', real: false },
-          { label: 'Domain Authority', value: analysis.domainAuthority.toString(), bg: 'bg-blue-50', text: 'text-blue-600', real: analysis.dataQuality === 'partial-real' },
-          { label: 'Backlinks', value: analysis.backlinksTotal.toLocaleString(), bg: 'bg-green-50', text: 'text-green-600', real: false },
-          { label: 'Keywords Ranked', value: analysis.keywordCount.toLocaleString(), bg: 'bg-purple-50', text: 'text-purple-600', real: false },
+          { label: 'Monthly Traffic', value: analysis.estimatedTraffic.toLocaleString(), bg: 'bg-orange-50', text: 'text-orange-600', real: !!quality.traffic },
+          { label: 'Domain Authority', value: analysis.domainAuthority.toString(), bg: 'bg-blue-50', text: 'text-blue-600', real: !!quality.authority },
+          { label: 'Backlinks', value: analysis.backlinksTotal.toLocaleString(), bg: 'bg-green-50', text: 'text-green-600', real: !!quality.backlinks },
+          { label: 'Keywords Ranked', value: analysis.keywordCount.toLocaleString(), bg: 'bg-purple-50', text: 'text-purple-600', real: !!quality.keywords },
         ].map(m => (
           <div key={m.label} className={`${m.bg} rounded-lg p-3 text-center`}>
             <div className={`text-xl font-black ${m.text}`}>{m.value}</div>

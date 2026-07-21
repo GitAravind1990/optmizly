@@ -580,3 +580,115 @@ export async function getReviewVelocity(placeId: string): Promise<ReviewResult |
   console.error(`[getReviewVelocity] poll budget (${REVIEWS_POLL_BUDGET_MS}ms) exceeded for place_id=${placeId} taskId=${taskId} — task never left queue`)
   return { reason: 'timeout', detail: `exceeded ${REVIEWS_POLL_BUDGET_MS}ms poll budget` }
 }
+
+// ─── Competitor Spy (ranked keywords, referring domains, top pages) ───────────
+
+type RankedKeywordsResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      total_count?: number
+      items?: Array<{
+        keyword_data?: { keyword?: string; keyword_info?: { search_volume?: number } }
+        ranked_serp_element?: { serp_item?: { rank_absolute?: number; etv?: number } }
+      }>
+    }> | null
+  }>
+}
+
+export type RankedKeyword = { keyword: string; position: number; volume: number; traffic: number }
+
+/** Real keywords a domain ranks for (US, Google, live/synchronous — not the async
+ *  task_post/task_get pattern reviews uses). `totalCount` comes free on the same
+ *  response as the `limit`-capped `items`, so this covers both Competitor Spy's
+ *  keyword list and its aggregate "Keywords Ranked" count in one call. */
+export async function getRankedKeywords(domain: string, limit = 20): Promise<{ items: RankedKeyword[]; totalCount: number } | null> {
+  const data = await dfsPost<RankedKeywordsResponse>('/v3/dataforseo_labs/google/ranked_keywords/live', [
+    { target: domain, location_code: 2840, language_code: 'en', limit, order_by: ['keyword_data.keyword_info.search_volume,desc'] },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return null
+  const result = task.result?.[0]
+  if (!result) return null
+  const items = (result.items ?? [])
+    .filter(item => item.keyword_data?.keyword && item.ranked_serp_element?.serp_item)
+    .map(item => ({
+      keyword: item.keyword_data!.keyword!,
+      position: item.ranked_serp_element!.serp_item!.rank_absolute ?? 0,
+      volume: item.keyword_data!.keyword_info?.search_volume ?? 0,
+      traffic: Math.round(item.ranked_serp_element!.serp_item!.etv ?? 0),
+    }))
+  return { items, totalCount: result.total_count ?? items.length }
+}
+
+type ReferringDomainsResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      items?: Array<{ domain?: string; backlinks?: number; rank?: number }>
+    }> | null
+  }>
+}
+
+export type ReferringDomain = { domain: string; links: number; da: number }
+
+/** Real top referring domains for a domain, each with DataForSEO's own domain-level
+ *  `rank` — a different scale/algorithm than Moz's Domain Authority (see the
+ *  daFromOPR-adjacent authority scaling in analyze/route.ts), observed live in the
+ *  0-1000+ range, clamped and scaled down to the same 0-100 display range the UI
+ *  already uses for the OpenPageRank-derived `da` field, purely for a consistent
+ *  on-screen scale — not a claim that the two scores are the same metric. */
+export async function getReferringDomains(domain: string, limit = 8): Promise<ReferringDomain[] | null> {
+  const data = await dfsPost<ReferringDomainsResponse>('/v3/backlinks/referring_domains/live', [
+    { target: domain, limit, order_by: ['backlinks,desc'] },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return null
+  const result = task.result?.[0]
+  if (!result) return null
+  return (result.items ?? [])
+    .filter(item => item.domain)
+    .map(item => ({
+      domain: item.domain!,
+      links: item.backlinks ?? 0,
+      da: Math.round(Math.min(1000, Math.max(0, item.rank ?? 0)) / 10),
+    }))
+}
+
+type RelevantPagesResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      items?: Array<{ page_address?: string; metrics?: { organic?: { etv?: number } } }>
+    }> | null
+  }>
+}
+
+export type TopPage = { title: string; url: string; traffic: number }
+
+/** Real top pages by estimated organic traffic for a domain. This endpoint returns
+ *  no human-readable title — `title` is derived from the URL path since DataForSEO
+ *  doesn't supply one here, so it'll be lower-fidelity than a scraped <title> tag;
+ *  acceptable given this only backs a supplementary "top pages" list, not the
+ *  primary metric. */
+export async function getTopPagesByTraffic(domain: string, limit = 5): Promise<TopPage[] | null> {
+  const data = await dfsPost<RelevantPagesResponse>('/v3/dataforseo_labs/google/relevant_pages/live', [
+    { target: domain, location_code: 2840, language_code: 'en', limit, order_by: ['metrics.organic.etv,desc'] },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return null
+  const result = task.result?.[0]
+  if (!result) return null
+  return (result.items ?? [])
+    .filter(item => item.page_address)
+    .map(item => {
+      const url = item.page_address!
+      const path = url.replace(/^https?:\/\/[^/]+/, '') || '/'
+      const title = path === '/' ? 'Home' : path.split('/').filter(Boolean).pop()!.replace(/[-_]/g, ' ').replace(/\.\w+$/, '')
+      return {
+        title: title.charAt(0).toUpperCase() + title.slice(1),
+        url: path,
+        traffic: Math.round(item.metrics?.organic?.etv ?? 0),
+      }
+    })
+}
