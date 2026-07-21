@@ -182,8 +182,16 @@ export default function CompetitorSpyPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [domainUrl, setDomainUrl] = useState('')
+  const [userDomain, setUserDomain] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
+
+  // Remember the user's own domain across analyses so it doesn't need retyping every
+  // time — it's not tied to any one competitor lookup.
+  useEffect(() => {
+    const saved = localStorage.getItem('competitorSpyUserDomain')
+    if (saved) setUserDomain(saved)
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -199,10 +207,15 @@ export default function CompetitorSpyPage() {
     setAnalyzing(true)
     setError('')
     try {
+      const cleanUserDomain = userDomain.replace(/^https?:\/\//, '').replace(/^www\./, '').trim()
+      if (cleanUserDomain) localStorage.setItem('competitorSpyUserDomain', cleanUserDomain)
       const res = await fetch('/api/tools/competitor-spy/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domainUrl: domainUrl.replace(/^https?:\/\//, '').replace(/^www\./, '') }),
+        body: JSON.stringify({
+          domainUrl: domainUrl.replace(/^https?:\/\//, '').replace(/^www\./, ''),
+          userDomain: cleanUserDomain || undefined,
+        }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'Analysis failed'); return }
@@ -260,7 +273,16 @@ export default function CompetitorSpyPage() {
                   className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   placeholder="ahrefs.com"
                 />
-                <p className="text-xs text-slate-400 mt-1">Enter domain without http:// or www.</p>
+                <p className="text-xs text-slate-400 mt-1">Competitor's domain, without http:// or www.</p>
+              </div>
+              <div className="flex-1">
+                <input
+                  value={userDomain}
+                  onChange={e => setUserDomain(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  placeholder="yoursite.com (optional)"
+                />
+                <p className="text-xs text-slate-400 mt-1">Your domain — enables real gap-keyword analysis.</p>
               </div>
               <button
                 type="submit"

@@ -399,6 +399,7 @@ model CompetitorAnalysis {
 
   domainUrl  String
   domainName String
+  userDomain String?
 
   estimatedTraffic Int
   domainAuthority  Float

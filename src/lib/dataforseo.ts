@@ -692,3 +692,46 @@ export async function getTopPagesByTraffic(domain: string, limit = 5): Promise<T
       }
     })
 }
+
+type DomainIntersectionResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      items?: Array<{
+        keyword_data?: {
+          keyword?: string
+          keyword_info?: { search_volume?: number }
+          keyword_properties?: { keyword_difficulty?: number }
+        }
+        second_domain_serp_element?: unknown
+      }>
+    }> | null
+  }>
+}
+
+export type GapKeyword = { keyword: string; volume: number; difficulty: number }
+
+/** Real "gap" keywords: keywords `competitorDomain` ranks for that `userDomain` does
+ *  not. Verified live (2026-07-22) that `intersections: false` with
+ *  target1=competitor/target2=user returns exactly this — every item has a
+ *  `first_domain_serp_element` (competitor's ranking) and no `second_domain_serp_element`
+ *  at all (confirmed by inspecting real API responses, not assumed from docs); this
+ *  function filters defensively on that absence in case a future item does carry one.
+ *  This endpoint doesn't accept an `order_by` param (rejected with a 40501 on a live
+ *  test) — items come back in the API's own default order. */
+export async function getDomainIntersectionGaps(userDomain: string, competitorDomain: string, limit = 10): Promise<GapKeyword[] | null> {
+  const data = await dfsPost<DomainIntersectionResponse>('/v3/dataforseo_labs/google/domain_intersection/live', [
+    { target1: competitorDomain, target2: userDomain, location_code: 2840, language_code: 'en', intersections: false, limit },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return null
+  const result = task.result?.[0]
+  if (!result) return null
+  return (result.items ?? [])
+    .filter(item => item.keyword_data?.keyword && !item.second_domain_serp_element)
+    .map(item => ({
+      keyword: item.keyword_data!.keyword!,
+      volume: item.keyword_data!.keyword_info?.search_volume ?? 0,
+      difficulty: item.keyword_data!.keyword_properties?.keyword_difficulty ?? 0,
+    }))
+}

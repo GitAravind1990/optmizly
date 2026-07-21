@@ -7,7 +7,7 @@ import { Plan } from '@prisma/client'
 import { AuthError, getOrCreateUser } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { fetchOPRScore } from '@/lib/openpagerank'
-import { getTrafficEstimate, getBacklinksSummary, getRankedKeywords, getReferringDomains, getTopPagesByTraffic, settledOrNull } from '@/lib/dataforseo'
+import { getTrafficEstimate, getBacklinksSummary, getRankedKeywords, getReferringDomains, getTopPagesByTraffic, getDomainIntersectionGaps, settledOrNull } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -157,13 +157,17 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getProUser()
     clerkId = user.clerkId
-    const { domainUrl } = await req.json()
+    const { domainUrl, userDomain: userDomainRaw } = await req.json()
     if (!domainUrl) throw new AuthError(400, 'domainUrl is required')
 
     const domainName = extractDomainName(domainUrl)
     if (!domainName || !domainName.includes('.')) {
       throw new AuthError(400, 'Invalid domain. Enter a domain like "ahrefs.com"')
     }
+    // Optional — only enables real gap-keyword analysis when provided. Not required
+    // since most of the tool's value (traffic, backlinks, keywords, pages) doesn't
+    // need a second domain to compare against.
+    const userDomain = userDomainRaw ? extractDomainName(userDomainRaw) : undefined
 
     const data = generateMockData(domainName)
 
@@ -173,19 +177,22 @@ export async function POST(req: NextRequest) {
     // actually succeeds, matching the original DA/PA precedent below rather than the
     // null-on-failure pattern used elsewhere (this model's numeric columns are
     // non-nullable, so "couldn't fetch" has to mean "keep the estimate," not null).
-    const quality = { authority: false, traffic: false, backlinks: false, backlinksDetail: false, keywords: false, pages: false }
+    const quality = { authority: false, traffic: false, backlinks: false, backlinksDetail: false, keywords: false, pages: false, gaps: false }
 
     // Real signals from OpenPageRank and DataForSEO, fetched concurrently since none
     // of them depend on each other. A rejected promise here is treated the same as an
     // in-band failure — settledOrNull() unwraps both cases to null, and null always
-    // means "keep the mock estimate," never zero.
-    const [oprResult, trafficResult, backlinksResult, keywordsResult, referringDomainsResult, topPagesResult] = await Promise.allSettled([
+    // means "keep the mock estimate," never zero. Gap keywords only run when the user
+    // supplied their own domain to compare against — skipped (not even attempted)
+    // otherwise rather than calling with a garbage/empty target.
+    const [oprResult, trafficResult, backlinksResult, keywordsResult, referringDomainsResult, topPagesResult, gapsResult] = await Promise.allSettled([
       fetchOPRScore(domainName),
       getTrafficEstimate(domainName),
       getBacklinksSummary(domainName),
       getRankedKeywords(domainName, 20),
       getReferringDomains(domainName, 8),
       getTopPagesByTraffic(domainName, 5),
+      userDomain ? getDomainIntersectionGaps(userDomain, domainName, 10) : Promise.resolve(null),
     ])
 
     // OpenPageRank only scores at domain granularity (0-10), so both Domain and Page
@@ -234,6 +241,12 @@ export async function POST(req: NextRequest) {
       quality.pages = true
     }
 
+    const gaps = settledOrNull(gapsResult)
+    if (gaps !== null) {
+      data.gapKeywords = gaps
+      quality.gaps = true
+    }
+
     // AI insights
     let aiInsights: AIInsights = {}
     try {
@@ -273,6 +286,7 @@ Return ONLY this JSON object:
         userId: user.id,
         domainUrl: domainName,
         domainName,
+        userDomain: userDomain ?? null,
         estimatedTraffic: data.traffic,
         domainAuthority: data.da,
         pageAuthority: data.pa,
