@@ -273,20 +273,17 @@ function GeogridContent() {
   const AUTOCOMPLETE_WRAP = INPUT.replace('bg-slate-50', 'bg-white').replace('px-4 py-2.5 ', '')
   const LABEL = 'block text-xs font-semibold text-slate-700 mb-1.5'
 
-  // Review Velocity fields only. Business Name/manual Place ID are grown to 48px
-  // (py-[13px], computed from text-sm's line-height) to match the search widget's
-  // fixed intrinsic height — the widget itself can't be shrunk without breaking its
-  // suggestions dropdown (confirmed via padding, font-size, and overflow-hidden,
-  // all tested live). Radius follows the same logic in reverse: the widget's own
-  // internal fill is hard-locked to a near-square 3px radius (measured live via
-  // getComputedStyle) regardless of what radius the wrapper is given — with
-  // `overflow: visible` (required, since `hidden` clips the dropdown even without a
-  // fixed height, confirmed live) the wrapper's rounding is nearly invisible behind
-  // that ~1px-inset square fill, so a mismatched rounded-2xl wrapper just left an
-  // odd notch at each corner. Matching rounded-[3px] everywhere in this row is the
-  // only way to make it look consistent without breaking the widget.
-  const RV_INPUT = INPUT.replace('rounded-xl', 'rounded-[3px]').replace('py-2.5', 'py-[13px]')
+  // Review Velocity fields only. Radius: the search widget's own internal fill is
+  // hard-locked to a near-square 3px radius (measured live via getComputedStyle)
+  // regardless of what radius its wrapper is given — with `overflow: visible`
+  // (required, since `hidden` clips its suggestions dropdown even without a fixed
+  // height, confirmed live) the wrapper's rounding is nearly invisible behind that
+  // ~1px-inset square fill. Matching rounded-[3px] everywhere in this row keeps it
+  // visually consistent without touching the widget itself.
   const RV_AUTOCOMPLETE_WRAP = AUTOCOMPLETE_WRAP.replace('rounded-xl', 'rounded-[3px]')
+  // py-[17px] -> 56px tall (one step up from the search box's fixed 48px, which
+  // can't grow the same way — padding/font-size don't affect its intrinsic size).
+  const RV_INPUT = INPUT.replace('rounded-xl', 'rounded-[3px]').replace('py-2.5', 'py-[17px]')
 
   if (plan === null) {
     return (
