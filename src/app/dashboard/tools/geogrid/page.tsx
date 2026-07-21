@@ -264,11 +264,12 @@ function GeogridContent() {
   // matter what the wrapper is styled with, so bg-slate-50 (used for plain <input>s)
   // only shows through at the padding edges — a visible two-tone seam against
   // sibling fields. Match the wrapper to white; border/radius still come from here
-  // since the widget renders no border of its own. Padding is dropped entirely —
-  // measured live, the widget has a fixed ~48px intrinsic height that our padding
-  // doesn't shrink, so px-4/py-2.5 just stacked on top of it, making the box
-  // visibly taller/bulkier than its sibling <input>s instead of centering it.
-  const AUTOCOMPLETE_WRAP = INPUT.replace('bg-slate-50', 'bg-white').replace('px-4 py-2.5 ', '')
+  // since the widget renders no border of its own. Padding is dropped since the
+  // widget has a fixed ~48px intrinsic height that padding doesn't shrink — instead
+  // the wrapper is pinned to the exact same 42px height as sibling <input>s
+  // (matching INPUT's py-2.5 + text-sm box height) with overflow clipped and the
+  // widget centered inside, so it reads as the same size as Business Name.
+  const AUTOCOMPLETE_WRAP = INPUT.replace('bg-slate-50', 'bg-white').replace('px-4 py-2.5 ', '') + ' h-[42px] overflow-hidden flex items-center'
   const LABEL = 'block text-xs font-semibold text-slate-700 mb-1.5'
 
   if (plan === null) {
