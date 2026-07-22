@@ -66,7 +66,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
   const realLabels: string[] = []
   const estimatedLabels: string[] = []
   if (quality.traffic) realLabels.push('Traffic'); else estimatedLabels.push('Traffic')
-  if (quality.authority) realLabels.push('Domain/Page Authority'); else estimatedLabels.push('Domain/Page Authority')
+  if (quality.authority) realLabels.push('Authority Score'); else estimatedLabels.push('Authority Score')
   if (quality.backlinks) realLabels.push('Backlinks'); else estimatedLabels.push('Backlinks')
   if (quality.keywords) realLabels.push('Keyword data'); else estimatedLabels.push('Keyword data')
 
@@ -140,8 +140,8 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
             <h2 className="text-sm font-bold text-slate-800 mb-3">Quick Stats</h2>
             {[
               ['Monthly Traffic', analysis.estimatedTraffic.toLocaleString(), !!quality.traffic],
-              ['Domain Authority', `${analysis.domainAuthority}/100`, !!quality.authority],
-              ['Page Authority', `${analysis.pageAuthority}/100`, !!quality.authority],
+              ['Authority Score (OPR)', `${analysis.domainAuthority}/100`, !!quality.authority],
+              ['Page Authority (OPR)', `${analysis.pageAuthority}/100`, !!quality.authority],
               ['Total Backlinks', analysis.backlinksTotal.toLocaleString(), !!quality.backlinks],
               ['New Backlinks (30d)', `+${analysis.backlinksNew}`, !!quality.backlinksNew],
               ['Keywords Ranked', analysis.keywordCount.toLocaleString(), !!quality.keywords],
@@ -149,7 +149,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
               ['Avg Content Length', `${analysis.avgContentLength.toLocaleString()} words`, false],
             ].map(([label, value, isReal]) => (
               <div key={label as string} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
-                <span className="text-xs text-slate-500">{label}</span>
+                <span className="text-xs text-slate-500" title={(label as string).includes('OPR') ? 'OpenPageRank score — a different metric and scale than Moz\'s Domain Authority' : undefined}>{label}</span>
                 <span className="text-xs font-bold text-slate-800">
                   {value}
                   {!isReal && <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}
@@ -191,7 +191,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-slate-400 w-4">{i + 1}</span>
                     <span className="text-xs text-slate-700 font-medium">{b.domain}</span>
-                    <span className="text-[10px] text-slate-400">DA {b.da}</span>
+                    <span className="text-[10px] text-slate-400" title="DataForSEO's own domain-rank score, scaled to 0-100 — a different metric than Moz's Domain Authority">Authority {b.da}</span>
                   </div>
                   <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">{b.links} links</span>
                 </div>

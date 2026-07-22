@@ -69,11 +69,11 @@ function AnalysisCard({ analysis, onDelete }: { analysis: Analysis; onDelete: ()
       <div className="grid grid-cols-4 gap-3 mb-4">
         {[
           { label: 'Monthly Traffic', value: analysis.estimatedTraffic.toLocaleString(), bg: 'bg-orange-50', text: 'text-orange-600', real: !!quality.traffic },
-          { label: 'Domain Authority', value: analysis.domainAuthority.toString(), bg: 'bg-blue-50', text: 'text-blue-600', real: !!quality.authority },
+          { label: 'Authority Score (OPR)', value: analysis.domainAuthority.toString(), bg: 'bg-blue-50', text: 'text-blue-600', real: !!quality.authority },
           { label: 'Backlinks', value: analysis.backlinksTotal.toLocaleString(), bg: 'bg-green-50', text: 'text-green-600', real: !!quality.backlinks },
           { label: 'Keywords Ranked', value: analysis.keywordCount.toLocaleString(), bg: 'bg-purple-50', text: 'text-purple-600', real: !!quality.keywords },
         ].map(m => (
-          <div key={m.label} className={`${m.bg} rounded-lg p-3 text-center`}>
+          <div key={m.label} className={`${m.bg} rounded-lg p-3 text-center`} title={m.label.includes('OPR') ? 'OpenPageRank score — a different metric and scale than Moz\'s Domain Authority' : undefined}>
             <div className={`text-xl font-black ${m.text}`}>{m.value}</div>
             <div className="text-[10px] text-slate-500 font-medium mt-0.5">
               {m.label}{!m.real && <span className="text-slate-400"> (est.)</span>}

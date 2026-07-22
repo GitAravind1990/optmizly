@@ -996,8 +996,8 @@ export function exportCompetitorSpyCSV(data: CompetitorSpyData) {
   rows.push(['KEY METRICS'])
   rows.push(['Metric', 'Value'])
   rows.push(['Estimated Monthly Traffic', String(data.estimatedTraffic.toLocaleString())])
-  rows.push(['Domain Authority', String(data.domainAuthority)])
-  rows.push(['Page Authority', String(data.pageAuthority)])
+  rows.push(['Authority Score (OpenPageRank, not Moz DA)', String(data.domainAuthority)])
+  rows.push(['Page Authority (OpenPageRank, not Moz PA)', String(data.pageAuthority)])
   rows.push(['Total Backlinks', String(data.backlinksTotal.toLocaleString())])
   rows.push(['New Backlinks', String(data.backlinksNew.toLocaleString())])
   rows.push(['Keywords Ranked', String(data.keywordCount.toLocaleString())])
@@ -1044,7 +1044,7 @@ export function exportCompetitorSpyCSV(data: CompetitorSpyData) {
   rows.push([''])
 
   rows.push(['TOP BACKLINK SOURCES'])
-  rows.push(['Domain', 'Links', 'Domain Authority'])
+  rows.push(['Domain', 'Links', 'Authority Score (DataForSEO rank, not Moz DA)'])
   data.topBacklinks.forEach(b => {
     rows.push([b.domain, String(b.links), String(b.da)])
   })
@@ -1090,7 +1090,7 @@ export function exportCompetitorSpyPDF(data: CompetitorSpyData) {
     <table style="width:auto;margin-bottom:16px">
       <tr><td style="padding:4px 16px 4px 0"><strong>Threat Level</strong></td><td><span class="badge ${threatColor}">${threatLevel}</span></td></tr>
       <tr><td style="padding:4px 16px 4px 0"><strong>Est. Monthly Traffic</strong></td><td>${data.estimatedTraffic.toLocaleString()}</td></tr>
-      <tr><td style="padding:4px 16px 4px 0"><strong>Domain Authority</strong></td><td>${data.domainAuthority}</td></tr>
+      <tr><td style="padding:4px 16px 4px 0"><strong>Authority Score (OpenPageRank)</strong></td><td>${data.domainAuthority} <span style="color:#94a3b8;font-size:9px">— not Moz Domain Authority</span></td></tr>
       <tr><td style="padding:4px 16px 4px 0"><strong>Backlinks</strong></td><td>${data.backlinksTotal.toLocaleString()}</td></tr>
       <tr><td style="padding:4px 16px 4px 0"><strong>Keywords Ranked</strong></td><td>${data.keywordCount.toLocaleString()}</td></tr>
     </table>
@@ -1118,7 +1118,8 @@ export function exportCompetitorSpyPDF(data: CompetitorSpyData) {
     <table><thead><tr><th style="width:400px">URL</th><th style="text-align:right;width:80px">Traffic</th></tr></thead><tbody>${pageRows}</tbody></table>
 
     <h2>Top Backlink Sources (${data.topBacklinks.length})</h2>
-    <table><thead><tr><th>Domain</th><th style="width:50px;text-align:right">Links</th><th style="width:80px;text-align:right">DA</th></tr></thead><tbody>${backlinkRows}</tbody></table>
+    <table><thead><tr><th>Domain</th><th style="width:50px;text-align:right">Links</th><th style="width:110px;text-align:right">Authority*</th></tr></thead><tbody>${backlinkRows}</tbody></table>
+    <p style="font-size:9px;color:#94a3b8;margin-top:2px">*DataForSEO domain-rank score scaled to 0-100 — not Moz Domain Authority.</p>
 
     <h2>Keyword Gaps - Opportunities (${data.gapKeywords.length})</h2>
     <table><thead><tr><th>Keyword</th><th style="width:60px;text-align:right">Volume</th><th style="width:60px;text-align:right">Difficulty</th></tr></thead><tbody>${gapRows}</tbody></table>
