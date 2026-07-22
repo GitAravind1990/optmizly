@@ -62,6 +62,9 @@ type RankingResult = {
     actions: { action: string; impact: string; effort: string; gain: number }[]
   }
   summary: string
+  // Not present on results from before this field existed — treat as all-estimated
+  // (every consumer below already falls back to `?? false`) rather than assuming real.
+  dataQuality?: { keywordVolume: boolean; keywordDifficulty: boolean; serpTop: boolean }
 }
 
 type FormState = { keyword: string; domain: string; country: string; goal: string }
@@ -182,15 +185,18 @@ function OverviewTab({ result }: { result: RankingResult }) {
           <h3 className="text-sm font-bold text-slate-800 mb-3">Keyword Metrics</h3>
           <div className="space-y-2">
             {([
-              ['Monthly Volume', fmt(keyword.volume)],
-              ['Difficulty', `${keyword.difficulty}/100`],
-              ['CPC', keyword.cpc || '—'],
-              ['Search Intent', keyword.intent],
-              ['Trend', keyword.trend],
-            ] as [string, string][]).map(([label, value]) => (
+              ['Monthly Volume', fmt(keyword.volume), !!result.dataQuality?.keywordVolume],
+              ['Difficulty', `${keyword.difficulty}/100`, !!result.dataQuality?.keywordDifficulty],
+              ['CPC', keyword.cpc || '—', false],
+              ['Search Intent', keyword.intent, false],
+              ['Trend', keyword.trend, false],
+            ] as [string, string, boolean][]).map(([label, value, isReal]) => (
               <div key={label} className="flex justify-between text-sm">
                 <span className="text-slate-500">{label}</span>
-                <span className="font-medium text-slate-800">{value}</span>
+                <span className="font-medium text-slate-800">
+                  {value}
+                  {!isReal && <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}
+                </span>
               </div>
             ))}
           </div>
@@ -306,7 +312,14 @@ function SERPTab({ result }: { result: RankingResult }) {
 
       {competitors.top?.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
-          <h3 className="text-sm font-bold text-slate-800 mb-3">Top Competitors</h3>
+          <h3 className="text-sm font-bold text-slate-800 mb-3">
+            Top Competitors
+            {result.dataQuality?.serpTop ? (
+              <span className="ml-2 text-[9px] font-bold uppercase text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full align-middle">Live SERP</span>
+            ) : (
+              <span className="ml-2 text-[9px] font-bold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full align-middle">Estimated</span>
+            )}
+          </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

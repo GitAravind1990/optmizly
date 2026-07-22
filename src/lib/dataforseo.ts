@@ -132,6 +132,42 @@ export async function getOrganicRank(
   return { found: true, rank: match.rank_absolute, url: match.url }
 }
 
+export type SerpResult = { domain: string; url: string; rank: number }
+
+/** Real top organic Google results for a keyword — no target domain filter, unlike
+ *  getOrganicRank above. Same endpoint, same 20000/40102 status handling; just
+ *  extracts the ranked list itself instead of searching it for one domain. Used to
+ *  ground Ranking Engine's "top competitors" in the keyword's actual current SERP
+ *  instead of an AI-invented domain list. */
+export async function getTopSerpResults(
+  keyword: string,
+  targetLocation: string,
+  deviceType: string,
+  limit = 10
+): Promise<SerpResult[] | null> {
+  const data = await dfsPost<OrganicRankResponse>('/v3/serp/google/organic/live/advanced', [
+    {
+      keyword,
+      location_code: ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US,
+      language_code: ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en',
+      device: deviceType === 'mobile' ? 'mobile' : 'desktop',
+      depth: limit,
+    },
+  ])
+
+  const task = data?.tasks?.[0]
+  if (!task) return null
+  if (task.status_code === DFS_NO_RESULTS) return []
+  if (task.status_code !== 20000) return null
+
+  const items = task.result?.[0]?.items ?? []
+  return items
+    .filter(i => i.type === 'organic' && typeof i.rank_absolute === 'number' && typeof i.domain === 'string')
+    .sort((a, b) => a.rank_absolute - b.rank_absolute)
+    .slice(0, limit)
+    .map(i => ({ domain: normalizeHost(i.domain), url: i.url, rank: i.rank_absolute }))
+}
+
 // ─── Local rank (geogrid) ─────────────────────────────────────────────────────
 
 type MapsResponse = {
