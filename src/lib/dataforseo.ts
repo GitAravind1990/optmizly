@@ -543,6 +543,111 @@ export async function getKeywordMetrics(
   return result
 }
 
+// ─── Search intent (ranking engine) ────────────────────────────────────────────
+
+type SearchIntentResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      items?: Array<{ keyword: string; keyword_intent?: { label?: string } | null }>
+    }> | null
+  }>
+}
+
+/** Real primary search intent (informational/navigational/commercial/transactional)
+ *  per keyword. A keyword missing from the results maps to null, same convention as
+ *  getKeywordMetrics — not guessed. */
+export async function getSearchIntent(keywords: string[], targetLocation: string): Promise<Map<string, string | null>> {
+  const languageCode = ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en'
+  const result = new Map<string, string | null>(keywords.map(kw => [kw, null]))
+
+  const data = await dfsPost<SearchIntentResponse>('/v3/dataforseo_labs/google/search_intent/live', [
+    { keywords, language_code: languageCode },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return result
+
+  for (const item of task.result?.[0]?.items ?? []) {
+    if (result.has(item.keyword) && item.keyword_intent?.label) {
+      result.set(item.keyword, item.keyword_intent.label)
+    }
+  }
+  return result
+}
+
+// ─── Related keywords (ranking engine) ─────────────────────────────────────────
+
+type RelatedKeywordsResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      items?: Array<{
+        keyword_data?: {
+          keyword?: string
+          keyword_info?: { search_volume?: number }
+          keyword_properties?: { keyword_difficulty?: number }
+        }
+      }>
+    }> | null
+  }>
+}
+
+export type RelatedKeyword = { keyword: string; volume: number; difficulty: number }
+
+/** Real related keywords for a seed keyword, with real volume/difficulty — the
+ *  response's first item is always the seed keyword itself, filtered out here since
+ *  callers want *other* keywords, not the one they already searched. */
+export async function getRelatedKeywords(keyword: string, targetLocation: string, limit = 6): Promise<RelatedKeyword[] | null> {
+  const locationCode = ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US
+  const languageCode = ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en'
+
+  const data = await dfsPost<RelatedKeywordsResponse>('/v3/dataforseo_labs/google/related_keywords/live', [
+    { keyword, location_code: locationCode, language_code: languageCode, limit: limit + 1 },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return null
+
+  return (task.result?.[0]?.items ?? [])
+    .filter(item => item.keyword_data?.keyword && item.keyword_data.keyword !== keyword)
+    .slice(0, limit)
+    .map(item => ({
+      keyword: item.keyword_data!.keyword!,
+      volume: item.keyword_data!.keyword_info?.search_volume ?? 0,
+      difficulty: item.keyword_data!.keyword_properties?.keyword_difficulty ?? 0,
+    }))
+}
+
+// ─── Bulk referring domains (ranking engine competitor table) ─────────────────
+
+type BulkReferringDomainsResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{ items?: Array<{ target: string; referring_domains?: number }> }> | null
+  }>
+}
+
+/** Real referring-domain counts for many domains in one call — the same aggregate
+ *  count getBacklinksSummary returns for a single domain, but batched (up to 1000
+ *  targets per DataForSEO's own limit) rather than one request per competitor.
+ *  A target DataForSEO has no data for reports a real 0, indistinguishable here from
+ *  "confirmed zero referring domains" — acceptable for real, already-ranking SERP
+ *  domains, where a genuine zero is very unlikely. */
+export async function getBulkReferringDomains(domains: string[]): Promise<Map<string, number>> {
+  const result = new Map<string, number>()
+  if (domains.length === 0) return result
+
+  const data = await dfsPost<BulkReferringDomainsResponse>('/v3/backlinks/bulk_referring_domains/live', [
+    { targets: domains },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return result
+
+  for (const item of task.result?.[0]?.items ?? []) {
+    if (item.target) result.set(normalizeHost(item.target), item.referring_domains ?? 0)
+  }
+  return result
+}
+
 // ─── Review velocity ──────────────────────────────────────────────────────────
 
 // Google Reviews has no synchronous "live" endpoint — only the async task_post/

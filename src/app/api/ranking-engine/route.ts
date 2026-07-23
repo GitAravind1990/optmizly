@@ -4,7 +4,7 @@ import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { prisma } from '@/lib/prisma'
 import { captureServerEvent, captureServerException } from '@/lib/posthog-server'
-import { getTopSerpResults, getKeywordMetrics } from '@/lib/dataforseo'
+import { getTopSerpResults, getKeywordMetrics, getSearchIntent, getRelatedKeywords, getBulkReferringDomains } from '@/lib/dataforseo'
 import { fetchOPRScore, fetchOPRScores } from '@/lib/openpagerank'
 
 export const runtime = 'nodejs'
@@ -28,12 +28,17 @@ const COUNTRY_TO_LOCATION: Record<string, string> = {
 // Only the fields this route actually reads/overwrites after Claude's response —
 // everything else Claude returns passes through untyped via the spread in apiSuccess.
 type RankingEngineResult = {
-  keyword: { volume: number; difficulty: number; cpc: string; trend: string; serp_features: string[]; [key: string]: unknown }
+  keyword: {
+    volume: number; difficulty: number; cpc: string; trend: string; serp_features: string[]
+    intent?: string
+    related?: Array<{ kw: string; vol: number; diff: number }>
+    [key: string]: unknown
+  }
   competitors: {
     avg_da?: number
     avg_rd?: number
     avg_words?: number
-    top?: Array<{ domain: string; da: number; rd: number; words: number; position?: number; url?: string; daIsReal?: boolean }>
+    top?: Array<{ domain: string; da: number; rd: number; words: number; position?: number; url?: string; daIsReal?: boolean; rdIsReal?: boolean }>
     [key: string]: unknown
   }
   website: { da_score: number; [key: string]: unknown }
@@ -64,16 +69,19 @@ export async function POST(req: NextRequest) {
     // Claude's own output (and any fields it invents around them, like per-domain
     // DA estimates) is at least anchored to the keyword's actual current ranking
     // page — not required for the call to proceed if any of them fail.
-    const [serpResult, metricsMap, userOpr] = await Promise.all([
+    const [serpResult, metricsMap, userOpr, intentMap, realRelated] = await Promise.all([
       getTopSerpResults(keyword, targetLocation, 'desktop', 10),
       getKeywordMetrics([keyword], targetLocation),
       fetchOPRScore(domain).catch(() => null),
+      getSearchIntent([keyword], targetLocation),
+      getRelatedKeywords(keyword, targetLocation, 6),
     ])
     const realMetrics = metricsMap.get(keyword)
     const realSerp = serpResult && serpResult.items.length > 0 ? serpResult.items : null
     const realFeatures = serpResult && serpResult.features.length > 0 ? serpResult.features : null
     const userAuthorityIsReal = !!userOpr && userOpr.status_code === 200 && typeof userOpr.page_rank_decimal === 'number'
     const realUserDa = userAuthorityIsReal ? scaleOPR(userOpr!.page_rank_decimal) : null
+    const realIntent = intentMap.get(keyword) ?? null
 
     const realDataLines = [
       realSerp ? `Real current top ${realSerp.length} Google organic results for this exact keyword (use these exact domains for competitors.top and competitors' order — do not invent different domains): ${realSerp.map(r => r.domain).join(', ')}` : null,
@@ -83,19 +91,23 @@ export async function POST(req: NextRequest) {
       realMetrics?.cpc != null ? `Real CPC: $${realMetrics.cpc}` : null,
       realMetrics?.trend ? `Real search trend (last 3 months vs prior 3): ${realMetrics.trend}` : null,
       realUserDa != null ? `Real authority score (OpenPageRank, 0-100 scale) for ${domain}: ${realUserDa}` : null,
+      realIntent ? `Real search intent: ${realIntent}` : null,
+      realRelated && realRelated.length > 0 ? `Real related keywords (use these exact ones for keyword.related, do not invent different ones): ${realRelated.map(r => `${r.keyword} (vol ${r.volume}, kd ${r.difficulty})`).join('; ')}` : null,
     ].filter(Boolean).join('\n')
 
-    // Real per-competitor authority scores — depends on the real SERP domain list
-    // above, so it can't join the first batch, but runs concurrently with the
-    // Claude call below instead of adding a sequential round trip.
-    const [raw, competitorOprMap] = await Promise.all([
+    // Real per-competitor authority scores and referring-domain counts — both
+    // depend on the real SERP domain list above, so neither can join the first
+    // batch, but both run concurrently with the Claude call below instead of
+    // adding sequential round trips.
+    const [raw, competitorOprMap, competitorRdMap] = await Promise.all([
       callClaude(
         SYSTEM,
-        `Keyword: ${keyword}\nDomain: ${domain}\nCountry: ${country}\nGoal: ${goal}${realDataLines ? `\n\n${realDataLines}` : ''}\n\nEstimate website metrics from the domain URL. Small/new sites: DA 10-25. Established niche sites: DA 30-55. Major brands: DA 70+. ${realSerp ? "Estimate per-domain referring-domains/word-count for the real competitor domains given above (DA will be supplied separately)." : "Generate realistic competitor data for this keyword's niche."}`,
+        `Keyword: ${keyword}\nDomain: ${domain}\nCountry: ${country}\nGoal: ${goal}${realDataLines ? `\n\n${realDataLines}` : ''}\n\nEstimate website metrics from the domain URL. Small/new sites: DA 10-25. Established niche sites: DA 30-55. Major brands: DA 70+. ${realSerp ? "Estimate per-domain word-count for the real competitor domains given above (DA and referring domains will be supplied separately)." : "Generate realistic competitor data for this keyword's niche."}`,
         2500,
         'claude-sonnet-4-6'
       ),
       realSerp ? fetchOPRScores(realSerp.map(r => r.domain)).catch(() => new Map()) : Promise.resolve(new Map()),
+      realSerp ? getBulkReferringDomains(realSerp.map(r => r.domain)).catch(() => new Map()) : Promise.resolve(new Map()),
     ])
     const result = extractJSON<RankingEngineResult>(raw)
 
@@ -111,11 +123,16 @@ export async function POST(req: NextRequest) {
     if (realMetrics?.trend) result.keyword.trend = realMetrics.trend
     if (realFeatures) result.keyword.serp_features = realFeatures
     if (realUserDa != null) result.website.da_score = realUserDa
+    if (realIntent) result.keyword.intent = realIntent
+    if (realRelated && realRelated.length > 0) {
+      result.keyword.related = realRelated.map(r => ({ kw: r.keyword, vol: r.volume, diff: r.difficulty }))
+    }
     if (realSerp) {
       const aiTop = Array.isArray(result.competitors?.top) ? result.competitors.top : []
       result.competitors.top = realSerp.map((r, i) => {
         const opr = competitorOprMap.get(r.domain)
         const realDa = opr && opr.status_code === 200 && typeof opr.page_rank_decimal === 'number' ? scaleOPR(opr.page_rank_decimal) : null
+        const realRd = competitorRdMap.get(r.domain)
         return {
           domain: r.domain,
           // Real SERP position and URL — previously fetched via getTopSerpResults()
@@ -124,18 +141,21 @@ export async function POST(req: NextRequest) {
           position: r.rank,
           url: r.url,
           da: realDa ?? aiTop[i]?.da ?? result.competitors?.avg_da ?? 40,
-          // Per-row flag since OPR doesn't have every domain indexed — some rows in
-          // the same table are real, some estimated, not an all-or-nothing column.
+          // Per-row flags since neither OPR nor the bulk backlinks lookup has every
+          // domain indexed — some rows in the same table are real, some estimated,
+          // not an all-or-nothing column.
           daIsReal: realDa != null,
-          rd: aiTop[i]?.rd ?? result.competitors?.avg_rd ?? 100,
+          rd: realRd ?? aiTop[i]?.rd ?? result.competitors?.avg_rd ?? 100,
+          rdIsReal: realRd != null,
           words: aiTop[i]?.words ?? result.competitors?.avg_words ?? 1500,
         }
       })
-      // avg_da now mixes real and estimated per-domain values (whichever each
-      // domain resolved to above) — recompute so the displayed average matches
-      // what the table actually shows instead of Claude's original guess.
+      // avg_da/avg_rd now mix real and estimated per-domain values (whichever each
+      // domain resolved to above) — recompute so the displayed averages match what
+      // the table actually shows instead of Claude's original guesses.
       if (result.competitors && result.competitors.top.length > 0) {
         result.competitors.avg_da = Math.round(result.competitors.top.reduce((sum, c) => sum + c.da, 0) / result.competitors.top.length)
+        result.competitors.avg_rd = Math.round(result.competitors.top.reduce((sum, c) => sum + c.rd, 0) / result.competitors.top.length)
       }
     }
 
@@ -152,6 +172,8 @@ export async function POST(req: NextRequest) {
         keywordDifficulty: realMetrics?.difficulty != null,
         keywordCpc: realMetrics?.cpc != null,
         keywordTrend: !!realMetrics?.trend,
+        keywordIntent: !!realIntent,
+        keywordRelated: !!realRelated && realRelated.length > 0,
         serpFeatures: !!realFeatures,
         serpTop: !!realSerp,
         userAuthority: userAuthorityIsReal,
@@ -159,6 +181,7 @@ export async function POST(req: NextRequest) {
           const opr = competitorOprMap.get(r.domain)
           return opr && opr.status_code === 200
         }),
+        competitorReferringDomains: !!realSerp && realSerp.some(r => competitorRdMap.has(r.domain)),
       },
     })
   } catch (e) {
