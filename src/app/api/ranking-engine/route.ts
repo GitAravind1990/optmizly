@@ -45,7 +45,7 @@ type RankingEngineResult = {
     top?: Array<{ domain: string; da: number; rd: number; words: number; position?: number; url?: string; daIsReal?: boolean; rdIsReal?: boolean; wordsIsReal?: boolean }>
     [key: string]: unknown
   }
-  website: { da_score: number; technical_score: number; [key: string]: unknown }
+  website: { da_score: number; technical_score: number; backlink_score: number; gaps: Record<string, number>; [key: string]: unknown }
   score: {
     overall: number
     label: string
@@ -78,6 +78,14 @@ function labelForScore(overall: number): string {
 // values slightly outside 0-10 for edge-case domains.
 function scaleOPR(decimal: number): number {
   return Math.round(Math.min(10, Math.max(0, decimal)) * 10)
+}
+
+// Same log-scale the Gaps tab already uses client-side to turn a raw referring-
+// domain count into a 0-100 score for the competitor-avg bar (client.tsx
+// compScoreFor.backlinks) — mirrored here so the user's own bar is computed with
+// the identical methodology instead of being Claude's independent 0-100 guess.
+function scaleRdToScore(rd: number): number {
+  return Math.min(100, Math.round(Math.log10(Math.max(2, rd)) * 26))
 }
 
 export async function POST(req: NextRequest) {
@@ -131,7 +139,7 @@ export async function POST(req: NextRequest) {
     // take that long) — bounded so a slow PSI run can't dominate this route's total
     // latency; a timeout just means the technical score falls back to Claude's
     // estimate, same graceful-degradation pattern as every other real call here.
-    const [raw, competitorOprMap, competitorRdMap, competitorPageStats, psiMetrics] = await Promise.all([
+    const [raw, competitorOprMap, rdMap, competitorPageStats, psiMetrics] = await Promise.all([
       callClaude(
         SYSTEM,
         `Keyword: ${keyword}\nDomain: ${domain}\nCountry: ${country}\nGoal: ${goal}${realDataLines ? `\n\n${realDataLines}` : ''}\n\nEstimate website metrics from the domain URL. Small/new sites: DA 10-25. Established niche sites: DA 30-55. Major brands: DA 70+. ${realSerp ? "DA, referring domains, and word counts for the real competitor domains will be supplied separately where available — estimate only what isn't." : "Generate realistic competitor data for this keyword's niche."}`,
@@ -139,7 +147,11 @@ export async function POST(req: NextRequest) {
         'claude-sonnet-4-6'
       ),
       realSerp ? fetchOPRScores(realSerp.map(r => r.domain)).catch(() => new Map()) : Promise.resolve(new Map()),
-      realSerp ? getBulkReferringDomains(realSerp.map(r => r.domain)).catch(() => new Map()) : Promise.resolve(new Map()),
+      // Same bulk endpoint, one extra target — the user's own domain rides along
+      // with the competitor domains in a single call, so getting a real referring-
+      // domain count for the user's site (previously only fetched for competitors)
+      // costs nothing extra.
+      getBulkReferringDomains([domain, ...(realSerp ? realSerp.map(r => r.domain) : [])]).catch(() => new Map()),
       realSerp ? crawlCompetitorPages(realSerp.map(r => r.url)) : Promise.resolve(new Map()),
       fetchPSIMetrics(`https://${domain}`, 20000),
     ])
@@ -177,13 +189,19 @@ export async function POST(req: NextRequest) {
     if (result.score?.factors?.technical_seo && psiMetrics?.performanceScore != null) {
       result.score.factors.technical_seo.score = psiMetrics.performanceScore
     }
-    // overall/label are recomputed deterministically from factors regardless of
-    // whether any factor above was just overwritten — Claude's own arithmetic on
-    // its stated "weighted sum / 100" rule isn't reliably self-consistent, so this
-    // never trusts result.score.overall/label as returned by the model.
-    if (result.score?.factors) {
-      result.score.overall = computeOverallScore(result.score.factors)
-      result.score.label = labelForScore(result.score.overall)
+
+    // Real referring-domain count for the user's own domain — domain-level
+    // authority/backlinks are legitimately comparable regardless of which keyword
+    // is being evaluated (unlike word count/content depth, which is specific to a
+    // page the user may not have written yet, so that one stays an AI estimate).
+    // Scored with the same log-scale formula the Gaps tab already applies to the
+    // competitor-avg bar, so both sides of that comparison use identical methodology.
+    const userRd = rdMap.get(domain.toLowerCase())
+    const userRdIsReal = typeof userRd === 'number'
+    if (userRdIsReal) {
+      const scaled = scaleRdToScore(userRd!)
+      result.website.backlink_score = scaled
+      if (result.score?.factors?.backlinks) result.score.factors.backlinks.score = scaled
     }
 
     if (realSerp) {
@@ -191,7 +209,7 @@ export async function POST(req: NextRequest) {
       result.competitors.top = realSerp.map((r, i) => {
         const opr = competitorOprMap.get(r.domain)
         const realDa = opr && opr.status_code === 200 && typeof opr.page_rank_decimal === 'number' ? scaleOPR(opr.page_rank_decimal) : null
-        const realRd = competitorRdMap.get(r.domain)
+        const realRd = rdMap.get(r.domain)
         const pageStats = competitorPageStats.get(r.url)
         return {
           domain: r.domain,
@@ -238,6 +256,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Raw RD delta for the Gaps tab's backlinks badge (shown in RD units, not the
+    // 0-100 score above) — only trustworthy once competitors.avg_rd has settled to
+    // its final real-or-estimated value from the block above, so this runs after it.
+    if (userRdIsReal && result.website.gaps && typeof result.competitors?.avg_rd === 'number') {
+      result.website.gaps.backlinks = userRd! - result.competitors.avg_rd
+    }
+
+    // overall/label are recomputed deterministically from factors after every
+    // possible factor overwrite above (domain authority, technical SEO, backlinks)
+    // — Claude's own arithmetic on its stated "weighted sum / 100" rule isn't
+    // reliably self-consistent, so this never trusts result.score.overall/label
+    // as returned by the model, real data or not.
+    if (result.score?.factors) {
+      result.score.overall = computeOverallScore(result.score.factors)
+      result.score.label = labelForScore(result.score.overall)
+    }
+
     // Analytics: awaited but fully isolated — a PostHog failure never surfaces to the user
     await trackToolRun(user, 'ranking-engine').catch(() => {})
 
@@ -256,11 +291,12 @@ export async function POST(req: NextRequest) {
         serpFeatures: !!realFeatures,
         serpTop: !!realSerp,
         userAuthority: userAuthorityIsReal,
+        userReferringDomains: userRdIsReal,
         competitorAuthority: !!realSerp && realSerp.some(r => {
           const opr = competitorOprMap.get(r.domain)
           return opr && opr.status_code === 200
         }),
-        competitorReferringDomains: !!realSerp && realSerp.some(r => competitorRdMap.has(r.domain)),
+        competitorReferringDomains: !!realSerp && realSerp.some(r => rdMap.has(r.domain)),
         competitorWords: competitorPageStats.size > 0,
         competitorSchemaTypes: competitorPageStats.size > 0,
         competitorFreshness: [...competitorPageStats.values()].some(s => s.lastUpdated != null),

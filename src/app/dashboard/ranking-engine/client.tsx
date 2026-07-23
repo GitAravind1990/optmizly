@@ -74,6 +74,7 @@ type RankingResult = {
     serpFeatures: boolean
     serpTop: boolean
     userAuthority: boolean
+    userReferringDomains: boolean
     competitorAuthority: boolean
     competitorReferringDomains: boolean
     competitorWords: boolean
@@ -236,6 +237,7 @@ function OverviewTab({ result }: { result: RankingResult }) {
             {Object.entries(score.factors).map(([key, f]) => {
               const isReal = key === 'domain_authority' ? result.dataQuality?.userAuthority
                 : key === 'technical_seo' ? result.dataQuality?.technicalScore
+                : key === 'backlinks' ? result.dataQuality?.userReferringDomains
                 : undefined
               return (
               <div key={key}>
@@ -475,7 +477,18 @@ function GapsTab({ result }: { result: RankingResult }) {
             return (
               <div key={key}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-700">{GAP_LABELS[key] ?? key}</span>
+                  <span className="text-sm font-medium text-slate-700">
+                    {GAP_LABELS[key] ?? key}
+                    {key === 'authority' && (result.dataQuality?.userAuthority
+                      ? <span className="ml-1.5 text-[9px] font-semibold text-green-600 uppercase align-middle">Live</span>
+                      : <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>)}
+                    {key === 'backlinks' && (result.dataQuality?.userReferringDomains
+                      ? <span className="ml-1.5 text-[9px] font-semibold text-green-600 uppercase align-middle">Live</span>
+                      : <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>)}
+                    {key === 'technical' && (result.dataQuality?.technicalScore
+                      ? <span className="ml-1.5 text-[9px] font-semibold text-green-600 uppercase align-middle">Live</span>
+                      : <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>)}
+                  </span>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isDeficit ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
                     {gapBadge(key, gap)}
                   </span>
@@ -517,7 +530,7 @@ function GapsTab({ result }: { result: RankingResult }) {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {([
             [`Domain Authority${result.dataQuality?.userAuthority ? ' (OPR)' : ' (Est.)'}`, website.da_score],
-            ['Backlinks', website.backlink_score],
+            [`Backlinks${result.dataQuality?.userReferringDomains ? ' (Live)' : ' (Est.)'}`, website.backlink_score],
             ['Content', website.content_score],
             ['Topical', website.topical_score],
             [`Technical SEO${result.dataQuality?.technicalScore ? ' (PSI)' : ' (Est.)'}`, website.technical_score],
