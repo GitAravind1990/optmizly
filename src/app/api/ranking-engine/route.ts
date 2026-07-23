@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma'
 import { captureServerEvent, captureServerException } from '@/lib/posthog-server'
 import { getTopSerpResults, getKeywordMetrics, getSearchIntent, getRelatedKeywords, getBulkReferringDomains } from '@/lib/dataforseo'
 import { fetchOPRScore, fetchOPRScores } from '@/lib/openpagerank'
+import { crawlCompetitorPages } from '@/lib/ranking-engine-crawl'
+import { fetchPSIMetrics } from '@/lib/seo-audit/psi'
 
 export const runtime = 'nodejs'
 // Was previously unset (pure Claude call) — now also fires two real DataForSEO
@@ -38,10 +40,12 @@ type RankingEngineResult = {
     avg_da?: number
     avg_rd?: number
     avg_words?: number
-    top?: Array<{ domain: string; da: number; rd: number; words: number; position?: number; url?: string; daIsReal?: boolean; rdIsReal?: boolean }>
+    freshness?: string
+    schema_types?: string[]
+    top?: Array<{ domain: string; da: number; rd: number; words: number; position?: number; url?: string; daIsReal?: boolean; rdIsReal?: boolean; wordsIsReal?: boolean }>
     [key: string]: unknown
   }
-  website: { da_score: number; [key: string]: unknown }
+  website: { da_score: number; technical_score: number; [key: string]: unknown }
   [key: string]: unknown
 }
 
@@ -95,28 +99,33 @@ export async function POST(req: NextRequest) {
       realRelated && realRelated.length > 0 ? `Real related keywords (use these exact ones for keyword.related, do not invent different ones): ${realRelated.map(r => `${r.keyword} (vol ${r.volume}, kd ${r.difficulty})`).join('; ')}` : null,
     ].filter(Boolean).join('\n')
 
-    // Real per-competitor authority scores and referring-domain counts — both
-    // depend on the real SERP domain list above, so neither can join the first
-    // batch, but both run concurrently with the Claude call below instead of
-    // adding sequential round trips.
-    const [raw, competitorOprMap, competitorRdMap] = await Promise.all([
+    // Real per-competitor authority/referring-domains/page-content stats, plus real
+    // page speed for the user's own domain — all depend on the real SERP domain
+    // list (or just `domain`) above, so none can join the first batch, but all run
+    // concurrently with the Claude call instead of adding sequential round trips.
+    // PSI gets a much shorter timeout than its 45s default (real Lighthouse runs can
+    // take that long) — bounded so a slow PSI run can't dominate this route's total
+    // latency; a timeout just means the technical score falls back to Claude's
+    // estimate, same graceful-degradation pattern as every other real call here.
+    const [raw, competitorOprMap, competitorRdMap, competitorPageStats, psiMetrics] = await Promise.all([
       callClaude(
         SYSTEM,
-        `Keyword: ${keyword}\nDomain: ${domain}\nCountry: ${country}\nGoal: ${goal}${realDataLines ? `\n\n${realDataLines}` : ''}\n\nEstimate website metrics from the domain URL. Small/new sites: DA 10-25. Established niche sites: DA 30-55. Major brands: DA 70+. ${realSerp ? "Estimate per-domain word-count for the real competitor domains given above (DA and referring domains will be supplied separately)." : "Generate realistic competitor data for this keyword's niche."}`,
+        `Keyword: ${keyword}\nDomain: ${domain}\nCountry: ${country}\nGoal: ${goal}${realDataLines ? `\n\n${realDataLines}` : ''}\n\nEstimate website metrics from the domain URL. Small/new sites: DA 10-25. Established niche sites: DA 30-55. Major brands: DA 70+. ${realSerp ? "DA, referring domains, and word counts for the real competitor domains will be supplied separately where available — estimate only what isn't." : "Generate realistic competitor data for this keyword's niche."}`,
         2500,
         'claude-sonnet-4-6'
       ),
       realSerp ? fetchOPRScores(realSerp.map(r => r.domain)).catch(() => new Map()) : Promise.resolve(new Map()),
       realSerp ? getBulkReferringDomains(realSerp.map(r => r.domain)).catch(() => new Map()) : Promise.resolve(new Map()),
+      realSerp ? crawlCompetitorPages(realSerp.map(r => r.url)) : Promise.resolve(new Map()),
+      fetchPSIMetrics(`https://${domain}`, 20000),
     ])
     const result = extractJSON<RankingEngineResult>(raw)
 
     // Real data always wins over whatever Claude produced, regardless of how well
     // it followed the instructions above — guarantees the keyword numbers, SERP
-    // features, competitor domain list, and (when OPR has them indexed) per-domain
-    // DA are accurate even if the model didn't comply exactly. Referring-domains/
-    // word-count stay as Claude's estimates since those need per-URL crawl/backlink
-    // data this tool doesn't fetch.
+    // features, competitor domain list, and (wherever each real source has that
+    // particular domain) per-domain DA/referring-domains/word-count are accurate
+    // even if the model didn't comply exactly.
     if (realMetrics?.searchVolume != null) result.keyword.volume = realMetrics.searchVolume
     if (realMetrics?.difficulty != null) result.keyword.difficulty = realMetrics.difficulty
     if (realMetrics?.cpc != null) result.keyword.cpc = `$${realMetrics.cpc.toFixed(2)}`
@@ -127,12 +136,19 @@ export async function POST(req: NextRequest) {
     if (realRelated && realRelated.length > 0) {
       result.keyword.related = realRelated.map(r => ({ kw: r.keyword, vol: r.volume, diff: r.difficulty }))
     }
+    // Real Lighthouse performance score doubles as the technical-SEO score — the
+    // same simplification SEO Audit's own PSI integration makes (page speed is a
+    // large, directly-measurable chunk of what "technical SEO" means in practice),
+    // rather than leaving it as a pure AI guess.
+    if (psiMetrics?.performanceScore != null) result.website.technical_score = psiMetrics.performanceScore
+
     if (realSerp) {
       const aiTop = Array.isArray(result.competitors?.top) ? result.competitors.top : []
       result.competitors.top = realSerp.map((r, i) => {
         const opr = competitorOprMap.get(r.domain)
         const realDa = opr && opr.status_code === 200 && typeof opr.page_rank_decimal === 'number' ? scaleOPR(opr.page_rank_decimal) : null
         const realRd = competitorRdMap.get(r.domain)
+        const pageStats = competitorPageStats.get(r.url)
         return {
           domain: r.domain,
           // Real SERP position and URL — previously fetched via getTopSerpResults()
@@ -141,21 +157,40 @@ export async function POST(req: NextRequest) {
           position: r.rank,
           url: r.url,
           da: realDa ?? aiTop[i]?.da ?? result.competitors?.avg_da ?? 40,
-          // Per-row flags since neither OPR nor the bulk backlinks lookup has every
-          // domain indexed — some rows in the same table are real, some estimated,
-          // not an all-or-nothing column.
+          // Per-row flags since none of OPR / the bulk backlinks lookup / the page
+          // crawl has every domain covered — some rows in the same table are real,
+          // some estimated, not an all-or-nothing column.
           daIsReal: realDa != null,
           rd: realRd ?? aiTop[i]?.rd ?? result.competitors?.avg_rd ?? 100,
           rdIsReal: realRd != null,
-          words: aiTop[i]?.words ?? result.competitors?.avg_words ?? 1500,
+          words: pageStats?.words ?? aiTop[i]?.words ?? result.competitors?.avg_words ?? 1500,
+          wordsIsReal: pageStats?.words != null,
         }
       })
-      // avg_da/avg_rd now mix real and estimated per-domain values (whichever each
-      // domain resolved to above) — recompute so the displayed averages match what
-      // the table actually shows instead of Claude's original guesses.
+      // avg_da/avg_rd/avg_words now mix real and estimated per-domain values
+      // (whichever each domain resolved to above) — recompute so the displayed
+      // averages match what the table actually shows instead of Claude's guesses.
       if (result.competitors && result.competitors.top.length > 0) {
-        result.competitors.avg_da = Math.round(result.competitors.top.reduce((sum, c) => sum + c.da, 0) / result.competitors.top.length)
-        result.competitors.avg_rd = Math.round(result.competitors.top.reduce((sum, c) => sum + c.rd, 0) / result.competitors.top.length)
+        const top = result.competitors.top
+        result.competitors.avg_da = Math.round(top.reduce((sum, c) => sum + c.da, 0) / top.length)
+        result.competitors.avg_rd = Math.round(top.reduce((sum, c) => sum + c.rd, 0) / top.length)
+        result.competitors.avg_words = Math.round(top.reduce((sum, c) => sum + c.words, 0) / top.length)
+      }
+
+      // Real schema types actually found across the crawled competitor pages —
+      // replaces Claude's guessed list entirely when we have at least one real
+      // crawl result (a real "here's what's actually there" beats a partial mix).
+      const realSchemaTypes = [...new Set([...competitorPageStats.values()].flatMap(s => s.schemaTypes))]
+      if (competitorPageStats.size > 0) result.competitors.schema_types = realSchemaTypes
+
+      // Real freshness summary from actual dateModified/datePublished found on the
+      // crawled pages — falls back to Claude's estimate if nothing crawled
+      // successfully returned a usable date.
+      const freshDates = [...competitorPageStats.values()].map(s => s.lastUpdated).filter((d): d is string => d != null)
+      if (freshDates.length > 0) {
+        const sixMonthsAgo = Date.now() - 1000 * 60 * 60 * 24 * 182
+        const recentCount = freshDates.filter(d => Date.parse(d) >= sixMonthsAgo).length
+        result.competitors.freshness = `${recentCount} of ${freshDates.length} checked competitors updated within 6 months`
       }
     }
 
@@ -182,6 +217,10 @@ export async function POST(req: NextRequest) {
           return opr && opr.status_code === 200
         }),
         competitorReferringDomains: !!realSerp && realSerp.some(r => competitorRdMap.has(r.domain)),
+        competitorWords: competitorPageStats.size > 0,
+        competitorSchemaTypes: competitorPageStats.size > 0,
+        competitorFreshness: [...competitorPageStats.values()].some(s => s.lastUpdated != null),
+        technicalScore: psiMetrics?.performanceScore != null,
       },
     })
   } catch (e) {

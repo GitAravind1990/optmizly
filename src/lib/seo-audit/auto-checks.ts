@@ -53,7 +53,9 @@ function getBody(html: string): string {
   return m ? m[1] : html
 }
 
-function plainText(html: string): string {
+// Exported for reuse outside the audit pipeline (Ranking Engine's competitor-page
+// crawl) — pure, side-effect-free HTML parsing with no dependency on AutoCheckContext.
+export function plainText(html: string): string {
   return getBody(html)
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -143,7 +145,7 @@ function anchors(html: string, origin: string): Anchor[] {
   })
 }
 
-function jsonLdTypes(html: string): { types: string[]; topLevelTypes: string[]; invalid: boolean } {
+export function jsonLdTypes(html: string): { types: string[]; topLevelTypes: string[]; invalid: boolean } {
   const blocks = [...html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)]
   const types: string[] = []
   const topLevelTypes: string[] = []

@@ -25,7 +25,7 @@ type RankingResult = {
     schema_types: string[]
     eeat_level: string
     page_speed: string
-    top: { domain: string; da: number; rd: number; words: number; position?: number; url?: string; daIsReal?: boolean; rdIsReal?: boolean }[]
+    top: { domain: string; da: number; rd: number; words: number; position?: number; url?: string; daIsReal?: boolean; rdIsReal?: boolean; wordsIsReal?: boolean }[]
   }
   website: {
     da_score: number
@@ -76,6 +76,10 @@ type RankingResult = {
     userAuthority: boolean
     competitorAuthority: boolean
     competitorReferringDomains: boolean
+    competitorWords: boolean
+    competitorSchemaTypes: boolean
+    competitorFreshness: boolean
+    technicalScore: boolean
   }
 }
 
@@ -320,8 +324,8 @@ function SERPTab({ result }: { result: RankingResult }) {
           {([
             [`Avg Domain Authority${result.dataQuality?.competitorAuthority ? ' (Mixed*)' : ' (Est.)'}`, String(competitors.avg_da)],
             [`Avg Referring Domains${result.dataQuality?.competitorReferringDomains ? ' (Mixed*)' : ' (Est.)'}`, fmt(competitors.avg_rd)],
-            ['Avg Word Count', fmt(competitors.avg_words)],
-            ['Content Freshness', competitors.freshness],
+            [`Avg Word Count${result.dataQuality?.competitorWords ? ' (Mixed*)' : ' (Est.)'}`, fmt(competitors.avg_words)],
+            [`Content Freshness${result.dataQuality?.competitorFreshness ? '' : ' (Est.)'}`, competitors.freshness],
           ] as [string, string][]).map(([label, value]) => (
             <div key={label} className="bg-slate-50 rounded-lg p-3 text-center">
               <div className="text-xl font-black text-slate-800">{value}</div>
@@ -349,7 +353,7 @@ function SERPTab({ result }: { result: RankingResult }) {
                   <th className="text-left pb-2">Domain</th>
                   <th className="text-right pb-2">DA*</th>
                   <th className="text-right pb-2">Ref. Domains*</th>
-                  <th className="text-right pb-2">Words</th>
+                  <th className="text-right pb-2">Words*</th>
                   <th className="text-right pb-2">vs Your DA</th>
                 </tr>
               </thead>
@@ -376,7 +380,10 @@ function SERPTab({ result }: { result: RankingResult }) {
                         {fmt(c.rd)}
                         {!c.rdIsReal && <span className="ml-1 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}
                       </td>
-                      <td className="py-2 text-right text-slate-600">{fmt(c.words)}</td>
+                      <td className="py-2 text-right text-slate-600">
+                        {fmt(c.words)}
+                        {!c.wordsIsReal && <span className="ml-1 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}
+                      </td>
                       <td className="py-2 text-right">
                         <span className={`font-semibold text-xs ${diff > 0 ? 'text-red-500' : 'text-green-600'}`}>
                           {diff > 0 ? `+${diff}` : diff}
@@ -388,13 +395,20 @@ function SERPTab({ result }: { result: RankingResult }) {
               </tbody>
             </table>
           </div>
-          <p className="text-[10px] text-slate-400 mt-2">*DA (OpenPageRank) and Ref. Domains (DataForSEO) are real per domain where indexed, individually marked Est. otherwise — Words remains an AI estimate.</p>
+          <p className="text-[10px] text-slate-400 mt-2">*DA (OpenPageRank), Ref. Domains (DataForSEO), and Words (real page fetch) are measured per domain where available, individually marked Est. otherwise.</p>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
-          <h3 className="text-sm font-bold text-slate-800 mb-3">Schema Types Used</h3>
+          <h3 className="text-sm font-bold text-slate-800 mb-3">
+            Schema Types Used
+            {result.dataQuality?.competitorSchemaTypes ? (
+              <span className="ml-2 text-[9px] font-bold uppercase text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full align-middle">Live Data</span>
+            ) : (
+              <span className="ml-2 text-[9px] font-bold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full align-middle">Estimated</span>
+            )}
+          </h3>
           <div className="flex flex-wrap gap-1.5">
             {competitors.schema_types?.length > 0
               ? competitors.schema_types.map(s => (
@@ -498,7 +512,7 @@ function GapsTab({ result }: { result: RankingResult }) {
             ['Backlinks', website.backlink_score],
             ['Content', website.content_score],
             ['Topical', website.topical_score],
-            ['Technical SEO', website.technical_score],
+            [`Technical SEO${result.dataQuality?.technicalScore ? ' (PSI)' : ' (Est.)'}`, website.technical_score],
             ['E-E-A-T', website.eeat_score],
           ] as [string, number][]).map(([label, val]) => (
             <div key={label} className="bg-slate-50 rounded-lg p-3 text-center">
