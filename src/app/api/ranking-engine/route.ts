@@ -262,6 +262,14 @@ export async function POST(req: NextRequest) {
     if (userRdIsReal && result.website.gaps && typeof result.competitors?.avg_rd === 'number') {
       result.website.gaps.backlinks = userRd! - result.competitors.avg_rd
     }
+    // Same for the authority gap: da_score (real OPR, set above) and avg_da (real
+    // per-competitor OPR, recomputed above) were both already real independently,
+    // but the gap between them was still Claude's own unsynced guess — caught live
+    // on forbes.com, where da_score(48) - avg_da(37) is really a +11 advantage,
+    // while Claude's gaps.authority claimed a -10 deficit.
+    if (realUserDa != null && result.website.gaps && typeof result.competitors?.avg_da === 'number') {
+      result.website.gaps.authority = realUserDa - result.competitors.avg_da
+    }
 
     // overall/label are recomputed deterministically from factors after every
     // possible factor overwrite above (domain authority, technical SEO, backlinks)
