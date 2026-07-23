@@ -233,14 +233,22 @@ function OverviewTab({ result }: { result: RankingResult }) {
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
           <h3 className="text-sm font-bold text-slate-800 mb-3">Ranking Factors</h3>
           <div className="space-y-3">
-            {Object.entries(score.factors).map(([key, f]) => (
+            {Object.entries(score.factors).map(([key, f]) => {
+              const isReal = key === 'domain_authority' ? result.dataQuality?.userAuthority
+                : key === 'technical_seo' ? result.dataQuality?.technicalScore
+                : undefined
+              return (
               <div key={key}>
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-slate-500">
                     {FACTOR_LABELS[key] ?? key}{' '}
                     <span className="text-slate-300">({f.weight}%)</span>
                   </span>
-                  <span className="font-semibold text-slate-700">{f.score}/100</span>
+                  <span className="font-semibold text-slate-700">
+                    {f.score}/100
+                    {isReal === true && <span className="ml-1.5 text-[9px] font-semibold text-green-600 uppercase align-middle">Live</span>}
+                    {isReal === false && <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}
+                  </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                   <div
@@ -249,7 +257,7 @@ function OverviewTab({ result }: { result: RankingResult }) {
                   />
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </div>

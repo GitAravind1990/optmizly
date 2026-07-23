@@ -46,7 +46,31 @@ type RankingEngineResult = {
     [key: string]: unknown
   }
   website: { da_score: number; technical_score: number; [key: string]: unknown }
+  score: {
+    overall: number
+    label: string
+    factors: Record<string, { weight: number; score: number }>
+    [key: string]: unknown
+  }
   [key: string]: unknown
+}
+
+// score.overall/label are supposed to be a deterministic function of score.factors
+// (per the SYSTEM prompt's own stated rule), but Claude's arithmetic on 6 weighted
+// terms isn't reliably correct — observed the displayed overall diverge from what
+// its own factors/weights compute to. Recomputed here in code instead of trusted,
+// same "don't trust the model's math" precedent as the real-data overwrites above.
+function computeOverallScore(factors: Record<string, { weight: number; score: number }>): number {
+  const weighted = Object.values(factors).reduce((sum, f) => sum + f.weight * f.score, 0)
+  return Math.round(weighted / 100)
+}
+
+function labelForScore(overall: number): string {
+  if (overall <= 20) return 'Very Unlikely'
+  if (overall <= 40) return 'Difficult'
+  if (overall <= 60) return 'Possible'
+  if (overall <= 80) return 'Strong Opportunity'
+  return 'Highly Likely'
 }
 
 // OPR's page_rank_decimal (0-10) scaled to the same 0-100 range used for DA
@@ -141,6 +165,26 @@ export async function POST(req: NextRequest) {
     // large, directly-measurable chunk of what "technical SEO" means in practice),
     // rather than leaving it as a pure AI guess.
     if (psiMetrics?.performanceScore != null) result.website.technical_score = psiMetrics.performanceScore
+
+    // score.factors drives the "Ranking Factors" panel and the headline gauge —
+    // was previously left as Claude's independent, unsynced guess even after the
+    // two lines above replaced website.da_score/technical_score with real values,
+    // so the same domain's authority/technical scores could show two different
+    // numbers in two panels. Sync whichever factors have a real source.
+    if (result.score?.factors?.domain_authority && realUserDa != null) {
+      result.score.factors.domain_authority.score = realUserDa
+    }
+    if (result.score?.factors?.technical_seo && psiMetrics?.performanceScore != null) {
+      result.score.factors.technical_seo.score = psiMetrics.performanceScore
+    }
+    // overall/label are recomputed deterministically from factors regardless of
+    // whether any factor above was just overwritten — Claude's own arithmetic on
+    // its stated "weighted sum / 100" rule isn't reliably self-consistent, so this
+    // never trusts result.score.overall/label as returned by the model.
+    if (result.score?.factors) {
+      result.score.overall = computeOverallScore(result.score.factors)
+      result.score.label = labelForScore(result.score.overall)
+    }
 
     if (realSerp) {
       const aiTop = Array.isArray(result.competitors?.top) ? result.competitors.top : []
