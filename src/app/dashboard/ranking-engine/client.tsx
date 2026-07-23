@@ -25,7 +25,7 @@ type RankingResult = {
     schema_types: string[]
     eeat_level: string
     page_speed: string
-    top: { domain: string; da: number; rd: number; words: number }[]
+    top: { domain: string; da: number; rd: number; words: number; position?: number; url?: string }[]
   }
   website: {
     da_score: number
@@ -324,6 +324,7 @@ function SERPTab({ result }: { result: RankingResult }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-slate-400 border-b border-slate-100">
+                  {result.dataQuality?.serpTop && <th className="text-left pb-2">#</th>}
                   <th className="text-left pb-2">Domain</th>
                   <th className="text-right pb-2">DA (Est.)</th>
                   <th className="text-right pb-2">Ref. Domains</th>
@@ -336,7 +337,16 @@ function SERPTab({ result }: { result: RankingResult }) {
                   const diff = c.da - result.website.da_score
                   return (
                     <tr key={i} className="border-b border-slate-50 last:border-0">
-                      <td className="py-2 font-medium text-slate-700">{c.domain}</td>
+                      {result.dataQuality?.serpTop && (
+                        <td className="py-2 text-slate-400 font-mono text-xs">{c.position ?? '—'}</td>
+                      )}
+                      <td className="py-2 font-medium text-slate-700">
+                        {c.url ? (
+                          <a href={c.url} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-blue-600" title={c.url}>
+                            {c.domain}
+                          </a>
+                        ) : c.domain}
+                      </td>
                       <td className="py-2 text-right text-slate-600">{c.da}</td>
                       <td className="py-2 text-right text-slate-600">{fmt(c.rd)}</td>
                       <td className="py-2 text-right text-slate-600">{fmt(c.words)}</td>

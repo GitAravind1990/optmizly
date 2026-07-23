@@ -32,7 +32,7 @@ type RankingEngineResult = {
     avg_da?: number
     avg_rd?: number
     avg_words?: number
-    top?: Array<{ domain: string; da: number; rd: number; words: number }>
+    top?: Array<{ domain: string; da: number; rd: number; words: number; position?: number; url?: string }>
     [key: string]: unknown
   }
   [key: string]: unknown
@@ -87,6 +87,11 @@ export async function POST(req: NextRequest) {
       const aiTop = Array.isArray(result.competitors?.top) ? result.competitors.top : []
       result.competitors.top = realSerp.map((r, i) => ({
         domain: r.domain,
+        // Real SERP position and URL — previously fetched via getTopSerpResults()
+        // but discarded here, so the UI only showed an implicit list order with no
+        // actual rank number or link to verify against.
+        position: r.rank,
+        url: r.url,
         da: aiTop[i]?.da ?? result.competitors?.avg_da ?? 40,
         rd: aiTop[i]?.rd ?? result.competitors?.avg_rd ?? 100,
         words: aiTop[i]?.words ?? result.competitors?.avg_words ?? 1500,
