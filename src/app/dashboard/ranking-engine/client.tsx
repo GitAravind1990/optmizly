@@ -25,7 +25,7 @@ type RankingResult = {
     schema_types: string[]
     eeat_level: string
     page_speed: string
-    top: { domain: string; da: number; rd: number; words: number; position?: number; url?: string }[]
+    top: { domain: string; da: number; rd: number; words: number; position?: number; url?: string; daIsReal?: boolean }[]
   }
   website: {
     da_score: number
@@ -64,7 +64,16 @@ type RankingResult = {
   summary: string
   // Not present on results from before this field existed — treat as all-estimated
   // (every consumer below already falls back to `?? false`) rather than assuming real.
-  dataQuality?: { keywordVolume: boolean; keywordDifficulty: boolean; serpTop: boolean }
+  dataQuality?: {
+    keywordVolume: boolean
+    keywordDifficulty: boolean
+    keywordCpc: boolean
+    keywordTrend: boolean
+    serpFeatures: boolean
+    serpTop: boolean
+    userAuthority: boolean
+    competitorAuthority: boolean
+  }
 }
 
 type FormState = { keyword: string; domain: string; country: string; goal: string }
@@ -187,9 +196,9 @@ function OverviewTab({ result }: { result: RankingResult }) {
             {([
               ['Monthly Volume', fmt(keyword.volume), !!result.dataQuality?.keywordVolume],
               ['Difficulty', `${keyword.difficulty}/100`, !!result.dataQuality?.keywordDifficulty],
-              ['CPC', keyword.cpc || '—', false],
+              ['CPC', keyword.cpc || '—', !!result.dataQuality?.keywordCpc],
               ['Search Intent', keyword.intent, false],
-              ['Trend', keyword.trend, false],
+              ['Trend', keyword.trend, !!result.dataQuality?.keywordTrend],
             ] as [string, string, boolean][]).map(([label, value, isReal]) => (
               <div key={label} className="flex justify-between text-sm">
                 <span className="text-slate-500">{label}</span>
@@ -202,7 +211,9 @@ function OverviewTab({ result }: { result: RankingResult }) {
           </div>
           {keyword.serp_features?.length > 0 && (
             <div className="mt-3 pt-3 border-t border-slate-50">
-              <div className="text-xs text-slate-400 mb-2">SERP Features</div>
+              <div className="text-xs text-slate-400 mb-2">
+                SERP Features{!result.dataQuality?.serpFeatures && <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {keyword.serp_features.map(f => (
                   <span key={f} className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">{f}</span>
@@ -297,7 +308,7 @@ function SERPTab({ result }: { result: RankingResult }) {
         <h3 className="text-sm font-bold text-slate-800 mb-4">Competitor Averages</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {([
-            ['Avg Domain Authority (Est.)', String(competitors.avg_da)],
+            [`Avg Domain Authority${result.dataQuality?.competitorAuthority ? ' (Mixed*)' : ' (Est.)'}`, String(competitors.avg_da)],
             ['Avg Referring Domains', fmt(competitors.avg_rd)],
             ['Avg Word Count', fmt(competitors.avg_words)],
             ['Content Freshness', competitors.freshness],
@@ -326,10 +337,10 @@ function SERPTab({ result }: { result: RankingResult }) {
                 <tr className="text-xs text-slate-400 border-b border-slate-100">
                   {result.dataQuality?.serpTop && <th className="text-left pb-2">#</th>}
                   <th className="text-left pb-2">Domain</th>
-                  <th className="text-right pb-2">DA (Est.)</th>
+                  <th className="text-right pb-2">DA*</th>
                   <th className="text-right pb-2">Ref. Domains</th>
                   <th className="text-right pb-2">Words</th>
-                  <th className="text-right pb-2">vs Your DA (Est.)</th>
+                  <th className="text-right pb-2">vs Your DA</th>
                 </tr>
               </thead>
               <tbody>
@@ -347,7 +358,10 @@ function SERPTab({ result }: { result: RankingResult }) {
                           </a>
                         ) : c.domain}
                       </td>
-                      <td className="py-2 text-right text-slate-600">{c.da}</td>
+                      <td className="py-2 text-right text-slate-600">
+                        {c.da}
+                        {!c.daIsReal && <span className="ml-1 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}
+                      </td>
                       <td className="py-2 text-right text-slate-600">{fmt(c.rd)}</td>
                       <td className="py-2 text-right text-slate-600">{fmt(c.words)}</td>
                       <td className="py-2 text-right">
@@ -361,6 +375,7 @@ function SERPTab({ result }: { result: RankingResult }) {
               </tbody>
             </table>
           </div>
+          <p className="text-[10px] text-slate-400 mt-2">*DA per domain is real (OpenPageRank) where indexed, individually marked Est. otherwise — Ref. Domains and Words remain AI estimates.</p>
         </div>
       )}
 
@@ -466,7 +481,7 @@ function GapsTab({ result }: { result: RankingResult }) {
         <h3 className="text-sm font-bold text-slate-800 mb-3">Your Website Scores</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {([
-            ['Domain Authority (Est.)', website.da_score],
+            [`Domain Authority${result.dataQuality?.userAuthority ? ' (OPR)' : ' (Est.)'}`, website.da_score],
             ['Backlinks', website.backlink_score],
             ['Content', website.content_score],
             ['Topical', website.topical_score],

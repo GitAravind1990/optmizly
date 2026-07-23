@@ -65,6 +65,7 @@ type OrganicRankResponse = {
   tasks: Array<{
     status_code: number
     result: Array<{
+      item_types?: string[]
       items: Array<{
         type: string
         rank_absolute: number
@@ -134,17 +135,33 @@ export async function getOrganicRank(
 
 export type SerpResult = { domain: string; url: string; rank: number }
 
-/** Real top organic Google results for a keyword — no target domain filter, unlike
- *  getOrganicRank above. Same endpoint, same 20000/40102 status handling; just
- *  extracts the ranked list itself instead of searching it for one domain. Used to
- *  ground Ranking Engine's "top competitors" in the keyword's actual current SERP
- *  instead of an AI-invented domain list. */
+const SERP_FEATURE_LABELS: Record<string, string> = {
+  ai_overview: 'AI Overview',
+  featured_snippet: 'Featured Snippet',
+  people_also_ask: 'People Also Ask',
+  video: 'Video',
+  images: 'Images',
+  related_searches: 'Related Searches',
+  top_stories: 'Top Stories',
+  local_pack: 'Local Pack',
+  shopping: 'Shopping',
+  knowledge_graph: 'Knowledge Graph',
+  reviews: 'Reviews',
+}
+
+/** Real top organic Google results for a keyword, plus which real SERP features
+ *  (AI Overview, People Also Ask, etc.) are actually present — no target domain
+ *  filter, unlike getOrganicRank above. Same endpoint, same 20000/40102 status
+ *  handling; extracts more of the response than getOrganicRank does (that function
+ *  only needs one domain match, this needs the full ranked list and the response's
+ *  own item_types field). Used to ground Ranking Engine's "top competitors" and
+ *  "SERP features" in the keyword's actual current SERP instead of AI-invented data. */
 export async function getTopSerpResults(
   keyword: string,
   targetLocation: string,
   deviceType: string,
   limit = 10
-): Promise<SerpResult[] | null> {
+): Promise<{ items: SerpResult[]; features: string[] } | null> {
   const data = await dfsPost<OrganicRankResponse>('/v3/serp/google/organic/live/advanced', [
     {
       keyword,
@@ -157,15 +174,22 @@ export async function getTopSerpResults(
 
   const task = data?.tasks?.[0]
   if (!task) return null
-  if (task.status_code === DFS_NO_RESULTS) return []
+  if (task.status_code === DFS_NO_RESULTS) return { items: [], features: [] }
   if (task.status_code !== 20000) return null
 
-  const items = task.result?.[0]?.items ?? []
-  return items
+  const result = task.result?.[0]
+  const items = result?.items ?? []
+  const topItems = items
     .filter(i => i.type === 'organic' && typeof i.rank_absolute === 'number' && typeof i.domain === 'string')
     .sort((a, b) => a.rank_absolute - b.rank_absolute)
     .slice(0, limit)
     .map(i => ({ domain: normalizeHost(i.domain), url: i.url, rank: i.rank_absolute }))
+
+  const features = (result?.item_types ?? [])
+    .filter(t => t !== 'organic')
+    .map(t => SERP_FEATURE_LABELS[t] ?? t)
+
+  return { items: topItems, features }
 }
 
 // ─── Local rank (geogrid) ─────────────────────────────────────────────────────
@@ -433,7 +457,12 @@ export async function getTrafficEstimate(domain: string): Promise<number | null>
 type SearchVolumeResponse = {
   tasks: Array<{
     status_code: number
-    result: Array<{ keyword: string; search_volume?: number | null }> | null
+    result: Array<{
+      keyword: string
+      search_volume?: number | null
+      cpc?: number | null
+      monthly_searches?: Array<{ year: number; month: number; search_volume: number }>
+    }> | null
   }>
 }
 
@@ -449,6 +478,24 @@ type KeywordDifficultyResponse = {
 export interface KeywordMetrics {
   searchVolume: number | null
   difficulty: number | null
+  /** Real CPC (USD) — same response as searchVolume, just wasn't extracted before. */
+  cpc: number | null
+  /** Computed from the same response's monthly_searches (most recent 3 months vs the
+   *  3 before that) — not a DataForSEO field itself, but derived from real numbers
+   *  rather than guessed. Null when there's not enough history to compare. */
+  trend: 'rising' | 'falling' | 'stable' | null
+}
+
+function computeTrend(monthly?: Array<{ year: number; month: number; search_volume: number }>): 'rising' | 'falling' | 'stable' | null {
+  if (!monthly || monthly.length < 6) return null
+  // DataForSEO returns these newest-first.
+  const recent3 = monthly.slice(0, 3).reduce((sum, m) => sum + m.search_volume, 0) / 3
+  const prior3 = monthly.slice(3, 6).reduce((sum, m) => sum + m.search_volume, 0) / 3
+  if (prior3 === 0) return null
+  const change = (recent3 - prior3) / prior3
+  if (change > 0.15) return 'rising'
+  if (change < -0.15) return 'falling'
+  return 'stable'
 }
 
 /** Real search volume + keyword difficulty for a batch of keywords — one call each,
@@ -470,12 +517,19 @@ export async function getKeywordMetrics(
     ]),
   ])
 
-  const result = new Map<string, KeywordMetrics>(keywords.map(kw => [kw, { searchVolume: null, difficulty: null }]))
+  const result = new Map<string, KeywordMetrics>(keywords.map(kw => [kw, { searchVolume: null, difficulty: null, cpc: null, trend: null }]))
 
   const volumeTask = volumeData?.tasks?.[0]
   if (volumeTask?.status_code === 20000) {
     for (const row of volumeTask.result ?? []) {
-      if (result.has(row.keyword)) result.set(row.keyword, { ...result.get(row.keyword)!, searchVolume: row.search_volume ?? null })
+      if (result.has(row.keyword)) {
+        result.set(row.keyword, {
+          ...result.get(row.keyword)!,
+          searchVolume: row.search_volume ?? null,
+          cpc: row.cpc ?? null,
+          trend: computeTrend(row.monthly_searches),
+        })
+      }
     }
   }
 
