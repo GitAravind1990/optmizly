@@ -31,6 +31,12 @@ export async function GET(
 
     return apiSuccess({
       ...analysis,
+      // backlinksTotal/dofollowLinks/nofollowLinks are BigInt columns (real backlink
+      // counts can exceed Postgres INT4) — JSON.stringify can't serialize BigInt
+      // directly, so convert to Number (safe at these magnitudes) before returning.
+      backlinksTotal: Number(analysis.backlinksTotal),
+      dofollowLinks: Number(analysis.dofollowLinks),
+      nofollowLinks: Number(analysis.nofollowLinks),
       topBacklinks: (() => { try { return JSON.parse(analysis.topBacklinks) } catch { return [] } })(),
       topReferringDomains: (() => { try { return JSON.parse(analysis.topReferringDomains) } catch { return [] } })(),
     })

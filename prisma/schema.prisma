@@ -867,9 +867,13 @@ model BacklinkDomainAnalysis {
   domain String
 
   // Overview metrics
-  backlinksTotal      Int   @default(0)
-  dofollowLinks       Int   @default(0)
-  nofollowLinks       Int   @default(0)
+  // backlinksTotal/dofollowLinks/nofollowLinks are BigInt, not Int — a real domain's
+  // raw backlink count (as opposed to unique referring domains) can exceed Postgres
+  // INT4's ~2.1B ceiling; github.com alone was observed at 3.43B, which threw an
+  // unhandled Prisma overflow error on every real analysis of a sufficiently large site.
+  backlinksTotal      BigInt @default(0)
+  dofollowLinks       BigInt @default(0)
+  nofollowLinks       BigInt @default(0)
   referringDomains    Int   @default(0)
   referringIPs        Int   @default(0)
   spamScore           Int   @default(0)

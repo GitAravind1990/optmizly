@@ -39,7 +39,17 @@ export async function GET() {
         lostReferringDomains14d: true, brokenBacklinks: true, createdAt: true,
       },
     })
-    return apiSuccess(analyses)
+    // backlinksTotal/dofollowLinks/nofollowLinks come back as BigInt (see POST) —
+    // JSON.stringify (which apiSuccess/NextResponse.json ultimately calls) throws on
+    // a raw BigInt, so convert to Number here. Safe: real backlink counts are nowhere
+    // near Number.MAX_SAFE_INTEGER (9 quadrillion+).
+    const serialized = analyses.map(a => ({
+      ...a,
+      backlinksTotal: Number(a.backlinksTotal),
+      dofollowLinks: Number(a.dofollowLinks),
+      nofollowLinks: Number(a.nofollowLinks),
+    }))
+    return apiSuccess(serialized)
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tools/backlinks/domain-analysis' })
     return apiError(e)
@@ -71,21 +81,22 @@ export async function POST(req: NextRequest) {
     // Real backlink profile — independent of OPR, never blocks the analysis if it fails.
     const backlinks = await getBacklinksSummary(domain).catch(() => null)
 
-    // Every field below except oprScore is an Int column — DataForSEO's TS response
-    // types claim `number`, but that's not a runtime guarantee (backlinks_spam_score
-    // in particular is a computed score, not a raw count, and real responses have been
-    // observed non-integer). Prisma throws on a float into an Int column, which was
-    // surfacing as an unhandled 500 for real domains — round defensively at the write
-    // boundary rather than trusting the upstream type annotation.
+    // backlinksTotal/dofollowLinks/nofollowLinks are BigInt columns — a real domain's
+    // raw backlink count can exceed Postgres INT4's ~2.1B ceiling (github.com was
+    // observed at 3.43B), which threw an unhandled overflow error on every real
+    // analysis of a sufficiently large site. The rest stay Int; DataForSEO's TS
+    // response types claim `number` but that's not a runtime guarantee (spam score is
+    // a computed value, not a raw count, and could in principle be non-integer), so
+    // Math.round defensively rather than trusting the upstream type annotation.
     const analysis = await prisma.backlinkDomainAnalysis.create({
       data: {
         userId: user.id,
         domain,
         oprScore:    opr.page_rank_decimal ?? 0,
         domainRank:  parseInt(opr.rank ?? '0', 10) || 0,
-        backlinksTotal:   Math.round(backlinks?.totalBacklinks ?? 0),
-        dofollowLinks:    Math.round(backlinks?.dofollowLinks ?? 0),
-        nofollowLinks:    Math.round(backlinks?.nofollowLinks ?? 0),
+        backlinksTotal:   BigInt(Math.round(backlinks?.totalBacklinks ?? 0)),
+        dofollowLinks:    BigInt(Math.round(backlinks?.dofollowLinks ?? 0)),
+        nofollowLinks:    BigInt(Math.round(backlinks?.nofollowLinks ?? 0)),
         referringDomains: Math.round(backlinks?.referringDomains ?? 0),
         referringIPs:     Math.round(backlinks?.referringIPs ?? 0),
         spamScore:        Math.round(backlinks?.spamScore ?? 0),
