@@ -71,19 +71,25 @@ export async function POST(req: NextRequest) {
     // Real backlink profile — independent of OPR, never blocks the analysis if it fails.
     const backlinks = await getBacklinksSummary(domain).catch(() => null)
 
+    // Every field below except oprScore is an Int column — DataForSEO's TS response
+    // types claim `number`, but that's not a runtime guarantee (backlinks_spam_score
+    // in particular is a computed score, not a raw count, and real responses have been
+    // observed non-integer). Prisma throws on a float into an Int column, which was
+    // surfacing as an unhandled 500 for real domains — round defensively at the write
+    // boundary rather than trusting the upstream type annotation.
     const analysis = await prisma.backlinkDomainAnalysis.create({
       data: {
         userId: user.id,
         domain,
         oprScore:    opr.page_rank_decimal ?? 0,
         domainRank:  parseInt(opr.rank ?? '0', 10) || 0,
-        backlinksTotal:   backlinks?.totalBacklinks ?? 0,
-        dofollowLinks:    backlinks?.dofollowLinks ?? 0,
-        nofollowLinks:    backlinks?.nofollowLinks ?? 0,
-        referringDomains: backlinks?.referringDomains ?? 0,
-        referringIPs:     backlinks?.referringIPs ?? 0,
-        spamScore:        backlinks?.spamScore ?? 0,
-        brokenBacklinks:  backlinks?.brokenBacklinks ?? 0,
+        backlinksTotal:   Math.round(backlinks?.totalBacklinks ?? 0),
+        dofollowLinks:    Math.round(backlinks?.dofollowLinks ?? 0),
+        nofollowLinks:    Math.round(backlinks?.nofollowLinks ?? 0),
+        referringDomains: Math.round(backlinks?.referringDomains ?? 0),
+        referringIPs:     Math.round(backlinks?.referringIPs ?? 0),
+        spamScore:        Math.round(backlinks?.spamScore ?? 0),
+        brokenBacklinks:  Math.round(backlinks?.brokenBacklinks ?? 0),
         topBacklinks:        '[]',
         topReferringDomains: '[]',
       },
