@@ -20,14 +20,7 @@ export async function POST(req: NextRequest) {
       throw new AuthError(400, 'Content is required')
     }
     const raw = await callClaude(SYSTEM, `Build AI citation plan.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`, 2000)
-    try {
-      return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
-    } catch (parseErr) {
-      // TEMP diagnostic: reproducible 502 on real Wikipedia content — need the raw
-      // text to tell truncation apart from malformed-mid-string JSON before fixing.
-      console.error('[citation] extractJSON failed. Raw length:', raw.length, 'Raw:', raw)
-      throw parseErr
-    }
+    return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/citation' })
     return apiError(e)

@@ -190,36 +190,56 @@ export function extractJSON<T = Record<string, unknown>>(text: string): T {
   // Fix empty array starts
   clean = clean.replace(/\[\s*,/g, '[null,')
 
+  // Stack-based, not count-based: tracks the actual nesting order of open
+  // brackets so it can fix both a truncated response (brackets never closed —
+  // the original failure mode this was built for) and a wrong-closer response
+  // (observed live: Claude closed a "plan" array with "}" instead of "]" right
+  // before the outer object's own "}" — same bracket *count* on each side, so
+  // the old blind "count {, count }, append the difference" approach saw
+  // balanced counts and did nothing, then mis-fixed the real problem by
+  // appending "]" at the very end instead of where it was actually missing).
   function repairJSON(s: string): string {
     let inString = false
     let escaped = false
-    let depth = 0
+    const stack: Array<'}' | ']'> = []
+    let out = ''
     let lastSafePos = 0
 
     for (let i = 0; i < s.length; i++) {
       const ch = s[i]
-      if (escaped) { escaped = false; continue }
-      if (ch === '\\') { escaped = true; continue }
+      if (escaped) { out += ch; escaped = false; continue }
+      if (ch === '\\') { out += ch; escaped = true; continue }
       if (ch === '"') {
         inString = !inString
-        if (!inString) lastSafePos = i + 1
+        out += ch
+        if (!inString) lastSafePos = out.length
         continue
       }
       if (!inString) {
-        if (ch === '{' || ch === '[') { depth++; lastSafePos = i + 1 }
-        else if (ch === '}' || ch === ']') { depth--; lastSafePos = i + 1 }
+        if (ch === '{') { stack.push('}'); out += ch; lastSafePos = out.length; continue }
+        if (ch === '[') { stack.push(']'); out += ch; lastSafePos = out.length; continue }
+        if (ch === '}' || ch === ']') {
+          // A closer that doesn't match the innermost open bracket means a
+          // bracket was skipped (e.g. array never closed before the object) —
+          // insert whatever's actually missing first, then let this character
+          // close the level it now genuinely matches.
+          while (stack.length && stack[stack.length - 1] !== ch) out += stack.pop()
+          if (stack.length && stack[stack.length - 1] === ch) {
+            stack.pop()
+            out += ch
+            lastSafePos = out.length
+          }
+          // else: a stray closer with nothing open to match — drop it.
+          continue
+        }
       }
+      out += ch
     }
 
-    if (inString) s = s.slice(0, lastSafePos) + '"'
+    if (inString) out = out.slice(0, lastSafePos) + '"'
+    while (stack.length) out += stack.pop()
 
-    const opens2  = (s.match(/{/g) ?? []).length
-    const closes2 = (s.match(/}/g) ?? []).length
-    const aopens2  = (s.match(/\[/g) ?? []).length
-    const acloses2 = (s.match(/\]/g) ?? []).length
-    s += ']'.repeat(Math.max(0, aopens2 - acloses2))
-    s += '}'.repeat(Math.max(0, opens2 - closes2))
-    return s.replace(/,\s*([}\]])/g, '$1')
+    return out.replace(/,\s*([}\]])/g, '$1')
   }
 
   clean = repairJSON(clean)
