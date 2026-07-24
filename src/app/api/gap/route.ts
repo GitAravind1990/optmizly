@@ -45,17 +45,36 @@ export async function POST(req: NextRequest) {
         crawledEntries.map(e => `<competitor domain="${e.r.domain}" rank="${e.r.rank}" url="${e.r.url}">\n${e.stats.textExcerpt}\n</competitor>`).join('\n\n')
       : null
 
-    const prompt = `Find content gaps.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>` +
-      (groundingBlock ? `\n\n${groundingBlock}` : '')
+    const basePrompt = `Find content gaps.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`
+    const prompt = basePrompt + (groundingBlock ? `\n\n${groundingBlock}` : '')
 
     const raw = await callClaude(SYSTEM, prompt, 2000)
+    let grounded = crawledEntries.length > 0
+    let parsed
+    try {
+      parsed = extractJSON(raw)
+    } catch (parseErr) {
+      // A prompt instruction alone doesn't reliably stop Claude from responding
+      // with plain-text commentary instead of JSON when the real crawled excerpts
+      // turn out to be irrelevant/boilerplate (observed live: real SERP results
+      // for an edge-case keyword were video-platform nav content, and Claude
+      // narrated about that instead of forcing the schema). Real-data grounding
+      // failing must never make this tool LESS reliable than before it existed —
+      // retry once, ungrounded, rather than surfacing a hard failure to a user
+      // who just happened to type a keyword.
+      if (!groundingBlock) throw parseErr
+      const rawRetry = await callClaude(SYSTEM, basePrompt, 2000)
+      parsed = extractJSON(rawRetry)
+      grounded = false
+    }
+
     return apiSuccess({
-      ...extractJSON(raw),
+      ...parsed,
       userPlan: user.plan,
       dataQuality: {
-        grounded: crawledEntries.length > 0,
+        grounded,
         keywordProvided: !!kw,
-        comparedDomains,
+        comparedDomains: grounded ? comparedDomains : [],
       },
     })
   } catch (e) {

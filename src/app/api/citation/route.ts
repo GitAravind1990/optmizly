@@ -43,18 +43,33 @@ export async function POST(req: NextRequest) {
       realSchemaTypes.length > 0 ? `Real structured-data (schema.org) types actually found on today's top-ranking pages for this keyword: ${realSchemaTypes.join(', ')} — ground your schema-markup recommendations in what's genuinely being used, not a generic list.` : null,
     ].filter(Boolean).join('\n')
 
-    const prompt = `Build AI citation plan.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>` +
-      (realLines ? `\n\n${realLines}` : '')
+    const basePrompt = `Build AI citation plan.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`
+    const prompt = basePrompt + (realLines ? `\n\n${realLines}` : '')
 
     const raw = await callClaude(SYSTEM, prompt, 2000)
+    let grounded = !!realFeatures || realSchemaTypes.length > 0
+    let parsed
+    try {
+      parsed = extractJSON(raw)
+    } catch (parseErr) {
+      // Same defensive retry as /api/gap — real crawled schema-type signals can
+      // still leave Claude responding with commentary instead of JSON in rare
+      // cases; grounding failing must never make this tool less reliable than
+      // before it existed.
+      if (!realLines) throw parseErr
+      const rawRetry = await callClaude(SYSTEM, basePrompt, 2000)
+      parsed = extractJSON(rawRetry)
+      grounded = false
+    }
+
     return apiSuccess({
-      ...extractJSON(raw),
+      ...parsed,
       userPlan: user.plan,
       dataQuality: {
-        grounded: !!realFeatures || realSchemaTypes.length > 0,
-        serpFeaturesReal: !!realFeatures,
-        competitorSchemaTypesReal: realSchemaTypes.length > 0,
-        comparedDomains,
+        grounded,
+        serpFeaturesReal: grounded && !!realFeatures,
+        competitorSchemaTypesReal: grounded && realSchemaTypes.length > 0,
+        comparedDomains: grounded ? comparedDomains : [],
       },
     })
   } catch (e) {

@@ -41,17 +41,30 @@ export async function POST(req: NextRequest) {
       realIntent ? `Real primary search intent for "${kw}": ${realIntent}` : null,
     ].filter(Boolean).join('\n')
 
-    const prompt = `Map AI search queries.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>` +
-      (realLines ? `\n\n${realLines}` : '')
+    const basePrompt = `Map AI search queries.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`
+    const prompt = basePrompt + (realLines ? `\n\n${realLines}` : '')
 
     const raw = await callClaude(SYSTEM, prompt, 2000)
+    let grounded = !!realRelated || !!realIntent
+    let parsed
+    try {
+      parsed = extractJSON(raw)
+    } catch (parseErr) {
+      // Same defensive retry as /api/gap and /api/citation — grounding failing
+      // must never make this tool less reliable than before it existed.
+      if (!realLines) throw parseErr
+      const rawRetry = await callClaude(SYSTEM, basePrompt, 2000)
+      parsed = extractJSON(rawRetry)
+      grounded = false
+    }
+
     return apiSuccess({
-      ...extractJSON(raw),
+      ...parsed,
       userPlan: user.plan,
       dataQuality: {
-        grounded: !!realRelated || !!realIntent,
-        relatedKeywordsReal: !!realRelated,
-        searchIntentReal: !!realIntent,
+        grounded,
+        relatedKeywordsReal: grounded && !!realRelated,
+        searchIntentReal: grounded && !!realIntent,
       },
     })
   } catch (e) {
