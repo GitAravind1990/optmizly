@@ -8,12 +8,27 @@ import { UpgradeModal } from '@/components/upgrade-modal'
 
 type Tab = 'citation' | 'queries'
 
-type CitationData = { summary: string; plan: Array<{ title: string; action: string; why: string; impact: string; effort: string }> }
-type QueriesData  = { summary: string; queries: Array<{ query: string; intent: string; coverage: string; why: string; fix: string }> }
+type CitationData = {
+  summary: string
+  plan: Array<{ title: string; action: string; why: string; impact: string; effort: string }>
+  dataQuality?: { grounded: boolean; serpFeaturesReal: boolean; competitorSchemaTypesReal: boolean; comparedDomains: string[] }
+}
+type QueriesData = {
+  summary: string
+  queries: Array<{ query: string; intent: string; coverage: string; why: string; fix: string }>
+  dataQuality?: { grounded: boolean; relatedKeywordsReal: boolean; searchIntentReal: boolean }
+}
+
+function GroundingBadge({ grounded, keywordProvided }: { grounded: boolean; keywordProvided: boolean }) {
+  if (grounded) return <span className="ml-2 text-[9px] font-bold uppercase text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full align-middle">Live Data</span>
+  if (keywordProvided) return <span className="ml-2 text-[9px] font-bold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full align-middle">Estimated</span>
+  return null
+}
 
 export function CitationClient({ unlocked }: { unlocked: boolean }) {
   const { content, analysisResult, toolResults, setToolResult } = useContent()
   const [tab, setTab]       = useState<Tab>('citation')
+  const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]   = useState('')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
@@ -25,7 +40,7 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
     if (content.length < 50) { setError('Paste content and run an analysis first'); return }
     setLoading(true); setError('')
     const summary = analysisResult?.summary ?? ''
-    const body = JSON.stringify({ content, summary })
+    const body = JSON.stringify({ content, summary, keyword: keyword.trim() || undefined })
     try {
       const [citRes, qRes] = await Promise.all([
         fetch('/api/citation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }),
@@ -40,11 +55,12 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Tool failed')
     } finally { setLoading(false) }
-  }, [content, analysisResult, setToolResult])
+  }, [content, analysisResult, setToolResult, keyword])
 
   if (!unlocked) return <LockedState tool="AI Visibility" plan="Pro" />
 
   const hasResults = citationData || queriesData
+  const keywordProvided = keyword.trim().length > 0
 
   return (
     <>
@@ -59,6 +75,20 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
           <Button className="ml-auto" onClick={handleRun} loading={loading}>
             {loading ? 'Running…' : 'Run AI Visibility'}
           </Button>
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="visibility-keyword" className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Target keyword (optional — grounds citation plan &amp; queries in real SERP data)
+          </label>
+          <input
+            id="visibility-keyword"
+            type="text"
+            value={keyword}
+            onChange={e => setKeyword(e.target.value)}
+            placeholder="e.g. best project management software"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+          />
         </div>
 
         {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-700">{error}</div>}
@@ -78,7 +108,19 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
           <div className="fade-up">
             {tab === 'citation' && citationData && (
               <div className="space-y-3">
-                {citationData.summary && <Card className="bg-slate-50"><p className="text-sm text-slate-600">{citationData.summary}</p></Card>}
+                {citationData.summary && (
+                  <Card className="bg-slate-50">
+                    <p className="text-sm text-slate-600">
+                      {citationData.summary}
+                      <GroundingBadge grounded={!!citationData.dataQuality?.grounded} keywordProvided={keywordProvided} />
+                    </p>
+                    {citationData.dataQuality?.grounded && citationData.dataQuality.comparedDomains.length > 0 && (
+                      <p className="text-[10px] text-slate-400 mt-1.5">
+                        Compared against real competitor pages: {citationData.dataQuality.comparedDomains.join(', ')}
+                      </p>
+                    )}
+                  </Card>
+                )}
                 {(citationData.plan ?? []).map((item, i) => (
                   <Card key={i}>
                     <div className="flex items-start justify-between gap-2 mb-1">
@@ -100,7 +142,14 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
             )}
             {tab === 'queries' && queriesData && (
               <div className="space-y-3">
-                {queriesData.summary && <Card className="bg-slate-50"><p className="text-sm text-slate-600">{queriesData.summary}</p></Card>}
+                {queriesData.summary && (
+                  <Card className="bg-slate-50">
+                    <p className="text-sm text-slate-600">
+                      {queriesData.summary}
+                      <GroundingBadge grounded={!!queriesData.dataQuality?.grounded} keywordProvided={keywordProvided} />
+                    </p>
+                  </Card>
+                )}
                 {(queriesData.queries ?? []).map((q, i) => (
                   <Card key={i}>
                     <div className="flex items-start justify-between gap-2 mb-1">

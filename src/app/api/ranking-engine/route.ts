@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { captureServerEvent, captureServerException } from '@/lib/posthog-server'
 import { getTopSerpResults, getKeywordMetrics, getSearchIntent, getRelatedKeywords, getBulkReferringDomains } from '@/lib/dataforseo'
 import { fetchOPRScore, fetchOPRScores } from '@/lib/openpagerank'
-import { crawlCompetitorPages } from '@/lib/ranking-engine-crawl'
+import { crawlCompetitorPages } from '@/lib/competitor-crawl'
 import { fetchPSIMetrics } from '@/lib/seo-audit/psi'
 
 export const runtime = 'nodejs'
