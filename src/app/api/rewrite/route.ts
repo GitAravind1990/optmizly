@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { requireAuth, AuthError } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
+import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -114,8 +115,10 @@ Then write the JSON metadata: {"improvements":["","","","",""],"framework_sectio
 Start writing the article now. Do not stop until the full article is complete.`
 
 export async function POST(req: NextRequest) {
+  let clerkId: string | null = null
   try {
     const user = await requireAuth('rewrite')
+    clerkId = user.clerkId
     const { content, summary, cachedEeat } = await req.json()
     if (!content || typeof content !== 'string' || !content.trim()) {
       throw new AuthError(400, 'Content is required')
@@ -174,6 +177,7 @@ export async function POST(req: NextRequest) {
       plan: user.plan,
     })
   } catch (e) {
+    await captureServerException(clerkId, e, { route: '/api/rewrite' })
     return apiError(e)
   }
 }
