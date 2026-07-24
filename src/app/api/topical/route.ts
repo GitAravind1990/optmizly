@@ -7,6 +7,35 @@ import { captureServerException } from '@/lib/posthog-server'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+// Common words that show up in almost every content-marketing slug and carry no
+// topical signal on their own — excluded so overlap only counts on words that
+// actually distinguish one pillar's topic from another's.
+const SLUG_STOPWORDS = new Set([
+  'how', 'to', 'for', 'the', 'and', 'of', 'in', 'on', 'is', 'a', 'an', 'what',
+  'are', 'with', 'your', 'you', 'best', 'guide', 'top', 'complete',
+])
+
+function slugWords(s: string): string[] {
+  return s.toLowerCase().split(/[-/]+/).filter(w => w.length > 2 && !SLUG_STOPWORDS.has(w))
+}
+
+// A pillar counts as already covered only if a real existing URL shares a
+// majority of its meaningful slug words — not just whether some substring of a
+// URL happens to contain the pillar's first slug word. A raw substring check
+// (the previous approach) false-positived constantly: a pillar slug starting
+// with "ai" matched any URL containing "email", "maintain", "domain",
+// "campaign" — ordinary words that happen to contain "ai", nothing to do with
+// AI as a topic.
+function pillarLikelyCovered(pillarSlug: string, urls: string[]): boolean {
+  const pillarWords = slugWords(pillarSlug)
+  if (pillarWords.length === 0) return false
+  return urls.some(u => {
+    const urlWords = new Set(slugWords(u))
+    const overlap = pillarWords.filter(w => urlWords.has(w)).length
+    return overlap / pillarWords.length >= 0.5
+  })
+}
+
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
@@ -96,7 +125,7 @@ Generate a complete topical authority map with 3 pillars × 3 clusters each, plu
     const pillar_pages = pillars.map(p => {
       const clusters = (p.clusters ?? []).slice(0, 3)
       totalTopics += 1 + clusters.length
-      const pcov = (urls as string[]).some(u => u.toLowerCase().includes(p.slug.split('-')[0]))
+      const pcov = pillarLikelyCovered(p.slug, urls as string[])
       if (pcov) coveredCount++
       clusters.forEach(c => { if (c.covered) coveredCount++ })
       const clusterScores = clusters.map(c => c.ai_cite_score).filter((s): s is number => typeof s === 'number')
