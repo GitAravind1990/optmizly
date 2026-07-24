@@ -3,70 +3,27 @@ import { requireAuth } from '@/lib/auth'
 import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
+import { getTopSerpResults } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+// Was previously an Apify Google Search Scraper call gated on APIFY_API_TOKEN —
+// that env var was never configured in production (confirmed via `vercel env ls`),
+// so this always silently returned [] and every "competitor" (including their
+// URLs) was 100% Claude-fabricated, with no indication to the user. Replaced with
+// the same proven, already-paid-for DataForSEO SERP endpoint every other real-data
+// tool in this codebase uses (Ranking Engine, Content Gap grounding, etc.).
 async function fetchRealSERP(
-  keyword: string, 
-  city?: string, 
+  keyword: string,
+  city?: string,
   countryCode: string = 'us'
-): Promise<Array<{url: string, title: string, snippet: string, position: number}>> {
-  const token = process.env.APIFY_API_TOKEN
-  if (!token) {
-    console.log('[SERP] No Apify token, skipping real SERP fetch')
-    return []
-  }
-
+): Promise<Array<{ url: string; domain: string; position: number }>> {
   const searchQuery = city ? `${keyword} ${city}` : keyword
-  console.log(`[SERP] Fetching real SERP for: "${searchQuery}" (country: ${countryCode})`)
-  
-  try {
-    const runResponse = await fetch(
-      `https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${token}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          queries: searchQuery,
-          maxPagesPerQuery: 1,
-          resultsPerPage: 10,
-          countryCode: countryCode,
-          languageCode: 'en',
-          mobileResults: false,
-          includeUnfilteredResults: false,
-          saveHtml: false,
-          saveHtmlToKeyValueStore: false,
-        }),
-      }
-    )
-
-    if (!runResponse.ok) {
-      const errorText = await runResponse.text()
-      console.error('[SERP] Apify fetch failed:', runResponse.status, errorText)
-      return []
-    }
-
-    const data = await runResponse.json()
-    console.log(`[SERP] Apify returned data for query`)
-    
-    const results = data[0]?.organicResults ?? []
-    console.log(`[SERP] Got ${results.length} organic results`)
-    
-    if (results.length === 0) {
-      console.log('[SERP] Full response:', JSON.stringify(data[0], null, 2).slice(0, 500))
-    }
-    
-    return results.slice(0, 10).map((r: any, i: number) => ({
-      url: r.url || '',
-      title: r.title || '',
-      snippet: r.description || '',
-      position: i + 1,
-    }))
-  } catch (e) {
-    console.error('[SERP] Fetch error:', e)
-    return []
-  }
+  const targetLocation = countryCode.toUpperCase()
+  const result = await getTopSerpResults(searchQuery, targetLocation, 'desktop', 10).catch(() => null)
+  if (!result || result.items.length === 0) return []
+  return result.items.map(i => ({ url: i.url, domain: i.domain, position: i.rank }))
 }
 
 export async function POST(req: NextRequest) {
@@ -80,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     const realSerpData = await fetchRealSERP(keyword, city, countryCode || 'us')
     const serpContext = realSerpData.length > 0 
-     ? `\n\nREAL GOOGLE SERP TOP 5 URLS (use these exactly):\n${realSerpData.slice(0, 5).map(r => `${r.position}. ${r.url} - ${r.title.slice(0, 80)}`).join('\n')}`
+     ? `\n\nREAL GOOGLE SERP TOP 5 URLS (use these exactly):\n${realSerpData.slice(0, 5).map(r => `${r.position}. ${r.domain} — ${r.url}`).join('\n')}`
       : '\n\nNo real SERP data available — use best estimates.'
 
     const ctx = `URL:${url} | Keyword:"${keyword}" | Position:#${position || '?'} | Biz:${biztype || 'business'}${city ? ` | City:${city}` : ''}${serpContext}`

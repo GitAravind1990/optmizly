@@ -46,6 +46,7 @@ export function SerpClient() {
     action_plan?: { phase1?: Array<{ task: string; why: string; effort: string; impact: string; priority: string }>; phase2?: Array<{ task: string; why: string; effort: string; impact: string; priority: string }>; phase3?: Array<{ task: string; why: string; effort: string; impact: string; priority: string }> }
     rank_projection?: Array<{ month: string; position: number }>
     structural_recommendation?: { title: string; detail: string; tradeoffs: string }
+    _meta?: { has_real_data?: boolean }
   } | null
 
   return (
@@ -105,7 +106,14 @@ export function SerpClient() {
             {/* Competitors */}
             {r.competitors?.length && (
               <Card>
-                <h2 className="text-sm font-black mb-3">Top {r.competitors.length} Competitor Breakdown</h2>
+                <h2 className="text-sm font-black mb-3">
+                  Top {r.competitors.length} Competitor Breakdown
+                  {r._meta?.has_real_data ? (
+                    <span className="ml-2 text-[9px] font-bold uppercase text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full align-middle">Live SERP Data</span>
+                  ) : (
+                    <span className="ml-2 text-[9px] font-bold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full align-middle">Estimated — competitors not confirmed</span>
+                  )}
+                </h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead><tr className="border-b border-slate-100">
@@ -151,7 +159,10 @@ export function SerpClient() {
             {/* Gap scorecard */}
             {r.gap_scores && (
               <Card>
-                <h2 className="text-sm font-black mb-3">Gap Scorecard</h2>
+                <h2 className="text-sm font-black mb-3">
+                  Gap Scorecard
+                  <span className="ml-2 text-[9px] font-bold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full align-middle">AI Estimated</span>
+                </h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead><tr className="border-b border-slate-100">
