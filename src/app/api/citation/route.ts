@@ -12,7 +12,7 @@ export const maxDuration = 60
 
 const SYSTEM = `You are an AI citation strategy expert. Analyse the content and return ONLY valid JSON:
 {"summary":"","plan":[{"title":"","action":"","why":"","impact":"high|medium|low","effort":"low|medium|high"}]}
-Rules: 8 specific citation-building actions. All strings concise.`
+Rules: 8 specific citation-building actions. All strings concise. Always return this exact JSON schema, never plain text — if real competitor signals are provided but turn out thin or irrelevant (e.g. navigation/boilerplate from a video platform instead of substantive content), base your plan on general citation best practices for the topic instead, but still return valid JSON matching the schema.`
 
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null

@@ -15,7 +15,7 @@ export const maxDuration = 60
 
 const SYSTEM = `You are a content gap analyst. Return ONLY valid JSON:
 {"summary":"","gaps":[{"title":"","why":"","opportunity":"high|medium|low","suggested_section":""}]}
-Rules: 8 specific content gaps vs what top-ranking competitors cover. All strings concise.`
+Rules: 8 specific content gaps vs what top-ranking competitors cover. All strings concise. Always return this exact JSON schema, never plain text — if real competitor excerpts are provided but turn out thin, irrelevant, or non-substantive (e.g. navigation/boilerplate from a video platform), base your gaps on general best practices for the topic instead, but still return valid JSON matching the schema.`
 
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
