@@ -382,7 +382,11 @@ function ResultsDisplay({ result, loadingFixes, onBack }: { result: AuditResult;
       {/* Industry Benchmark */}
       {result.industryData && (
         <div className="bg-white border border-slate-200 rounded-xl p-6">
-          <h2 className="text-sm font-bold text-slate-700 mb-4">Industry Benchmark</h2>
+          <h2 className="text-sm font-bold text-slate-700 mb-1">Industry Benchmark</h2>
+          <p className="text-[11px] text-slate-400 mb-4">
+            Your score is real, measured PageSpeed data. Industry Average and Top 10% are typical reference
+            figures for this category, not a live measurement across real sites.
+          </p>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <div className={`text-3xl font-black ${scoreColor(m.overallScore)}`}>{m.overallScore}</div>
@@ -390,11 +394,11 @@ function ResultsDisplay({ result, loadingFixes, onBack }: { result: AuditResult;
             </div>
             <div>
               <div className="text-3xl font-black text-blue-600">{result.industryData.avg}</div>
-              <div className="text-xs text-slate-500 mt-1">Industry Average</div>
+              <div className="text-xs text-slate-500 mt-1">Industry Average <span className="text-slate-400">(typical)</span></div>
             </div>
             <div>
               <div className="text-3xl font-black text-green-600">{result.industryData.topPercent}</div>
-              <div className="text-xs text-slate-500 mt-1">Top 10%</div>
+              <div className="text-xs text-slate-500 mt-1">Top 10% <span className="text-slate-400">(typical)</span></div>
             </div>
           </div>
         </div>
