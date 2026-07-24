@@ -293,7 +293,9 @@ function IdeaModal({ idea, onClose, onUpdate }: {
               )}
 
               <div>
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Opportunity Score</div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Opportunity Score <span className="text-slate-400 font-normal normal-case">(AI-scored, not a measured metric)</span>
+                </div>
                 {opportunityBar(idea.opportunityScore)}
               </div>
 

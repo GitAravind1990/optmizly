@@ -1298,6 +1298,7 @@ type ContentIdea = {
   searchVolume: number
   difficulty: number
   cpc: number | null
+  metricsReal: boolean
   contentType: string
   estimatedLength: number
   sections: string
@@ -1335,7 +1336,8 @@ export function exportContentIdeasCSV(data: ContentIdeasData) {
   rows.push([''])
 
   rows.push(['CONTENT IDEAS'])
-  rows.push(['Title', 'Primary Keyword', 'Type', 'Status', 'Search Volume', 'Difficulty', 'Opportunity', 'Est. Length', 'E-E-A-T', 'Competitors', 'Related Keywords', 'Notes'])
+  rows.push(['Note: Search Volume/Difficulty are real DataForSEO data where marked, else AI-estimated. Opportunity, E-E-A-T, and Competitors are always AI-estimated, not measured.'])
+  rows.push(['Title', 'Primary Keyword', 'Type', 'Status', 'Search Volume', 'Data Source', 'Difficulty', 'Opportunity (AI Est.)', 'Est. Length', 'E-E-A-T (AI Est.)', 'Competitors (AI Est.)', 'Related Keywords', 'Notes'])
 
   data.ideas.forEach(idea => {
     rows.push([
@@ -1344,6 +1346,7 @@ export function exportContentIdeasCSV(data: ContentIdeasData) {
       idea.contentType,
       idea.status,
       String(idea.searchVolume),
+      idea.metricsReal ? 'Real (DataForSEO)' : 'AI Estimated',
       String(idea.difficulty),
       String(idea.opportunityScore),
       String(idea.estimatedLength) + ' words',
@@ -1415,7 +1418,7 @@ export function exportContentIdeasPDF(data: ContentIdeasData) {
       <td>${idea.primaryKeyword}</td>
       <td style="font-size:10px">${idea.contentType}</td>
       <td style="font-size:10px"><span class="badge ${idea.status === 'published' ? 'low' : idea.status === 'writing' ? 'medium' : idea.status === 'idea' ? 'high' : 'medium'}">${idea.status}</span></td>
-      <td style="text-align:right;font-size:10px">${idea.searchVolume.toLocaleString()}</td>
+      <td style="text-align:right;font-size:10px">${idea.searchVolume.toLocaleString()}${idea.metricsReal ? '' : ' <span style="color:#d97706">(est.)</span>'}</td>
       <td style="text-align:center;font-size:10px;font-weight:600;color:${idea.difficulty <= 30 ? '#16a34a' : idea.difficulty <= 60 ? '#d97706' : '#dc2626'}">${idea.difficulty}</td>
       <td style="text-align:center;font-weight:600;color:${idea.opportunityScore >= 70 ? '#16a34a' : idea.opportunityScore >= 50 ? '#d97706' : '#6b7280'}">${idea.opportunityScore}</td>
     </tr>`).join('')
@@ -1448,7 +1451,8 @@ export function exportContentIdeasPDF(data: ContentIdeasData) {
       </tr>`).join('')}</tbody></table>
 
     <h2>All Ideas (${data.ideas.length})</h2>
-    <table><thead><tr><th>Title</th><th>Keyword</th><th>Type</th><th style="width:60px">Status</th><th style="width:70px">Volume</th><th style="width:50px">KD</th><th style="width:60px">Opp.</th></tr></thead><tbody>${ideaRows}</tbody></table>
+    <p class="meta" style="margin:-8px 0 8px">Volume is real DataForSEO data unless marked (est.). Opportunity Score is always AI-estimated, not measured.</p>
+    <table><thead><tr><th>Title</th><th>Keyword</th><th>Type</th><th style="width:60px">Status</th><th style="width:70px">Volume</th><th style="width:50px">KD</th><th style="width:60px">Opp. (AI)</th></tr></thead><tbody>${ideaRows}</tbody></table>
 
     <h2>Content Type Breakdown</h2>
     <table><thead><tr><th>Type</th><th style="width:50px;text-align:right">Count</th></tr></thead><tbody>${typeRows}</tbody></table>

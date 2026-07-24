@@ -106,18 +106,23 @@ export function SerpClient() {
             {/* Competitors */}
             {r.competitors?.length && (
               <Card>
-                <h2 className="text-sm font-black mb-3">
+                <h2 className="text-sm font-black mb-1">
                   Top {r.competitors.length} Competitor Breakdown
                   {r._meta?.has_real_data ? (
-                    <span className="ml-2 text-[9px] font-bold uppercase text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full align-middle">Live SERP Data</span>
+                    <span className="ml-2 text-[9px] font-bold uppercase text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full align-middle">Live Competitor URLs</span>
                   ) : (
                     <span className="ml-2 text-[9px] font-bold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full align-middle">Estimated — competitors not confirmed</span>
                   )}
                 </h2>
+                <p className="text-[11px] text-slate-400 mb-3">
+                  {r._meta?.has_real_data
+                    ? 'Rank and URL are from a real Google SERP lookup. Authority, Page Type, Content, and E-E-A-T are AI estimates, not measured.'
+                    : 'No real SERP data was available for this query — every column below, including competitor identity, is an AI estimate.'}
+                </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead><tr className="border-b border-slate-100">
-                      {['#','URL','Authority','Page Type','Content','E-E-A-T'].map(h => (
+                      {['#','URL','Authority (Est.)','Page Type (Est.)','Content (Est.)','E-E-A-T (Est.)'].map(h => (
                         <th key={h} className="py-2 px-2 text-left font-bold text-slate-400">{h}</th>
                       ))}
                     </tr></thead>
