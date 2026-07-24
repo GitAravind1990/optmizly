@@ -361,6 +361,9 @@ model ContentIdea {
   searchVolume    Int
   difficulty      Int
   cpc             Float?
+  // True when searchVolume/difficulty/cpc came from a real DataForSEO lookup for
+  // primaryKeyword rather than Claude's own invented "realistic" number.
+  metricsReal     Boolean @default(false)
 
   contentType     String
   estimatedLength Int

@@ -6,6 +6,7 @@ import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError, getOrCreateUser } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
+import { getKeywordMetrics } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -95,6 +96,18 @@ Make searchVolume realistic (100-50000), difficulty 10-90, opportunityScore 30-9
     const parsed = extractJSON<RawIdea[]>(raw)
     const ideas = Array.isArray(parsed) ? parsed : []
 
+    // Real search volume/difficulty/CPC always wins over Claude's own invented
+    // "realistic" numbers (the prompt above literally instructs it to make up a
+    // plausible-looking figure) — one batched DataForSEO call covers every idea's
+    // primary keyword. Ideas whose keyword has no real data keep Claude's estimate,
+    // flagged via metricsReal so the UI can show which numbers are real.
+    const primaryKeywords = [...new Set(
+      ideas.map(i => i.primaryKeyword?.trim()).filter((k): k is string => !!k)
+    )]
+    const realMetrics = primaryKeywords.length > 0
+      ? await getKeywordMetrics(primaryKeywords, 'US').catch(() => new Map())
+      : new Map()
+
     // Resolve or create project
     let resolvedProjectId = projectId
     if (!resolvedProjectId) {
@@ -112,18 +125,21 @@ Make searchVolume realistic (100-50000), difficulty 10-90, opportunityScore 30-9
     }
 
     const saved = await Promise.all(
-      ideas.map((idea: RawIdea) =>
-        prisma.contentIdea.create({
+      ideas.map((idea: RawIdea) => {
+        const primaryKeyword = idea.primaryKeyword ?? keywordsStr.split(',')[0].trim()
+        const real = realMetrics.get(primaryKeyword)
+        return prisma.contentIdea.create({
           data: {
             projectId: resolvedProjectId,
             title: idea.title ?? 'Untitled',
             slug: toSlug(idea.title ?? 'untitled'),
             description: idea.description ?? null,
-            primaryKeyword: idea.primaryKeyword ?? keywordsStr.split(',')[0].trim(),
+            primaryKeyword,
             relatedKeywords: JSON.stringify(idea.relatedKeywords ?? []),
-            searchVolume: idea.searchVolume ?? 0,
-            difficulty: idea.difficulty ?? 50,
-            cpc: idea.cpc ?? null,
+            searchVolume: real?.searchVolume ?? idea.searchVolume ?? 0,
+            difficulty: real?.difficulty ?? idea.difficulty ?? 50,
+            cpc: real?.cpc ?? idea.cpc ?? null,
+            metricsReal: real?.searchVolume != null,
             contentType: idea.contentType ?? 'article',
             estimatedLength: idea.estimatedLength ?? 1500,
             sections: JSON.stringify(idea.sections ?? []),
@@ -135,7 +151,7 @@ Make searchVolume realistic (100-50000), difficulty 10-90, opportunityScore 30-9
             opportunityScore: idea.opportunityScore ?? 50,
           },
         })
-      )
+      })
     )
 
     return apiSuccess({ success: true, count: saved.length, projectId: resolvedProjectId, ideas: saved }, 201)

@@ -15,6 +15,7 @@ type Idea = {
   searchVolume: number
   difficulty: number
   cpc: number | null
+  metricsReal: boolean
   contentType: string
   estimatedLength: number
   sections: string
@@ -285,6 +286,11 @@ function IdeaModal({ idea, onClose, onUpdate }: {
                   </div>
                 ))}
               </div>
+              {idea.metricsReal ? (
+                <span className="text-[9px] font-bold uppercase text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">Live DataForSEO Data</span>
+              ) : (
+                <span className="text-[9px] font-bold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full">AI Estimated — no real data for this keyword</span>
+              )}
 
               <div>
                 <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Opportunity Score</div>
@@ -640,7 +646,7 @@ export default function ContentIdeasPage() {
                       <h3 className="text-sm font-bold text-slate-900 leading-snug mb-1">{idea.title}</h3>
                       <div className="flex items-center gap-4 text-xs text-slate-500">
                         <span className="font-medium text-slate-700">{idea.primaryKeyword}</span>
-                        <span>{idea.searchVolume.toLocaleString()} vol</span>
+                        <span>{idea.searchVolume.toLocaleString()} vol{!idea.metricsReal && <span className="text-amber-500"> (est.)</span>}</span>
                         <span className={`font-semibold ${difficultyColor(idea.difficulty)}`}>KD {idea.difficulty}</span>
                         <span>{idea.estimatedLength.toLocaleString()} words</span>
                         <span className="text-slate-400">{idea.project.industry}</span>
