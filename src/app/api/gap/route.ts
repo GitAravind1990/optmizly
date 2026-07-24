@@ -8,10 +8,12 @@ import type { SerpResult } from '@/lib/dataforseo'
 import type { CompetitorPageStats } from '@/lib/competitor-crawl'
 
 export const runtime = 'nodejs'
-// Was previously unset (pure Claude call) — a keyword-grounded run also fires a
-// real SERP lookup + up to 5-page competitor crawl before the Claude call, so give
-// it the same explicit headroom used elsewhere for real-data-backed routes.
-export const maxDuration = 60
+// Was previously unset (pure Claude call). A keyword-grounded run fires a real
+// SERP lookup + up to 5-page competitor crawl before the Claude call, and on a
+// parse failure retries with a second Claude call — confirmed live that crawl +
+// 2 sequential Claude calls can exceed 60s (a real "Task timed out" was hit),
+// so this needs the same 90s headroom as Local SEO's similarly multi-call route.
+export const maxDuration = 90
 
 const SYSTEM = `You are a content gap analyst. Return ONLY valid JSON:
 {"summary":"","gaps":[{"title":"","why":"","opportunity":"high|medium|low","suggested_section":""}]}

@@ -6,9 +6,11 @@ import { captureServerException } from '@/lib/posthog-server'
 import { fetchKeywordGrounding } from '@/lib/content-grounding'
 
 export const runtime = 'nodejs'
-// Was previously unset (pure Claude call) — a keyword-grounded run also fires a
-// real SERP lookup + competitor crawl before the Claude call.
-export const maxDuration = 60
+// Was previously unset (pure Claude call). A keyword-grounded run fires a real SERP
+// lookup + competitor crawl before the Claude call, and on a parse failure retries
+// with a second Claude call — same 90s headroom as /api/gap, confirmed live that
+// crawl + 2 sequential Claude calls can exceed 60s.
+export const maxDuration = 90
 
 const SYSTEM = `You are an AI citation strategy expert. Analyse the content and return ONLY valid JSON:
 {"summary":"","plan":[{"title":"","action":"","why":"","impact":"high|medium|low","effort":"low|medium|high"}]}

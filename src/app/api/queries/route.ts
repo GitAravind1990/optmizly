@@ -6,9 +6,11 @@ import { captureServerException } from '@/lib/posthog-server'
 import { fetchKeywordGrounding } from '@/lib/content-grounding'
 
 export const runtime = 'nodejs'
-// Was previously unset (pure Claude call) — a keyword-grounded run also fires real
-// DataForSEO lookups before the Claude call.
-export const maxDuration = 60
+// Was previously unset (pure Claude call). A keyword-grounded run fires real
+// DataForSEO lookups before the Claude call, and on a parse failure retries with a
+// second Claude call — same 90s headroom as /api/gap for consistency, though this
+// route doesn't crawl so is at lower risk of hitting it in practice.
+export const maxDuration = 90
 
 const SYSTEM = `You are an AI search query strategist. Return ONLY valid JSON:
 {"summary":"","queries":[{"query":"","intent":"informational|commercial|navigational","coverage":"strong|partial|weak","why":"","fix":""}]}
