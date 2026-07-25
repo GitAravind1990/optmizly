@@ -536,7 +536,13 @@ function GeogridContent() {
                         className={RV_AUTOCOMPLETE_WRAP}
                         onSelect={(id, name) => {
                           setPlaceId(id)
-                          if (name && !rvBiz) setRvBiz(name)
+                          // Functional update, not a closed-over rvBiz read — this
+                          // callback is captured once by PlaceIdAutocomplete's effect
+                          // (which only re-runs on placesLib changes) and would
+                          // otherwise always see rvBiz as it was at that early render
+                          // (typically empty), silently overwriting anything the user
+                          // had since typed into the Business Name field.
+                          if (name) setRvBiz(prev => prev || name)
                         }}
                       />
                       <p className="text-[11px] text-slate-400 mt-1">
