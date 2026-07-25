@@ -1,21 +1,12 @@
 import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, extractJSON, setTrackingUser } from '@/lib/anthropic'
+import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-async function getUser() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) throw new AuthError(401, 'Not authenticated')
-  const user = await getOrCreateUser(clerkId)
-  setTrackingUser(user.id)
-  return user
-}
 
 // ─── Local analysis helpers (no AI needed) ────────────────────────────────────
 
@@ -220,7 +211,13 @@ interface AIFix {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    const user = await getUser()
+    // Was getUser() — no plan-tier check at all (not even PLAN_TOOLS membership)
+    // and no quota tracking, so any authenticated user on any plan could call this
+    // an unlimited number of times, each firing a real Claude call. 'onpage' is
+    // already in every plan's PLAN_TOOLS list including FREE, so this doesn't
+    // change who *can* use it — it just makes the existing per-plan monthly cap
+    // actually apply here like it does everywhere else.
+    const user = await requireAuth('onpage')
     clerkId = user.clerkId
     const { content, targetKeyword, pageUrl, pageTitle, previousAnalysisId } = await req.json()
 
@@ -313,13 +310,13 @@ Rules:
     // Fetch previous score if re-analyzing
     let previousScore: number | null = null
     if (previousAnalysisId) {
-      const prev = await prisma.onPageAnalysis.findFirst({ where: { id: previousAnalysisId, userId: user.id } })
+      const prev = await prisma.onPageAnalysis.findFirst({ where: { id: previousAnalysisId, userId: user.userId } })
       previousScore = prev?.overallScore ?? null
     }
 
     const analysis = await prisma.onPageAnalysis.create({
       data: {
-        userId: user.id,
+        userId: user.userId,
         content,
         targetKeyword,
         pageUrl: pageUrl ?? null,

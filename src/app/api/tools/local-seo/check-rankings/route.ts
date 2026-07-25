@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getLocalPackRank, isDataForSEOConfigured, resolveBusinessCoordinates, settledOrNull } from '@/lib/dataforseo'
 import { rankNDaysAgo } from '@/lib/rank-history'
@@ -10,18 +9,14 @@ import { rankNDaysAgo } from '@/lib/rank-history'
 export const runtime = 'nodejs'
 export const maxDuration = 90
 
-async function getAgencyUser() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) throw new AuthError(401, 'Not authenticated')
-  const user = await getOrCreateUser(clerkId)
-  if (user.plan !== 'AGENCY') throw new AuthError(403, 'AGENCY plan required')
-  return user
-}
-
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    const user = await getAgencyUser()
+    // Was getAgencyUser() (tier check only, no quota) — this fires one real
+    // DataForSEO local-pack call per tracked keyword, every time it's run, with no
+    // limit on how often a user can re-check the same location. Belongs behind
+    // monthly-quota enforcement like every other billable analysis.
+    const user = await requireAuth('local-seo')
     clerkId = user.clerkId
     const { locationId } = await req.json()
     if (!locationId) throw new AuthError(400, 'locationId required')
@@ -34,7 +29,7 @@ export async function POST(req: NextRequest) {
       where: { id: locationId },
       include: { account: true, keywords: true },
     })
-    if (!location || location.account.userId !== user.id) throw new AuthError(404, 'Location not found')
+    if (!location || location.account.userId !== user.userId) throw new AuthError(404, 'Location not found')
 
     // Real local-pack rank checks need a lat/lng centroid, but the location only has a
     // street address on file — resolve its real Google Business Profile coordinates

@@ -18,7 +18,7 @@ export const TRIAL_LIMITS: Record<Plan, number> = {
 export const PLAN_TOOLS: Record<Plan, string[]> = {
   FREE: ['analyse', 'onpage'],
   PRO: ['analyse', 'onpage', 'eeat', 'citation', 'gap', 'queries', 'rewrite', 'content-ideas', 'content-optimizer', 'competitor-spy', 'rank-tracker', 'ranking-engine', 'backlinks'],
-  AGENCY: ['analyse', 'onpage', 'eeat', 'citation', 'gap', 'queries', 'rewrite', 'serp', 'topical', 'local', 'tracker', 'content-ideas', 'content-optimizer', 'competitor-spy', 'rank-tracker', 'local-seo', 'seo-audit', 'geogrid', 'review-velocity', 'ranking-engine', 'backlinks', 'performance-fixer', 'search-console'],
+  AGENCY: ['analyse', 'onpage', 'eeat', 'citation', 'gap', 'queries', 'rewrite', 'serp', 'topical', 'local', 'tracker', 'content-ideas', 'content-optimizer', 'competitor-spy', 'rank-tracker', 'local-seo', 'seo-audit', 'geogrid', 'review-velocity', 'ranking-engine', 'backlinks', 'performance-fixer', 'search-console', 'client-reports'],
 }
 
 export function canUseTool(plan: Plan, tool: string): boolean {

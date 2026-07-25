@@ -1,22 +1,13 @@
 import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getOrganicRank, isDataForSEOConfigured, settledOrNull } from '@/lib/dataforseo'
 import { rankNDaysAgo } from '@/lib/rank-history'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-async function getProUser() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) throw new AuthError(401, 'Not authenticated')
-  const user = await getOrCreateUser(clerkId)
-  if (user.plan === 'FREE') throw new AuthError(403, 'PRO or AGENCY plan required')
-  return user
-}
 
 function detectAlerts(
   keyword: string,
@@ -52,7 +43,10 @@ function detectAlerts(
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   let clerkId: string | null = null
   try {
-    const user = await getProUser()
+    // Was getProUser() (tier check only, no quota) — this fires one real DataForSEO
+    // organic-rank lookup per tracked keyword, every time it's run, with no limit
+    // on how often a user can re-check the same project.
+    const user = await requireAuth('rank-tracker')
     clerkId = user.clerkId
     const { projectId } = await params
 
@@ -64,7 +58,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
       where: { id: projectId },
       include: { keywords: true },
     })
-    if (!project || project.userId !== user.id) throw new AuthError(404, 'Project not found')
+    if (!project || project.userId !== user.userId) throw new AuthError(404, 'Project not found')
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)

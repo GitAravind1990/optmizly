@@ -1,24 +1,13 @@
 import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, extractJSON, setTrackingUser } from '@/lib/anthropic'
+import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
-import { Plan } from '@prisma/client'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getKeywordMetrics } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-async function getProUser() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) throw new AuthError(401, 'Not authenticated')
-  const user = await getOrCreateUser(clerkId)
-  if (user.plan === Plan.FREE) throw new AuthError(403, 'PRO or AGENCY plan required')
-  setTrackingUser(user.id)
-  return user
-}
 
 function toSlug(title: string): string {
   return title
@@ -51,7 +40,9 @@ interface RawIdea {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    const user = await getProUser()
+    // Was getProUser() (tier check only, no quota) — this fires Claude plus a real
+    // DataForSEO keyword-metrics batch call per request.
+    const user = await requireAuth('content-ideas')
     clerkId = user.clerkId
     const { seedKeywords, industry, targetAudience, numberOfIdeas = 10, projectId } = await req.json()
 
@@ -108,12 +99,18 @@ Make searchVolume realistic (100-50000), difficulty 10-90, opportunityScore 30-9
       ? await getKeywordMetrics(primaryKeywords, 'US').catch(() => new Map())
       : new Map()
 
-    // Resolve or create project
+    // Resolve or create project. A client-supplied projectId was previously used
+    // directly with no ownership check at all — any user could inject generated
+    // ideas into another tenant's project by passing its id. Verify first.
     let resolvedProjectId = projectId
+    if (resolvedProjectId) {
+      const existing = await prisma.contentIdeaProject.findUnique({ where: { id: resolvedProjectId } })
+      if (!existing || existing.userId !== user.userId) throw new AuthError(404, 'Project not found')
+    }
     if (!resolvedProjectId) {
       const project = await prisma.contentIdeaProject.create({
         data: {
-          userId: user.id,
+          userId: user.userId,
           name: `${industry} (${new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })})`,
           industry,
           targetAudience,

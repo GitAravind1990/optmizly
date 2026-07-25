@@ -1,25 +1,14 @@
 import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, setTrackingUser } from '@/lib/anthropic'
+import { callClaude } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
-import { Plan } from '@prisma/client'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { getBacklinksSummary, getOrganicRank, getTrafficEstimate, isDataForSEOConfigured, settledOrNull } from '@/lib/dataforseo'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-async function getAgencyUser() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) throw new AuthError(401, 'Not authenticated')
-  const user = await getOrCreateUser(clerkId)
-  if (user.plan !== Plan.AGENCY) throw new AuthError(403, 'Agency plan required')
-  setTrackingUser(user.id)
-  return user
-}
 
 // aiSummary gets interpolated straight into reportHtml, which the public report
 // page renders via dangerouslySetInnerHTML — escape first so the model's raw text
@@ -190,7 +179,11 @@ function generateReportHtml(data: {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    const user = await getAgencyUser()
+    // Was getAgencyUser() (tier check only, no quota) — this fires Claude plus
+    // real OpenPageRank/DataForSEO lookups per request. 'client-reports' was never
+    // registered in PLAN_TOOLS, so this route had no quota path to plug into until
+    // now (added to the AGENCY tool list alongside this fix).
+    const user = await requireAuth('client-reports')
     clerkId = user.clerkId
     const { clientId, month, year } = await req.json()
 
@@ -201,7 +194,7 @@ export async function POST(req: NextRequest) {
     }
 
     const client = await prisma.client.findUnique({ where: { id: clientId } })
-    if (!client || client.agencyId !== user.id) throw new AuthError(404, 'Client not found')
+    if (!client || client.agencyId !== user.userId) throw new AuthError(404, 'Client not found')
 
     const keywords: string[] = JSON.parse(client.trackKeywords || '[]')
     const domain = cleanDomain(client.website)

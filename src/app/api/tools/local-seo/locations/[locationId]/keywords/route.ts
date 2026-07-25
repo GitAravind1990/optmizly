@@ -29,7 +29,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ loc
     })
     if (!location || location.account.userId !== user.id) throw new AuthError(404, 'Location not found')
 
-    const kwList: string[] = (keywords ?? []).map((k: string) => k.trim()).filter(Boolean)
+    // Capped — these keywords feed check-rankings' unbatched per-keyword DataForSEO
+    // fan-out on every future rank check, so an oversized list added once here
+    // compounds into an oversized concurrent API burst on every subsequent check.
+    const kwList: string[] = (keywords ?? []).map((k: string) => k.trim()).filter(Boolean).slice(0, 50)
     if (!kwList.length) throw new AuthError(400, 'keywords required')
 
     const existing = await prisma.localKeywordRank.findMany({

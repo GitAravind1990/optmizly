@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getKeywordMetrics } from '@/lib/dataforseo'
 
@@ -63,7 +63,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    const user = await getProUser()
+    // Was getProUser() (tier check only, no quota) — this fires a real DataForSEO
+    // keyword-metrics batch call (up to 100 keywords) per request.
+    const user = await requireAuth('rank-tracker')
     clerkId = user.clerkId
     const { name, domain, targetLocation, deviceType, keywords } = await req.json()
 
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     const project = await prisma.rankTrackingProject.create({
       data: {
-        userId: user.id,
+        userId: user.userId,
         name: name.trim(),
         domain: cleanDomain,
         targetLocation: resolvedLocation,

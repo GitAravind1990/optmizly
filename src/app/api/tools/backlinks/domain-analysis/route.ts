@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { getBacklinksSummary } from '@/lib/dataforseo'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
 import { captureServerException } from '@/lib/posthog-server'
 
@@ -59,7 +59,10 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    const user = await getProUser()
+    // Was getProUser() (tier check only, no quota) — real OpenPageRank + DataForSEO
+    // calls per request belong behind the same monthly-quota enforcement every other
+    // billable analysis uses.
+    const user = await requireAuth('backlinks')
     clerkId = user.clerkId
     const { domain: rawDomain } = await req.json()
     if (!rawDomain?.trim()) throw new AuthError(400, 'Domain required')
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
     // Math.round defensively rather than trusting the upstream type annotation.
     const analysis = await prisma.backlinkDomainAnalysis.create({
       data: {
-        userId: user.id,
+        userId: user.userId,
         domain,
         oprScore:    opr.page_rank_decimal ?? 0,
         domainRank:  parseInt(opr.rank ?? '0', 10) || 0,

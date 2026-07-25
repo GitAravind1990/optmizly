@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, setTrackingUser } from '@/lib/anthropic'
+import { callClaude } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
@@ -14,24 +14,28 @@ async function getAgencyUser() {
   if (!clerkId) throw new AuthError(401, 'Not authenticated')
   const user = await getOrCreateUser(clerkId)
   if (user.plan !== 'AGENCY') throw new AuthError(403, 'AGENCY plan required')
-  setTrackingUser(user.id)
-  return user
+  return { userId: user.id, clerkId, email: user.email, plan: user.plan }
 }
 
 // Generate AI response for a review
 export async function POST(req: NextRequest, { params }: { params: Promise<{ locationId: string }> }) {
   let clerkId: string | null = null
   try {
-    const user = await getAgencyUser()
-    clerkId = user.clerkId
     const { locationId } = await params
     const { reviewId, action } = await req.json()
+
+    // generate-response fires a real Claude call, so it's billable and gated by
+    // requireAuth's quota; flag is a cheap DB-only mutation and shouldn't cost a
+    // user one of their limited monthly analyses — same AGENCY tier check either
+    // way, via getAgencyUser's own PLAN_TOOLS-equivalent gate.
+    const user = action === 'generate-response' ? await requireAuth('local-seo') : await getAgencyUser()
+    clerkId = user.clerkId
 
     const location = await prisma.localSEOLocation.findUnique({
       where: { id: locationId },
       include: { account: true },
     })
-    if (!location || location.account.userId !== user.id) throw new AuthError(404, 'Location not found')
+    if (!location || location.account.userId !== user.userId) throw new AuthError(404, 'Location not found')
 
     if (action === 'generate-response') {
       const review = await prisma.localReview.findUnique({ where: { id: reviewId } })

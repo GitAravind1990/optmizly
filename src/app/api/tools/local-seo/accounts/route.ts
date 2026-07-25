@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { resolveBusinessCoordinates, settledOrNull } from '@/lib/dataforseo'
 
@@ -45,7 +45,10 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    const user = await getAgencyUser()
+    // Was getAgencyUser() (tier check only, no quota) — this resolves real
+    // DataForSEO business-coordinate lookups, one per location, so it belongs
+    // behind monthly-quota enforcement like every other billable analysis.
+    const user = await requireAuth('local-seo')
     clerkId = user.clerkId
     const { name, accountType, locations } = await req.json()
 
@@ -54,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     const account = await prisma.localSEOAccount.create({
       data: {
-        userId: user.id,
+        userId: user.userId,
         name: name.trim(),
         accountType: accountType ?? 'multi-location',
       },

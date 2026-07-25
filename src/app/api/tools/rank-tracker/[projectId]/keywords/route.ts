@@ -1,33 +1,30 @@
 import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getKeywordMetrics } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 
-async function getProUser() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) throw new AuthError(401, 'Not authenticated')
-  const user = await getOrCreateUser(clerkId)
-  if (user.plan === 'FREE') throw new AuthError(403, 'PRO or AGENCY plan required')
-  return user
-}
-
 export async function POST(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   let clerkId: string | null = null
   try {
-    const user = await getProUser()
+    // Was getProUser() (tier check only, no quota) — this fires a real DataForSEO
+    // keyword-metrics batch call per request.
+    const user = await requireAuth('rank-tracker')
     clerkId = user.clerkId
     const { projectId } = await params
     const { keywords } = await req.json()
 
     const project = await prisma.rankTrackingProject.findUnique({ where: { id: projectId } })
-    if (!project || project.userId !== user.id) throw new AuthError(404, 'Project not found')
+    if (!project || project.userId !== user.userId) throw new AuthError(404, 'Project not found')
 
-    const kwList: string[] = (keywords ?? []).map((k: string) => k.trim()).filter(Boolean)
+    // Was unbounded — the sibling "create project" endpoint clamps to 100
+    // (rank-tracker/route.ts), but this "add more keywords to an existing
+    // project" endpoint had no cap, allowing an oversized paid DataForSEO batch
+    // call and unbounded bulk insert via a direct API call bypassing the UI.
+    const kwList: string[] = (keywords ?? []).map((k: string) => k.trim()).filter(Boolean).slice(0, 100)
     if (!kwList.length) throw new AuthError(400, 'keywords array required')
 
     const existing = await prisma.rankTrackingKeyword.findMany({

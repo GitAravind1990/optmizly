@@ -1,10 +1,8 @@
 ﻿import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, extractJSON, setTrackingUser } from '@/lib/anthropic'
+import { callClaude, extractJSON } from '@/lib/anthropic'
 import { apiError, apiSuccess } from '@/lib/api'
-import { Plan } from '@prisma/client'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { getTrafficEstimate, getBacklinksSummary, getRankedKeywords, getReferringDomains, getTopPagesByTraffic, getDomainIntersectionGaps, settledOrNull } from '@/lib/dataforseo'
@@ -12,15 +10,6 @@ import { parseDataQuality } from '@/lib/competitor-spy-quality'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-async function getProUser() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) throw new AuthError(401, 'Not authenticated')
-  const user = await getOrCreateUser(clerkId)
-  if (user.plan === Plan.FREE) throw new AuthError(403, 'PRO or AGENCY plan required')
-  setTrackingUser(user.id)
-  return user
-}
 
 function strHash(s: string): number {
   let h = 2166136261
@@ -143,7 +132,11 @@ interface AIInsights {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    const user = await getProUser()
+    // Was getProUser() (tier check only, no quota) — this fires Claude plus 5
+    // real DataForSEO/OpenPageRank lookups per request, easily the most expensive
+    // single call in the app, so it belongs behind monthly-quota enforcement like
+    // every other billable analysis.
+    const user = await requireAuth('competitor-spy')
     clerkId = user.clerkId
     const { domainUrl, userDomain: userDomainRaw } = await req.json()
     if (!domainUrl) throw new AuthError(400, 'domainUrl is required')
@@ -183,7 +176,7 @@ export async function POST(req: NextRequest) {
       userDomain ? getDomainIntersectionGaps(userDomain, domainName, 10) : Promise.resolve(null),
       // For the backlinksNew delta below — independent of the DataForSEO calls, so it
       // rides in the same batch rather than adding a sequential round trip.
-      prisma.competitorAnalysis.findFirst({ where: { userId: user.id, domainName }, orderBy: { createdAt: 'desc' } }),
+      prisma.competitorAnalysis.findFirst({ where: { userId: user.userId, domainName }, orderBy: { createdAt: 'desc' } }),
     ])
 
     // OpenPageRank only scores at domain granularity (0-10), so both Domain and Page
@@ -328,7 +321,7 @@ Rules: base "missingEntities" on topics implied by the competitor's top keywords
 
     const analysis = await prisma.competitorAnalysis.create({
       data: {
-        userId: user.id,
+        userId: user.userId,
         domainUrl: domainName,
         domainName,
         userDomain: userDomain ?? null,
