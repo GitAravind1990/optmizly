@@ -753,7 +753,7 @@ export function exportSeoAuditCSV(data: SeoAuditData) {
   rows.push(['Warning Checks', String(data.warnChecks)])
   rows.push(['Failed Checks', String(data.failedChecks)])
   if (data.backlinkData?.oprScore != null) {
-    rows.push(['Domain Authority (OPR)', data.backlinkData.oprScore.toFixed(1), '/10'])
+    rows.push(['Domain Score (OPR)', data.backlinkData.oprScore.toFixed(1), '/10'])
     if (data.backlinkData.domainRank && data.backlinkData.domainRank > 0) {
       rows.push(['Global Domain Rank', `#${data.backlinkData.domainRank.toLocaleString()}`])
     }
@@ -838,7 +838,7 @@ export function exportSeoAuditPDF(data: SeoAuditData) {
     <table style="width:auto;margin-bottom:16px">
       <tr><td style="padding:4px 16px 4px 0"><strong>Overall Score</strong></td><td style="font-size:24px;font-weight:900">${data.overallScore}<span style="font-size:12px;font-weight:600;color:#6b7280">/100</span></td></tr>
       <tr><td style="padding:4px 16px 4px 0"><strong>Results</strong></td><td style="font-size:11px">✓ ${data.passedChecks} passed · ⚠ ${data.warnChecks} warnings · ✗ ${data.failedChecks} failed</td></tr>
-      ${data.backlinkData?.oprScore != null ? `<tr><td style="padding:4px 16px 4px 0"><strong>Domain Authority</strong></td><td>OPR Score: <strong>${data.backlinkData.oprScore.toFixed(1)}/10</strong>${data.backlinkData.domainRank && data.backlinkData.domainRank > 0 ? ` · Global Rank: <strong>#${data.backlinkData.domainRank.toLocaleString()}</strong>` : ''}</td></tr>` : ''}
+      ${data.backlinkData?.oprScore != null ? `<tr><td style="padding:4px 16px 4px 0"><strong>Domain Score</strong></td><td>OPR Score: <strong>${data.backlinkData.oprScore.toFixed(1)}/10</strong>${data.backlinkData.domainRank && data.backlinkData.domainRank > 0 ? ` · Global Rank: <strong>#${data.backlinkData.domainRank.toLocaleString()}</strong>` : ''}</td></tr>` : ''}
     </table>
     <h2>Category Breakdown</h2>
     <table><thead><tr><th>Category</th><th style="width:100px"></th><th style="text-align:right">Score</th><th style="width:50px">Priority</th></tr></thead><tbody>${categoryRows}</tbody></table>
@@ -1573,7 +1573,7 @@ export function exportBacklinksProjectCSV(data: BacklinksProject) {
   rows.push([''])
 
   rows.push(['OPPORTUNITIES'])
-  rows.push(['Site Name', 'URL', 'Domain Authority', 'Link Type', 'Pitch Angle', 'Why Relevant', 'Contact Approach', 'Difficulty', 'Impact', 'Status', 'Notes'])
+  rows.push(['Site Name', 'URL', 'Domain Score', 'Link Type', 'Pitch Angle', 'Why Relevant', 'Contact Approach', 'Difficulty', 'Impact', 'Status', 'Notes'])
   data.opportunities.forEach(opp => {
     rows.push([
       opp.siteName,
@@ -1675,7 +1675,7 @@ export function exportBacklinksProjectPDF(data: BacklinksProject) {
     </div>
 
     <h2>Opportunities (${data.opportunities.length})</h2>
-    <table><thead><tr><th>Site Name</th><th style="width:150px">URL</th><th style="width:60px">DA</th><th>Type</th><th>Angle</th><th>Relevance</th><th>Contact</th><th>Diff</th><th>Impact</th><th>Status</th></tr></thead><tbody>${oppRows}</tbody></table>`
+    <table><thead><tr><th>Site Name</th><th style="width:150px">URL</th><th style="width:60px">DS</th><th>Type</th><th>Angle</th><th>Relevance</th><th>Contact</th><th>Diff</th><th>Impact</th><th>Status</th></tr></thead><tbody>${oppRows}</tbody></table>`
 
   downloadPDF('Optmizly Backlinks Project Report', html)
 }

@@ -116,7 +116,7 @@ function OpportunityCard({
           </div>
           <div className="flex gap-1.5 flex-wrap mt-1.5">
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${DA_COLOR[opp.domainAuthority] ?? 'bg-slate-100 text-slate-600'}`}>
-              DA: {opp.domainAuthority}
+              DS: {opp.domainAuthority}
             </span>
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
               {opp.linkType?.replace(/_/g, ' ')}

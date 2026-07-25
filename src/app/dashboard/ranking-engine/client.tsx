@@ -94,7 +94,7 @@ const TABS = ['Overview', 'SERP', 'Gaps', 'Topical', 'Forecast', 'Actions'] as c
 type Tab = typeof TABS[number]
 
 const FACTOR_LABELS: Record<string, string> = {
-  domain_authority: 'Domain Authority',
+  domain_authority: 'Domain Score',
   backlinks: 'Backlinks',
   content_depth: 'Content Depth',
   topical_authority: 'Topical Authority',
@@ -103,7 +103,7 @@ const FACTOR_LABELS: Record<string, string> = {
 }
 
 const GAP_LABELS: Record<string, string> = {
-  authority: 'Domain Authority',
+  authority: 'Domain Score',
   backlinks: 'Backlinks',
   content: 'Content Quality',
   topical: 'Topical Coverage',
@@ -332,7 +332,7 @@ function SERPTab({ result }: { result: RankingResult }) {
         <h3 className="text-sm font-bold text-slate-800 mb-4">Competitor Averages</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {([
-            [`Avg Domain Authority${result.dataQuality?.competitorAuthority ? ' (Mixed*)' : ' (Est.)'}`, String(competitors.avg_da)],
+            [`Avg Domain Score${result.dataQuality?.competitorAuthority ? ' (Mixed*)' : ' (Est.)'}`, String(competitors.avg_da)],
             [`Avg Referring Domains${result.dataQuality?.competitorReferringDomains ? ' (Mixed*)' : ' (Est.)'}`, fmt(competitors.avg_rd)],
             [`Avg Word Count${result.dataQuality?.competitorWords ? ' (Mixed*)' : ' (Est.)'}`, fmt(competitors.avg_words)],
             [`Content Freshness${result.dataQuality?.competitorFreshness ? '' : ' (Est.)'}`, competitors.freshness],
@@ -361,10 +361,10 @@ function SERPTab({ result }: { result: RankingResult }) {
                 <tr className="text-xs text-slate-400 border-b border-slate-100">
                   {result.dataQuality?.serpTop && <th className="text-left pb-2">#</th>}
                   <th className="text-left pb-2">Domain</th>
-                  <th className="text-right pb-2">DA*</th>
-                  <th className="text-right pb-2">Ref. Domains*</th>
-                  <th className="text-right pb-2">Words*</th>
-                  <th className="text-right pb-2">vs Your DA</th>
+                  <th className="text-right pb-2">DS</th>
+                  <th className="text-right pb-2">Ref. Domains</th>
+                  <th className="text-right pb-2">Words</th>
+                  <th className="text-right pb-2">vs Your DS</th>
                 </tr>
               </thead>
               <tbody>
@@ -405,7 +405,6 @@ function SERPTab({ result }: { result: RankingResult }) {
               </tbody>
             </table>
           </div>
-          <p className="text-[10px] text-slate-400 mt-2">*DA (OpenPageRank), Ref. Domains (DataForSEO), and Words (real page fetch) are measured per domain where available, individually marked Est. otherwise.</p>
         </div>
       )}
 
@@ -529,7 +528,7 @@ function GapsTab({ result }: { result: RankingResult }) {
         <h3 className="text-sm font-bold text-slate-800 mb-3">Your Website Scores</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {([
-            [`Domain Authority${result.dataQuality?.userAuthority ? ' (OPR)' : ' (Est.)'}`, website.da_score],
+            [`Domain Score${result.dataQuality?.userAuthority ? ' (OPR)' : ' (Est.)'}`, website.da_score],
             [`Backlinks${result.dataQuality?.userReferringDomains ? ' (Live)' : ' (Est.)'}`, website.backlink_score],
             ['Content', website.content_score],
             ['Topical', website.topical_score],

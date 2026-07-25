@@ -479,7 +479,7 @@ export default function SeoAuditPage() {
 
                     {cat.key === 'backlinks' && current.backlinkData?.oprScore != null && (
                       <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                        <div className="text-[11px] font-bold uppercase text-slate-500 mb-2">Domain Authority</div>
+                        <div className="text-[11px] font-bold uppercase text-slate-500 mb-2">Domain Score</div>
                         <div className="flex gap-4 text-xs text-slate-700">
                           <span>OPR Score: <strong className="text-slate-900">{current.backlinkData.oprScore.toFixed(1)}/10</strong></span>
                           {current.backlinkData.domainRank && current.backlinkData.domainRank > 0 && (

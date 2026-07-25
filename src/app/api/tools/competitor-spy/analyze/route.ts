@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
         `Analyze this competitor SEO data for ${domainName} and return JSON insights:
 
 Traffic: ${data.traffic.toLocaleString()} monthly visits ${qual(quality.traffic)}
-Domain Authority: ${data.da} ${qual(quality.authority)}
+Domain Score: ${data.da} ${qual(quality.authority)}
 Backlinks: ${data.backlinksTotal.toLocaleString()} total ${qual(quality.backlinks)}, ${data.backlinksNew} new this month ${qual(quality.backlinksNew)}
 Top keywords they rank for: ${data.topKeywords.slice(0, 5).map(k => k.keyword).join(', ')} ${qual(quality.keywords)}
 Content count: ${data.contentCount} pages, avg ${data.avgContentLength} words (rough estimate)

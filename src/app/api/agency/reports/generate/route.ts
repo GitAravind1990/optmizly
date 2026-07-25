@@ -113,7 +113,7 @@ function generateReportHtml(data: {
       </div>
       <div style="background:#fff;padding:24px;text-align:center">
         <div style="font-size:32px;font-weight:800;color:${brand}">${domainAuthority ?? '—'}</div>
-        <div style="font-size:12px;color:#64748b;margin-top:4px;font-weight:600">Domain Authority</div>
+        <div style="font-size:12px;color:#64748b;margin-top:4px;font-weight:600">Domain Score</div>
       </div>
     </div>
 

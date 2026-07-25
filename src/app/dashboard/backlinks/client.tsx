@@ -87,7 +87,7 @@ function AnalysisCard({ a, onDelete }: { a: DomainAnalysis; onDelete: (id: strin
           <div className="text-lg font-bold text-blue-700">
             {a.oprScore > 0 ? a.oprScore.toFixed(2) : '—'}
           </div>
-          <div className="text-[10px] text-slate-500">Domain Authority</div>
+          <div className="text-[10px] text-slate-500">Domain Score</div>
         </div>
         <div className="bg-slate-50 rounded-lg p-3 text-center">
           <div className="text-lg font-bold text-slate-700">
@@ -268,7 +268,7 @@ export function BacklinksClient() {
       <div className="flex gap-1 mb-6 bg-slate-100 rounded-xl p-1 w-fit">
         <button onClick={() => setTab('data')}
           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === 'data' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-          Domain Authority
+          Domain Score
         </button>
         <button onClick={() => setTab('outreach')}
           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === 'outreach' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>

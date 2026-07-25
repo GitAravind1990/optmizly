@@ -686,7 +686,7 @@ export const AUDIT_FRAMEWORK: AuditCategory[] = [
   {
     num: 35, key: 'backlinks', title: 'Backlinks & Link Profile', tag: 'AUTHORITY', priority: 'High',
     subCategories: [
-      sub('Domain Authority', [
+      sub('Domain Score', [
         ['Domain has established page rank (OPR score ≥ 3)', true],
         ['Domain globally ranked (rank < 1,000,000)', true],
       ], 'backlinks', 0),
