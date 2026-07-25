@@ -74,7 +74,7 @@ function AnalysisCard({ a, onDelete }: { a: DomainAnalysis; onDelete: (id: strin
           <div className="text-xs text-slate-400 mt-0.5">{new Date(a.createdAt).toLocaleDateString()}</div>
         </div>
         <div className="text-right">
-          <div className="text-xs text-slate-400">Authority Score</div>
+          <div className="text-xs text-slate-400">Domain Score</div>
           <div className={`text-2xl font-black ${oprColor(a.oprScore)}`}>
             {a.oprScore > 0 ? a.oprScore.toFixed(1) : '—'}<span className="text-sm font-normal text-slate-400">/10</span>
           </div>

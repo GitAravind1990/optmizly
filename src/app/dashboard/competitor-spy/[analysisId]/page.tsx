@@ -66,7 +66,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
   const realLabels: string[] = []
   const estimatedLabels: string[] = []
   if (quality.traffic) realLabels.push('Traffic'); else estimatedLabels.push('Traffic')
-  if (quality.authority) realLabels.push('Authority Score'); else estimatedLabels.push('Authority Score')
+  if (quality.authority) realLabels.push('Domain Score'); else estimatedLabels.push('Domain Score')
   if (quality.backlinks) realLabels.push('Backlinks'); else estimatedLabels.push('Backlinks')
   if (quality.keywords) realLabels.push('Keyword data'); else estimatedLabels.push('Keyword data')
 
@@ -140,7 +140,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
             <h2 className="text-sm font-bold text-slate-800 mb-3">Quick Stats</h2>
             {[
               ['Monthly Traffic', analysis.estimatedTraffic.toLocaleString(), !!quality.traffic],
-              ['Authority Score (OPR)', `${analysis.domainAuthority}/100`, !!quality.authority],
+              ['Domain Score (OPR)', `${analysis.domainAuthority}/100`, !!quality.authority],
               ['Page Authority (OPR)', `${analysis.pageAuthority}/100`, !!quality.authority],
               ['Total Backlinks', analysis.backlinksTotal.toLocaleString(), !!quality.backlinks],
               ['New Backlinks (30d)', `+${analysis.backlinksNew}`, !!quality.backlinksNew],

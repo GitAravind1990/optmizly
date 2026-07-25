@@ -69,7 +69,7 @@ function AnalysisCard({ analysis, onDelete }: { analysis: Analysis; onDelete: ()
       <div className="grid grid-cols-4 gap-3 mb-4">
         {[
           { label: 'Monthly Traffic', value: analysis.estimatedTraffic.toLocaleString(), bg: 'bg-orange-50', text: 'text-orange-600', real: !!quality.traffic },
-          { label: 'Authority Score (OPR)', value: analysis.domainAuthority.toString(), bg: 'bg-blue-50', text: 'text-blue-600', real: !!quality.authority },
+          { label: 'Domain Score (OPR)', value: analysis.domainAuthority.toString(), bg: 'bg-blue-50', text: 'text-blue-600', real: !!quality.authority },
           { label: 'Backlinks', value: analysis.backlinksTotal.toLocaleString(), bg: 'bg-green-50', text: 'text-green-600', real: !!quality.backlinks },
           { label: 'Keywords Ranked', value: analysis.keywordCount.toLocaleString(), bg: 'bg-purple-50', text: 'text-purple-600', real: !!quality.keywords },
         ].map(m => (

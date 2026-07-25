@@ -1046,7 +1046,7 @@ export function exportCompetitorSpyCSV(data: CompetitorSpyData) {
   rows.push(['KEY METRICS', '(Real) = measured via DataForSEO/OpenPageRank, (Est.) = AI estimate'])
   rows.push(['Metric', 'Value'])
   rows.push([`Estimated Monthly Traffic ${qualityTag(q.traffic)}`, String(data.estimatedTraffic.toLocaleString())])
-  rows.push([`Authority Score (OpenPageRank, not Moz DA) ${qualityTag(q.authority)}`, String(data.domainAuthority)])
+  rows.push([`Domain Score (OpenPageRank, not Moz DA) ${qualityTag(q.authority)}`, String(data.domainAuthority)])
   rows.push([`Page Authority (OpenPageRank, not Moz PA) ${qualityTag(q.authority)}`, String(data.pageAuthority)])
   rows.push([`Total Backlinks ${qualityTag(q.backlinks)}`, String(data.backlinksTotal.toLocaleString())])
   rows.push([`New Backlinks ${qualityTag(q.backlinksNew)}`, String(data.backlinksNew.toLocaleString())])
@@ -1094,7 +1094,7 @@ export function exportCompetitorSpyCSV(data: CompetitorSpyData) {
   rows.push([''])
 
   rows.push([`TOP BACKLINK SOURCES ${qualityTag(q.backlinksDetail)}`])
-  rows.push(['Domain', 'Links', 'Authority Score (DataForSEO rank, not Moz DA)'])
+  rows.push(['Domain', 'Links', 'Domain Score (DataForSEO rank, not Moz DA)'])
   data.topBacklinks.forEach(b => {
     rows.push([b.domain, String(b.links), String(b.da)])
   })
@@ -1141,7 +1141,7 @@ export function exportCompetitorSpyPDF(data: CompetitorSpyData) {
     <table style="width:auto;margin-bottom:16px">
       <tr><td style="padding:4px 16px 4px 0"><strong>Threat Level</strong></td><td><span class="badge ${threatColor}">${threatLevel}</span></td></tr>
       <tr><td style="padding:4px 16px 4px 0"><strong>Est. Monthly Traffic ${qualityTag(q.traffic)}</strong></td><td>${data.estimatedTraffic.toLocaleString()}</td></tr>
-      <tr><td style="padding:4px 16px 4px 0"><strong>Authority Score (OpenPageRank) ${qualityTag(q.authority)}</strong></td><td>${data.domainAuthority} <span style="color:#94a3b8;font-size:9px">— not Moz Domain Authority</span></td></tr>
+      <tr><td style="padding:4px 16px 4px 0"><strong>Domain Score (OpenPageRank) ${qualityTag(q.authority)}</strong></td><td>${data.domainAuthority} <span style="color:#94a3b8;font-size:9px">— not Moz Domain Authority</span></td></tr>
       <tr><td style="padding:4px 16px 4px 0"><strong>Backlinks ${qualityTag(q.backlinks)}</strong></td><td>${data.backlinksTotal.toLocaleString()}</td></tr>
       <tr><td style="padding:4px 16px 4px 0"><strong>Keywords Ranked ${qualityTag(q.keywords)}</strong></td><td>${data.keywordCount.toLocaleString()}</td></tr>
     </table>
