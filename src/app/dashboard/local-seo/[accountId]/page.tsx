@@ -58,14 +58,21 @@ export default function LocalSEOAccountPage() {
       if (r.status === 404) { router.push('/dashboard/local-seo'); return }
       if (d.data) {
         setAccount(d.data)
-        if (!selectedLocation && d.data.locations.length > 0) setSelectedLocation(d.data.locations[0].id)
+        // Functional update instead of reading selectedLocation from closure —
+        // keeping it out of this callback's dependencies stops `load`'s identity
+        // (and therefore the effect below) from changing every time the user
+        // clicks a different location tab, which was causing a full account
+        // refetch on every tab click, plus a guaranteed double-fetch on initial
+        // mount (this auto-select step itself changed selectedLocation, which
+        // used to be a dependency of this very callback).
+        setSelectedLocation(prev => prev ?? d.data.locations[0]?.id ?? null)
       }
     } catch {
       // network error — leave existing state
     } finally {
       setLoading(false)
     }
-  }, [accountId, router, selectedLocation])
+  }, [accountId, router])
 
   useEffect(() => { load() }, [load])
 
