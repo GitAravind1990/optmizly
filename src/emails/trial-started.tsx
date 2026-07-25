@@ -2,6 +2,7 @@ import {
   Body, Button, Container, Head, Heading, Hr, Html,
   Preview, Section, Text, Tailwind,
 } from '@react-email/components'
+import { TRIAL_LIMITS } from '@/lib/plans'
 
 interface TrialStartedEmailProps {
   firstName?: string
@@ -25,7 +26,11 @@ export function TrialStartedEmail({
 }: TrialStartedEmailProps) {
   const isAgency = plan === 'Agency'
   const accentColor = isAgency ? '#d97706' : '#2563eb'
-  const limit = isAgency ? '200' : '50'
+  // The real enforced cap during a trial is TRIAL_LIMITS, not the full paid-plan
+  // PLAN_LIMITS (50/200) — this previously promised the higher paid-tier number,
+  // so a trial user would hit a 429 well before the count this email told them
+  // they had, since requireAuth actually enforces TRIAL_LIMITS[plan] while trialing.
+  const limit = isAgency ? TRIAL_LIMITS.AGENCY : TRIAL_LIMITS.PRO
 
   return (
     <Html>
@@ -88,7 +93,7 @@ export function TrialStartedEmail({
               <Text className="text-xs text-slate-400 m-0">
                 Questions? Reply to this email. We respond within 24 hours.
               </Text>
-              <Text className="text-xs text-slate-400 mt-1">Optmizly · © 2025</Text>
+              <Text className="text-xs text-slate-400 mt-1">Optmizly · © {new Date().getFullYear()}</Text>
             </Section>
 
           </Container>

@@ -63,7 +63,7 @@ export function CancelledEmail({
               <Text className="text-xs text-slate-400 m-0">
                 Changed your mind? Reply to this email and we'll help.
               </Text>
-              <Text className="text-xs text-slate-400 mt-1">Optmizly · © 2025</Text>
+              <Text className="text-xs text-slate-400 mt-1">Optmizly · © {new Date().getFullYear()}</Text>
             </Section>
 
           </Container>

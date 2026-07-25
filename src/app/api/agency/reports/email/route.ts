@@ -33,6 +33,11 @@ export async function POST(req: NextRequest) {
     })
     if (!report) throw new AuthError(404, 'Report not found')
     if (report.client.agencyId !== user.id) throw new AuthError(403, 'Forbidden')
+    // The dashboard button already disables itself once emailSent — this mirrors
+    // that server-side, since this email goes to a real external client (not the
+    // agency user themselves), and a direct repeated call would otherwise resend
+    // the same report to them every time with no dedup.
+    if (report.emailSent) throw new AuthError(409, 'This report has already been emailed to the client')
 
     const monthName = MONTH_NAMES[report.month - 1]
     const reportUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://Optmizly.com'}/agency/reports/${report.id}`

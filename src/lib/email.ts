@@ -148,11 +148,12 @@ export async function sendLimitWarningEmail(
   used: number,
   limit: number,
   firstName?: string,
+  plan: 'FREE' | 'PRO' | 'AGENCY' = 'FREE',
 ) {
   try {
     if (!resend) return
     const html = await render(
-      LimitWarningEmail({ firstName, used, limit, pricingUrl: `${APP_URL}/pricing` })
+      LimitWarningEmail({ firstName, used, limit, plan, pricingUrl: `${APP_URL}/pricing` })
     )
     await resend.emails.send({
       from: FROM,
@@ -171,11 +172,12 @@ export async function sendLimitReachedEmail(
   to: string,
   limit: number,
   firstName?: string,
+  plan: 'FREE' | 'PRO' | 'AGENCY' = 'FREE',
 ) {
   try {
     if (!resend) return
     const html = await render(
-      LimitReachedEmail({ firstName, limit, pricingUrl: `${APP_URL}/pricing` })
+      LimitReachedEmail({ firstName, limit, plan, pricingUrl: `${APP_URL}/pricing` })
     )
     await resend.emails.send({
       from: FROM,

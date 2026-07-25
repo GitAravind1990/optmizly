@@ -74,7 +74,7 @@ export function TrialEndingEmail({
               <Text className="text-xs text-slate-400 m-0">
                 Questions? Reply to this email. We respond within 24 hours.
               </Text>
-              <Text className="text-xs text-slate-400 mt-1">Optmizly · © 2025</Text>
+              <Text className="text-xs text-slate-400 mt-1">Optmizly · © {new Date().getFullYear()}</Text>
             </Section>
 
           </Container>

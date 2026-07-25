@@ -35,7 +35,7 @@ export function DripDay1Email({ firstName = 'there', dashboardUrl }: DripDay1Pro
 
               <Hr className="border-slate-100 mb-6" />
 
-              <Text className="text-sm font-bold text-slate-800 mb-3">Your 8 content dimensions:</Text>
+              <Text className="text-sm font-bold text-slate-800 mb-3">A few of the 8 content dimensions we score:</Text>
               {[
                 ['📊', 'On-Page SEO', 'Title, headings, keyword usage'],
                 ['🤖', 'LLM Citation', 'Whether AI would cite you in answers'],

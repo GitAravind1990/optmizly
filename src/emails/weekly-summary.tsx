@@ -32,9 +32,12 @@ export function WeeklySummaryEmail({
   const isLow = remaining <= Math.ceil(monthLimit * 0.1) // ≤10% left
   const isFree = plan === 'FREE'
 
+  // "free" was hardcoded here even for Pro/Agency — this only feeds the <Preview>
+  // inbox-snippet text (the real Subject is computed separately in email.ts and
+  // is already plan-neutral), but the snippet is still user-visible.
   const subject = isActive
     ? `Your Optmizly week: ${weekAnalyses} ${weekAnalyses === 1 ? 'analysis' : 'analyses'} run`
-    : `You still have ${remaining} free ${remaining === 1 ? 'analysis' : 'analyses'} this month`
+    : `You still have ${remaining}${isFree ? ' free' : ''} ${remaining === 1 ? 'analysis' : 'analyses'} this month`
 
   return (
     <Html>

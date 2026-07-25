@@ -56,7 +56,7 @@ export function DripDay7Email({ firstName = 'there', dashboardUrl, pricingUrl, i
 
               {isFree && (
                 <Text className="text-center text-xs text-slate-400 mt-3 m-0">
-                  Need more? <Link href={pricingUrl} className="text-blue-600 font-semibold">Upgrade to Pro ($19/mo)</Link> for rank tracking, SERP audits and 14 more tools.
+                  Need more? <Link href={pricingUrl} className="text-blue-600 font-semibold">Upgrade to Pro ($19/mo)</Link> for rank tracking, backlinks, E-E-A-T analysis and more.
                 </Text>
               )}
             </Section>

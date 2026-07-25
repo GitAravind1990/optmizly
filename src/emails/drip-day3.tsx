@@ -31,7 +31,7 @@ export function DripDay3Email({ firstName = 'there', pricingUrl }: DripDay3Props
               </Text>
 
               {[
-                ['📈', 'SERP Audit', "See exactly why you're not ranking: real competitor breakdown with a step-by-step recovery plan."],
+                ['🔗', 'Backlinks', 'Discover real link-building opportunities, verified against actual domain authority data.'],
                 ['🎯', 'Rank Tracker', 'Track keyword positions over time. Get alerts when you move up or drop.'],
                 ['⭐', 'E-E-A-T Analysis', 'Score your expertise and trust signals the way Google evaluates them.'],
                 ['📊', 'Ranking Engine', 'Enter a keyword and domain to get a probability score before you write a word.'],
@@ -47,7 +47,7 @@ export function DripDay3Email({ firstName = 'there', pricingUrl }: DripDay3Props
               <Hr className="border-slate-100 my-6" />
 
               <Text className="text-slate-600 text-sm mb-6">
-                All 17 tools. One flat price. <strong>Pro is $19/mo</strong>, cancel any time.
+                All the tools above, and more. One flat price. <strong>Pro is $19/mo</strong>, cancel any time.
               </Text>
 
               <Button

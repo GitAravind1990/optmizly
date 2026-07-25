@@ -91,7 +91,7 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
   // see the identical bug found and fixed in the DoDo webhook (session_jul15).
   if (updated.count === limit - 1 && limit - 1 > 0) {
     const firstName = await getClerkFirstName(clerkId, user.email.split('@')[0])
-    await sendLimitWarningEmail(user.email, updated.count, limit, firstName).catch(() => {})
+    await sendLimitWarningEmail(user.email, updated.count, limit, firstName, user.plan).catch(() => {})
   }
 
   if (updated.count > limit) {
@@ -111,7 +111,7 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
     }).catch(() => ({ count: 0 }))
     if (flagged > 0) {
       const firstName = await getClerkFirstName(clerkId, user.email.split('@')[0])
-      await sendLimitReachedEmail(user.email, limit, firstName).catch(() => {})
+      await sendLimitReachedEmail(user.email, limit, firstName, user.plan).catch(() => {})
     }
     await captureServerEvent(clerkId, 'free_limit_hit', {
       tool,
