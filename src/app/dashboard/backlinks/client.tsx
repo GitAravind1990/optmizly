@@ -208,7 +208,7 @@ export function BacklinksClient() {
   }
 
   async function runAnalysis() {
-    if (!domainInput.trim()) { setAnalyzeError('Enter a domain'); return }
+    if (analyzing || !domainInput.trim()) { if (!domainInput.trim()) setAnalyzeError('Enter a domain'); return }
     setAnalyzeError('')
     setAnalyzing(true)
     try {

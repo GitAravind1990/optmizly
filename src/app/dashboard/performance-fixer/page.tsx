@@ -115,7 +115,7 @@ export default function PerformanceFixerPage() {
   }, []);
 
   const handleAnalyze = async () => {
-    if (!url) return;
+    if (loading || loadingFixes || !url) return;
     setLoading(true);
     setResult(null);
     setError(null);

@@ -25,6 +25,7 @@ export function ToolRunner({ onResult }: ToolRunnerProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const runAnalysis = useCallback(async (contentToAnalyse?: string, contentUrl?: string) => {
+    if (analyseLoading) return
     const c = contentToAnalyse ?? content
     if (!c || c.length < 50) { setError('Paste some content first'); return }
     setAnalyseLoading(true); setError('')
@@ -41,10 +42,10 @@ export function ToolRunner({ onResult }: ToolRunnerProps) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Analysis failed')
     } finally { setAnalyseLoading(false) }
-  }, [content, onResult])
+  }, [content, onResult, analyseLoading])
 
   const fetchAndAnalyse = useCallback(async () => {
-    if (!urlInput.trim()) return
+    if (fetchLoading || !urlInput.trim()) return
     setFetchLoading(true); setError('')
     try {
       const r = await fetch('/api/fetch-url', {
@@ -59,7 +60,7 @@ export function ToolRunner({ onResult }: ToolRunnerProps) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not fetch URL')
     } finally { setFetchLoading(false) }
-  }, [urlInput, setContent, runAnalysis])
+  }, [urlInput, setContent, runAnalysis, fetchLoading])
 
   return (
     <>

@@ -181,6 +181,20 @@ function GeogridContent() {
       .catch(() => setPlan('FREE'))
   }, [])
 
+  // Guards the geogrid progress-bar interval and its eventual setState calls
+  // against firing after unmount — handleGeogridRun starts the interval inside a
+  // click handler (not a useEffect), so nothing previously stopped it if the user
+  // navigated away mid-scan (up to a 9x9 = 81-point grid, tens of seconds).
+  const isMountedRef = useRef(true)
+  const gridIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (gridIntervalRef.current) clearInterval(gridIntervalRef.current)
+    }
+  }, [])
+
   const handleGeogridRun = useCallback(async () => {
     if (!biz || !keyword || lat == null || lng == null) {
       setGridError('Fill in all fields and select an address from the autocomplete dropdown.')
@@ -190,7 +204,8 @@ function GeogridContent() {
     setGridError('')
     setGridProgress(0)
 
-    const interval = setInterval(() => {
+    gridIntervalRef.current = setInterval(() => {
+      if (!isMountedRef.current) return
       setGridProgress(p => Math.min(p + Math.random() * 7, 88))
     }, 500)
 
@@ -201,15 +216,16 @@ function GeogridContent() {
         body: JSON.stringify({ businessName: biz, keyword, centerLat: lat, centerLng: lng, gridSize, spacing, unit }),
       })
       const d = await r.json()
+      if (!isMountedRef.current) return
       if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
       if (!r.ok) throw new Error(d.error)
       setGridProgress(100)
       setGridResult(d)
     } catch (e) {
-      setGridError(e instanceof Error ? e.message : 'Analysis failed')
+      if (isMountedRef.current) setGridError(e instanceof Error ? e.message : 'Analysis failed')
     } finally {
-      clearInterval(interval)
-      setGridLoading(false)
+      if (gridIntervalRef.current) clearInterval(gridIntervalRef.current)
+      if (isMountedRef.current) setGridLoading(false)
     }
   }, [biz, keyword, lat, lng, gridSize, spacing, unit])
 
