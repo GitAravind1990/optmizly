@@ -1047,7 +1047,7 @@ export function exportCompetitorSpyCSV(data: CompetitorSpyData) {
   rows.push(['Metric', 'Value'])
   rows.push([`Estimated Monthly Traffic ${qualityTag(q.traffic)}`, String(data.estimatedTraffic.toLocaleString())])
   rows.push([`Domain Score (OpenPageRank, not Moz DA) ${qualityTag(q.authority)}`, String(data.domainAuthority)])
-  rows.push([`Page Authority (OpenPageRank, not Moz PA) ${qualityTag(q.authority)}`, String(data.pageAuthority)])
+  rows.push([`Page Score (OpenPageRank, not Moz PA) ${qualityTag(q.authority)}`, String(data.pageAuthority)])
   rows.push([`Total Backlinks ${qualityTag(q.backlinks)}`, String(data.backlinksTotal.toLocaleString())])
   rows.push([`New Backlinks ${qualityTag(q.backlinksNew)}`, String(data.backlinksNew.toLocaleString())])
   rows.push([`Keywords Ranked ${qualityTag(q.keywords)}`, String(data.keywordCount.toLocaleString())])

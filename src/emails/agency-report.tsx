@@ -57,7 +57,7 @@ export function AgencyReportEmail({
                   <strong>{backlinksAdded === null ? '—' : backlinksAdded}</strong> new backlinks added
                 </Text>
                 <Text className="text-sm text-slate-700 m-0">
-                  Domain authority: <strong>{domainAuthority ?? '—'}</strong>
+                  Domain score: <strong>{domainAuthority ?? '—'}</strong>
                 </Text>
               </Section>
 

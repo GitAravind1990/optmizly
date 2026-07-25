@@ -141,7 +141,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
             {[
               ['Monthly Traffic', analysis.estimatedTraffic.toLocaleString(), !!quality.traffic],
               ['Domain Score (OPR)', `${analysis.domainAuthority}/100`, !!quality.authority],
-              ['Page Authority (OPR)', `${analysis.pageAuthority}/100`, !!quality.authority],
+              ['Page Score (OPR)', `${analysis.pageAuthority}/100`, !!quality.authority],
               ['Total Backlinks', analysis.backlinksTotal.toLocaleString(), !!quality.backlinks],
               ['New Backlinks (30d)', `+${analysis.backlinksNew}`, !!quality.backlinksNew],
               ['Keywords Ranked', analysis.keywordCount.toLocaleString(), !!quality.keywords],

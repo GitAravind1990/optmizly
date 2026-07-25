@@ -8,7 +8,7 @@ import { UpgradeModal } from '@/components/upgrade-modal'
 const SEV_COLORS: Record<string, 'red' | 'amber' | 'blue' | 'green'> = { critical: 'red', high: 'amber', medium: 'blue', low: 'green' }
 const ENTITY_COLORS: Record<string, string> = { target: 'text-blue-600', competitor1: 'text-red-600', competitor2: 'text-amber-600', competitor3: 'text-purple-600' }
 const DIMS = ['domain_authority','local_signals','content_depth','eeat','backlinks','technical_health','brand_authority']
-const DIM_LABELS = ['Domain Auth','Local Signals','Content Depth','E-E-A-T','Backlinks','Technical','Brand Auth']
+const DIM_LABELS = ['Domain Score','Local Signals','Content Depth','E-E-A-T','Backlinks','Technical','Brand Auth']
 
 export function SerpClient() {
   const [fields, setFields] = useState({ url: '', keyword: '', position: '', biztype: '', city: '' })
