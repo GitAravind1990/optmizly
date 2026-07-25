@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendDripDay1Email, sendDripDay3Email, sendDripDay7Email } from '@/lib/email'
 import { getClerkFirstName } from '@/lib/auth'
+import { claimDripEmail } from '@/lib/drip-claim'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -28,9 +29,9 @@ export async function GET(req: NextRequest) {
 
   for (const user of day1Users) {
     try {
+      if (!(await claimDripEmail(user.id, 'drip_day1'))) continue
       const firstName = await getClerkFirstName(user.clerkId)
       await sendDripDay1Email(user.email, firstName)
-      await prisma.drippedEmail.create({ data: { userId: user.id, emailType: 'drip_day1' } })
       results.day1++
     } catch {
       results.errors++
@@ -49,9 +50,9 @@ export async function GET(req: NextRequest) {
 
   for (const user of day3Users) {
     try {
+      if (!(await claimDripEmail(user.id, 'drip_day3'))) continue
       const firstName = await getClerkFirstName(user.clerkId)
       await sendDripDay3Email(user.email, firstName)
-      await prisma.drippedEmail.create({ data: { userId: user.id, emailType: 'drip_day3' } })
       results.day3++
     } catch {
       results.errors++
@@ -69,9 +70,9 @@ export async function GET(req: NextRequest) {
 
   for (const user of day7Users) {
     try {
+      if (!(await claimDripEmail(user.id, 'drip_day7'))) continue
       const firstName = await getClerkFirstName(user.clerkId)
       await sendDripDay7Email(user.email, firstName, user.plan === 'FREE')
-      await prisma.drippedEmail.create({ data: { userId: user.id, emailType: 'drip_day7' } })
       results.day7++
     } catch {
       results.errors++

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { sendTrialEndingEmail } from '@/lib/email'
 import { getClerkFirstName } from '@/lib/auth'
 import { TRIAL_REMINDER_DAYS_BEFORE } from '@/lib/plans'
+import { claimDripEmail } from '@/lib/drip-claim'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
 
   for (const sub of trials) {
     try {
+      if (!(await claimDripEmail(sub.userId, 'trial_ending_3d'))) continue
       const firstName = await getClerkFirstName(sub.user.clerkId, sub.user.email.split('@')[0])
       const planLabel = sub.plan === 'AGENCY' ? 'Agency' : 'Pro'
       const amount = sub.plan === 'AGENCY' ? '$49' : '$19'
@@ -37,7 +39,6 @@ export async function GET(req: NextRequest) {
         ? sub.currentPeriodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
         : undefined
       await sendTrialEndingEmail(sub.user.email, planLabel, amount, firstName, trialEndDate)
-      await prisma.drippedEmail.create({ data: { userId: sub.userId, emailType: 'trial_ending_3d' } })
       results.sent++
     } catch {
       results.errors++

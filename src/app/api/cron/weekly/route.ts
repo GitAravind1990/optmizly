@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { sendWeeklySummaryEmail } from '@/lib/email'
 import { getClerkFirstName } from '@/lib/auth'
 import { PLAN_LIMITS, TRIAL_LIMITS } from '@/lib/plans'
+import { claimDripEmail } from '@/lib/drip-claim'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
 
   for (const user of users) {
     try {
+      if (!(await claimDripEmail(user.id, weekKey))) continue
       const [usageRecord, weekActivity, sub] = await Promise.all([
         prisma.usage.findUnique({ where: { userId_month: { userId: user.id, month: monthKey } } }),
         prisma.contentOptimization.findMany({
@@ -66,7 +68,6 @@ export async function GET(req: NextRequest) {
         bestScore,
       })
 
-      await prisma.drippedEmail.create({ data: { userId: user.id, emailType: weekKey } })
       results.sent++
     } catch {
       results.errors++

@@ -235,25 +235,41 @@ export async function POST(req: NextRequest) {
       }
     } else if (eventType === 'subscription.cancelled') {
       const sub = event.data
-      await prisma.subscription.updateMany({
-        where: { dodoSubscriptionId: sub.subscription_id },
-        data: { status: 'CANCELLED', cancelledAt: new Date() },
-      })
-      const record = await prisma.subscription.findUnique({
-        where: { dodoSubscriptionId: sub.subscription_id },
-      })
-      if (record) {
-        await prisma.user.update({ where: { id: record.userId }, data: { plan: Plan.FREE } })
-      }
-      console.log(`[Dodo Webhook] Cancelled subscription ${sub.subscription_id}`)
-      if (record) {
-        const cancelledUser = await prisma.user.findUnique({ where: { id: record.userId } })
-        if (cancelledUser) {
-          const firstName = await getClerkFirstName(cancelledUser.clerkId, cancelledUser.email.split('@')[0])
-          const accessUntil = record.currentPeriodEnd
-            ? record.currentPeriodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-            : undefined
-          await sendCancelledEmail(cancelledUser.email, record.plan, firstName, accessUntil).catch(() => {})
+      const eventTimestamp = event.timestamp ? new Date(event.timestamp) : new Date()
+
+      // Same staleness/dedup reasoning as the created/updated/renewed branch above,
+      // just never applied here: DoDo retries on any non-2xx/timeout, and a
+      // cancellation can be delivered out of order against a later reactivation
+      // (or simply retried after this handler already processed it once). Without
+      // this, a late-arriving retry would unconditionally re-downgrade an active
+      // user back to FREE and re-send the cancellation email a second time.
+      const existingSub = await prisma.subscription.findUnique({ where: { dodoSubscriptionId: sub.subscription_id } })
+      if (!existingSub) {
+        console.warn(`[Dodo Webhook] Cancellation for unknown subscription ${sub.subscription_id}`)
+      } else {
+        const isStaleEvent = Boolean(existingSub.lastWebhookEventAt && eventTimestamp < existingSub.lastWebhookEventAt)
+        const alreadyCancelled = existingSub.status === 'CANCELLED'
+
+        if (isStaleEvent) {
+          console.log(`[Dodo Webhook] Ignoring stale cancellation for ${sub.subscription_id} (event ${eventTimestamp.toISOString()} older than last-applied ${existingSub.lastWebhookEventAt!.toISOString()})`)
+        } else if (alreadyCancelled) {
+          console.log(`[Dodo Webhook] Subscription ${sub.subscription_id} already cancelled, skipping duplicate processing`)
+        } else {
+          await prisma.subscription.update({
+            where: { id: existingSub.id },
+            data: { status: 'CANCELLED', cancelledAt: new Date(), lastWebhookEventAt: eventTimestamp },
+          })
+          await prisma.user.update({ where: { id: existingSub.userId }, data: { plan: Plan.FREE } })
+          console.log(`[Dodo Webhook] Cancelled subscription ${sub.subscription_id}`)
+
+          const cancelledUser = await prisma.user.findUnique({ where: { id: existingSub.userId } })
+          if (cancelledUser) {
+            const firstName = await getClerkFirstName(cancelledUser.clerkId, cancelledUser.email.split('@')[0])
+            const accessUntil = existingSub.currentPeriodEnd
+              ? existingSub.currentPeriodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+              : undefined
+            await sendCancelledEmail(cancelledUser.email, existingSub.plan, firstName, accessUntil).catch(() => {})
+          }
         }
       }
     } else {
