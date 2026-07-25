@@ -60,6 +60,13 @@ Write a 2-3 sentence response:
     }
 
     if (action === 'flag') {
+      // Same ownership check as generate-response above — without it, any AGENCY
+      // user could flag an arbitrary reviewId belonging to a different tenant's
+      // location, using any locationId they legitimately own to pass the outer
+      // gate (the outer check only proves they own *a* location, not this review).
+      const review = await prisma.localReview.findUnique({ where: { id: reviewId } })
+      if (!review || review.locationId !== locationId) throw new AuthError(404, 'Review not found')
+
       await prisma.localReview.update({
         where: { id: reviewId },
         data: { flaggedAsNegative: true },
