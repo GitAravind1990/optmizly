@@ -45,6 +45,7 @@ model User {
   competitorComparisons CompetitorComparison[] @relation("CompetitorComparisons")
   onPageAnalyses       OnPageAnalysis[]      @relation("OnPageAnalyses")
   rankTrackingProjects RankTrackingProject[] @relation("RankTrackingProjects")
+  keywordListProjects  KeywordListProject[]  @relation("KeywordListProjects")
   localSEOAccounts     LocalSEOAccount[]     @relation("LocalSEOAccounts")
   llmVisibilityAnalyses LLMVisibilityAnalysis[] @relation("LLMVisibilityAnalyses")
   backlinkProjects     BacklinkProject[]     @relation("BacklinkProjects")
@@ -517,6 +518,41 @@ model ContentCalendar {
 
   @@index([projectId])
   @@index([publishDate])
+}
+
+model KeywordListProject {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation("KeywordListProjects", fields: [userId], references: [id], onDelete: Cascade)
+
+  name           String
+  targetLocation String   @default("US")
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  keywords       KeywordResearchResult[]
+
+  @@index([userId])
+}
+
+model KeywordResearchResult {
+  id           String             @id @default(cuid())
+  projectId    String
+  project      KeywordListProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  keyword      String
+  isSeed       Boolean  @default(false)
+  searchVolume Int?
+  difficulty   Int?
+  cpc          Float?
+  trend        String?
+  intent       String?
+
+  createdAt    DateTime @default(now())
+
+  @@index([projectId])
+  @@unique([projectId, keyword])
 }
 
 model RankTrackingProject {

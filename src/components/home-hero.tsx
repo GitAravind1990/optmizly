@@ -89,7 +89,7 @@ function MetricBar({ label, value, color }: { label: string; value: number; colo
 
 function HeroDashboard() {
   const freeTools = ['Content Analyzer', 'On-Page SEO']
-  const proTools  = ['Content Planner', 'Rank Tracker', 'Content Optimizer', 'AI Visibility', 'Backlinks', 'Ranking Engine']
+  const proTools  = ['Content Planner', 'Keyword Research', 'Rank Tracker', 'Content Optimizer', 'AI Visibility', 'Backlinks', 'Ranking Engine']
   const agencyTools = ['SEO Audit', 'SERP Audit', 'Topical Authority', 'Performance Fixer', 'Geogrid', 'Review Velocity']
 
   return (

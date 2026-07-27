@@ -18,7 +18,7 @@ const STEPS = [
   },
   {
     n: 3,
-    label: 'Unlock all 17 tools',
+    label: 'Unlock all 18 tools',
     desc: 'Pro adds rank tracking, E-E-A-T analysis, content gaps, backlinks and more.',
     href: '/pricing',
   },
