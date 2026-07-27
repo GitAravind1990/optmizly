@@ -601,8 +601,12 @@ export async function getRelatedKeywords(keyword: string, targetLocation: string
   const locationCode = ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US
   const languageCode = ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en'
 
+  // depth defaults to 1 server-side, which only explores directly-related terms and
+  // tops out well short of most `limit` values (e.g. 9 items for a 25-item request on
+  // "content marketing") -- depth 2 reliably fills the limit without the extra cost of
+  // going higher (3/4 returned the same count in testing).
   const data = await dfsPost<RelatedKeywordsResponse>('/v3/dataforseo_labs/google/related_keywords/live', [
-    { keyword, location_code: locationCode, language_code: languageCode, limit: limit + 1 },
+    { keyword, location_code: locationCode, language_code: languageCode, limit: limit + 1, depth: 2 },
   ])
   const task = data?.tasks?.[0]
   if (!task || task.status_code !== 20000) return null
