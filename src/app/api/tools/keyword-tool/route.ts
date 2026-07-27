@@ -4,7 +4,35 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { getKeywordMetrics, getSearchIntent, getRelatedKeywords } from '@/lib/dataforseo'
+import { getKeywordMetrics, getSearchIntent, getRelatedKeywords, getAllInTitleCount } from '@/lib/dataforseo'
+
+type CandidateRow = {
+  keyword: string
+  isSeed: boolean
+  searchVolume: number | null
+  difficulty: number | null
+  cpc: number | null
+  trend: string | null
+  intent: string | null
+}
+
+/** Opportunity Ratio (allintitle: result count / search volume) is only meaningful —
+ *  and only worth the extra DataForSEO call — for keywords under ~250 monthly
+ *  searches, matching the technique's own applicability window. Fired in parallel
+ *  across just that low-volume subset, not every row. */
+async function computeOpportunityRatios(rows: CandidateRow[], targetLocation: string): Promise<Map<string, number>> {
+  const lowVolume = rows.filter((r): r is CandidateRow & { searchVolume: number } =>
+    r.searchVolume !== null && r.searchVolume > 0 && r.searchVolume < 250
+  )
+  const entries = await Promise.all(
+    lowVolume.map(async r => {
+      const count = await getAllInTitleCount(r.keyword, targetLocation).catch(() => null)
+      const ratio = count !== null ? Math.round((count / r.searchVolume) * 100) / 100 : null
+      return [r.keyword, ratio] as const
+    })
+  )
+  return new Map(entries.filter((e): e is [string, number] => e[1] !== null))
+}
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -68,29 +96,36 @@ export async function POST(req: NextRequest) {
 
     const seedMetrics = metrics.get(seed)
 
+    const candidates: CandidateRow[] = [
+      {
+        keyword: seed,
+        isSeed: true,
+        searchVolume: seedMetrics?.searchVolume ?? null,
+        difficulty: seedMetrics?.difficulty ?? null,
+        cpc: seedMetrics?.cpc ?? null,
+        trend: seedMetrics?.trend ?? null,
+        intent: intent.get(seed) ?? null,
+      },
+      ...(related ?? []).map(r => ({
+        keyword: r.keyword,
+        isSeed: false,
+        searchVolume: r.volume,
+        difficulty: r.difficulty,
+        cpc: null,
+        trend: null,
+        intent: null,
+      })),
+    ]
+
+    const ratios = await computeOpportunityRatios(candidates, resolvedLocation)
+
     const project = await prisma.keywordListProject.create({
       data: {
         userId: user.userId,
         name: name.trim(),
         targetLocation: resolvedLocation,
         keywords: {
-          create: [
-            {
-              keyword: seed,
-              isSeed: true,
-              searchVolume: seedMetrics?.searchVolume ?? null,
-              difficulty: seedMetrics?.difficulty ?? null,
-              cpc: seedMetrics?.cpc ?? null,
-              trend: seedMetrics?.trend ?? null,
-              intent: intent.get(seed) ?? null,
-            },
-            ...(related ?? []).map(r => ({
-              keyword: r.keyword,
-              isSeed: false,
-              searchVolume: r.volume,
-              difficulty: r.difficulty,
-            })),
-          ],
+          create: candidates.map(c => ({ ...c, opportunityRatio: ratios.get(c.keyword) ?? null })),
         },
       },
       include: { keywords: true },

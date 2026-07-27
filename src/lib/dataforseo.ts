@@ -66,6 +66,7 @@ type OrganicRankResponse = {
     status_code: number
     result: Array<{
       item_types?: string[]
+      se_results_count?: number
       items: Array<{
         type: string
         rank_absolute: number
@@ -190,6 +191,28 @@ export async function getTopSerpResults(
     .map(t => SERP_FEATURE_LABELS[t] ?? t)
 
   return { items: topItems, features }
+}
+
+/** Real Google allintitle: result count for `keyword` — the numerator DataForSEO's
+ *  organic SERP endpoint already exposes as se_results_count when queried this way.
+ *  Used to compute the Opportunity Ratio (allintitle count / search volume): a low
+ *  ratio means few pages seriously target the exact phrase relative to how often it's
+ *  searched. Null on a failed/errored call, distinct from a genuine zero. */
+export async function getAllInTitleCount(keyword: string, targetLocation: string): Promise<number | null> {
+  const data = await dfsPost<OrganicRankResponse>('/v3/serp/google/organic/live/advanced', [
+    {
+      keyword: `allintitle:${keyword}`,
+      location_code: ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US,
+      language_code: ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en',
+      device: 'desktop',
+      depth: 1,
+    },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task) return null
+  if (task.status_code === DFS_NO_RESULTS) return 0
+  if (task.status_code !== 20000) return null
+  return task.result?.[0]?.se_results_count ?? null
 }
 
 // ─── Local rank (geogrid) ─────────────────────────────────────────────────────

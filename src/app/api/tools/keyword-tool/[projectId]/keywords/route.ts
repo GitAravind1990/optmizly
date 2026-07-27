@@ -3,10 +3,38 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { getKeywordMetrics, getSearchIntent, getRelatedKeywords } from '@/lib/dataforseo'
+import { getKeywordMetrics, getSearchIntent, getRelatedKeywords, getAllInTitleCount } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+
+type CandidateRow = {
+  keyword: string
+  isSeed: boolean
+  searchVolume: number | null
+  difficulty: number | null
+  cpc: number | null
+  trend: string | null
+  intent: string | null
+}
+
+/** Opportunity Ratio (allintitle: result count / search volume) is only meaningful —
+ *  and only worth the extra DataForSEO call — for keywords under ~250 monthly
+ *  searches, matching the technique's own applicability window. Fired in parallel
+ *  across just that low-volume subset, not every row. */
+async function computeOpportunityRatios(rows: CandidateRow[], targetLocation: string): Promise<Map<string, number>> {
+  const lowVolume = rows.filter((r): r is CandidateRow & { searchVolume: number } =>
+    r.searchVolume !== null && r.searchVolume > 0 && r.searchVolume < 250
+  )
+  const entries = await Promise.all(
+    lowVolume.map(async r => {
+      const count = await getAllInTitleCount(r.keyword, targetLocation).catch(() => null)
+      const ratio = count !== null ? Math.round((count / r.searchVolume) * 100) / 100 : null
+      return [r.keyword, ratio] as const
+    })
+  )
+  return new Map(entries.filter((e): e is [string, number] => e[1] !== null))
+}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   let clerkId: string | null = null
@@ -37,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
     ])
 
     const seedMetrics = metrics.get(seed)
-    const rows: Array<{ keyword: string; isSeed: boolean; searchVolume: number | null; difficulty: number | null; cpc: number | null; trend: string | null; intent: string | null }> = []
+    const rows: CandidateRow[] = []
 
     if (!existingSet.has(seed.toLowerCase())) {
       rows.push({
@@ -58,8 +86,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
     }
 
     if (rows.length > 0) {
+      const ratios = await computeOpportunityRatios(rows, project.targetLocation)
       await prisma.keywordResearchResult.createMany({
-        data: rows.map(r => ({ ...r, projectId })),
+        data: rows.map(r => ({ ...r, projectId, opportunityRatio: ratios.get(r.keyword) ?? null })),
       })
       await prisma.keywordListProject.update({ where: { id: projectId }, data: { updatedAt: new Date() } })
     }

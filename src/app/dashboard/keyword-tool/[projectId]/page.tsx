@@ -12,6 +12,7 @@ type KeywordRow = {
   cpc: number | null
   trend: string | null
   intent: string | null
+  opportunityRatio: number | null
 }
 
 type Project = {
@@ -36,6 +37,12 @@ function trendBadge(trend: string | null) {
   return <span className="text-slate-300 text-xs">—</span>
 }
 
+function opportunityRatioCell(ratio: number | null) {
+  if (ratio === null) return <span className="text-slate-300 text-xs">—</span>
+  const color = ratio < 0.25 ? 'text-green-600' : ratio < 1 ? 'text-amber-600' : 'text-red-600'
+  return <span className={`text-xs font-semibold ${color}`}>{ratio.toFixed(2)}</span>
+}
+
 function intentBadge(intent: string | null) {
   if (!intent) return <span className="text-slate-300 text-xs">—</span>
   const colors: Record<string, string> = {
@@ -54,7 +61,7 @@ export default function KeywordListDetailPage() {
 
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState<'volume' | 'difficulty' | 'keyword'>('volume')
+  const [sortBy, setSortBy] = useState<'volume' | 'difficulty' | 'keyword' | 'opportunity'>('volume')
   const [newSeed, setNewSeed] = useState('')
   const [addingSeed, setAddingSeed] = useState(false)
   const [addError, setAddError] = useState('')
@@ -91,6 +98,7 @@ export default function KeywordListDetailPage() {
   if (sortBy === 'volume') kws.sort((a, b) => (b.searchVolume ?? 0) - (a.searchVolume ?? 0))
   else if (sortBy === 'difficulty') kws.sort((a, b) => (a.difficulty ?? 999) - (b.difficulty ?? 999))
   else if (sortBy === 'keyword') kws.sort((a, b) => a.keyword.localeCompare(b.keyword))
+  else if (sortBy === 'opportunity') kws.sort((a, b) => (a.opportunityRatio ?? Infinity) - (b.opportunityRatio ?? Infinity))
 
   const totalVolume = project.keywords.reduce((s, k) => s + (k.searchVolume ?? 0), 0)
   const withDifficulty = project.keywords.filter((k): k is KeywordRow & { difficulty: number } => k.difficulty !== null)
@@ -136,6 +144,7 @@ export default function KeywordListDetailPage() {
             className="rounded border border-slate-200 px-2 py-1 text-xs">
             <option value="volume">Volume</option>
             <option value="difficulty">Difficulty</option>
+            <option value="opportunity">Opportunity Ratio</option>
             <option value="keyword">A–Z</option>
           </select>
         </div>
@@ -148,6 +157,7 @@ export default function KeywordListDetailPage() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Keyword</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Volume</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">KD</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Opportunity Ratio</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">CPC</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Trend</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Intent</th>
@@ -168,6 +178,7 @@ export default function KeywordListDetailPage() {
                   <td className={`text-center px-3 py-3 text-xs font-semibold ${difficultyColor(kw.difficulty)}`}>
                     {kw.difficulty ?? '—'}
                   </td>
+                  <td className="text-center px-3 py-3">{opportunityRatioCell(kw.opportunityRatio)}</td>
                   <td className="text-center px-3 py-3 text-xs text-slate-600">
                     {kw.cpc !== null ? `$${kw.cpc.toFixed(2)}` : '—'}
                   </td>
