@@ -54,6 +54,26 @@ function intentBadge(intent: string | null) {
   return <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase ${colors[intent] ?? 'bg-slate-100 text-slate-600'}`}>{intent}</span>
 }
 
+// Standard SEO/marketing mapping from search intent to funnel stage — not a separate
+// DataForSEO field, derived from the intent we already store.
+function funnelStage(intent: string | null): string | null {
+  if (intent === 'informational') return 'TOFU'
+  if (intent === 'commercial') return 'MOFU'
+  if (intent === 'transactional' || intent === 'navigational') return 'BOFU'
+  return null
+}
+
+function funnelBadge(intent: string | null) {
+  const stage = funnelStage(intent)
+  if (!stage) return <span className="text-slate-300 text-xs">—</span>
+  const colors: Record<string, string> = {
+    TOFU: 'bg-blue-100 text-blue-700',
+    MOFU: 'bg-amber-100 text-amber-700',
+    BOFU: 'bg-green-100 text-green-700',
+  }
+  return <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${colors[stage]}`}>{stage}</span>
+}
+
 export default function KeywordListDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -65,6 +85,9 @@ export default function KeywordListDetailPage() {
   const [newSeed, setNewSeed] = useState('')
   const [addingSeed, setAddingSeed] = useState(false)
   const [addError, setAddError] = useState('')
+  const [tab, setTab] = useState<'all' | 'magic'>('all')
+  const [findingMagic, setFindingMagic] = useState(false)
+  const [findMagicMsg, setFindMagicMsg] = useState('')
 
   const load = useCallback(async () => {
     const r = await fetch(`/api/tools/keyword-tool/${projectId}`)
@@ -91,6 +114,16 @@ export default function KeywordListDetailPage() {
     setAddingSeed(false)
   }
 
+  async function findMagicKeywords() {
+    setFindingMagic(true); setFindMagicMsg('')
+    const r = await fetch(`/api/tools/keyword-tool/${projectId}/magic`, { method: 'POST' })
+    const d = await r.json()
+    if (!r.ok) { setFindMagicMsg(d.error || 'Failed'); setFindingMagic(false); return }
+    setFindMagicMsg(`Checked ${d.data.checked} keyword${d.data.checked === 1 ? '' : 's'}`)
+    await load()
+    setFindingMagic(false)
+  }
+
   if (loading) return <div className="flex-1 flex items-center justify-center text-slate-400">Loading...</div>
   if (!project) return null
 
@@ -106,6 +139,11 @@ export default function KeywordListDetailPage() {
     ? Math.round(withDifficulty.reduce((s, k) => s + k.difficulty, 0) / withDifficulty.length)
     : null
   const seedCount = project.keywords.filter(k => k.isSeed).length
+
+  const magicKws = project.keywords
+    .filter(k => k.opportunityRatio !== null && k.opportunityRatio < 0.25)
+    .sort((a, b) => (a.opportunityRatio ?? 0) - (b.opportunityRatio ?? 0))
+  const uncheckedCount = project.keywords.filter(k => (k.searchVolume ?? 0) > 0 && k.opportunityRatio === null).length
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -137,6 +175,20 @@ export default function KeywordListDetailPage() {
           ))}
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-slate-200">
+          <button onClick={() => setTab('all')}
+            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${tab === 'all' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+            All Keywords ({project.keywords.length})
+          </button>
+          <button onClick={() => setTab('magic')}
+            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${tab === 'magic' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+            Magic Keywords ({magicKws.length})
+          </button>
+        </div>
+
+        {tab === 'all' && (
+        <>
         {/* Sort */}
         <div className="flex items-center gap-2 text-xs text-slate-500">
           Sort:
@@ -206,6 +258,71 @@ export default function KeywordListDetailPage() {
           <span><span className="text-red-600 font-semibold">1+</span> = competitive</span>
           <span><span className="text-slate-400 font-semibold">—</span> = only shown for keywords under 1,000 searches/month</span>
         </div>
+        </>
+        )}
+
+        {tab === 'magic' && (
+        <>
+        {/* Find Magic Keywords */}
+        <div className="rounded-xl border border-slate-200 bg-white p-4 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <div className="text-xs font-bold text-slate-700">Magic Keywords</div>
+            <p className="text-xs text-slate-500 mt-0.5">Every keyword in this list with an Opportunity Ratio under 0.25 — no volume ceiling, so high-volume low-competition finds show up here too.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {findMagicMsg && <span className="text-xs text-green-600 font-medium">{findMagicMsg}</span>}
+            <button onClick={findMagicKeywords} disabled={findingMagic || uncheckedCount === 0}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap">
+              {findingMagic ? 'Checking...' : uncheckedCount > 0 ? `Find Magic Keywords (${uncheckedCount} to check)` : 'All keywords checked'}
+            </button>
+          </div>
+        </div>
+
+        {/* Magic keywords table */}
+        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Keyword</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Volume</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Intent</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Opportunity Ratio</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">KD</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Funnel</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {magicKws.map(kw => (
+                <tr key={kw.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-slate-800">{kw.keyword}</span>
+                      {kw.isSeed && <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold uppercase">Seed</span>}
+                    </div>
+                  </td>
+                  <td className="text-center px-3 py-3 text-xs text-slate-600">
+                    {kw.searchVolume !== null ? kw.searchVolume.toLocaleString() : '—'}
+                  </td>
+                  <td className="text-center px-3 py-3">{intentBadge(kw.intent)}</td>
+                  <td className="text-center px-3 py-3">{opportunityRatioCell(kw.opportunityRatio)}</td>
+                  <td className={`text-center px-3 py-3 text-xs font-semibold ${difficultyColor(kw.difficulty)}`}>
+                    {kw.difficulty ?? '—'}
+                  </td>
+                  <td className="text-center px-3 py-3">{funnelBadge(kw.intent)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {magicKws.length === 0 && (
+            <div className="text-center py-8 text-slate-400 text-sm">
+              {uncheckedCount > 0
+                ? `No magic keywords found yet — click "Find Magic Keywords" to check the remaining ${uncheckedCount} keyword${uncheckedCount === 1 ? '' : 's'}.`
+                : 'No magic keywords in this list (none scored under 0.25).'}
+            </div>
+          )}
+        </div>
+        </>
+        )}
 
         {/* Research another seed keyword */}
         <div className="rounded-xl border border-slate-200 bg-white p-4">
