@@ -88,34 +88,33 @@ export async function POST(req: NextRequest) {
     const resolvedLocation = targetLocation ?? 'US'
     const seed = seedKeyword.trim()
 
-    const [metrics, intent, related] = await Promise.all([
-      getKeywordMetrics([seed], resolvedLocation),
-      getSearchIntent([seed], resolvedLocation),
-      getRelatedKeywords(seed, resolvedLocation, 25).catch(() => null),
+    // Related keywords must be discovered before metrics/intent can be batched, since
+    // that batch call needs the full keyword list up front. Still exactly 3 DataForSEO
+    // calls total (related, then metrics+intent in parallel) -- same cost as calling
+    // metrics/intent for the seed alone, just restructured so every row gets real
+    // CPC/trend/intent instead of only the seed.
+    const related = await getRelatedKeywords(seed, resolvedLocation, 25).catch(() => null)
+    const relatedFallback = new Map((related ?? []).map(r => [r.keyword, r]))
+    const allKeywords = [seed, ...(related ?? []).map(r => r.keyword)]
+
+    const [metrics, intent] = await Promise.all([
+      getKeywordMetrics(allKeywords, resolvedLocation),
+      getSearchIntent(allKeywords, resolvedLocation),
     ])
 
-    const seedMetrics = metrics.get(seed)
-
-    const candidates: CandidateRow[] = [
-      {
-        keyword: seed,
-        isSeed: true,
-        searchVolume: seedMetrics?.searchVolume ?? null,
-        difficulty: seedMetrics?.difficulty ?? null,
-        cpc: seedMetrics?.cpc ?? null,
-        trend: seedMetrics?.trend ?? null,
-        intent: intent.get(seed) ?? null,
-      },
-      ...(related ?? []).map(r => ({
-        keyword: r.keyword,
-        isSeed: false,
-        searchVolume: r.volume,
-        difficulty: r.difficulty,
-        cpc: null,
-        trend: null,
-        intent: null,
-      })),
-    ]
+    const candidates: CandidateRow[] = allKeywords.map(keyword => {
+      const m = metrics.get(keyword)
+      const fallback = relatedFallback.get(keyword)
+      return {
+        keyword,
+        isSeed: keyword === seed,
+        searchVolume: m?.searchVolume ?? fallback?.volume ?? null,
+        difficulty: m?.difficulty ?? fallback?.difficulty ?? null,
+        cpc: m?.cpc ?? null,
+        trend: m?.trend ?? null,
+        intent: intent.get(keyword) ?? null,
+      }
+    })
 
     const ratios = await computeOpportunityRatios(candidates, resolvedLocation)
 

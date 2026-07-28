@@ -58,31 +58,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
     })
     const existingSet = new Set(existing.map(k => k.keyword.toLowerCase()))
 
-    const [metrics, intent, related] = await Promise.all([
-      getKeywordMetrics([seed], project.targetLocation),
-      getSearchIntent([seed], project.targetLocation),
-      getRelatedKeywords(seed, project.targetLocation, 25).catch(() => null),
+    // Related keywords must be discovered before metrics/intent can be batched, since
+    // that batch call needs the full keyword list up front. Still exactly 3 DataForSEO
+    // calls total (related, then metrics+intent in parallel) -- same cost as calling
+    // metrics/intent for the seed alone, just restructured so every row gets real
+    // CPC/trend/intent instead of only the seed.
+    const related = await getRelatedKeywords(seed, project.targetLocation, 25).catch(() => null)
+    const relatedFallback = new Map((related ?? []).map(r => [r.keyword, r]))
+    const allKeywords = [seed, ...(related ?? []).map(r => r.keyword)]
+
+    const [metrics, intent] = await Promise.all([
+      getKeywordMetrics(allKeywords, project.targetLocation),
+      getSearchIntent(allKeywords, project.targetLocation),
     ])
 
-    const seedMetrics = metrics.get(seed)
     const rows: CandidateRow[] = []
-
-    if (!existingSet.has(seed.toLowerCase())) {
+    for (const keyword of allKeywords) {
+      if (existingSet.has(keyword.toLowerCase())) continue
+      const m = metrics.get(keyword)
+      const fallback = relatedFallback.get(keyword)
       rows.push({
-        keyword: seed,
-        isSeed: true,
-        searchVolume: seedMetrics?.searchVolume ?? null,
-        difficulty: seedMetrics?.difficulty ?? null,
-        cpc: seedMetrics?.cpc ?? null,
-        trend: seedMetrics?.trend ?? null,
-        intent: intent.get(seed) ?? null,
+        keyword,
+        isSeed: keyword === seed,
+        searchVolume: m?.searchVolume ?? fallback?.volume ?? null,
+        difficulty: m?.difficulty ?? fallback?.difficulty ?? null,
+        cpc: m?.cpc ?? null,
+        trend: m?.trend ?? null,
+        intent: intent.get(keyword) ?? null,
       })
-    }
-
-    for (const r of related ?? []) {
-      if (!existingSet.has(r.keyword.toLowerCase())) {
-        rows.push({ keyword: r.keyword, isSeed: false, searchVolume: r.volume, difficulty: r.difficulty, cpc: null, trend: null, intent: null })
-      }
     }
 
     if (rows.length > 0) {
