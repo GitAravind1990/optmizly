@@ -18,13 +18,13 @@ type CandidateRow = {
   intent: string | null
 }
 
-/** Opportunity Ratio (allintitle: result count / search volume) is only meaningful —
- *  and only worth the extra DataForSEO call — for keywords under ~250 monthly
- *  searches, matching the technique's own applicability window. Fired in parallel
- *  across just that low-volume subset, not every row. */
+/** Opportunity Ratio (allintitle: result count / search volume) is only worth the
+ *  extra DataForSEO call for lower-volume keywords, where it's actually meaningful —
+ *  above this it gets noisy and isn't really the technique anymore. Fired in parallel
+ *  across just that subset, not every row, to keep the added cost bounded. */
 async function computeOpportunityRatios(rows: CandidateRow[], targetLocation: string): Promise<Map<string, number>> {
   const lowVolume = rows.filter((r): r is CandidateRow & { searchVolume: number } =>
-    r.searchVolume !== null && r.searchVolume > 0 && r.searchVolume < 250
+    r.searchVolume !== null && r.searchVolume > 0 && r.searchVolume < 1000
   )
   const entries = await Promise.all(
     lowVolume.map(async r => {

@@ -159,7 +159,7 @@ export default function KeywordListDetailPage() {
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">KD</th>
                 <th
                   className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-help"
-                  title="Pages with this exact phrase in their title ÷ monthly searches. Lower is better: under 0.25 is a strong opportunity, under 1 is workable. Only calculated for keywords under 250 searches/month."
+                  title="Pages with this exact phrase in their title ÷ monthly searches. Lower is better: under 0.25 is a strong opportunity, under 1 is workable. Only calculated for keywords under 1,000 searches/month."
                 >
                   Opportunity Ratio <span className="text-slate-300 normal-case">ⓘ</span>
                 </th>
@@ -204,7 +204,7 @@ export default function KeywordListDetailPage() {
           <span><span className="text-green-600 font-semibold">under 0.25</span> = strong opportunity</span>
           <span><span className="text-amber-600 font-semibold">under 1</span> = workable</span>
           <span><span className="text-red-600 font-semibold">1+</span> = competitive</span>
-          <span><span className="text-slate-400 font-semibold">—</span> = only shown for keywords under 250 searches/month</span>
+          <span><span className="text-slate-400 font-semibold">—</span> = only shown for keywords under 1,000 searches/month</span>
         </div>
 
         {/* Research another seed keyword */}
