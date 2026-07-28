@@ -193,15 +193,22 @@ export async function getTopSerpResults(
   return { items: topItems, features }
 }
 
-/** Real Google allintitle: result count for `keyword` — the numerator DataForSEO's
+/** Real Google exact-title-match result count for `keyword` — the numerator DataForSEO's
  *  organic SERP endpoint already exposes as se_results_count when queried this way.
- *  Used to compute the Opportunity Ratio (allintitle count / search volume): a low
+ *  Used to compute the Opportunity Ratio (title-match count / search volume): a low
  *  ratio means few pages seriously target the exact phrase relative to how often it's
- *  searched. Null on a failed/errored call, distinct from a genuine zero. */
+ *  searched. Null on a failed/errored call, distinct from a genuine zero.
+ *
+ *  Uses `intitle:"phrase"`, not the traditional KGR `allintitle:` operator — verified
+ *  live that allintitle: is unreliable (a known, widely-reported Google degradation
+ *  since ~2023): for "seo checker" (KD 80, genuinely competitive) it returned 83,
+ *  dominated by pages about the allintitle *operator* itself rather than the keyword,
+ *  while intitle:"seo checker" returned a sane ~9,400 real title matches. Same
+ *  se_results_count field, just a query Google still honors correctly. */
 export async function getAllInTitleCount(keyword: string, targetLocation: string): Promise<number | null> {
   const data = await dfsPost<OrganicRankResponse>('/v3/serp/google/organic/live/advanced', [
     {
-      keyword: `allintitle:${keyword}`,
+      keyword: `intitle:"${keyword.replace(/"/g, '')}"`,
       location_code: ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US,
       language_code: ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en',
       device: 'desktop',
