@@ -548,7 +548,9 @@ model KeywordResearchResult {
   cpc          Float?
   trend        String?
   intent       String?
-  opportunityRatio Float?
+  /// Comma-separated top-3 ranking domains, filled on demand for Magic Keyword
+  /// candidates so KD's page-level blind spot can be eyeballed. Null = not checked.
+  topDomains   String?
 
   createdAt    DateTime @default(now())
 

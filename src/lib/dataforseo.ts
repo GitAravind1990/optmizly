@@ -66,7 +66,6 @@ type OrganicRankResponse = {
     status_code: number
     result: Array<{
       item_types?: string[]
-      se_results_count?: number
       items: Array<{
         type: string
         rank_absolute: number
@@ -193,34 +192,24 @@ export async function getTopSerpResults(
   return { items: topItems, features }
 }
 
-/** Real Google exact-title-match result count for `keyword` — the numerator DataForSEO's
- *  organic SERP endpoint already exposes as se_results_count when queried this way.
- *  Used to compute the Opportunity Ratio (title-match count / search volume): a low
- *  ratio means few pages seriously target the exact phrase relative to how often it's
- *  searched. Null on a failed/errored call, distinct from a genuine zero.
+/* Removed: getAllInTitleCount, and with it the KGR-style "Opportunity Ratio".
  *
- *  Uses `intitle:"phrase"`, not the traditional KGR `allintitle:` operator — verified
- *  live that allintitle: is unreliable (a known, widely-reported Google degradation
- *  since ~2023): for "seo checker" (KD 80, genuinely competitive) it returned 83,
- *  dominated by pages about the allintitle *operator* itself rather than the keyword,
- *  while intitle:"seo checker" returned a sane ~9,400 real title matches. Same
- *  se_results_count field, just a query Google still honors correctly. */
-export async function getAllInTitleCount(keyword: string, targetLocation: string): Promise<number | null> {
-  const data = await dfsPost<OrganicRankResponse>('/v3/serp/google/organic/live/advanced', [
-    {
-      keyword: `intitle:"${keyword.replace(/"/g, '')}"`,
-      location_code: ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US,
-      language_code: ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en',
-      device: 'desktop',
-      depth: 1,
-    },
-  ])
-  const task = data?.tasks?.[0]
-  if (!task) return null
-  if (task.status_code === DFS_NO_RESULTS) return 0
-  if (task.status_code !== 20000) return null
-  return task.result?.[0]?.se_results_count ?? null
-}
+ * It divided a title-match count by search volume, taking the numerator from this
+ * endpoint's se_results_count. Live probing showed that field cannot support the
+ * metric: it is a Google estimate that does not respect the search operator, and the
+ * numbers are internally contradictory in a way that reproduces exactly across runs.
+ *
+ *   "seo checker"                          plain 130  intitle: 9,170  allintitle:   101
+ *   "wordpress speed optimization plugin"              intitle:   196  allintitle: 5,740
+ *   "best crm for small business"                      intitle: 1,660  allintitle: 6,850
+ *
+ * allintitle: matches are a strict subset of intitle: matches, which are a strict
+ * subset of the unrestricted search, so every row above is impossible. Sampling the
+ * returned titles confirmed Google silently drops the operator on many queries while
+ * still reporting a large count — so neither operator gives a usable numerator.
+ *
+ * Ranking "magic" keywords now uses keyword_difficulty from getKeywordMetrics, a
+ * calibrated DataForSEO Labs metric, rather than a scraped estimate. */
 
 // ─── Local rank (geogrid) ─────────────────────────────────────────────────────
 

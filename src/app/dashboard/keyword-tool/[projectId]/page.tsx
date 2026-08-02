@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { MAGIC_MAX_KD, MAGIC_MIN_VOLUME, isMagicCandidate, parseTopDomains } from '@/lib/magic-keywords'
 
 type KeywordRow = {
   id: string
@@ -12,7 +13,7 @@ type KeywordRow = {
   cpc: number | null
   trend: string | null
   intent: string | null
-  opportunityRatio: number | null
+  topDomains: string | null
 }
 
 type Project = {
@@ -37,12 +38,6 @@ function trendBadge(trend: string | null) {
   return <span className="text-slate-300 text-xs">—</span>
 }
 
-function opportunityRatioCell(ratio: number | null) {
-  if (ratio === null) return <span className="text-slate-300 text-xs">—</span>
-  const color = ratio < 0.25 ? 'text-green-600' : ratio < 1 ? 'text-amber-600' : 'text-red-600'
-  return <span className={`text-xs font-semibold ${color}`}>{ratio.toFixed(2)}</span>
-}
-
 function intentBadge(intent: string | null) {
   if (!intent) return <span className="text-slate-300 text-xs">—</span>
   const colors: Record<string, string> = {
@@ -63,6 +58,24 @@ function funnelStage(intent: string | null): string | null {
   return null
 }
 
+/** The evidence column: the domains actually holding the top 3 spots. Deliberately raw
+ *  rather than scored — recognising "nike.com" as unbeatable is something the user does
+ *  instantly and no single difficulty number does reliably. */
+function topDomainsCell(stored: string | null) {
+  if (stored === null) return <span className="text-slate-300 text-xs">Not checked</span>
+  const domains = parseTopDomains(stored)
+  if (domains.length === 0) return <span className="text-slate-400 text-xs">No results</span>
+  return (
+    <div className="flex flex-wrap gap-1">
+      {domains.map(d => (
+        <span key={d} className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">
+          {d.replace(/^www\./, '')}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function funnelBadge(intent: string | null) {
   const stage = funnelStage(intent)
   if (!stage) return <span className="text-slate-300 text-xs">—</span>
@@ -81,13 +94,13 @@ export default function KeywordListDetailPage() {
 
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState<'volume' | 'difficulty' | 'keyword' | 'opportunity'>('volume')
+  const [sortBy, setSortBy] = useState<'volume' | 'difficulty' | 'keyword'>('volume')
   const [newSeed, setNewSeed] = useState('')
   const [addingSeed, setAddingSeed] = useState(false)
   const [addError, setAddError] = useState('')
   const [tab, setTab] = useState<'all' | 'magic'>('all')
-  const [findingMagic, setFindingMagic] = useState(false)
-  const [findMagicMsg, setFindMagicMsg] = useState('')
+  const [checkingSerps, setCheckingSerps] = useState(false)
+  const [serpCheckMsg, setSerpCheckMsg] = useState('')
 
   const load = useCallback(async () => {
     const r = await fetch(`/api/tools/keyword-tool/${projectId}`)
@@ -114,14 +127,18 @@ export default function KeywordListDetailPage() {
     setAddingSeed(false)
   }
 
-  async function findMagicKeywords() {
-    setFindingMagic(true); setFindMagicMsg('')
-    const r = await fetch(`/api/tools/keyword-tool/${projectId}/magic`, { method: 'POST' })
+  async function checkSerps() {
+    setCheckingSerps(true); setSerpCheckMsg('')
+    const r = await fetch(`/api/tools/keyword-tool/${projectId}/serp-check`, { method: 'POST' })
     const d = await r.json()
-    if (!r.ok) { setFindMagicMsg(d.error || 'Failed'); setFindingMagic(false); return }
-    setFindMagicMsg(`Checked ${d.data.checked} keyword${d.data.checked === 1 ? '' : 's'}`)
+    if (!r.ok) { setSerpCheckMsg(d.error || 'Failed'); setCheckingSerps(false); return }
+    setSerpCheckMsg(
+      d.data.remaining > 0
+        ? `Checked ${d.data.checked} — ${d.data.remaining} left`
+        : `Checked ${d.data.checked}`
+    )
     await load()
-    setFindingMagic(false)
+    setCheckingSerps(false)
   }
 
   if (loading) return <div className="flex-1 flex items-center justify-center text-slate-400">Loading...</div>
@@ -131,7 +148,6 @@ export default function KeywordListDetailPage() {
   if (sortBy === 'volume') kws.sort((a, b) => (b.searchVolume ?? 0) - (a.searchVolume ?? 0))
   else if (sortBy === 'difficulty') kws.sort((a, b) => (a.difficulty ?? 999) - (b.difficulty ?? 999))
   else if (sortBy === 'keyword') kws.sort((a, b) => a.keyword.localeCompare(b.keyword))
-  else if (sortBy === 'opportunity') kws.sort((a, b) => (a.opportunityRatio ?? Infinity) - (b.opportunityRatio ?? Infinity))
 
   const totalVolume = project.keywords.reduce((s, k) => s + (k.searchVolume ?? 0), 0)
   const withDifficulty = project.keywords.filter((k): k is KeywordRow & { difficulty: number } => k.difficulty !== null)
@@ -140,10 +156,14 @@ export default function KeywordListDetailPage() {
     : null
   const seedCount = project.keywords.filter(k => k.isSeed).length
 
+  // Best first = most traffic available at a difficulty you can realistically win.
   const magicKws = project.keywords
-    .filter(k => k.opportunityRatio !== null && k.opportunityRatio < 0.25)
-    .sort((a, b) => (a.opportunityRatio ?? 0) - (b.opportunityRatio ?? 0))
-  const uncheckedCount = project.keywords.filter(k => (k.searchVolume ?? 0) > 0 && k.opportunityRatio === null).length
+    .filter(isMagicCandidate)
+    .sort((a, b) => (b.searchVolume ?? 0) - (a.searchVolume ?? 0))
+  const uncheckedSerps = magicKws.filter(k => k.topDomains === null).length
+  // Keywords DataForSEO returned no difficulty for can't be judged either way; surfaced
+  // in the empty state so a short list doesn't look like a bug.
+  const unratedCount = project.keywords.filter(k => k.difficulty === null).length
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -196,7 +216,6 @@ export default function KeywordListDetailPage() {
             className="rounded border border-slate-200 px-2 py-1 text-xs">
             <option value="volume">Volume</option>
             <option value="difficulty">Difficulty</option>
-            <option value="opportunity">Opportunity Ratio</option>
             <option value="keyword">A–Z</option>
           </select>
         </div>
@@ -208,12 +227,11 @@ export default function KeywordListDetailPage() {
               <tr className="border-b border-slate-100 bg-slate-50">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Keyword</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Volume</th>
-                <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">KD</th>
                 <th
                   className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-help"
-                  title="Pages with this exact phrase in their title ÷ monthly searches. Lower is better: under 0.25 is a strong opportunity, under 1 is workable. Only calculated for keywords under 1,000 searches/month."
+                  title="Keyword Difficulty (0–100): how hard it is to rank on page one, based on the backlink strength of the pages currently ranking. Lower is easier."
                 >
-                  Opportunity Ratio <span className="text-slate-300 normal-case">ⓘ</span>
+                  KD <span className="text-slate-300 normal-case">ⓘ</span>
                 </th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">CPC</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Trend</th>
@@ -235,7 +253,6 @@ export default function KeywordListDetailPage() {
                   <td className={`text-center px-3 py-3 text-xs font-semibold ${difficultyColor(kw.difficulty)}`}>
                     {kw.difficulty ?? '—'}
                   </td>
-                  <td className="text-center px-3 py-3">{opportunityRatioCell(kw.opportunityRatio)}</td>
                   <td className="text-center px-3 py-3 text-xs text-slate-600">
                     {kw.cpc !== null ? `$${kw.cpc.toFixed(2)}` : '—'}
                   </td>
@@ -250,30 +267,39 @@ export default function KeywordListDetailPage() {
           )}
         </div>
 
-        {/* Opportunity Ratio legend — always visible, not hover-only, so it's usable on mobile */}
+        {/* KD legend — always visible, not hover-only, so it's usable on mobile */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 px-1">
-          <span className="font-semibold text-slate-600">Opportunity Ratio:</span>
-          <span><span className="text-green-600 font-semibold">under 0.25</span> = strong opportunity</span>
-          <span><span className="text-amber-600 font-semibold">under 1</span> = workable</span>
-          <span><span className="text-red-600 font-semibold">1+</span> = competitive</span>
-          <span><span className="text-slate-400 font-semibold">—</span> = only shown for keywords under 1,000 searches/month</span>
+          <span className="font-semibold text-slate-600">Keyword Difficulty:</span>
+          <span><span className="text-green-600 font-semibold">0–30</span> = easy to rank</span>
+          <span><span className="text-amber-600 font-semibold">31–60</span> = moderate</span>
+          <span><span className="text-red-600 font-semibold">61+</span> = hard, needs strong backlinks</span>
+          <span><span className="text-slate-400 font-semibold">—</span> = no difficulty data for this keyword</span>
         </div>
         </>
         )}
 
         {tab === 'magic' && (
         <>
-        {/* Find Magic Keywords */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 flex items-center justify-between flex-wrap gap-3">
-          <div>
+        {/* What qualifies — stated in full so the tab is never a black box */}
+        <div className="rounded-xl border border-slate-200 bg-white p-4 flex items-start justify-between flex-wrap gap-3">
+          <div className="min-w-0">
             <div className="text-xs font-bold text-slate-700">Magic Keywords</div>
-            <p className="text-xs text-slate-500 mt-0.5">Every keyword in this list with an Opportunity Ratio under 0.25 — no volume ceiling, so high-volume low-competition finds show up here too.</p>
+            <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+              Keywords in this list you can realistically win: difficulty of{' '}
+              <span className="font-semibold text-green-600">{MAGIC_MAX_KD} or under</span> with at least{' '}
+              <span className="font-semibold text-slate-700">{MAGIC_MIN_VOLUME} searches/month</span>. Highest volume first.
+            </p>
+            <p className="text-xs text-slate-500 mt-1.5 max-w-2xl">
+              Difficulty scores the backlinks of the <em>pages</em> ranking, so a thin page on a big domain can
+              score low. Check the SERP to see who actually ranks — if it&apos;s all major brands, skip the keyword
+              whatever its KD says.
+            </p>
           </div>
           <div className="flex items-center gap-3">
-            {findMagicMsg && <span className="text-xs text-green-600 font-medium">{findMagicMsg}</span>}
-            <button onClick={findMagicKeywords} disabled={findingMagic || uncheckedCount === 0}
+            {serpCheckMsg && <span className="text-xs text-green-600 font-medium">{serpCheckMsg}</span>}
+            <button onClick={checkSerps} disabled={checkingSerps || uncheckedSerps === 0}
               className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap">
-              {findingMagic ? 'Checking...' : uncheckedCount > 0 ? `Find Magic Keywords (${uncheckedCount} to check)` : 'All keywords checked'}
+              {checkingSerps ? 'Checking...' : uncheckedSerps > 0 ? `Check SERPs (${uncheckedSerps})` : 'All SERPs checked'}
             </button>
           </div>
         </div>
@@ -285,9 +311,9 @@ export default function KeywordListDetailPage() {
               <tr className="border-b border-slate-100 bg-slate-50">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Keyword</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Volume</th>
-                <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Intent</th>
-                <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Opportunity Ratio</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">KD</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Who ranks now</th>
+                <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Intent</th>
                 <th className="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Funnel</th>
               </tr>
             </thead>
@@ -303,21 +329,21 @@ export default function KeywordListDetailPage() {
                   <td className="text-center px-3 py-3 text-xs text-slate-600">
                     {kw.searchVolume !== null ? kw.searchVolume.toLocaleString() : '—'}
                   </td>
-                  <td className="text-center px-3 py-3">{intentBadge(kw.intent)}</td>
-                  <td className="text-center px-3 py-3">{opportunityRatioCell(kw.opportunityRatio)}</td>
                   <td className={`text-center px-3 py-3 text-xs font-semibold ${difficultyColor(kw.difficulty)}`}>
                     {kw.difficulty ?? '—'}
                   </td>
+                  <td className="px-3 py-3">{topDomainsCell(kw.topDomains)}</td>
+                  <td className="text-center px-3 py-3">{intentBadge(kw.intent)}</td>
                   <td className="text-center px-3 py-3">{funnelBadge(kw.intent)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           {magicKws.length === 0 && (
-            <div className="text-center py-8 text-slate-400 text-sm">
-              {uncheckedCount > 0
-                ? `No magic keywords found yet — click "Find Magic Keywords" to check the remaining ${uncheckedCount} keyword${uncheckedCount === 1 ? '' : 's'}.`
-                : 'No magic keywords in this list (none scored under 0.25).'}
+            <div className="text-center py-8 px-4 text-slate-400 text-sm">
+              No keyword in this list is both KD {MAGIC_MAX_KD} or under and at {MAGIC_MIN_VOLUME}+ searches/month.
+              Try researching a more specific seed keyword — longer, more niche phrases tend to score lower difficulty.
+              {unratedCount > 0 && ` (${unratedCount} keyword${unratedCount === 1 ? ' has' : 's have'} no difficulty data and can't be scored.)`}
             </div>
           )}
         </div>

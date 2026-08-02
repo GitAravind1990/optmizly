@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { getKeywordMetrics, getSearchIntent, getRelatedKeywords, getAllInTitleCount } from '@/lib/dataforseo'
+import { getKeywordMetrics, getSearchIntent, getRelatedKeywords } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -16,24 +16,6 @@ type CandidateRow = {
   cpc: number | null
   trend: string | null
   intent: string | null
-}
-
-/** Opportunity Ratio (allintitle: result count / search volume) is only worth the
- *  extra DataForSEO call for lower-volume keywords, where it's actually meaningful —
- *  above this it gets noisy and isn't really the technique anymore. Fired in parallel
- *  across just that subset, not every row, to keep the added cost bounded. */
-async function computeOpportunityRatios(rows: CandidateRow[], targetLocation: string): Promise<Map<string, number>> {
-  const lowVolume = rows.filter((r): r is CandidateRow & { searchVolume: number } =>
-    r.searchVolume !== null && r.searchVolume > 0 && r.searchVolume < 1000
-  )
-  const entries = await Promise.all(
-    lowVolume.map(async r => {
-      const count = await getAllInTitleCount(r.keyword, targetLocation).catch(() => null)
-      const ratio = count !== null ? Math.round((count / r.searchVolume) * 100) / 100 : null
-      return [r.keyword, ratio] as const
-    })
-  )
-  return new Map(entries.filter((e): e is [string, number] => e[1] !== null))
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
@@ -89,9 +71,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
     }
 
     if (rows.length > 0) {
-      const ratios = await computeOpportunityRatios(rows, project.targetLocation)
       await prisma.keywordResearchResult.createMany({
-        data: rows.map(r => ({ ...r, projectId, opportunityRatio: ratios.get(r.keyword) ?? null })),
+        data: rows.map(r => ({ ...r, projectId })),
       })
       await prisma.keywordListProject.update({ where: { id: projectId }, data: { updatedAt: new Date() } })
     }

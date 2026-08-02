@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { getKeywordMetrics, getSearchIntent, getRelatedKeywords, getAllInTitleCount } from '@/lib/dataforseo'
+import { getKeywordMetrics, getSearchIntent, getRelatedKeywords } from '@/lib/dataforseo'
 
 type CandidateRow = {
   keyword: string
@@ -14,24 +14,6 @@ type CandidateRow = {
   cpc: number | null
   trend: string | null
   intent: string | null
-}
-
-/** Opportunity Ratio (allintitle: result count / search volume) is only worth the
- *  extra DataForSEO call for lower-volume keywords, where it's actually meaningful —
- *  above this it gets noisy and isn't really the technique anymore. Fired in parallel
- *  across just that subset, not every row, to keep the added cost bounded. */
-async function computeOpportunityRatios(rows: CandidateRow[], targetLocation: string): Promise<Map<string, number>> {
-  const lowVolume = rows.filter((r): r is CandidateRow & { searchVolume: number } =>
-    r.searchVolume !== null && r.searchVolume > 0 && r.searchVolume < 1000
-  )
-  const entries = await Promise.all(
-    lowVolume.map(async r => {
-      const count = await getAllInTitleCount(r.keyword, targetLocation).catch(() => null)
-      const ratio = count !== null ? Math.round((count / r.searchVolume) * 100) / 100 : null
-      return [r.keyword, ratio] as const
-    })
-  )
-  return new Map(entries.filter((e): e is [string, number] => e[1] !== null))
 }
 
 export const runtime = 'nodejs'
@@ -116,16 +98,12 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    const ratios = await computeOpportunityRatios(candidates, resolvedLocation)
-
     const project = await prisma.keywordListProject.create({
       data: {
         userId: user.userId,
         name: name.trim(),
         targetLocation: resolvedLocation,
-        keywords: {
-          create: candidates.map(c => ({ ...c, opportunityRatio: ratios.get(c.keyword) ?? null })),
-        },
+        keywords: { create: candidates },
       },
       include: { keywords: true },
     })
