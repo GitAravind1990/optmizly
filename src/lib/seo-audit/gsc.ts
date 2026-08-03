@@ -6,7 +6,9 @@
 
 import type { AutoCheckResult } from './auto-checks'
 import type { CheckStatus } from './framework'
-import { getValidAccessToken, listSearchConsoleSites, matchGSCProperty } from '@/lib/search-console'
+import {
+  getValidAccessToken, listSearchConsoleSites, matchGSCProperty, searchAnalyticsQuery,
+} from '@/lib/search-console'
 
 const WEBMASTERS_BASE = 'https://www.googleapis.com/webmasters/v3'
 const URL_INSPECTION_ENDPOINT = 'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect'
@@ -60,27 +62,6 @@ async function fetchJSON(url: string, accessToken: string, init?: RequestInit): 
   } finally {
     clearTimeout(t)
   }
-}
-
-interface QueryRow { keys: string[]; clicks: number; impressions: number; position: number }
-
-async function searchAnalyticsQuery(
-  siteUrl: string,
-  accessToken: string,
-  body: Record<string, unknown>
-): Promise<QueryRow[] | null> {
-  const data = await fetchJSON(
-    `${WEBMASTERS_BASE}/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
-    accessToken,
-    { method: 'POST', body: JSON.stringify(body) }
-  ) as { rows?: unknown } | null
-  // The API returns 200 with no `rows` field at all (not `rows: []`) when nothing
-  // matches the filters — that's a successful "no data" response, not a failure.
-  if (!data) return null
-  if (!Array.isArray(data.rows)) return []
-  return data.rows.filter((r): r is QueryRow =>
-    !!r && typeof r === 'object' && Array.isArray((r as QueryRow).keys)
-  )
 }
 
 function normalizeUrl(u: string): string {

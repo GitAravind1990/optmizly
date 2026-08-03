@@ -54,6 +54,7 @@ model User {
   drippedEmails        DrippedEmail[]
   analysisHistory      AnalysisHistory[]
   searchConsoleConnection SearchConsoleConnection?
+  gscQueryRows            GscQueryRow[]         @relation("GscQueryRows")
 
   @@index([clerkId])
 }
@@ -1012,6 +1013,46 @@ model SeoAudit {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+/// Stored Search Console Search Analytics rows — Google's own measured impressions,
+/// clicks and average position for queries a connected property actually ranks for.
+///
+/// This is ground truth, and the only ground truth available without a clickstream
+/// panel: every other number in the product is a vendor estimate. It exists so volume
+/// and difficulty estimates can eventually be scored against real data rather than
+/// trusted. Deliberately append-and-refresh rather than transient, because the
+/// calibration value comes from accumulated history that cannot be backfilled later
+/// than Google's ~16-month retention window.
+model GscQueryRow {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("GscQueryRows", fields: [userId], references: [id], onDelete: Cascade)
+
+  /// The GSC property this came from, verbatim ("sc-domain:x.com" or "https://x.com/").
+  siteUrl String
+  date    DateTime @db.Date
+  query   String   @db.Text
+  /// Null unless the sync was run with the high-cardinality "page" dimension.
+  page    String?  @db.Text
+  country String
+  device  String
+
+  clicks      Int
+  impressions Int
+  ctr         Float
+  position    Float
+
+  fetchedAt DateTime @default(now())
+
+  /// SHA-256 of the dimension tuple. Postgres btree tuples cap around 2.7KB and a
+  /// query+page pair can exceed that, so the uniqueness constraint hashes the
+  /// dimensions instead of indexing the raw strings.
+  dimHash String
+
+  @@unique([userId, dimHash])
+  @@index([userId, siteUrl])
+  @@index([userId, date])
 }
 
 model SearchConsoleConnection {
