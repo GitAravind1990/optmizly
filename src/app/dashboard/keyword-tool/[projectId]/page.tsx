@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { MAGIC_MAX_KD, MAGIC_MIN_VOLUME, isMagicCandidate, parseTopDomains } from '@/lib/magic-keywords'
+import { MAGIC_MAX_KD, MAGIC_MIN_VOLUME, isMagicCandidate, isBrandQuery, parseTopDomains } from '@/lib/magic-keywords'
 
 type KeywordRow = {
   id: string
@@ -99,6 +99,7 @@ export default function KeywordListDetailPage() {
   const [addingSeed, setAddingSeed] = useState(false)
   const [addError, setAddError] = useState('')
   const [tab, setTab] = useState<'all' | 'magic'>('all')
+  const [showBrand, setShowBrand] = useState(false)
   const [checkingSerps, setCheckingSerps] = useState(false)
   const [serpCheckMsg, setSerpCheckMsg] = useState('')
 
@@ -157,10 +158,14 @@ export default function KeywordListDetailPage() {
   const seedCount = project.keywords.filter(k => k.isSeed).length
 
   // Best first = most traffic available at a difficulty you can realistically win.
-  const magicKws = project.keywords
+  const allCandidates = project.keywords
     .filter(isMagicCandidate)
     .sort((a, b) => (b.searchVolume ?? 0) - (a.searchVolume ?? 0))
-  const uncheckedSerps = magicKws.filter(k => k.topDomains === null).length
+  // Rivals' brand terms score low difficulty precisely because they're brand terms;
+  // hidden rather than dropped, so the filter is auditable instead of silent.
+  const brandKws = allCandidates.filter(isBrandQuery)
+  const magicKws = showBrand ? allCandidates : allCandidates.filter(k => !isBrandQuery(k))
+  const uncheckedSerps = allCandidates.filter(k => k.topDomains === null).length
   // Keywords DataForSEO returned no difficulty for can't be judged either way; surfaced
   // in the empty state so a short list doesn't look like a bug.
   const unratedCount = project.keywords.filter(k => k.difficulty === null).length
@@ -294,6 +299,25 @@ export default function KeywordListDetailPage() {
               score low. Check the SERP to see who actually ranks — if it&apos;s all major brands, skip the keyword
               whatever its KD says.
             </p>
+            {uncheckedSerps > 0 && (
+              <p className="text-xs text-slate-500 mt-1.5 max-w-2xl">
+                Checking SERPs also filters out competitors&apos; brand queries, which score low difficulty because
+                nobody competes for a rival&apos;s name. That can only be told from who ranks, so{' '}
+                <span className="font-semibold text-slate-700">{uncheckedSerps} unchecked</span>{' '}
+                {uncheckedSerps === 1 ? 'keyword is' : 'keywords are'} still unfiltered.
+              </p>
+            )}
+            {brandKws.length > 0 && (
+              <p className="text-xs text-slate-500 mt-1.5">
+                <span className="font-semibold text-amber-600">{brandKws.length} brand {brandKws.length === 1 ? 'query' : 'queries'}</span>
+                {showBrand ? ' shown' : ' hidden'} — competitors&apos; own names ({brandKws.slice(0, 3).map(k => k.keyword).join(', ')}
+                {brandKws.length > 3 ? '…' : ''}). They score low difficulty because nobody competes for a rival&apos;s
+                brand, not because you can win them.{' '}
+                <button onClick={() => setShowBrand(!showBrand)} className="font-semibold text-blue-600 hover:underline">
+                  {showBrand ? 'Hide' : 'Show anyway'}
+                </button>
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {serpCheckMsg && <span className="text-xs text-green-600 font-medium">{serpCheckMsg}</span>}
@@ -324,6 +348,7 @@ export default function KeywordListDetailPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-slate-800">{kw.keyword}</span>
                       {kw.isSeed && <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold uppercase">Seed</span>}
+                      {isBrandQuery(kw) && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold uppercase">Brand</span>}
                     </div>
                   </td>
                   <td className="text-center px-3 py-3 text-xs text-slate-600">
@@ -339,7 +364,13 @@ export default function KeywordListDetailPage() {
               ))}
             </tbody>
           </table>
-          {magicKws.length === 0 && (
+          {magicKws.length === 0 && allCandidates.length > 0 && (
+            <div className="text-center py-8 px-4 text-slate-400 text-sm">
+              Every qualifying keyword here is a competitor&apos;s brand query, so none is a real opening.
+              Use &quot;Show anyway&quot; above to see them.
+            </div>
+          )}
+          {allCandidates.length === 0 && (
             <div className="text-center py-8 px-4 text-slate-400 text-sm">
               No keyword in this list is both KD {MAGIC_MAX_KD} or under and at {MAGIC_MIN_VOLUME}+ searches/month.
               Try researching a more specific seed keyword — longer, more niche phrases tend to score lower difficulty.
