@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { getKeywordMetrics, getSearchIntent, getRelatedKeywords } from '@/lib/dataforseo'
+import { getKeywordMetrics, getSearchIntent, discoverKeywords, KEYWORDS_PER_SEED } from '@/lib/dataforseo'
 
 type CandidateRow = {
   keyword: string
@@ -70,14 +70,12 @@ export async function POST(req: NextRequest) {
     const resolvedLocation = targetLocation ?? 'US'
     const seed = seedKeyword.trim()
 
-    // Related keywords must be discovered before metrics/intent can be batched, since
-    // that batch call needs the full keyword list up front. Still exactly 3 DataForSEO
-    // calls total (related, then metrics+intent in parallel) -- same cost as calling
-    // metrics/intent for the seed alone, just restructured so every row gets real
-    // CPC/trend/intent instead of only the seed.
-    const related = await getRelatedKeywords(seed, resolvedLocation, 25).catch(() => null)
-    const relatedFallback = new Map((related ?? []).map(r => [r.keyword, r]))
-    const allKeywords = [seed, ...(related ?? []).map(r => r.keyword)]
+    // Discovery must finish before metrics/intent can be batched, since those calls
+    // need the full keyword list up front. metrics/intent are then batched across the
+    // whole set rather than called per keyword, so the row count barely affects cost.
+    const discovered = await discoverKeywords(seed, resolvedLocation, KEYWORDS_PER_SEED)
+    const relatedFallback = new Map(discovered.map(r => [r.keyword, r]))
+    const allKeywords = [seed, ...discovered.map(r => r.keyword)]
 
     const [metrics, intent] = await Promise.all([
       getKeywordMetrics(allKeywords, resolvedLocation),

@@ -616,16 +616,23 @@ export type RelatedKeyword = { keyword: string; volume: number; difficulty: numb
 /** Real related keywords for a seed keyword, with real volume/difficulty — the
  *  response's first item is always the seed keyword itself, filtered out here since
  *  callers want *other* keywords, not the one they already searched. */
-export async function getRelatedKeywords(keyword: string, targetLocation: string, limit = 6): Promise<RelatedKeyword[] | null> {
+export async function getRelatedKeywords(
+  keyword: string,
+  targetLocation: string,
+  limit = 6,
+  depth = 2
+): Promise<RelatedKeyword[] | null> {
   const locationCode = ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US
   const languageCode = ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en'
 
   // depth defaults to 1 server-side, which only explores directly-related terms and
   // tops out well short of most `limit` values (e.g. 9 items for a 25-item request on
-  // "content marketing") -- depth 2 reliably fills the limit without the extra cost of
-  // going higher (3/4 returned the same count in testing).
+  // "content marketing"). depth 2 is the default here because it fills small limits
+  // cheaply, but it has its own ceiling -- "seo audit tool" exhausts at 39 items no
+  // matter how high `limit` goes. Callers wanting a large set should pass depth 3,
+  // which returned 112 for that same seed at roughly 1.5x the cost.
   const data = await dfsPost<RelatedKeywordsResponse>('/v3/dataforseo_labs/google/related_keywords/live', [
-    { keyword, location_code: locationCode, language_code: languageCode, limit: limit + 1, depth: 2 },
+    { keyword, location_code: locationCode, language_code: languageCode, limit: limit + 1, depth },
   ])
   const task = data?.tasks?.[0]
   if (!task || task.status_code !== 20000) return null
@@ -638,6 +645,93 @@ export async function getRelatedKeywords(keyword: string, targetLocation: string
       volume: item.keyword_data!.keyword_info?.search_volume ?? 0,
       difficulty: item.keyword_data!.keyword_properties?.keyword_difficulty ?? 0,
     }))
+}
+
+type KeywordSuggestionsResponse = {
+  tasks: Array<{
+    status_code: number
+    result: Array<{
+      items?: Array<{
+        keyword?: string
+        keyword_info?: { search_volume?: number }
+        keyword_properties?: { keyword_difficulty?: number }
+      }>
+    }> | null
+  }>
+}
+
+/** Keywords that contain the seed phrase — the long-tail variants ("seo audit tool
+ *  free", "free seo audit tool", "seo site audit tool"). Distinct from
+ *  getRelatedKeywords, which returns semantic neighbours that need not contain the
+ *  seed at all; between them they cover what Ahrefs splits into "Matching terms" and
+ *  "Related terms". Note the flatter response shape: fields sit directly on the item
+ *  here, not nested under `keyword_data` as related_keywords nests them. */
+export async function getKeywordSuggestions(
+  keyword: string,
+  targetLocation: string,
+  limit = 100
+): Promise<RelatedKeyword[] | null> {
+  const data = await dfsPost<KeywordSuggestionsResponse>('/v3/dataforseo_labs/google/keyword_suggestions/live', [
+    {
+      keyword,
+      location_code: ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US,
+      language_code: ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en',
+      limit,
+    },
+  ])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return null
+
+  return (task.result?.[0]?.items ?? [])
+    .filter(item => item.keyword && item.keyword !== keyword)
+    .map(item => ({
+      keyword: item.keyword!,
+      volume: item.keyword_info?.search_volume ?? 0,
+      difficulty: item.keyword_properties?.keyword_difficulty ?? 0,
+    }))
+}
+
+/**
+ * Full keyword set for a seed: phrase-matching suggestions plus semantic neighbours,
+ * de-duplicated and capped.
+ *
+ * Either source alone under-delivers. related_keywords is bounded by its own tree and
+ * exhausts around 39 items at depth 2 for a typical seed, which is why this tool used
+ * to return 26 keywords total; keyword_suggestions only ever returns phrases containing
+ * the seed, so it misses adjacent topics. Run together they reach the ~150 a research
+ * tool is expected to produce.
+ *
+ * Both calls are independent, so one failing still yields the other's results.
+ */
+/** Keywords returned per seed. Google Ads search_volume is flat-rate per call rather
+ *  than per keyword, so raising this from the old 25 costs very little: measured on a
+ *  real seed, metrics for 131 keywords cost $0.145 against $0.120 for 26. */
+export const KEYWORDS_PER_SEED = 150
+
+export async function discoverKeywords(
+  seed: string,
+  targetLocation: string,
+  max = KEYWORDS_PER_SEED
+): Promise<RelatedKeyword[]> {
+  const [suggestions, related] = await Promise.all([
+    getKeywordSuggestions(seed, targetLocation, max).catch(() => null),
+    getRelatedKeywords(seed, targetLocation, Math.ceil(max / 2), 3).catch(() => null),
+  ])
+
+  // Suggestions first: containing the seed phrase makes them the more reliably
+  // on-topic half, so they win the cap when the union overflows.
+  //
+  // Both endpoints drop the seed themselves, but only on an exact string match — a
+  // seed typed "SEO Audit Tool" would come back alongside "seo audit tool" and land as
+  // a second, near-identical row. Compared case-insensitively here for that reason.
+  const seedKey = seed.trim().toLowerCase()
+  const byKeyword = new Map<string, RelatedKeyword>()
+  for (const k of [...(suggestions ?? []), ...(related ?? [])]) {
+    const key = k.keyword.trim().toLowerCase()
+    if (key === seedKey || byKeyword.has(key)) continue
+    byKeyword.set(key, k)
+  }
+  return [...byKeyword.values()].slice(0, max)
 }
 
 // ─── Bulk referring domains (ranking engine competitor table) ─────────────────
