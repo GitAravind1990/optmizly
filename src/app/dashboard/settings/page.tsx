@@ -12,6 +12,23 @@ type GSCStatus = {
   connectedAt?: string
 }
 
+/** Coverage snapshot of the stored Search Console corpus — the honest answer to
+ *  "is there enough real data yet", as opposed to how many properties are connected. */
+type GSCCorpus = {
+  rows: number
+  distinctQueries: number
+  earliest: string | null
+  latest: string | null
+}
+
+type GSCSyncResult = {
+  siteUrl: string
+  monthsRequested: number
+  rowsFetched: number
+  rowsWritten: number
+  failed: boolean
+}
+
 const GSC_ERROR_MESSAGES: Record<string, string> = {
   denied: 'You cancelled the Search Console connection.',
   invalid_state: 'Something went wrong verifying the request. Please try connecting again.',
@@ -58,6 +75,13 @@ export default function SettingsPage() {
   const [gscDisconnecting, setGscDisconnecting] = useState(false)
   const [gscBanner, setGscBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
+  const [gscCorpus, setGscCorpus] = useState<GSCCorpus | null>(null)
+  // Separate from `gscCorpus === null`: a failed or empty fetch also leaves the corpus
+  // null, and without this the effect would refetch on every render.
+  const [gscCorpusLoaded, setGscCorpusLoaded] = useState(false)
+  const [gscSyncing, setGscSyncing] = useState(false)
+  const [gscSyncMsg, setGscSyncMsg] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
   useEffect(() => {
     fetch('/api/user').then(r => r.json()).then(d => { setUsage(d); setLoading(false) }).catch(() => setLoading(false))
   }, [])
@@ -87,13 +111,64 @@ export default function SettingsPage() {
     }
   }, [loading, tab, plan, gscStatus, gscLoading])
 
+  // Coverage is only meaningful once a connection exists, and it's cheap enough to load
+  // alongside the status rather than behind another click.
+  useEffect(() => {
+    if (!gscStatus?.connected || gscCorpusLoaded) return
+    setGscCorpusLoaded(true)
+    fetch('/api/integrations/search-console/sync')
+      .then(r => r.json())
+      .then(d => setGscCorpus(d.data ?? null))
+      .catch(() => setGscCorpus(null))
+  }, [gscStatus, gscCorpusLoaded])
+
   async function disconnectGsc() {
     setGscDisconnecting(true)
     try {
       await fetch('/api/integrations/search-console', { method: 'DELETE' })
       setGscStatus({ connected: false })
+      // Reset coverage too, so reconnecting re-reads it instead of showing the old numbers.
+      setGscCorpus(null)
+      setGscCorpusLoaded(false)
+      setGscSyncMsg(null)
     } finally {
       setGscDisconnecting(false)
+    }
+  }
+
+  /**
+   * Pulls Search Analytics history into the stored corpus.
+   *
+   * Deliberately reports rows written rather than just "done": the whole point of the
+   * corpus is that it accumulates real measurements, so a run that stored nothing is a
+   * failure worth seeing even when the request itself returned 200.
+   */
+  async function syncGsc() {
+    setGscSyncing(true)
+    setGscSyncMsg(null)
+    try {
+      const r = await fetch('/api/integrations/search-console/sync', { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Sync failed')
+
+      const results: GSCSyncResult[] = d.data?.results ?? []
+      if (d.data?.corpus) setGscCorpus(d.data.corpus)
+
+      const failed = results.filter(x => x.failed)
+      const written = results.reduce((n, x) => n + x.rowsWritten, 0)
+      const propertyWord = (n: number) => `propert${n === 1 ? 'y' : 'ies'}`
+
+      if (results.length > 0 && failed.length === results.length) {
+        setGscSyncMsg({ type: 'error', message: 'Google rejected every property. The connection may need reconnecting.' })
+      } else if (failed.length > 0) {
+        setGscSyncMsg({ type: 'success', message: `Stored ${written.toLocaleString()} rows · ${failed.length} ${propertyWord(failed.length)} failed.` })
+      } else {
+        setGscSyncMsg({ type: 'success', message: `Stored ${written.toLocaleString()} rows from ${results.length} ${propertyWord(results.length)}.` })
+      }
+    } catch (e) {
+      setGscSyncMsg({ type: 'error', message: e instanceof Error ? e.message : 'Sync failed' })
+    } finally {
+      setGscSyncing(false)
     }
   }
 
@@ -482,6 +557,56 @@ export default function SettingsPage() {
                         ))}
                       </div>
                     )}
+
+                    <div className="border-t border-slate-100 pt-4">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div>
+                          <div className="text-sm font-medium">Search history</div>
+                          <p className="text-xs text-slate-400 max-w-sm mt-0.5">
+                            Stores the real impressions, clicks and average position Google recorded for your
+                            property. Google keeps roughly 16 months and drops the rest, so history not pulled
+                            now cannot be recovered later.
+                          </p>
+                        </div>
+                        <button onClick={syncGsc} disabled={gscSyncing}
+                          className="shrink-0 text-xs font-bold border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50">
+                          {gscSyncing ? 'Syncing…' : gscCorpus && gscCorpus.rows > 0 ? 'Sync now' : 'Pull history'}
+                        </button>
+                      </div>
+
+                      {gscCorpus && gscCorpus.rows > 0 ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-slate-50 rounded-lg px-3 py-2">
+                            <div className="text-sm font-black text-slate-800">{gscCorpus.rows.toLocaleString()}</div>
+                            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Rows</div>
+                          </div>
+                          <div className="bg-slate-50 rounded-lg px-3 py-2">
+                            <div className="text-sm font-black text-slate-800">{gscCorpus.distinctQueries.toLocaleString()}</div>
+                            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Queries</div>
+                          </div>
+                          <div className="bg-slate-50 rounded-lg px-3 py-2">
+                            <div className="text-sm font-black text-slate-800">
+                              {gscCorpus.earliest ? gscCorpus.earliest.slice(0, 7) : '—'}
+                            </div>
+                            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">
+                              {gscCorpus.latest ? `to ${gscCorpus.latest.slice(0, 7)}` : 'Earliest'}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 bg-slate-50 rounded-lg px-3 py-2">
+                          No history stored yet. The first pull covers 16 months and can take a few minutes —
+                          it works newest month first, so if it stops early the recent data is already saved and
+                          clicking again continues where it left off.
+                        </p>
+                      )}
+
+                      {gscSyncMsg && (
+                        <p className={`text-xs mt-2 font-medium ${gscSyncMsg.type === 'success' ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {gscSyncMsg.message}
+                        </p>
+                      )}
+                    </div>
 
                     <button onClick={disconnectGsc} disabled={gscDisconnecting}
                       className="text-xs text-red-500 hover:text-red-700 font-bold border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50">
