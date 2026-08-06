@@ -9,6 +9,11 @@ import { Card, Badge, Button, Spinner, ScoreBar } from '@/components/ui'
 type GSCStatus = {
   connected: boolean
   sites?: { siteUrl: string; permissionLevel: string }[] | null
+  /** Why the connection can't be read, when it can't. A stored connection whose grant
+   *  has expired still reports connected:true, so this is what distinguishes a working
+   *  integration from one that quietly died. */
+  authError?: 'not_connected' | 'expired' | 'not_configured' | 'undecryptable' | 'unreachable' | null
+  authMessage?: string | null
   connectedAt?: string
 }
 
@@ -542,13 +547,34 @@ export default function SettingsPage() {
                       <div>
                         <div className="text-sm font-medium">Status</div>
                         <div className="text-xs text-slate-400">
-                          {gscStatus.sites === null
-                            ? 'Connected, but could not reach Google right now'
+                          {gscStatus.authError
+                            ? gscStatus.authMessage ?? 'Could not read this connection'
                             : `Connected · ${gscStatus.sites?.length ?? 0} propert${gscStatus.sites?.length === 1 ? 'y' : 'ies'}`}
                         </div>
                       </div>
-                      <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Connected</span>
+                      {gscStatus.authError ? (
+                        <span className="shrink-0 text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
+                          {gscStatus.authError === 'unreachable' ? 'Unavailable' : 'Action needed'}
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Connected</span>
+                      )}
                     </div>
+
+                    {/* Only an expired/unreadable grant is worth a reconnect prompt — telling
+                        someone to reconnect during a transient Google outage would throw away
+                        a connection that is actually fine. */}
+                    {(gscStatus.authError === 'expired' || gscStatus.authError === 'undecryptable') && (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3">
+                        <p className="text-xs text-amber-800 font-medium mb-2">
+                          {gscStatus.authMessage}
+                        </p>
+                        <a href="/api/integrations/search-console/connect"
+                          className="inline-block text-xs font-bold bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700 transition-colors">
+                          Reconnect Search Console →
+                        </a>
+                      </div>
+                    )}
 
                     {gscStatus.sites && gscStatus.sites.length > 0 && (
                       <div className="space-y-1.5">
@@ -568,8 +594,10 @@ export default function SettingsPage() {
                             now cannot be recovered later.
                           </p>
                         </div>
-                        <button onClick={syncGsc} disabled={gscSyncing}
-                          className="shrink-0 text-xs font-bold border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50">
+                        {/* Pointless to offer a pull that cannot authenticate — the reconnect
+                            prompt above is the actionable step in that state. */}
+                        <button onClick={syncGsc} disabled={gscSyncing || !!gscStatus.authError}
+                          className="shrink-0 text-xs font-bold border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                           {gscSyncing ? 'Syncing…' : gscCorpus && gscCorpus.rows > 0 ? 'Sync now' : 'Pull history'}
                         </button>
                       </div>

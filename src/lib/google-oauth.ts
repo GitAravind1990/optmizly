@@ -19,6 +19,25 @@ export interface RefreshedToken {
   expiresAt: Date
 }
 
+/**
+ * Why a refresh failed. Google's own `error` field is carried through rather than
+ * flattened, because the distinction is the whole point: `invalid_grant` means the
+ * grant is gone for good and the user must reconnect, while a network blip or a 5xx
+ * is worth retrying. Collapsing both into null is what made a dead connection look
+ * identical to a transient outage.
+ */
+export type RefreshFailure =
+  | { reason: 'not_configured' }
+  /** Google refused the grant — revoked, expired (Testing-status apps expire refresh
+   *  tokens after 7 days), or the client credentials no longer match the token. */
+  | { reason: 'grant_rejected'; googleError: string }
+  /** Network error, timeout, or a non-OK response that wasn't a grant rejection. */
+  | { reason: 'unreachable'; detail: string }
+
+export type RefreshResult =
+  | { ok: true; token: RefreshedToken }
+  | ({ ok: false } & RefreshFailure)
+
 function credentials(): { clientId: string; clientSecret: string } | null {
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET
@@ -69,9 +88,17 @@ export async function exchangeCodeForTokens(code: string, redirectUri: string): 
   }
 }
 
-export async function refreshGoogleAccessToken(refreshToken: string): Promise<RefreshedToken | null> {
+/**
+ * Exchanges a refresh token for a fresh access token.
+ *
+ * Reports *why* it failed rather than returning null for everything. A refresh can
+ * fail because the grant is permanently gone (reconnect required) or because Google
+ * was momentarily unreachable (retry), and those need opposite responses — telling a
+ * user to reconnect during a transient outage throws away a working connection.
+ */
+export async function refreshGoogleAccessToken(refreshToken: string): Promise<RefreshResult> {
   const creds = credentials()
-  if (!creds) return null
+  if (!creds) return { ok: false, reason: 'not_configured' }
   try {
     const res = await fetch(TOKEN_ENDPOINT, {
       method: 'POST',
@@ -83,14 +110,29 @@ export async function refreshGoogleAccessToken(refreshToken: string): Promise<Re
         grant_type: 'refresh_token',
       }),
     })
-    const data = await res.json()
-    if (!res.ok || !data.access_token) return null
-    return {
-      accessToken: data.access_token,
-      expiresAt: new Date(Date.now() + (data.expires_in ?? 3600) * 1000),
+    const data = await res.json().catch(() => ({})) as { access_token?: string; error?: string; error_description?: string }
+
+    if (!res.ok) {
+      // Google returns 400 + {"error":"invalid_grant"} for a revoked or expired refresh
+      // token — the one failure a user can actually fix, by reconnecting.
+      if (data.error === 'invalid_grant' || data.error === 'invalid_client') {
+        return { ok: false, reason: 'grant_rejected', googleError: data.error }
+      }
+      return { ok: false, reason: 'unreachable', detail: `HTTP ${res.status}${data.error ? ` ${data.error}` : ''}` }
     }
-  } catch {
-    return null
+    if (!data.access_token) {
+      return { ok: false, reason: 'unreachable', detail: 'no access_token in response' }
+    }
+
+    return {
+      ok: true,
+      token: {
+        accessToken: data.access_token,
+        expiresAt: new Date(Date.now() + ((data as { expires_in?: number }).expires_in ?? 3600) * 1000),
+      },
+    }
+  } catch (e) {
+    return { ok: false, reason: 'unreachable', detail: e instanceof Error ? e.message : 'network error' }
   }
 }
 

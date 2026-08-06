@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, requireToolAccess } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { listSearchConsoleSites } from '@/lib/search-console'
+import { listSearchConsoleSitesResult, GSC_AUTH_MESSAGES } from '@/lib/search-console'
 import { syncGscProperty, getGscCorpusStats } from '@/lib/gsc-corpus'
 
 export const runtime = 'nodejs'
@@ -43,11 +43,17 @@ export async function POST(req: Request) {
     const conn = await prisma.searchConsoleConnection.findUnique({ where: { userId: user.userId } })
     if (!conn) throw new AuthError(400, 'Search Console is not connected')
 
-    const sites = await listSearchConsoleSites(user.userId)
-    if (!sites) throw new AuthError(502, 'Could not list Search Console properties')
+    const listed = await listSearchConsoleSitesResult(user.userId)
+    if (!listed.ok) {
+      // 401 for a grant the user must re-establish, 502 for Google being unreachable —
+      // the status code alone used to say "upstream problem" for both, which sent people
+      // looking at Google's status page when the real fix was a reconnect.
+      const status = listed.error === 'expired' || listed.error === 'undecryptable' ? 401 : 502
+      throw new AuthError(status, GSC_AUTH_MESSAGES[listed.error])
+    }
 
     // siteUnverifiedUser grants cannot back Search Analytics reads.
-    const verified = sites.filter(s => s.permissionLevel !== 'siteUnverifiedUser')
+    const verified = listed.sites.filter(s => s.permissionLevel !== 'siteUnverifiedUser')
     const targets = body.siteUrl
       ? verified.filter(s => s.siteUrl === body.siteUrl)
       : verified

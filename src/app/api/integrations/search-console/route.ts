@@ -3,7 +3,7 @@ import { apiError, apiSuccess } from '@/lib/api'
 import { prisma } from '@/lib/prisma'
 import { decrypt } from '@/lib/crypto'
 import { revokeGoogleToken } from '@/lib/google-oauth'
-import { listSearchConsoleSites } from '@/lib/search-console'
+import { listSearchConsoleSitesResult, GSC_AUTH_MESSAGES } from '@/lib/search-console'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
@@ -18,13 +18,18 @@ export async function GET() {
     const conn = await prisma.searchConsoleConnection.findUnique({ where: { userId: user.userId } })
     if (!conn) return apiSuccess({ data: { connected: false } })
 
-    const sites = await listSearchConsoleSites(user.userId)
+    const result = await listSearchConsoleSitesResult(user.userId)
 
     return apiSuccess({
       data: {
         connected: true,
         // null distinctly means "couldn't reach Google right now" — not "zero properties"
-        sites,
+        sites: result.ok ? result.sites : null,
+        // Surfaced so the UI can tell an expired grant (fix: reconnect) from a transient
+        // outage (fix: wait). A connection that has quietly died otherwise keeps
+        // presenting itself as "Connected" indefinitely.
+        authError: result.ok ? null : result.error,
+        authMessage: result.ok ? null : GSC_AUTH_MESSAGES[result.error],
         connectedAt: conn.createdAt,
       },
     })
