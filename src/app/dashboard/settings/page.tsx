@@ -86,6 +86,9 @@ export default function SettingsPage() {
   const [gscCorpusLoaded, setGscCorpusLoaded] = useState(false)
   const [gscSyncing, setGscSyncing] = useState(false)
   const [gscSyncMsg, setGscSyncMsg] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  /** Empty string means every syncable property — the route's own default when no
+   *  siteUrl is sent, so the default selection changes nothing about what it does. */
+  const [gscSyncTarget, setGscSyncTarget] = useState('')
 
   useEffect(() => {
     fetch('/api/user').then(r => r.json()).then(d => { setUsage(d); setLoading(false) }).catch(() => setLoading(false))
@@ -104,6 +107,12 @@ export default function SettingsPage() {
   }, [searchParams])
 
   const plan = usage?.plan ?? 'FREE'
+
+  // `siteUnverifiedUser` grants cannot back Search Analytics reads, so the sync route
+  // filters them out server-side. Mirrored here so the picker offers exactly what the
+  // route will act on, rather than listing a property that silently does nothing.
+  const syncableSites = (gscStatus?.sites ?? []).filter(s => s.permissionLevel !== 'siteUnverifiedUser')
+  const unverifiedCount = (gscStatus?.sites ?? []).length - syncableSites.length
 
   useEffect(() => {
     if (!loading && tab === 'integrations' && plan === 'AGENCY' && !gscStatus && !gscLoading) {
@@ -152,7 +161,11 @@ export default function SettingsPage() {
     setGscSyncing(true)
     setGscSyncMsg(null)
     try {
-      const r = await fetch('/api/integrations/search-console/sync', { method: 'POST' })
+      const r = await fetch('/api/integrations/search-console/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gscSyncTarget ? { siteUrl: gscSyncTarget } : {}),
+      })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'Sync failed')
 
@@ -167,6 +180,10 @@ export default function SettingsPage() {
         setGscSyncMsg({ type: 'error', message: 'Google rejected every property. The connection may need reconnecting.' })
       } else if (failed.length > 0) {
         setGscSyncMsg({ type: 'success', message: `Stored ${written.toLocaleString()} rows · ${failed.length} ${propertyWord(failed.length)} failed.` })
+      } else if (results.length === 1) {
+        // Naming the property matters when one was picked deliberately: "0 rows" reads as
+        // a bug until you can see it was the empty property you selected.
+        setGscSyncMsg({ type: 'success', message: `Stored ${written.toLocaleString()} rows from ${results[0].siteUrl}.` })
       } else {
         setGscSyncMsg({ type: 'success', message: `Stored ${written.toLocaleString()} rows from ${results.length} ${propertyWord(results.length)}.` })
       }
@@ -579,7 +596,17 @@ export default function SettingsPage() {
                     {gscStatus.sites && gscStatus.sites.length > 0 && (
                       <div className="space-y-1.5">
                         {gscStatus.sites.map(s => (
-                          <div key={s.siteUrl} className="text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2 truncate">{s.siteUrl}</div>
+                          <div key={s.siteUrl} className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
+                            <span className="truncate">{s.siteUrl}</span>
+                            {/* Named rather than hidden: this permission level cannot back Search
+                                Analytics reads, so it is skipped on sync and the count of listed
+                                properties would otherwise not match the count that syncs. */}
+                            {s.permissionLevel === 'siteUnverifiedUser' && (
+                              <span className="shrink-0 text-[10px] text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded-full font-bold uppercase">
+                                Not verified
+                              </span>
+                            )}
+                          </div>
                         ))}
                       </div>
                     )}
@@ -601,6 +628,32 @@ export default function SettingsPage() {
                           {gscSyncing ? 'Syncing…' : gscCorpus && gscCorpus.rows > 0 ? 'Sync now' : 'Pull history'}
                         </button>
                       </div>
+
+                      {/* Only offered when there is an actual choice to make. Syncing every
+                          property is the right default for a single-site account, but an account
+                          with unrelated properties on it pays for each one in Google quota and in
+                          wall time against this route's budget. */}
+                      {syncableSites.length > 1 && (
+                        <div className="mb-3">
+                          <label htmlFor="gsc-target" className="block text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1">
+                            Property to sync
+                          </label>
+                          <select id="gsc-target" value={gscSyncTarget} onChange={e => setGscSyncTarget(e.target.value)}
+                            disabled={gscSyncing}
+                            className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 disabled:opacity-50">
+                            <option value="">All properties ({syncableSites.length})</option>
+                            {syncableSites.map(s => (
+                              <option key={s.siteUrl} value={s.siteUrl}>{s.siteUrl}</option>
+                            ))}
+                          </select>
+                          {unverifiedCount > 0 && (
+                            <p className="text-[11px] text-slate-400 mt-1">
+                              {unverifiedCount} listed propert{unverifiedCount === 1 ? 'y is' : 'ies are'} not verified for this
+                              account and cannot be synced.
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       {gscCorpus && gscCorpus.rows > 0 ? (
                         <div className="grid grid-cols-3 gap-2">
