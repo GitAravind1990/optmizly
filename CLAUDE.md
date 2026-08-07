@@ -2,7 +2,13 @@
 
 ## Project Overview
 
-AI-powered SaaS platform for content optimization. 18 tools across Free/Pro/Agency tiers.
+AI-powered SaaS platform for content optimization. 19 tools across Free/Pro/Agency tiers.
+
+Note: the marketed count and the nav do not agree. `TOOL_GROUPS` in
+`src/app/dashboard/layout.tsx` lists 22 entries, and user-facing copy currently says
+17 in three places and 18 in two. Before changing the number again, decide what counts
+as a tool and make every surface say the same thing — see the plans/limits checklist
+below, which lists them.
 
 ## Tech Stack
 
