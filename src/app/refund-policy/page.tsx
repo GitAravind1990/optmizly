@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'Refund Policy – Optmizly' }
 const sections = [
   {
     title: '1. How the Free Trial Works',
-    body: `Pro and Agency plans include a 7-day free trial. A payment method is required to start the trial, but you will not be charged until the trial period ends. You have full access to your plan's features for the entire trial.`,
+    body: `Pro and Agency plans include a 7-day free trial. A payment method is required to start the trial, but you will not be charged until the trial period ends. Every tool included in your plan is unlocked for the whole trial. Usage during the trial is capped at 10 analyses on Pro and 15 on Agency, rather than the full monthly allowance of 50 and 200; the full allowance applies as soon as the trial converts to a paid subscription.`,
   },
   {
     title: '2. Cancelling During Your Trial',
@@ -46,7 +46,7 @@ export default function RefundPolicyPage() {
 
       <div className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-4xl font-black mb-2">Refund Policy</h1>
-        <p className="text-slate-400 text-sm mb-4">Last updated: July 2026</p>
+        <p className="text-slate-400 text-sm mb-4">Last updated: August 2026</p>
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-6 py-4 mb-12">
           <p className="text-blue-800 font-semibold text-sm">

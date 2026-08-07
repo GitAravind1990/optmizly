@@ -259,8 +259,24 @@ export async function POST(req: NextRequest) {
             where: { id: existingSub.id },
             data: { status: 'CANCELLED', cancelledAt: new Date(), lastWebhookEventAt: eventTimestamp },
           })
-          await prisma.user.update({ where: { id: existingSub.userId }, data: { plan: Plan.FREE } })
-          console.log(`[Dodo Webhook] Cancelled subscription ${sub.subscription_id}`)
+
+          // Access is NOT revoked here. The customer has paid through
+          // currentPeriodEnd, and the Terms, the Refund Policy and the cancellation
+          // email sent a few lines below all promise access until that date — this
+          // used to set FREE immediately and contradict all three, so cancelling on
+          // day 2 of a paid month forfeited the rest of the month.
+          //
+          // The downgrade happens in getOrCreateUser() once the period has actually
+          // elapsed. Only cancellations with nothing left to honour are applied now,
+          // so a lapsed or period-less subscription still drops immediately.
+          const stillPaidFor = existingSub.currentPeriodEnd && existingSub.currentPeriodEnd > new Date()
+          if (!stillPaidFor) {
+            await prisma.user.update({ where: { id: existingSub.userId }, data: { plan: Plan.FREE } })
+          }
+          console.log(
+            `[Dodo Webhook] Cancelled subscription ${sub.subscription_id}` +
+            (stillPaidFor ? ` (access retained until ${existingSub.currentPeriodEnd!.toISOString()})` : ' (downgraded immediately)')
+          )
 
           const cancelledUser = await prisma.user.findUnique({ where: { id: existingSub.userId } })
           if (cancelledUser) {

@@ -32,8 +32,42 @@ export class AuthError extends Error {
   }
 }
 
+/**
+ * Drops a cancelled subscriber to FREE once the period they paid for has actually
+ * elapsed — never before it.
+ *
+ * Cancelling is not the moment access ends. The Terms, the Refund Policy and the
+ * cancellation email all promise access until the end of the current billing period,
+ * and the webhook used to contradict all three by setting FREE the instant DoDo
+ * delivered subscription.cancelled. Someone who cancelled on day 2 of a paid month
+ * lost what they had already paid for.
+ *
+ * Done lazily at read time rather than by a scheduled job: there is no cron to drift
+ * or fail, the check runs on the user's next request, and the subscription row is
+ * already being loaded here so it costs no extra query. A cancelled user who never
+ * returns stays nominally PRO in the database, which is harmless — nothing is granted
+ * without a request passing through this function first.
+ */
+function hasLapsed(sub: { status: string; currentPeriodEnd: Date | null } | null): boolean {
+  if (!sub || sub.status !== 'CANCELLED') return false
+  // A cancellation with no period end recorded has nothing left to honour.
+  return !sub.currentPeriodEnd || sub.currentPeriodEnd <= new Date()
+}
+
 export async function getOrCreateUser(clerkId: string) {
-  let user = await prisma.user.findUnique({ where: { clerkId } })
+  let user = await prisma.user.findUnique({
+    where: { clerkId },
+    include: { subscription: { select: { status: true, currentPeriodEnd: true } } },
+  })
+
+  if (user && user.plan !== Plan.FREE && hasLapsed(user.subscription)) {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { plan: Plan.FREE },
+      include: { subscription: { select: { status: true, currentPeriodEnd: true } } },
+    })
+  }
+
   if (!user) {
     // New user — create with FREE plan
     const clerkUser = await fetch(`https://api.clerk.com/v1/users/${clerkId}`, {
@@ -41,8 +75,9 @@ export async function getOrCreateUser(clerkId: string) {
     }).then(r => r.json())
     const email = clerkUser.email_addresses?.[0]?.email_address ?? ''
 
+    const withSub = { subscription: { select: { status: true, currentPeriodEnd: true } } }
     try {
-      user = await prisma.user.create({ data: { clerkId, email, plan: Plan.FREE } })
+      user = await prisma.user.create({ data: { clerkId, email, plan: Plan.FREE }, include: withSub })
     } catch (e) {
       // A row with this email already exists under a different clerkId — this happens
       // when the same person authenticates through a different Clerk instance (e.g.
@@ -50,7 +85,7 @@ export async function getOrCreateUser(clerkId: string) {
       // Treat it as the same user rather than crashing; never overwrite the existing
       // row's clerkId, or the real account under the original instance would break.
       const isEmailCollision = e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002'
-      user = isEmailCollision ? await prisma.user.findUnique({ where: { email } }) : null
+      user = isEmailCollision ? await prisma.user.findUnique({ where: { email }, include: withSub }) : null
       if (!user) throw e
     }
   }

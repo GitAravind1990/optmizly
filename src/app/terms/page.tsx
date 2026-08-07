@@ -11,11 +11,11 @@ const sections = [
   },
   {
     title: '2. Description of Service',
-    body: `Optmizly provides AI-powered content analysis and optimisation tools. The Service uses large language models to analyse content and generate recommendations. Results are provided for informational purposes only and do not guarantee specific SEO outcomes. AI-generated recommendations may not always be accurate and should be reviewed before implementation.`,
+    body: `Optmizly provides content analysis and SEO tools. Some tools use large language models to analyse content and generate recommendations. Others report measured data retrieved from third-party providers, including search volume, keyword difficulty, rankings, backlink and domain metrics, page performance data, and — where you connect it — your own Google Search Console data. Results are provided for informational purposes only and do not guarantee specific SEO outcomes. AI-generated recommendations are probabilistic and may not always be accurate. Third-party data is provided as supplied to us and we do not warrant its accuracy or completeness. Both should be reviewed before implementation.`,
   },
   {
     title: '3. Account Registration and Plans',
-    body: `You must create an account to use Optmizly. You are responsible for maintaining the confidentiality of your login credentials and for all activity under your account. Free accounts are limited to 3 analyses per month. Pro accounts are limited to 50 analyses per month. Agency accounts are limited to 200 analyses per month. Unused analyses do not roll over. We reserve the right to modify plan limits with 30 days' notice.`,
+    body: `You must create an account to use Optmizly. You are responsible for maintaining the confidentiality of your login credentials and for all activity under your account. Free accounts are limited to 3 analyses per month. Pro accounts are limited to 50 analyses per month. Agency accounts are limited to 200 analyses per month. Accounts on a free trial are limited to 10 analyses on Pro and 15 on Agency until the trial converts. Unused analyses do not roll over. We reserve the right to modify plan limits with 30 days' notice.`,
   },
   {
     title: '4. User Obligations',
@@ -23,7 +23,7 @@ const sections = [
   },
   {
     title: '5. Payments and Billing',
-    body: `Paid plans are billed monthly or annually via DoDo Payments. By subscribing, you authorise recurring charges to your payment method. All prices are in USD. Taxes may apply depending on your location and will be added at checkout. Subscriptions auto-renew at the end of each billing period. You may cancel at any time – you retain access to paid features until the end of your current billing period. No partial refunds are issued for unused time within a billing period, except as outlined in our Refund Policy.`,
+    body: `Paid plans are billed monthly via DoDo Payments. By subscribing, you authorise recurring charges to your payment method. All prices are in USD. Taxes may apply depending on your location and will be added at checkout. Subscriptions auto-renew at the end of each billing period. You may cancel at any time – you retain access to paid features until the end of your current billing period. No partial refunds are issued for unused time within a billing period, except as outlined in our Refund Policy.`,
   },
   {
     title: '6. Refund Policy',
@@ -70,7 +70,7 @@ export default function TermsPage() {
 
       <div className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-4xl font-black mb-2">Terms of Service</h1>
-        <p className="text-slate-400 text-sm mb-12">Last updated: July 2026</p>
+        <p className="text-slate-400 text-sm mb-12">Last updated: August 2026</p>
 
         {sections.map(s => (
           <section key={s.title} className="mb-10">
