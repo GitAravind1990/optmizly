@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { MAGIC_MAX_KD, MAGIC_MIN_VOLUME, isMagicCandidate, isBrandQuery, parseTopDomains } from '@/lib/magic-keywords'
+import { exportKeywordListCSV, exportKeywordListPDF } from '@/lib/export'
 
 type KeywordRow = {
   id: string
@@ -180,6 +181,25 @@ export default function KeywordListDetailPage() {
               <h1 className="text-base font-bold text-slate-900">{project.name}</h1>
               <div className="text-xs text-slate-400">{project.targetLocation} · {project.keywords.length} keywords</div>
             </div>
+          </div>
+          {/* Exports cover the whole list rather than the visible tab: the Magic and Brand
+              columns carry the same distinction the tabs do, so one file answers both
+              views instead of making the download depend on which tab was open. */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportKeywordListCSV(project)}
+              disabled={project.keywords.length === 0}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ↓ CSV
+            </button>
+            <button
+              onClick={() => exportKeywordListPDF(project)}
+              disabled={project.keywords.length === 0}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ↓ PDF
+            </button>
           </div>
         </div>
       </div>

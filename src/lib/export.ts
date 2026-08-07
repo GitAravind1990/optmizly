@@ -2,6 +2,7 @@
 
 import { AUDIT_FRAMEWORK } from '@/lib/seo-audit/framework'
 import { parseDataQuality } from '@/lib/competitor-spy-quality'
+import { MAGIC_MAX_KD, MAGIC_MIN_VOLUME, isMagicCandidate, isBrandQuery, parseTopDomains } from '@/lib/magic-keywords'
 
 // ── CSV export ────────────────────────────────────────────────────────────────
 function downloadCSV(filename: string, rows: string[][]) {
@@ -1843,3 +1844,148 @@ export function exportContentOptimizerPDF(data: ContentOptimizerResult) {
 
 
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KEYWORD RESEARCH EXPORTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+type KeywordListRow = {
+  keyword: string
+  isSeed: boolean
+  searchVolume: number | null
+  difficulty: number | null
+  cpc: number | null
+  trend: string | null
+  intent: string | null
+  topDomains: string | null
+}
+
+type KeywordListData = {
+  name: string
+  targetLocation: string
+  createdAt?: string
+  keywords: KeywordListRow[]
+}
+
+/** The Magic Keywords rule and its known blind spot, stated in the export itself.
+ *  The dashboard shows this as a legend; a download that dropped it would present a
+ *  "Magic" column as a verdict rather than a threshold anyone can check. */
+const MAGIC_RULE_NOTE = `Magic candidate = Keyword Difficulty ${MAGIC_MAX_KD} or under AND ${MAGIC_MIN_VOLUME}+ searches/month.`
+const KD_CAVEAT_NOTE = 'Keyword Difficulty scores the backlink profile of the pages currently ranking, so it is blind to domain strength: a thin page on a major domain can score 0. Check the ranking domains column before acting on a low score.'
+const BRAND_NOTE = 'Brand query = the keyword names the company that ranks #1 for it. These score low difficulty because nobody competes for a rival brand, not because they are winnable. Detection needs SERP data, so keywords with no ranking domains listed have not been assessed.'
+
+export function exportKeywordListCSV(data: KeywordListData) {
+  const rows: string[][] = []
+
+  rows.push(['KEYWORD RESEARCH'])
+  rows.push(['List', data.name])
+  rows.push(['Location', data.targetLocation])
+  rows.push(['Export Date', new Date().toLocaleDateString()])
+  rows.push([''])
+
+  const candidates = data.keywords.filter(isMagicCandidate)
+  const unchecked = candidates.filter(k => k.topDomains === null).length
+  const totalVolume = data.keywords.reduce((s, k) => s + (k.searchVolume ?? 0), 0)
+  const unrated = data.keywords.filter(k => k.difficulty === null).length
+
+  rows.push(['SUMMARY'])
+  rows.push(['Total Keywords', String(data.keywords.length)])
+  rows.push(['Seed Keywords', String(data.keywords.filter(k => k.isSeed).length)])
+  rows.push(['Total Monthly Volume', String(totalVolume.toLocaleString())])
+  rows.push(['Magic Candidates', String(candidates.length)])
+  rows.push(['Brand Queries Among Candidates', String(candidates.filter(isBrandQuery).length)])
+  // Stated as a number rather than implied: an unchecked candidate has not been screened
+  // for brand queries at all, so a clean-looking list can still contain them.
+  rows.push(['Candidates Without SERP Check', String(unchecked)])
+  rows.push(['Keywords With No Difficulty Data', String(unrated)])
+  rows.push([''])
+
+  rows.push(['NOTES'])
+  rows.push([MAGIC_RULE_NOTE])
+  rows.push([KD_CAVEAT_NOTE])
+  rows.push([BRAND_NOTE])
+  rows.push([''])
+
+  rows.push(['KEYWORDS'])
+  rows.push([
+    'Keyword', 'Seed', 'Search Volume', 'Difficulty', 'CPC (USD)', 'Trend', 'Intent',
+    'Magic Candidate', 'Brand Query', 'SERP Checked', 'Top Ranking Domains',
+  ])
+
+  data.keywords.forEach(k => {
+    const checked = k.topDomains !== null
+    rows.push([
+      k.keyword,
+      k.isSeed ? 'Yes' : '',
+      k.searchVolume !== null ? String(k.searchVolume) : '—',
+      k.difficulty !== null ? String(k.difficulty) : '—',
+      k.cpc !== null ? k.cpc.toFixed(2) : '—',
+      k.trend ?? '—',
+      k.intent ?? '—',
+      isMagicCandidate(k) ? 'Yes' : '',
+      // Blank rather than "No" when unchecked: absence of evidence is not evidence of
+      // absence, and "No" would read as a cleared result.
+      !checked ? 'Not assessed' : isBrandQuery(k) ? 'Yes' : 'No',
+      checked ? 'Yes' : 'No',
+      parseTopDomains(k.topDomains).join(' | ') || '—',
+    ])
+  })
+
+  downloadCSV('Optmizly-keyword-research.csv', rows)
+}
+
+export function exportKeywordListPDF(data: KeywordListData) {
+  const candidates = data.keywords.filter(isMagicCandidate)
+  const unchecked = candidates.filter(k => k.topDomains === null).length
+  const brandCount = candidates.filter(isBrandQuery).length
+  const totalVolume = data.keywords.reduce((s, k) => s + (k.searchVolume ?? 0), 0)
+
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  const candidateRows = candidates.map(k => {
+    const checked = k.topDomains !== null
+    const brand = checked && isBrandQuery(k)
+    return `<tr>
+      <td>${esc(k.keyword)}${brand ? ' <span class="badge medium">Brand</span>' : ''}</td>
+      <td>${k.searchVolume?.toLocaleString() ?? '—'}</td>
+      <td>${k.difficulty ?? '—'}</td>
+      <td>${k.intent ?? '—'}</td>
+      <td>${checked ? esc(parseTopDomains(k.topDomains).join(', ')) || '—' : '<em>not checked</em>'}</td>
+    </tr>`
+  }).join('')
+
+  const allRows = data.keywords.map(k => `<tr>
+    <td>${esc(k.keyword)}${k.isSeed ? ' <span class="badge low">Seed</span>' : ''}</td>
+    <td>${k.searchVolume?.toLocaleString() ?? '—'}</td>
+    <td>${k.difficulty ?? '—'}</td>
+    <td>${k.cpc !== null ? '$' + k.cpc.toFixed(2) : '—'}</td>
+    <td>${k.trend ?? '—'}</td>
+    <td>${k.intent ?? '—'}</td>
+  </tr>`).join('')
+
+  const html = `
+    <h1>Keyword Research — ${esc(data.name)}</h1>
+    <p class="meta">${esc(data.targetLocation)} · ${data.keywords.length} keywords · Exported ${new Date().toLocaleDateString()}</p>
+
+    <h2>Summary</h2>
+    <table>
+      <tr><td><strong>Total keywords</strong></td><td style="text-align:right">${data.keywords.length}</td></tr>
+      <tr><td><strong>Total monthly volume</strong></td><td style="text-align:right">${totalVolume.toLocaleString()}</td></tr>
+      <tr><td><strong>Magic candidates</strong></td><td style="text-align:right">${candidates.length}</td></tr>
+      <tr><td><strong>Brand queries among candidates</strong></td><td style="text-align:right">${brandCount}</td></tr>
+      <tr><td><strong>Candidates without SERP check</strong></td><td style="text-align:right">${unchecked}</td></tr>
+    </table>
+
+    <h2>Magic Candidates</h2>
+    <p>${MAGIC_RULE_NOTE}</p>
+    <p>${KD_CAVEAT_NOTE}</p>
+    ${unchecked > 0 ? `<p><strong>${unchecked}</strong> of these have no SERP data, so they have not been screened for brand queries. ${BRAND_NOTE}</p>` : ''}
+    ${candidates.length > 0
+      ? `<table><thead><tr><th>Keyword</th><th>Volume</th><th>KD</th><th>Intent</th><th>Top ranking domains</th></tr></thead><tbody>${candidateRows}</tbody></table>`
+      : `<p>No keyword in this list meets the rule above.</p>`}
+
+    <h2>All Keywords</h2>
+    <table><thead><tr><th>Keyword</th><th>Volume</th><th>KD</th><th>CPC</th><th>Trend</th><th>Intent</th></tr></thead><tbody>${allRows}</tbody></table>`
+
+  downloadPDF('Optmizly Keyword Research', html)
+}
