@@ -1,0 +1,68 @@
+// Daily, per-tool usage caps.
+//
+// Separate from requireAuth's monthly quota on purpose. That quota meters billable
+// analyses against the plan allowance and drives the limit-warning emails; this meters
+// a lead-magnet tool that free users get every day. Mixing the two would either charge
+// a free user's monthly allowance for a tool meant to be free, or corrupt the counts the
+// billing emails read.
+
+import { prisma } from '@/lib/prisma'
+import { Plan } from '@prisma/client'
+
+/** UTC day key, matching the 'YYYY-MM' shape Usage uses for months. A string key means
+ *  the unique constraint does the resetting — there is no midnight job to run or miss. */
+export function getDayKey(d = new Date()): string {
+  return d.toISOString().slice(0, 10)
+}
+
+/** Daily generation caps for AI Regex. Free gets a real, usable number every day
+ *  because the tool exists to be tried without an account decision; paid tiers are set
+ *  high enough to be invisible in normal use while still bounding a runaway script. */
+export const AI_REGEX_DAILY_LIMITS: Record<Plan, number> = {
+  FREE: 5,
+  PRO: 200,
+  AGENCY: 1000,
+}
+
+export interface DailyUsageState {
+  used: number
+  limit: number
+  remaining: number
+  exceeded: boolean
+}
+
+/**
+ * Increments first, then reports — the same order requireAuth uses, and for the same
+ * reason: two concurrent requests that both read before either writes would each see
+ * room and both proceed. The upsert is atomic, so the count is authoritative even under
+ * concurrency, and a caller that exceeds simply refuses to do the work.
+ *
+ * Note the consequence: a rejected request still consumed a count. That is the correct
+ * trade for a cap whose only job is bounding cost, and it cannot be gamed by racing.
+ */
+export async function consumeDailyUsage(userId: string, tool: string, limit: number): Promise<DailyUsageState> {
+  const day = getDayKey()
+  const row = await prisma.dailyToolUsage.upsert({
+    where: { userId_tool_day: { userId, tool, day } },
+    create: { userId, tool, day, count: 1 },
+    update: { count: { increment: 1 } },
+  })
+
+  return {
+    used: row.count,
+    limit,
+    remaining: Math.max(0, limit - row.count),
+    exceeded: row.count > limit,
+  }
+}
+
+/** Read-only view of today's usage, for showing "X of 5 left" before the user acts.
+ *  Never increments. */
+export async function peekDailyUsage(userId: string, tool: string, limit: number): Promise<DailyUsageState> {
+  const row = await prisma.dailyToolUsage.findUnique({
+    where: { userId_tool_day: { userId, tool, day: getDayKey() } },
+    select: { count: true },
+  })
+  const used = row?.count ?? 0
+  return { used, limit, remaining: Math.max(0, limit - used), exceeded: used >= limit }
+}

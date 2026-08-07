@@ -52,6 +52,7 @@
     "next-mdx-remote": "^6.0.0",
     "posthog-js": "^1.396.2",
     "posthog-node": "^5.38.8",
+    "re2": "^1.24.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "resend": "^3.4.0",

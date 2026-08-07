@@ -15,7 +15,9 @@ const securityHeaders = [
 
 const nextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ['@prisma/client'],
+  // re2 is a native addon (.node binary) — bundling it breaks the require, so it must
+  // stay external and be resolved at runtime, same as the Prisma client.
+  serverExternalPackages: ['@prisma/client', 're2'],
   eslint: {
     ignoreDuringBuilds: true,
   },

@@ -17,6 +17,7 @@ function NavIcon({ id }: { id: string }) {
     'onpage':           <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="1" width="11" height="13" rx="1.5"/><line x1="5" y1="5" x2="10" y2="5"/><line x1="5" y1="8" x2="10" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg>,
     'ideas':            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="1" y="3" width="13" height="10" rx="1.5"/><line x1="1" y1="7" x2="14" y2="7"/><line x1="5" y1="3" x2="5" y2="2"/><line x1="10" y1="3" x2="10" y2="2"/></svg>,
     'keyword-tool':     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="6.5" cy="6.5" r="5"/><line x1="10" y1="10" x2="14" y2="14"/></svg>,
+    'ai-regex':         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 2.5h-1a1.5 1.5 0 0 0-1.5 1.5v2a1.5 1.5 0 0 1-1.5 1.5 1.5 1.5 0 0 1 1.5 1.5v2a1.5 1.5 0 0 0 1.5 1.5h1"/><path d="M10.5 2.5h1a1.5 1.5 0 0 1 1.5 1.5v2a1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 0-1.5 1.5v2a1.5 1.5 0 0 1-1.5 1.5h-1"/><circle cx="7.5" cy="7.5" r="1"/></svg>,
     'rank-tracker':     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,12 5,7 9,10 14,3"/><polyline points="11,3 14,3 14,6"/></svg>,
     'competitor-spy':   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1 7.5s2.8-5 6.5-5 6.5 5 6.5 5-2.8 5-6.5 5-6.5-5-6.5-5z"/><circle cx="7.5" cy="7.5" r="2"/></svg>,
     'optimizer':        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1l2 2-8.5 8.5-3.5 1 1-3.5L12 1z"/><path d="M10 3l2 2"/></svg>,
@@ -47,6 +48,7 @@ const TOOL_GROUPS = [
     tools: [
       { id: 'content-analyzer', label: 'Content Analyzer', href: '/dashboard',                   minPlan: 'FREE'   },
       { id: 'onpage',           label: 'On-Page SEO',      href: '/dashboard/onpage',            minPlan: 'FREE'   },
+      { id: 'ai-regex',         label: 'AI Regex',         href: '/dashboard/tools/ai-regex',    minPlan: 'FREE'   },
     ],
   },
   {

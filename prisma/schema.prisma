@@ -55,8 +55,31 @@ model User {
   analysisHistory      AnalysisHistory[]
   searchConsoleConnection SearchConsoleConnection?
   gscQueryRows            GscQueryRow[]         @relation("GscQueryRows")
+  dailyToolUsage          DailyToolUsage[]      @relation("DailyToolUsage")
 
   @@index([clerkId])
+}
+
+/// Per-day, per-tool usage, for tools capped daily rather than by the monthly Usage
+/// quota. Kept separate from Usage deliberately: that table's rows drive the monthly
+/// limit-warning and limit-reached emails, and mixing a different cadence into it would
+/// corrupt those counts. `day` is a 'YYYY-MM-DD' string in UTC, matching how Usage
+/// stores 'YYYY-MM' — a string key makes the unique constraint do the resetting, with no
+/// job to run at midnight.
+model DailyToolUsage {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("DailyToolUsage", fields: [userId], references: [id], onDelete: Cascade)
+
+  tool   String
+  day    String
+  count  Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, tool, day])
+  @@index([userId, tool, day])
 }
 
 model Client {
