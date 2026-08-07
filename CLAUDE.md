@@ -2,13 +2,22 @@
 
 ## Project Overview
 
-AI-powered SaaS platform for content optimization. 19 tools across Free/Pro/Agency tiers.
+AI-powered SaaS platform for content optimization. 22 tools across Free/Pro/Agency tiers.
 
-Note: the marketed count and the nav do not agree. `TOOL_GROUPS` in
-`src/app/dashboard/layout.tsx` lists 22 entries, and user-facing copy currently says
-17 in three places and 18 in two. Before changing the number again, decide what counts
-as a tool and make every surface say the same thing — see the plans/limits checklist
-below, which lists them.
+**A "tool" is one entry in `TOOL_GROUPS`** (`src/app/dashboard/layout.tsx`) — what a user
+can actually click. That is the only definition; don't count `PLAN_TOOLS` keys or
+marketing figures. Counts are cumulative by tier, since each plan sees the tiers below it:
+
+| Tier | Sees | Claim to use |
+|---|---|---|
+| Free | 3 | — |
+| Pro | 13 | "13 Pro tools", never "all tools" |
+| Agency | 22 | "all 22 tools" |
+
+Pro does **not** get everything, so a Pro-facing upgrade prompt must say 13, not 22.
+Adding a nav entry means updating the count in: `/login`, `/signup`, `PRO_BENEFITS` in
+`src/components/ui/index.tsx`, `src/components/upgrade-modal.tsx`,
+`src/components/welcome-banner.tsx`, and this file.
 
 ## Tech Stack
 

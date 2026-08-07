@@ -36,7 +36,7 @@ export default function SignUpPage() {
             </span>
           </h1>
           <p className="text-slate-300 text-lg mb-10 leading-relaxed max-w-sm">
-            17 AI-powered tools for SEO, GEO & AEO. Optimize once, rank everywhere.
+            22 AI-powered tools for SEO, GEO & AEO. Optimize once, rank everywhere.
           </p>
 
           <ul className="space-y-4">
@@ -50,7 +50,7 @@ export default function SignUpPage() {
         </div>
 
         <div className="border-t border-white/10 pt-8 flex gap-8">
-          {[['3', 'Free analyses/mo'], ['17', 'AI tools'], ['3', 'Plan tiers']].map(([n, l]) => (
+          {[['3', 'Free analyses/mo'], ['22', 'AI tools'], ['3', 'Plan tiers']].map(([n, l]) => (
             <div key={l}>
               <div className="text-2xl font-black">{n}</div>
               <div className="text-xs text-slate-400 mt-0.5">{l}</div>
