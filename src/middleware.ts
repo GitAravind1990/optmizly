@@ -1,4 +1,4 @@
-import { clerkMiddleware } from '@clerk/nextjs/server'
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -67,7 +67,34 @@ function buildCSP(nonce: string): string {
   ].join('; ')
 }
 
-export default clerkMiddleware(async (_auth, req: NextRequest) => {
+/**
+ * Pages that require a signed-in user.
+ *
+ * Only /dashboard. The API routes authenticate themselves and return 401, which is the
+ * right answer for a fetch; /admin redirects from its own layout via requireAdmin(); and
+ * /agency/reports/[reportId] is deliberately public, because that is the link an agency
+ * shares with its client.
+ */
+const isProtectedPage = createRouteMatcher(['/dashboard(.*)'])
+
+export default clerkMiddleware(async (auth, req: NextRequest) => {
+  // Before this existed, /dashboard/* rendered for signed-out visitors: the middleware
+  // ran Clerk but never asked it to protect anything, and no page had its own guard. No
+  // data leaked, since every API returns 401 — but a logged-out visitor could fill in a
+  // tool, submit it, and get an error instead of being asked to sign in.
+  if (isProtectedPage(req)) {
+    const { userId } = await auth()
+    if (!userId) {
+      // Explicit path rather than Clerk's redirectToSignIn(): that resolves through
+      // NEXT_PUBLIC_CLERK_SIGN_IN_URL, which has been empty in production before now
+      // (see the June sign-in loop), and its default of /sign-in does not exist here —
+      // the sign-in page is /login. A hardcoded path cannot 404 on a misconfigured env.
+      const login = new URL('/login', req.url)
+      login.searchParams.set('redirect_url', req.nextUrl.pathname + req.nextUrl.search)
+      return NextResponse.redirect(login)
+    }
+  }
+
   if (req.nextUrl.pathname.startsWith('/api/')) {
     if (!rateLimiter) {
       if (IS_PROD) {
