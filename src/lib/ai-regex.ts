@@ -74,6 +74,9 @@ Return ONLY a JSON object, no markdown fences, no commentary:
 Rules:
 - Anchor with ^ and $ only when the request is genuinely about the whole line.
 - Prefer \\b word boundaries over bare substrings, so "art" does not match "start".
+- ALWAYS wrap an alternation of short words in word boundaries: write \\b(vs|versus|or)\\b, never (vs|versus|or). Without them "or" matches the middle of "keyword" and "vs" matches inside other words.
+- "N or more" is {N,}, not {N}. {3} means exactly three. Re-read the request and check which one it asks for.
+- Match the shape actually present in the sample data. If the sample shows dates as YYYY/MM, do not require a day component the data does not have.
 - Keep the pattern as simple as the request allows; a reader should be able to check it.
 - Never use nested quantifiers such as (a+)+ or (.*)*.
 - The explanation describes the pattern, not the data. Do not claim how many lines will match.`
@@ -142,7 +145,14 @@ The user wants to select: ${trimmed}`
   const attempt = async (extra?: string): Promise<{ parsed: GeneratedRegex | null; reason?: string }> => {
     let text: string
     try {
-      text = await callClaude(SYSTEM_PROMPT, extra ? `${basePrompt}\n\n${extra}` : basePrompt, 700)
+      // Deliberately the larger tier. Measured on the small tier, patterns came back
+      // plausible but wrong in ways a user cannot see: an unanchored `or` alternation
+      // that matched "keyword" via its middle letters, and `\w{,3}` — invalid quantifier
+      // syntax that the engine treats as literal text, so the pattern silently matched
+      // nothing and, inverted, returned every line as a hit. A wrong pattern presented
+      // with a confident row count is worse than a refusal, and this is the one call in
+      // the tool, so the cost difference is a rounding error against getting it right.
+      text = await callClaude(SYSTEM_PROMPT, extra ? `${basePrompt}\n\n${extra}` : basePrompt, 700, 'claude-sonnet-4-6')
     } catch {
       return { parsed: null, reason: 'The pattern generator is unavailable right now. Please try again.' }
     }
