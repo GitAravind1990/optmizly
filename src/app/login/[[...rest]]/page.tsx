@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SignInForm } from './sign-in-form'
@@ -77,7 +78,9 @@ export default function SignInPage() {
             </p>
           </div>
 
-          <SignInForm />
+          <Suspense fallback={<div className="w-full max-w-md h-[420px] rounded-2xl border border-slate-200 bg-white" />}>
+            <SignInForm />
+          </Suspense>
         </div>
       </div>
     </div>

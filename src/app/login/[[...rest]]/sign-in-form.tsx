@@ -1,10 +1,22 @@
 'use client'
 
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { SignIn as ClerkSignIn } from '@clerk/nextjs'
 
 export function SignInForm() {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+
+  // The middleware guard bounces a signed-out visitor here with ?redirect_url=<page>.
+  // forceRedirectUrl overrides Clerk's own handling of that parameter, so it has to be
+  // carried through by hand — otherwise the value is silently dropped and everyone lands
+  // on the dashboard home regardless of the link they followed. /auth-redirect validates
+  // it before using it; nothing is trusted just because it arrived here.
+  const params = useSearchParams()
+  const requested = params.get('redirect_url')
+  const afterSignIn = requested
+    ? `/auth-redirect?redirect_url=${encodeURIComponent(requested)}`
+    : '/auth-redirect'
 
   if (!publishableKey) {
     return (
@@ -18,7 +30,7 @@ export function SignInForm() {
 
   return (
     <ClerkSignIn
-      forceRedirectUrl="/auth-redirect"
+      forceRedirectUrl={afterSignIn}
       signUpUrl="/signup"
       appearance={{
         elements: {
