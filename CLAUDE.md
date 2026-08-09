@@ -68,6 +68,35 @@ Two rules learned the hard way:
   and the cancellation email all promise access until `currentPeriodEnd`; the
   webhook must not downgrade before then.
 
+## Adding or switching a third party that receives user data
+
+`/privacy` section 5 is a legal list of sub-processors, not a description of the
+stack. Adding a vendor, or switching between two, changes who receives personal
+data and has to be disclosed — GDPR does not treat this as optional.
+
+This has already gone wrong once. `LLM_PROVIDER=groq` was set in production and
+nobody touched the policy, so for roughly two months it told users their
+submitted content went to Anthropic while it was going to Groq. Nothing in the
+plans/billing checklist above covers "which third parties see user data", which
+is exactly why it slipped.
+
+Update `/privacy` in the same commit when you:
+
+- add or replace an API that receives user content, URLs, domains or keywords
+  (AI providers, SEO data vendors, crawlers)
+- change `LLM_PROVIDER`, or any other env var that reroutes data to a different
+  company — **an env-var change is a sub-processor change**
+- add analytics, error tracking, email or payment services
+- start storing a new category of data, or change how long any of it is kept
+
+Name the provider actually in use. If a switch is configurable, list both and
+say which is current, since either can be the live path.
+
+**Careful with provider naming in code.** `callClaude()`, `src/lib/anthropic.ts`
+and model ids like `claude-haiku-4-5-20251001` all route to Groq in production.
+The source reads as though Anthropic is the provider and nothing contradicts it
+until you read the env — do not infer the live provider from a function name.
+
 ## Exports must restate what badges show
 
 Live/Est badges, filters and warnings are React-only. CSV and PDF exports
