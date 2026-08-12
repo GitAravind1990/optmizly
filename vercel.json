@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/trial-reminder",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/gsc-sync",
+      "schedule": "0 4 * * 1"
     }
   ],
   "redirects": [
