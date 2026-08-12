@@ -59,7 +59,14 @@ update these in the same commit:
 - `/pricing` — plan cards, comparison table, FAQ answers
 - Tool-count copy — upgrade modal, welcome banner, homepage dashboard mockup
 
-Two rules learned the hard way:
+Adding a tool that makes real third-party API calls? Give it a weight in
+`TOOL_COST_UNITS` (`src/lib/plans.ts`). Unlisted means 1 unit, which is right for
+LLM-only tools and wrong for anything hitting DataForSEO — a keyword research
+costs ~$0.20 a run against a $19 plan. Weighted tools must also appear in the
+Terms §3 list, both pricing cards, the "what counts as one analysis" FAQ, and
+they get a `2×`/`3×` badge in the sidebar automatically.
+
+Three rules learned the hard way:
 
 - **State the enforced number, not the marketed one.** A trial is capped at
   10/15, not the 50/200 the plan advertises. Copy that promises the plan limit
