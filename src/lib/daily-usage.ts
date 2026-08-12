@@ -15,9 +15,11 @@ export function getDayKey(d = new Date()): string {
   return d.toISOString().slice(0, 10)
 }
 
-/** Daily generation caps for AI Regex. Free gets a real, usable number every day
- *  because the tool exists to be tried without an account decision; paid tiers are set
- *  high enough to be invisible in normal use while still bounding a runaway script. */
+/** Daily generation caps for AI Regex, which is Agency-only. The FREE and PRO entries
+ *  are unreachable — PLAN_TOOLS refuses those tiers before a cap is ever consulted — but
+ *  the Record needs every key, and leaving them low means a future tier change cannot
+ *  silently hand out an uncapped tool. AGENCY is set high enough to be invisible in
+ *  normal use while still bounding a runaway script. */
 export const AI_REGEX_DAILY_LIMITS: Record<Plan, number> = {
   FREE: 5,
   PRO: 200,

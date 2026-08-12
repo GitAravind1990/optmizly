@@ -10,11 +10,11 @@ marketing figures. Counts are cumulative by tier, since each plan sees the tiers
 
 | Tier | Sees | Claim to use |
 |---|---|---|
-| Free | 3 | — |
-| Pro | 13 | "13 Pro tools", never "all tools" |
+| Free | 2 | — |
+| Pro | 12 | "12 Pro tools", never "all tools" |
 | Agency | 22 | "all 22 tools" |
 
-Pro does **not** get everything, so a Pro-facing upgrade prompt must say 13, not 22.
+Pro does **not** get everything, so a Pro-facing upgrade prompt must say 12, not 22.
 Adding a nav entry means updating the count in: `/login`, `/signup`, `PRO_BENEFITS` in
 `src/components/ui/index.tsx`, `src/components/upgrade-modal.tsx`,
 `src/components/welcome-banner.tsx`, and this file.

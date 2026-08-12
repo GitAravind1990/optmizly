@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
+import { LockedState } from '@/components/ui'
 
 type DataType = 'gsc_queries' | 'keywords' | 'page_content' | 'generic'
 
@@ -46,6 +46,7 @@ export default function AiRegexPage() {
   const [rerunning, setRerunning] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState<'pattern' | 'matches' | null>(null)
+  const [locked, setLocked] = useState(false)
 
   // Editable copies, so tweaking the pattern never mutates the generated result until
   // the user re-runs.
@@ -54,7 +55,13 @@ export default function AiRegexPage() {
   const [editNegate, setEditNegate] = useState(false)
 
   useEffect(() => {
-    fetch('/api/tools/ai-regex').then(r => r.json()).then(d => setUsage(d.data ?? null)).catch(() => {})
+    fetch('/api/tools/ai-regex')
+      .then(async r => {
+        if (r.status === 403) { setLocked(true); return null }
+        return (await r.json()).data ?? null
+      })
+      .then(d => setUsage(d))
+      .catch(() => {})
   }, [])
 
   const dirty = result !== null && (
@@ -123,6 +130,14 @@ export default function AiRegexPage() {
   const outOfCredit = usage !== null && usage.remaining <= 0
   const currentType = DATA_TYPES.find(t => t.id === dataType)!
 
+  if (locked) {
+    return (
+      <div className="flex-1 overflow-y-auto p-6">
+        <LockedState tool="AI Regex" plan="Agency" />
+      </div>
+    )
+  }
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-3">
@@ -136,9 +151,6 @@ export default function AiRegexPage() {
               <span className={usage.remaining <= 1 ? 'font-bold text-amber-600' : 'text-slate-500'}>
                 {usage.remaining} of {usage.limit} generations left today
               </span>
-              {usage.plan === 'FREE' && usage.remaining <= 2 && (
-                <Link href="/pricing" className="ml-2 font-bold text-blue-600 hover:underline">Upgrade →</Link>
-              )}
             </div>
           )}
         </div>
@@ -214,10 +226,9 @@ export default function AiRegexPage() {
           >
             {loading ? 'Generating…' : outOfCredit ? 'No generations left today' : 'Generate & Match'}
           </button>
-          {outOfCredit && usage?.plan === 'FREE' && (
+          {outOfCredit && (
             <p className="text-xs text-slate-500">
-              Your {usage.limit} free generations reset tomorrow. Editing and re-running a pattern is always free.{' '}
-              <Link href="/pricing" className="font-bold text-blue-600 hover:underline">See plans →</Link>
+              Your {usage?.limit} generations reset tomorrow. Editing and re-running a pattern does not count.
             </p>
           )}
         </div>

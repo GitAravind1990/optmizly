@@ -108,7 +108,7 @@ export function EmptyState({ icon, title, desc, cta }: {
 // ── Locked state ──────────────────────────────────────────────────────────────
 const PRO_BENEFITS = [
   'Unlimited content analyses every month',
-  'All 13 Pro SEO tools (E-E-A-T, Gap, Keyword Research, Ranking Engine…)',
+  'All 12 Pro SEO tools (E-E-A-T, Gap, Keyword Research, Ranking Engine…)',
   'Rank Tracker, AI citation optimiser & Agency reports',
 ]
 

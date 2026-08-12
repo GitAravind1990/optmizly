@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
-import { auth } from '@clerk/nextjs/server'
+import { AuthError, requireToolAccess } from '@/lib/auth'
 import { runWithTracking } from '@/lib/llm'
 import { captureServerException } from '@/lib/posthog-server'
 import { generateRegex, type RegexDataType } from '@/lib/ai-regex'
@@ -17,10 +16,10 @@ const VALID_TYPES: RegexDataType[] = ['gsc_queries', 'keywords', 'page_content',
 /**
  * Generate a pattern from a description, then apply it.
  *
- * Deliberately NOT behind requireAuth: this tool is available on every plan including
- * FREE, and requireAuth would meter it against the monthly analysis allowance, charging
- * a free user's three analyses for a tool meant to be a free entry point. The cap here
- * is a separate daily one.
+ * Gated to Agency via requireToolAccess, which checks PLAN_TOOLS without touching the
+ * monthly quota — the daily cap below is what bounds cost here. requireAuth would be
+ * wrong: it meters the monthly analysis allowance, and a pattern generation is not an
+ * analysis.
  *
  * The two layers stay strictly separated. The model sees the description and at most a few
  * sample lines; it returns a pattern. The pattern is validated, then run by a real
@@ -29,11 +28,8 @@ const VALID_TYPES: RegexDataType[] = ['gsc_queries', 'keywords', 'page_content',
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    const { userId: authedClerkId } = await auth()
-    if (!authedClerkId) throw new AuthError(401, 'Not authenticated')
-    clerkId = authedClerkId
-
-    const user = await getOrCreateUser(authedClerkId)
+    const user = await requireToolAccess('ai-regex')
+    clerkId = user.clerkId
 
     const body = await req.json().catch(() => ({})) as {
       description?: string
@@ -54,18 +50,16 @@ export async function POST(req: NextRequest) {
     }
 
     const limit = AI_REGEX_DAILY_LIMITS[user.plan]
-    const usage = await consumeDailyUsage(user.id, TOOL, limit)
+    const usage = await consumeDailyUsage(user.userId, TOOL, limit)
     if (usage.exceeded) {
       throw new AuthError(
         429,
-        user.plan === 'FREE'
-          ? `You have used all ${limit} free pattern generations today. They reset tomorrow, or upgrade to Pro for ${AI_REGEX_DAILY_LIMITS.PRO} a day.`
-          : `Daily limit of ${limit} pattern generations reached. It resets tomorrow.`
+        `Daily limit of ${limit} pattern generations reached. It resets tomorrow.`
       )
     }
 
     // Only the sample reaches the model, never the full dataset.
-    const generated = await runWithTracking(user.id, () => generateRegex(description, dataType, data))
+    const generated = await runWithTracking(user.userId, () => generateRegex(description, dataType, data))
     if (!generated.ok) throw new AuthError(422, generated.error)
 
     const { pattern, flags, negate, explanation, exampleMatches } = generated.result
@@ -104,12 +98,9 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   let clerkId: string | null = null
   try {
-    const { userId: authedClerkId } = await auth()
-    if (!authedClerkId) throw new AuthError(401, 'Not authenticated')
-    clerkId = authedClerkId
-
-    const user = await getOrCreateUser(authedClerkId)
-    const usage = await peekDailyUsage(user.id, TOOL, AI_REGEX_DAILY_LIMITS[user.plan])
+    const user = await requireToolAccess('ai-regex')
+    clerkId = user.clerkId
+    const usage = await peekDailyUsage(user.userId, TOOL, AI_REGEX_DAILY_LIMITS[user.plan])
 
     return apiSuccess({ data: { plan: user.plan, ...usage } })
   } catch (e) {

@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser } from '@/lib/auth'
-import { auth } from '@clerk/nextjs/server'
+import { AuthError, requireToolAccess } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { safeMatch, validatePattern, UnsafePatternError, MAX_INPUT_BYTES } from '@/lib/regex-safety'
 
@@ -22,10 +21,10 @@ export const maxDuration = 15
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    const { userId: authedClerkId } = await auth()
-    if (!authedClerkId) throw new AuthError(401, 'Not authenticated')
-    clerkId = authedClerkId
-    await getOrCreateUser(authedClerkId)
+    // Gated too: otherwise a non-Agency user who obtained a pattern could keep running
+    // it here, which is the whole tool minus the generation step.
+    const user = await requireToolAccess('ai-regex')
+    clerkId = user.clerkId
 
     const body = await req.json().catch(() => ({})) as {
       pattern?: string
