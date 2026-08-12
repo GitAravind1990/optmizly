@@ -1,6 +1,7 @@
 ﻿import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminAuth';
+import { estimateCostRange, activeRates } from '@/lib/llm-pricing';
 
 export async function GET(_req: NextRequest) {
   try {
@@ -70,11 +71,11 @@ export async function GET(_req: NextRequest) {
     const totalInputTokens = tokenTotals._sum.totalInputTokens ?? 0;
     const totalOutputTokens = tokenTotals._sum.totalOutputTokens ?? 0;
     const totalTokens = totalInputTokens + totalOutputTokens;
-    // NOTE: these are Anthropic claude-haiku-4-5 rates ($0.80/M in, $4.00/M out).
-    // Production runs Groq (LLM_PROVIDER=groq), whose Llama pricing is far lower, so
-    // this figure overstates real spend. Left as-is rather than guessed at; replace
-    // with the live provider's published rates.
-    const estimatedCost = (totalInputTokens * 0.80 + totalOutputTokens * 4.00) / 1_000_000;
+    // Rates live in llm-pricing.ts and follow LLM_PROVIDER, so this cannot drift back
+    // into billing one provider's tokens at another's prices. A range rather than a
+    // single figure because token totals carry no record of which tier produced them.
+    const costRange = estimateCostRange(totalInputTokens, totalOutputTokens, activeRates());
+    const estimatedCost = costRange.mid;
 
     return NextResponse.json({
       revenue: { mrrByPlan, totalMRR, churnRate: churnRate.toFixed(1) },
@@ -89,6 +90,10 @@ export async function GET(_req: NextRequest) {
         totalOutputTokens,
         totalTokens,
         estimatedCost: parseFloat(estimatedCost.toFixed(4)),
+        // The bounds the midpoint sits between, so the panel can show that this is
+        // an estimate with real width rather than a precise figure.
+        estimatedCostMin: parseFloat(costRange.min.toFixed(4)),
+        estimatedCostMax: parseFloat(costRange.max.toFixed(4)),
       },
       period: { startDate, endDate, days },
     });

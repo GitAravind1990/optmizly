@@ -1,25 +1,40 @@
 ﻿import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminAuth';
+import { estimateCostRange, activeRates } from '@/lib/llm-pricing';
 
 export async function GET(_req: NextRequest) {
   try {
     const admin = await requireAdmin();
     if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
-    const [monthlyAnalyses, totalUsers, totalContentOptimizations, totalSubscriptions] = await Promise.all([
-      prisma.contentOptimization.count({
-        where: { analyzedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-      }),
-      prisma.user.count(),
-      prisma.contentOptimization.count(),
-      prisma.subscription.count(),
-    ]);
+    const [monthlyAnalyses, totalUsers, totalContentOptimizations, totalSubscriptions, tokenTotals, analysisTotal] =
+      await Promise.all([
+        prisma.contentOptimization.count({
+          where: { analyzedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+        }),
+        prisma.user.count(),
+        prisma.contentOptimization.count(),
+        prisma.subscription.count(),
+        prisma.user.aggregate({ _sum: { totalInputTokens: true, totalOutputTokens: true } }),
+        prisma.usage.aggregate({ _sum: { count: true } }),
+      ]);
 
-    // Flat estimate, not derived from the live provider. Production runs Groq, whose
-    // per-token pricing is well below the Anthropic figure this was chosen against —
-    // treat the cost panel as an upper bound until it is re-based.
-    const aiCostPerAnalysis = 0.15;
+    // Derived from real usage rather than a chosen constant. The previous $0.15 per
+    // analysis was picked against Anthropic pricing and survived the move to Groq, which
+    // put this panel out by roughly two orders of magnitude — a real analysis costs a
+    // fraction of a cent at Llama rates.
+    //
+    // Per-analysis cost is all-time spend divided by all-time analyses, then applied to
+    // the last 30 days' count. Both sides come from stored data, so the figure moves with
+    // actual behaviour instead of needing to be maintained by hand.
+    const allTimeCost = estimateCostRange(
+      tokenTotals._sum.totalInputTokens ?? 0,
+      tokenTotals._sum.totalOutputTokens ?? 0,
+      activeRates()
+    ).mid;
+    const allTimeAnalyses = analysisTotal._sum.count ?? 0;
+    const aiCostPerAnalysis = allTimeAnalyses > 0 ? allTimeCost / allTimeAnalyses : 0;
     const totalAiCost = monthlyAnalyses * aiCostPerAnalysis;
     const googleCallsMonthly = monthlyAnalyses * 2;
 
@@ -39,7 +54,7 @@ export async function GET(_req: NextRequest) {
       },
       costs: {
         claude: {
-          costPerAnalysis: '$' + aiCostPerAnalysis,
+          costPerAnalysis: '$' + aiCostPerAnalysis.toFixed(4),
           monthlyAnalyses,
           estimatedMonthlyCost: '$' + totalAiCost.toFixed(2),
         },

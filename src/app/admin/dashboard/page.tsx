@@ -92,7 +92,7 @@ export default function AdminDashboard() {
 function OverviewTab({ stats }: any) {
   const totalAnalyses = stats.features['Content Optimizer'] || 0;
   const avgPerUser = stats.users.total > 0 ? Math.round(totalAnalyses / stats.users.total) : 0;
-  const tok = stats.tokens ?? { totalTokens: 0, totalInputTokens: 0, totalOutputTokens: 0, estimatedCost: 0 };
+  const tok = stats.tokens ?? { totalTokens: 0, totalInputTokens: 0, totalOutputTokens: 0, estimatedCost: 0, estimatedCostMin: 0, estimatedCostMax: 0 };
   const totalTokensDisplay = tok.totalTokens >= 1_000_000
     ? `${(tok.totalTokens / 1_000_000).toFixed(2)}M`
     : tok.totalTokens >= 1_000
@@ -110,7 +110,7 @@ function OverviewTab({ stats }: any) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricCard title="Total Tokens Used" value={totalTokensDisplay} sub={`${(tok.totalInputTokens / 1000).toFixed(1)}K in · ${(tok.totalOutputTokens / 1000).toFixed(1)}K out`} color="blue" />
-        <MetricCard title="Est. LLM Cost (all time)" value={`$${tok.estimatedCost.toFixed(4)}`} sub="Groq haiku rates" color="purple" />
+        <MetricCard title="Est. LLM Cost (all time)" value={`$${tok.estimatedCost.toFixed(4)}`} sub={`$${(tok.estimatedCostMin ?? 0).toFixed(4)}–$${(tok.estimatedCostMax ?? 0).toFixed(4)} depending on tier`} color="purple" />
         <MetricCard title="Tokens / User" value={stats.users.total > 0 ? Math.round(tok.totalTokens / stats.users.total).toLocaleString() : '0'} sub="All-time average" color="green" />
       </div>
 
