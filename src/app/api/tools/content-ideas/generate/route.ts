@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const count = Math.min(Math.max(Number(numberOfIdeas), 1), 20)
     const keywordsStr = Array.isArray(seedKeywords) ? seedKeywords.join(', ') : seedKeywords
 
-    const raw = await callClaude(
+    const raw = await callLLM(
       'You are an expert SEO content strategist. Return ONLY a valid JSON array. No markdown, no backticks, no explanation.',
       `Generate ${count} high-opportunity content ideas for a ${industry} business targeting: ${targetAudience}
 

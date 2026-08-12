@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude } from '@/lib/anthropic'
+import { callLLM } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, requireAuth } from '@/lib/auth'
 import { fetchOPRScore } from '@/lib/openpagerank'
@@ -245,7 +245,7 @@ export async function POST(req: NextRequest) {
       ? Math.round(((trafficCurrent - priorReport.trafficCurrent) / priorReport.trafficCurrent) * 100)
       : null
 
-    const aiSummary = await callClaude(
+    const aiSummary = await callLLM(
       'You are a professional SEO analyst writing concise monthly reports for agency clients. Be data-driven, specific, and encouraging. Write in third person about the client. Where a metric is noted as "not yet available", describe it as still being established rather than inventing a number.',
       `Generate a professional 150-200 word SEO executive summary for ${client.name} (${client.website}) for ${MONTH_NAMES[month - 1]} ${year}.
 

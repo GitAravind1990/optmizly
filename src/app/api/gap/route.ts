@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
 import { fetchKeywordGrounding } from '@/lib/content-grounding'
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     const basePrompt = `Find content gaps.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`
     const prompt = basePrompt + (groundingBlock ? `\n\n${groundingBlock}` : '')
 
-    const raw = await callClaude(SYSTEM, prompt, 2000)
+    const raw = await callLLM(SYSTEM, prompt, 2000)
     let grounded = crawledEntries.length > 0
     let parsed
     try {
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       // retry once, ungrounded, rather than surfacing a hard failure to a user
       // who just happened to type a keyword.
       if (!groundingBlock) throw parseErr
-      const rawRetry = await callClaude(SYSTEM, basePrompt, 2000)
+      const rawRetry = await callLLM(SYSTEM, basePrompt, 2000)
       parsed = extractJSON(rawRetry)
       grounded = false
     }

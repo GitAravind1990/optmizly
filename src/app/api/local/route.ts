@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 
 export const runtime = 'nodejs'
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       gbp: `Generate GBP content for:\nBusiness: ${businessName}\nLocation: ${city}\nService: ${service}\n\n<content>\n${content.slice(0, 3500)}\n</content>`,
     }
 
-    const raw = await callClaude(system, prompts[subTool], 2500)
+    const raw = await callLLM(system, prompts[subTool], 2500)
     return apiSuccess({ ...extractJSON(raw), subTool, userPlan: user.plan })
   } catch (e) {
     return apiError(e)

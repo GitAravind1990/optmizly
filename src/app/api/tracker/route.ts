@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
 
@@ -40,7 +40,7 @@ Evaluate for these queries (one result per query):
 <queries>
 ${queries.slice(0, 4).map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')}
 </queries>`
-    const raw = await callClaude(system, prompt, 4000)
+    const raw = await callLLM(system, prompt, 4000)
     return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/tracker' })

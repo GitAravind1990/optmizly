@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth, type AuthedUser } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { prisma } from '@/lib/prisma'
 import { captureServerEvent, captureServerException } from '@/lib/posthog-server'
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       return apiError({ message: 'Content too short', status: 400, name: 'ValidationError' })
     }
 
-    const raw = await callClaude(
+    const raw = await callLLM(
       SYSTEM,
       `Analyse the content below and categorize each issue:\n<content>\n${content.slice(0, 5000)}\n</content>`,
       2000,

@@ -1,10 +1,21 @@
+// Single entry point for every LLM call in the product.
+//
+// Provider-neutral on purpose: LLM_PROVIDER selects between Groq, Anthropic and
+// Bedrock at runtime, and production currently runs Groq. This file was called
+// anthropic.ts and its function callClaude() until 2026-08-09, which made the source
+// read as though Anthropic were the provider — that is how Groq ended up processing
+// user content while the privacy policy still named Anthropic. Do not rename these
+// after whichever provider happens to be live; name them after the job.
+//
+// The Anthropic SDK import below is one provider path among three, not the default.
+
 import Anthropic from '@anthropic-ai/sdk'
 import { AsyncLocalStorage } from 'async_hooks'
 import { prisma } from './prisma'
 
 // This file is SERVER ONLY — never import in client components
 if (typeof window !== 'undefined') {
-  throw new Error('anthropic.ts must only be used on the server')
+  throw new Error('llm.ts must only be used on the server')
 }
 
 // Per-request userId storage for automatic token tracking
@@ -15,7 +26,7 @@ export function setTrackingUser(userId: string): void {
   trackingStorage.enterWith(userId)
 }
 
-/** Wrap an async route body to auto-track tokens for all callClaude calls within it. */
+/** Wrap an async route body to auto-track tokens for all callLLM calls within it. */
 export function runWithTracking<T>(userId: string, fn: () => Promise<T>): Promise<T> {
   return trackingStorage.run(userId, fn)
 }
@@ -107,7 +118,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
   }
 }
 
-export async function callClaude(
+export async function callLLM(
   system: string,
   prompt: string,
   maxTokens = 1500,

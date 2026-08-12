@@ -942,7 +942,7 @@ export function RankingEngineClient({ unlocked }: { unlocked: boolean }) {
             style={{ borderColor: '#0000FF', borderTopColor: 'transparent' }}
           />
           <p className="text-slate-500 text-sm font-medium">Analyzing ranking possibility...</p>
-          <p className="text-slate-400 text-xs mt-1">Claude is estimating competitor metrics and gap analysis</p>
+          <p className="text-slate-400 text-xs mt-1">AI is estimating competitor metrics and gap analysis</p>
         </div>
       )}
 

@@ -167,7 +167,7 @@ export default function PerformanceFixerPage() {
               <h2 className="font-bold text-sm mb-3 text-slate-700">What you unlock:</h2>
               <ul className="space-y-2 text-sm text-slate-600">
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> All PageSpeed Insights metrics (20+)</li>
-                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> AI-Generated Code Fixes (Claude AI)</li>
+                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> AI-Generated Code Fixes</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> ROI Calculator: revenue impact analysis</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> Industry Benchmarks</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" /> 50 audits / month</li>

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth, AuthError } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
 import { fetchKeywordGrounding } from '@/lib/content-grounding'
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const basePrompt = `Build AI citation plan.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`
     const prompt = basePrompt + (realLines ? `\n\n${realLines}` : '')
 
-    const raw = await callClaude(SYSTEM, prompt, 2000)
+    const raw = await callLLM(SYSTEM, prompt, 2000)
     let grounded = !!realFeatures || realSchemaTypes.length > 0
     let parsed
     try {
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       // cases; grounding failing must never make this tool less reliable than
       // before it existed.
       if (!realLines) throw parseErr
-      const rawRetry = await callClaude(SYSTEM, basePrompt, 2000)
+      const rawRetry = await callLLM(SYSTEM, basePrompt, 2000)
       parsed = extractJSON(rawRetry)
       grounded = false
     }

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth, type AuthedUser } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { prisma } from '@/lib/prisma'
 import { captureServerEvent, captureServerException } from '@/lib/posthog-server'
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
     // latency; a timeout just means the technical score falls back to Claude's
     // estimate, same graceful-degradation pattern as every other real call here.
     const [raw, competitorOprMap, rdMap, competitorPageStats, psiMetrics] = await Promise.all([
-      callClaude(
+      callLLM(
         SYSTEM,
         `Keyword: ${keyword}\nDomain: ${domain}\nCountry: ${country}\nGoal: ${goal}${realDataLines ? `\n\n${realDataLines}` : ''}\n\nEstimate website metrics from the domain URL. Small/new sites: DA 10-25. Established niche sites: DA 30-55. Major brands: DA 70+. ${realSerp ? "DA, referring domains, and word counts for the real competitor domains will be supplied separately where available — estimate only what isn't." : "Generate realistic competitor data for this keyword's niche."}`,
         2500,

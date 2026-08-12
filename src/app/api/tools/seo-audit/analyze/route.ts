@@ -1,6 +1,6 @@
 ﻿import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { validateUrl } from '@/lib/ssrf-guard'
 import { runAutoChecks, type AutoCheckContext, type RedirectHop } from '@/lib/seo-audit/auto-checks'
@@ -246,7 +246,7 @@ export async function POST(req: NextRequest) {
     let aiResults: Record<string, AICategoryResult> = {}
     try {
       const schemaTypes = [...page.html.matchAll(/"@type"\s*:\s*"([^"]+)"/g)].map(m => m[1])
-      const raw = await callClaude(
+      const raw = await callLLM(
         'You are an expert enterprise SEO auditor. Return ONLY valid JSON — no markdown, no backticks.',
         `Audit this web page for four SEO dimensions (score 0-100, higher = better) AND a specific checklist.
 

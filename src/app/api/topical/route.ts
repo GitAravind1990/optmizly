@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
 
@@ -99,7 +99,7 @@ Existing URLs: ${urlBlock}
 
 Generate a complete topical authority map with 3 pillars × 3 clusters each, plus scoring and content plan.`
 
-    const raw = await callClaude(system, prompt, 3500)
+    const raw = await callLLM(system, prompt, 3500)
     const data = extractJSON<{
       pillars: Array<{
         title: string; slug: string; intent: string; monthly_searches: string

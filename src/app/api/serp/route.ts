@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
 import { getTopSerpResults } from '@/lib/dataforseo'
@@ -51,8 +51,8 @@ Rules: Use the EXACT URLs from the real SERP data above. 5 competitors from the 
 Rules: phase1=3 tasks (weeks 1-4), phase2=3 tasks (weeks 5-10), phase3=3 tasks (weeks 11-20). Realistic rank projection.`
 
     const [r1, r2] = await Promise.all([
-      callClaude(sys1, `SERP audit for: ${url} targeting "${keyword}"`, 4000, 'claude-sonnet-4-6'),
-      callClaude(sys2, `Recovery plan for: ${url} targeting "${keyword}"`, 2000, 'claude-sonnet-4-6'),
+      callLLM(sys1, `SERP audit for: ${url} targeting "${keyword}"`, 4000, 'claude-sonnet-4-6'),
+      callLLM(sys2, `Recovery plan for: ${url} targeting "${keyword}"`, 2000, 'claude-sonnet-4-6'),
     ])
 
     const result = {

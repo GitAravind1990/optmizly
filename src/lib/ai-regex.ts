@@ -7,7 +7,7 @@
 //
 // SERVER ONLY — imports the Anthropic client transitively.
 
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { validatePattern, sanitiseFlags } from '@/lib/regex-safety'
 
 /** What the lines are, so the prompt can carry the right domain hints. Deliberately a
@@ -152,7 +152,7 @@ The user wants to select: ${trimmed}`
       // nothing and, inverted, returned every line as a hit. A wrong pattern presented
       // with a confident row count is worse than a refusal, and this is the one call in
       // the tool, so the cost difference is a rounding error against getting it right.
-      text = await callClaude(SYSTEM_PROMPT, extra ? `${basePrompt}\n\n${extra}` : basePrompt, 700, 'claude-sonnet-4-6')
+      text = await callLLM(SYSTEM_PROMPT, extra ? `${basePrompt}\n\n${extra}` : basePrompt, 700, 'claude-sonnet-4-6')
     } catch {
       return { parsed: null, reason: 'The pattern generator is unavailable right now. Please try again.' }
     }

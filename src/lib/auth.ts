@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from './prisma'
 import { PLAN_LIMITS, TRIAL_LIMITS, PLAN_TOOLS, getMonthKey } from './plans'
 import { Plan, Prisma } from '@prisma/client'
-import { setTrackingUser } from './anthropic'
+import { setTrackingUser } from './llm'
 import { captureServerEvent } from './posthog-server'
 import { sendLimitWarningEmail, sendLimitReachedEmail } from './email'
 

@@ -1,6 +1,6 @@
 ﻿import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
@@ -254,7 +254,7 @@ export async function POST(req: NextRequest) {
     const qual = (isReal: boolean) => isReal ? '(measured)' : '(rough estimate)'
     let aiInsights: AIInsights = {}
     try {
-      const raw = await callClaude(
+      const raw = await callLLM(
         'You are an expert SEO competitive analyst. Return ONLY valid JSON — no markdown, no backticks.',
         `Analyze this competitor SEO data for ${domainName} and return JSON insights:
 

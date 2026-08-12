@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth, AuthError } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
 
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (!content || typeof content !== 'string' || !content.trim()) {
       throw new AuthError(400, 'Content is required')
     }
-    const raw = await callClaude(SYSTEM, `Analyse for E-E-A-T.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`, 1200)
+    const raw = await callLLM(SYSTEM, `Analyse for E-E-A-T.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`, 1200)
     return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/eeat' })

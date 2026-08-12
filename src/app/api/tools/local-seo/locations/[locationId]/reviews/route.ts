@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude } from '@/lib/anthropic'
+import { callLLM } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
@@ -53,7 +53,7 @@ Write a 2-3 sentence response:
 - 3 stars: acknowledge feedback and show commitment to improvement
 - 1-2 stars: apologize sincerely, take responsibility, offer to resolve offline`
 
-      const responseText = await callClaude(system, prompt, 300)
+      const responseText = await callLLM(system, prompt, 300)
 
       await prisma.localReview.update({
         where: { id: reviewId },

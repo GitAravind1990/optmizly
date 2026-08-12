@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth, AuthError } from '@/lib/auth'
-import { callClaude, extractJSON } from '@/lib/anthropic'
+import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
 
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
     // Step 1: E-E-A-T analysis (use cached if available)
     let eeatResult = cachedEeat
     if (!eeatResult?.overall) {
-      const eeatRaw = await callClaude(
+      const eeatRaw = await callLLM(
         EEAT_SYSTEM,
         `Analyse for E-E-A-T.\n<topic>${summary ?? ''}</topic>\n\n<content>\n${content.slice(0, 3000)}\n</content>`,
         1200,
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
       .map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')
 
     // Step 2: Full rewrite with higher token limit
-    const raw = await callClaude(
+    const raw = await callLLM(
       REWRITE_SYSTEM(`${eeatFindings}\n\nRECOMMENDATIONS TO APPLY:\n${eeatRecs}`),
       `Rewrite the content below following the high-performance SEO framework. Write the COMPLETE article, do not truncate:\n<content>\n${content.slice(0, 6000)}\n</content>`,
       6000,

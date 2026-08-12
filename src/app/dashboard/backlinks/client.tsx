@@ -375,7 +375,7 @@ export function BacklinksClient() {
                   className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-colors">
                   {generating ? 'Generating...' : 'Generate 12 Opportunities'}
                 </button>
-                {generating && <span className="text-xs text-slate-400">Claude is researching real sites (~20 sec)</span>}
+                {generating && <span className="text-xs text-slate-400">AI is researching real sites (~20 sec)</span>}
               </div>
             </div>
           )}

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { AuthError } from './auth'
 import { ZodError } from 'zod'
-import { AIResponseParseError } from './anthropic'
+import { AIResponseParseError } from './llm'
 
 export function apiError(error: unknown): NextResponse {
   if (error instanceof AuthError) {

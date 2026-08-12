@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, extractJSON, setTrackingUser } from '@/lib/anthropic'
+import { callLLM, extractJSON, setTrackingUser } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
@@ -115,7 +115,7 @@ Content Brief: ${contentBrief ?? 'General content about ' + niche}
 
 Generate highly specific opportunities. Research real publications in the ${niche} space.`
 
-    const raw = await callClaude(SYSTEM, prompt, 3000)
+    const raw = await callLLM(SYSTEM, prompt, 3000)
     const parsed = extractJSON<{
       summary: string
       opportunities: Array<{

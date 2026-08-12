@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import { callClaude as callClaudeShared } from '@/lib/anthropic';
+import { callLLM as callLLMShared } from '@/lib/llm';
 import { requireAuth, AuthError, getOrCreateUser } from '@/lib/auth';
 import { captureServerException } from '@/lib/posthog-server';
 
@@ -151,8 +151,8 @@ interface Fix {
   afterText?: string;
 }
 
-async function callClaude(prompt: string): Promise<string> {
-  return callClaudeShared('', prompt, 3000, 'claude-sonnet-4-6')
+async function callLLM(prompt: string): Promise<string> {
+  return callLLMShared('', prompt, 3000, 'claude-sonnet-4-6')
 }
 
 function parseJSON<T>(text: string, fallback: T): T {
@@ -180,7 +180,7 @@ Return ONLY valid JSON:
     { "issue": "Specific issue", "suggestion": "How to fix", "priority": "critical|warning|info" }
   ]
 }`;
-  return parseJSON(await callClaude(prompt), {
+  return parseJSON(await callLLM(prompt), {
     intent: 'informational', matchScore: 50, reasoning: '', suggestions: [],
   });
 }
@@ -200,7 +200,7 @@ Return ONLY valid JSON:
   "relationships": [{"entity1": "X", "entity2": "Y", "relationship": "type"}],
   "suggestions": [{"issue": "...", "suggestion": "...", "priority": "warning"}]
 }`;
-  return parseJSON(await callClaude(prompt), {
+  return parseJSON(await callLLM(prompt), {
     entities: [], score: 50, missing: [], relationships: [], suggestions: [],
   });
 }
@@ -219,7 +219,7 @@ Return ONLY valid JSON:
   "score": 60,
   "suggestions": [{"issue": "...", "suggestion": "...", "priority": "info"}]
 }`;
-  return parseJSON(await callClaude(prompt), {
+  return parseJSON(await callLLM(prompt), {
     found: [], missing: [], score: 50, suggestions: [],
   });
 }
@@ -237,7 +237,7 @@ Return ONLY valid JSON:
   "reasoning": "Why this schema type",
   "jsonLd": "<script type=\\"application/ld+json\\">{ \\"@context\\": \\"https://schema.org\\" }</script>"
 }`;
-  return parseJSON(await callClaude(prompt), {
+  return parseJSON(await callLLM(prompt), {
     type: 'Article', reasoning: '', jsonLd: '',
   });
 }
@@ -260,7 +260,7 @@ Return ONLY valid JSON:
   "linkingOpportunities": [{"from": "current page", "to": "suggested page", "anchor": "link text"}],
   "suggestions": [{"issue": "...", "suggestion": "...", "priority": "warning"}]
 }`;
-  return parseJSON(await callClaude(prompt), {
+  return parseJSON(await callLLM(prompt), {
     mainTopic: keyword, covered: [], missing: [], score: 50,
     pillarSuggestion: '', clusterSuggestions: [], linkingOpportunities: [], suggestions: [],
   });
@@ -287,7 +287,7 @@ Return ONLY valid JSON:
     "trust": "Explanation"
   }
 }`;
-  return parseJSON(await callClaude(prompt), {
+  return parseJSON(await callLLM(prompt), {
     experience: 50, expertise: 50, authority: 50, trust: 50, overall: 50, details: {},
   });
 }
@@ -315,7 +315,7 @@ Return ONLY valid JSON:
     { "section": "Section name", "original": "Current text", "improved": "AI rewrite" }
   ]
 }`;
-  return parseJSON(await callClaude(prompt), {
+  return parseJSON(await callLLM(prompt), {
     contentScore: 50, fixes: [], rewrites: [],
   });
 }

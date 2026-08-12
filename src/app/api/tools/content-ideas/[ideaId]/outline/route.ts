@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { callClaude, setTrackingUser } from '@/lib/anthropic'
+import { callLLM, setTrackingUser } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError, getOrCreateUser } from '@/lib/auth'
@@ -36,7 +36,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const sectionsStr = sections.join(', ')
 
     const [aiOutline, aiIntro] = await Promise.all([
-      callClaude(
+      callLLM(
         'You are an expert SEO content strategist. Create detailed, actionable content outlines.',
         `Create a detailed SEO content outline for:
 
@@ -59,7 +59,7 @@ Format clearly with headers and bullet points.`,
         'claude-haiku-4-5-20251001'
       ),
 
-      callClaude(
+      callLLM(
         'You are an expert SEO copywriter. Write compelling, keyword-optimized introductions.',
         `Write a 120-150 word engaging introduction for:
 

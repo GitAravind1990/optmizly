@@ -350,7 +350,7 @@ function HealthTab() {
         <h3 className="text-lg font-bold mb-4">Monthly Cost Estimates</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="border rounded-lg p-4">
-            <h4 className="font-semibold mb-3 text-gray-700">Claude API</h4>
+            <h4 className="font-semibold mb-3 text-gray-700">LLM API</h4>
             <div className="text-3xl font-bold mb-1">{health.costs.claude.estimatedMonthlyCost}</div>
             <div className="text-xs text-gray-500">
               {health.costs.claude.monthlyAnalyses} analyses @ {health.costs.claude.costPerAnalysis}/ea
