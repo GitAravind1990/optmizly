@@ -15,7 +15,7 @@ const sections = [
   },
   {
     title: '3. Account Registration and Plans',
-    body: `You must create an account to use Optmizly. You are responsible for maintaining the confidentiality of your login credentials and for all activity under your account. Free accounts are limited to 3 analyses per month. Pro accounts are limited to 50 analyses per month. Agency accounts are limited to 200 analyses per month. Accounts on a free trial are limited to 10 analyses on Pro and 15 on Agency until the trial converts. Unused analyses do not roll over. We reserve the right to modify plan limits with 30 days' notice.`,
+    body: `You must create an account to use Optmizly. You are responsible for maintaining the confidentiality of your login credentials and for all activity under your account. Free accounts are limited to 3 analyses per month. Pro accounts are limited to 50 analyses per month. Agency accounts are limited to 200 analyses per month. Accounts on a free trial are limited to 10 analyses on Pro and 15 on Agency until the trial converts. Most tools count as one analysis. A small number that make significantly more third-party API calls on your behalf — currently Keyword Research, Competitor Spy, Ranking Engine, Geogrid and the Local SEO suite — count as two or three, and the tool tells you before you run it. Unused analyses do not roll over. We reserve the right to modify plan limits with 30 days' notice.`,
   },
   {
     title: '4. User Obligations',

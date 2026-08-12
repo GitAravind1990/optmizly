@@ -48,7 +48,7 @@ const plans = [
     featured: true,
     features: [
       'Everything in Free, plus:',
-      '50 analyses / month',
+      '50 analyses / month (data-heavy tools count as 2–3)',
       'Content Optimizer + Full Rewrite',
       'E-E-A-T deep analysis',
       'Relevant Backlinks finder',
@@ -69,7 +69,7 @@ const plans = [
     featured: false,
     features: [
       'Everything in Pro, plus:',
-      '200 analyses / month',
+      '200 analyses / month (data-heavy tools count as 2–3)',
       'AI Citation Tracker',
       'Local SEO Suite (4 tools)',
       'SERP Competitor Audit',
@@ -398,7 +398,7 @@ const FAQS = [
   },
   {
     q: 'What counts as one analysis?',
-    a: 'Each time you submit content or a URL for scoring (whether that\'s a content analysis, E-E-A-T check, SERP audit, or other tool), it uses one analysis credit. Credits reset at the start of each billing month.',
+    a: 'Each time you submit content or a URL for scoring, it uses one analysis credit. Most tools cost one credit. A few pull a lot more live data from third-party providers on your behalf — Keyword Research, Competitor Spy, Ranking Engine, Geogrid and the Local SEO suite — and those cost two or three credits per run, which the tool tells you before you run it. Credits reset at the start of each billing month, and the Free plan\'s tools all cost one.',
   },
   {
     q: 'Can I cancel anytime?',

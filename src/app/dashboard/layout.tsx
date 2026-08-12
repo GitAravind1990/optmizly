@@ -7,6 +7,7 @@ import { UserButton } from '@clerk/nextjs'
 import { ContentProvider } from '@/context/ContentContext'
 import { WelcomeBanner } from '@/components/welcome-banner'
 import posthog from 'posthog-js'
+import { toolCost } from '@/lib/plans'
 
 type UsageData = { plan: string; count: number; limit: number; remaining: number }
 
@@ -222,6 +223,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     >
                       <NavIcon id={tool.id} />
                       <span className="flex-1 truncate">{tool.label}</span>
+                      {/* Data-heavy tools draw more than one analysis from the monthly
+                          allowance, so the cost is shown before the user commits to a
+                          run rather than discovered in a 429. */}
+                      {unlocked && toolCost(tool.id) > 1 && (
+                        <span
+                          title={`Uses ${toolCost(tool.id)} of your monthly analyses`}
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500"
+                        >
+                          {toolCost(tool.id)}&times;
+                        </span>
+                      )}
                       {!usage ? null : !unlocked ? (
                         <NavIcon id="lock" />
                       ) : tool.minPlan !== 'FREE' && !active && (

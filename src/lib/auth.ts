@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from './prisma'
-import { PLAN_LIMITS, TRIAL_LIMITS, PLAN_TOOLS, getMonthKey } from './plans'
+import { PLAN_LIMITS, TRIAL_LIMITS, PLAN_TOOLS, getMonthKey, toolCost } from './plans'
 import { Plan, Prisma } from '@prisma/client'
 import { setTrackingUser } from './llm'
 import { captureServerEvent } from './posthog-server'
@@ -114,26 +114,34 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
   const sub = await prisma.subscription.findUnique({ where: { userId: user.id }, select: { status: true } })
   const limit = sub?.status === 'TRIALING' ? TRIAL_LIMITS[user.plan] : PLAN_LIMITS[user.plan]
 
+  // Tools cost different amounts of the allowance — see TOOL_COST_UNITS for why.
+  const cost = toolCost(tool)
+
   const updated = await prisma.usage.upsert({
     where: { userId_month: { userId: user.id, month } },
-    create: { userId: user.id, month, count: 1 },
-    update: { count: { increment: 1 } },
+    create: { userId: user.id, month, count: cost },
+    update: { count: { increment: cost } },
   })
+  const before = updated.count - cost
 
-  // Warn when they've just used their second-to-last analysis (fires exactly once per month)
+  // Warn when they cross into their last analysis. Written as a threshold crossing
+  // rather than an equality: a 3-unit tool can jump 47 -> 50 without ever landing on
+  // 49, and the old `count === limit - 1` check would silently never fire for those
+  // users. Comparing before/after fires exactly once per month either way.
   // Awaited (not fire-and-forget): on Vercel's serverless runtime, an un-awaited
   // promise has no guarantee of completing once the surrounding request finishes —
   // see the identical bug found and fixed in the DoDo webhook (session_jul15).
-  if (updated.count === limit - 1 && limit - 1 > 0) {
+  if (limit - 1 > 0 && before < limit - 1 && updated.count >= limit - 1 && updated.count <= limit) {
     const firstName = await getClerkFirstName(clerkId, user.email.split('@')[0])
     await sendLimitWarningEmail(user.email, updated.count, limit, firstName, user.plan).catch(() => {})
   }
 
   if (updated.count > limit) {
-    // Roll back the increment — we were already at the limit
+    // Roll back by what was actually taken, not by 1 — otherwise a rejected 3-unit run
+    // would permanently consume 2 units of a user's allowance for work never done.
     await prisma.usage.update({
       where: { userId_month: { userId: user.id, month } },
-      data: { count: { decrement: 1 } },
+      data: { count: { decrement: cost } },
     })
     // Send exactly once per month — atomically flip limitEmailSent false→true.
     // Awaited before the throw below, for the same reason as above: this used
@@ -153,7 +161,13 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
       plan: user.plan,
       limit,
     }).catch(() => {})
-    throw new AuthError(429, `Monthly limit of ${limit} analyses reached. Upgrade to continue.`)
+    const remaining = Math.max(0, limit - before)
+    throw new AuthError(
+      429,
+      cost > 1 && remaining > 0
+        ? `This tool uses ${cost} of your monthly allowance and you have ${remaining} left of ${limit}. Upgrade to continue.`
+        : `Monthly limit of ${limit} analyses reached. Upgrade to continue.`
+    )
   }
 
   setTrackingUser(user.id)
