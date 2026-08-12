@@ -40,7 +40,7 @@ interface RawIdea {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    // Was getProUser() (tier check only, no quota) — this fires Claude plus a real
+    // Was getProUser() (tier check only, no quota) — this fires the model plus a real
     // DataForSEO keyword-metrics batch call per request.
     const user = await requireAuth('content-ideas')
     clerkId = user.clerkId
@@ -87,10 +87,10 @@ Make searchVolume realistic (100-50000), difficulty 10-90, opportunityScore 30-9
     const parsed = extractJSON<RawIdea[]>(raw)
     const ideas = Array.isArray(parsed) ? parsed : []
 
-    // Real search volume/difficulty/CPC always wins over Claude's own invented
+    // Real search volume/difficulty/CPC always wins over the model's own invented
     // "realistic" numbers (the prompt above literally instructs it to make up a
     // plausible-looking figure) — one batched DataForSEO call covers every idea's
-    // primary keyword. Ideas whose keyword has no real data keep Claude's estimate,
+    // primary keyword. Ideas whose keyword has no real data keep the model's estimate,
     // flagged via metricsReal so the UI can show which numbers are real.
     const primaryKeywords = [...new Set(
       ideas.map(i => i.primaryKeyword?.trim()).filter((k): k is string => !!k)

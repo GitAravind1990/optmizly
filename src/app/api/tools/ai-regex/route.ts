@@ -22,7 +22,7 @@ const VALID_TYPES: RegexDataType[] = ['gsc_queries', 'keywords', 'page_content',
  * a free user's three analyses for a tool meant to be a free entry point. The cap here
  * is a separate daily one.
  *
- * The two layers stay strictly separated. Claude sees the description and at most a few
+ * The two layers stay strictly separated. The model sees the description and at most a few
  * sample lines; it returns a pattern. The pattern is validated, then run by a real
  * engine over the data. The model never sees the full dataset and never decides a match.
  */
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Only the sample reaches Claude, never the full dataset.
+    // Only the sample reaches the model, never the full dataset.
     const generated = await runWithTracking(user.id, () => generateRegex(description, dataType, data))
     if (!generated.ok) throw new AuthError(422, generated.error)
 

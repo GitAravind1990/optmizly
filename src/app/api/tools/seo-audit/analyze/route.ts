@@ -14,7 +14,7 @@ import { prisma } from '@/lib/prisma'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
-// Real-Lighthouse PSI runs (~15-40s) execute in parallel with the Claude call, but need
+// Real-Lighthouse PSI runs (~15-40s) execute in parallel with the model call, but need
 // headroom beyond the page-fetch/robots/sitemap/WP-check time that precedes them.
 export const maxDuration = 90
 
@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
     const wordCount = bodyText ? bodyText.split(/\s+/).length : 0
 
     // Kick off the PSI (real Lighthouse) run and the bounded sitemap crawl now so they
-    // execute concurrently with the Claude call below, rather than adding their latency
+    // execute concurrently with the model call below, rather than adding their latency
     // on top sequentially. Both skipped for paste-HTML audits (no real URL to work from).
     const psiPromise = (fetched && urlKnown) ? fetchPSIMetrics(page.finalUrl) : Promise.resolve(null)
     const crawlPromise = (fetched && urlKnown) ? crawlSitemapSample(sitemapXml, page.finalUrl) : Promise.resolve({})

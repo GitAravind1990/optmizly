@@ -6,7 +6,7 @@
 // `auto: true` marks checks the regex/header engine in auto-checks.ts attempts to
 // detect from the fetched page. Everything else is a manual checklist item.
 // Judgement-heavy categories (E-E-A-T, AI/GEO, cannibalization, etc.) are scored by
-// Claude at the category level rather than per check.
+// The model at the category level rather than per check.
 
 export type AuditPriority = 'Critical' | 'High' | 'Medium' | 'Low' | 'Advanced'
 export type CheckStatus = 'pass' | 'fail' | 'warn' | 'na'
@@ -28,7 +28,7 @@ export interface AuditCategory {
   title: string
   tag: string
   priority: AuditPriority
-  /** true when Claude scores this category (judgement-based) */
+  /** true when the model scores this category (judgement-based) */
   ai?: boolean
   subCategories: AuditSubCategory[]
 }
@@ -725,7 +725,7 @@ export const CATEGORY_BY_KEY: Record<string, AuditCategory> = Object.fromEntries
   AUDIT_FRAMEWORK.map(c => [c.key, c])
 )
 
-/** Categories scored by Claude rather than the regex engine. */
+/** Categories scored by the model rather than the regex engine. */
 export const AI_CATEGORY_KEYS = AUDIT_FRAMEWORK.filter(c => c.ai).map(c => c.key)
 
 export const PRIORITY_RANK: Record<AuditPriority, number> = {
@@ -772,7 +772,7 @@ export function computeAuditScores({ autoResults, aiResults, checklistState }: A
 
     let final: number | null = null
     if (checkAvg !== null && aiScore !== null) {
-      // AI categories: Claude's holistic score carries more weight than 1-2 auto signals
+      // AI categories: the model's holistic score carries more weight than 1-2 auto signals
       const aiWeight = cat.ai ? 0.75 : 0.5
       final = Math.round(checkAvg * (1 - aiWeight) + aiScore * aiWeight)
     } else if (checkAvg !== null) {

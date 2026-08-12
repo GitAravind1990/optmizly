@@ -1,5 +1,5 @@
 // Shared real-data grounding for the content-based ideation tools (Content Gap,
-// Citation, Queries) — these previously asked Claude to compare pasted content
+// Citation, Queries) — these previously asked the model to compare pasted content
 // against "top-ranking competitors" purely from its own training knowledge, with
 // zero real data. This orchestrates the same proven DataForSEO calls Ranking Engine
 // already uses (real SERP, real related keywords, real search intent) plus an

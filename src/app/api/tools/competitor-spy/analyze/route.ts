@@ -92,7 +92,7 @@ function generateMockData(domainName: string) {
   ]
 
   // missingEntities/contentOpps are NOT generated here — they're always overwritten
-  // by the AI-insights block below (either Claude's real, domain-grounded output, or
+  // by the AI-insights block below (either the model's real, domain-grounded output, or
   // an honest generic fallback if that call fails). These typed-empty placeholders
   // exist only so `data`'s shape is consistent before that block runs.
   const missingEntities: string[] = []
@@ -122,7 +122,7 @@ interface AIInsights {
   topOpportunity?: string
   threatLevel?: string
   missingEntities?: string[]
-  // `keyword` is Claude's own output, used server-side to look up a real traffic
+  // `keyword` is the model's own output, used server-side to look up a real traffic
   // number for the separate `contentOpps` DB column (which only has
   // {title, opportunity, traffic}, no `keyword`) — stripped before `aiInsights`
   // itself is persisted, see below.
@@ -132,7 +132,7 @@ interface AIInsights {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    // Was getProUser() (tier check only, no quota) — this fires Claude plus 5
+    // Was getProUser() (tier check only, no quota) — this fires the model plus 5
     // real DataForSEO/OpenPageRank lookups per request, easily the most expensive
     // single call in the app, so it belongs behind monthly-quota enforcement like
     // every other billable analysis.
@@ -247,7 +247,7 @@ export async function POST(req: NextRequest) {
     }
 
     // AI insights — inputs are qualified inline ("(measured)" vs "(rough estimate)")
-    // so Claude's own generated text doesn't state a mock number with false
+    // so the model's own generated text doesn't state a mock number with false
     // confidence. missingEntities/contentOpps moved here from generateMockData: they
     // used to be the same 3 hardcoded ideas every single time regardless of domain;
     // now they're grounded in this domain's actual gap/top keywords when available.
@@ -284,7 +284,7 @@ Rules: base "missingEntities" on topics implied by the competitor's top keywords
       )
       aiInsights = extractJSON<AIInsights>(raw)
 
-      // Claude can't reliably estimate real traffic numbers, so contentOpps' displayed
+      // The model can't reliably estimate real traffic numbers, so contentOpps' displayed
       // "traffic" comes from the real gap-keyword volume it matched, not an AI guess —
       // falls back to 0 (rendered as "estimated" via dataQuality either way) when it
       // didn't match a real keyword.

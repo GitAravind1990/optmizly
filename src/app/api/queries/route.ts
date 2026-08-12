@@ -6,9 +6,9 @@ import { captureServerException } from '@/lib/posthog-server'
 import { fetchKeywordGrounding } from '@/lib/content-grounding'
 
 export const runtime = 'nodejs'
-// Was previously unset (pure Claude call). A keyword-grounded run fires real
-// DataForSEO lookups before the Claude call, and on a parse failure retries with a
-// second Claude call — same 90s headroom as /api/gap for consistency, though this
+// Was previously unset (pure model call). A keyword-grounded run fires real
+// DataForSEO lookups before the model call, and on a parse failure retries with a
+// second model call — same 90s headroom as /api/gap for consistency, though this
 // route doesn't crawl so is at lower risk of hitting it in practice.
 export const maxDuration = 90
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Optional — grounds the query map in real related keywords/search intent
-    // instead of Claude inventing plausible-sounding queries from scratch. No
+    // instead of the model inventing plausible-sounding queries from scratch. No
     // crawl needed here (this tool's real signal is query candidates, not named
     // competitor pages). Absent/failed grounding falls back to today's exact
     // pure-AI behavior.

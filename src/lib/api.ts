@@ -27,7 +27,7 @@ export function apiError(error: unknown): NextResponse {
       return NextResponse.json({ error: obj.message }, { status: obj.status })
     }
   }
-  // All other errors (Prisma, Anthropic SDK, network, etc.) — log internally, never expose details
+  // All other errors (Prisma, LLM SDK, network, etc.) — log internally, never expose details
   console.error('[API Error]', error)
   return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
 }

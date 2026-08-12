@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
   try {
     // Was getUser() — no plan-tier check at all (not even PLAN_TOOLS membership)
     // and no quota tracking, so any authenticated user on any plan could call this
-    // an unlimited number of times, each firing a real Claude call. 'onpage' is
+    // an unlimited number of times, each firing a real model call. 'onpage' is
     // already in every plan's PLAN_TOOLS list including FREE, so this doesn't
     // change who *can* use it — it just makes the existing per-plan monthly cap
     // actually apply here like it does everywhere else.

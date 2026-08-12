@@ -70,7 +70,10 @@ export async function GET(_req: NextRequest) {
     const totalInputTokens = tokenTotals._sum.totalInputTokens ?? 0;
     const totalOutputTokens = tokenTotals._sum.totalOutputTokens ?? 0;
     const totalTokens = totalInputTokens + totalOutputTokens;
-    // Anthropic claude-haiku-4-5 rates: $0.80/M input, $4.00/M output
+    // NOTE: these are Anthropic claude-haiku-4-5 rates ($0.80/M in, $4.00/M out).
+    // Production runs Groq (LLM_PROVIDER=groq), whose Llama pricing is far lower, so
+    // this figure overstates real spend. Left as-is rather than guessed at; replace
+    // with the live provider's published rates.
     const estimatedCost = (totalInputTokens * 0.80 + totalOutputTokens * 4.00) / 1_000_000;
 
     return NextResponse.json({

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ loc
     const { locationId } = await params
     const { reviewId, action } = await req.json()
 
-    // generate-response fires a real Claude call, so it's billable and gated by
+    // generate-response fires a real model call, so it's billable and gated by
     // requireAuth's quota; flag is a cheap DB-only mutation and shouldn't cost a
     // user one of their limited monthly analyses — same AGENCY tier check either
     // way, via getAgencyUser's own PLAN_TOOLS-equivalent gate.

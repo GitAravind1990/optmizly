@@ -1,6 +1,6 @@
 // Per-check AI verdicts — a curated set of manual checklist items that are
 // judgeable directly from a single page's content (no external data needed),
-// answered by the same Claude call that scores the four AI categories.
+// answered by the same model call that scores the four AI categories.
 // Anything not in this list stays a manual checklist item.
 
 import { ALL_CHECKS, type CheckStatus } from './framework'
@@ -23,7 +23,7 @@ export function aiCheckPromptLines(): string {
 const VALID_STATUSES: CheckStatus[] = ['pass', 'fail', 'warn', 'na']
 
 /**
- * Validates and merges Claude's per-check verdicts into the auto-results map.
+ * Validates and merges the model's per-check verdicts into the auto-results map.
  * Only ids in AI_CHECK_IDS are accepted; anything malformed is silently
  * skipped so a bad AI response degrades to "manual", never to a wrong verdict.
  */

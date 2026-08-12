@@ -9,11 +9,11 @@ export const runtime = 'nodejs'
 export const maxDuration = 15
 
 /**
- * Apply a pattern the user already has. No Claude call, and no daily-cap consumption.
+ * Apply a pattern the user already has. No model call, and no daily-cap consumption.
  *
  * Iterating on a pattern is the main thing people do with a tool like this — tweak a
  * word boundary, flip the negation, re-run. Charging a generation for that would make
- * the free tier feel punitive and would spend Anthropic tokens on a job that needs no
+ * the free tier feel punitive and would spend provider tokens on a job that needs no
  * model at all. The expensive layer is generation; matching is a local regex scan.
  *
  * Still authenticated, still validated, still capped on input size: the pattern arrives

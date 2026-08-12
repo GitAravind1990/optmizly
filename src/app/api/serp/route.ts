@@ -11,7 +11,7 @@ export const maxDuration = 60
 // Was previously an Apify Google Search Scraper call gated on APIFY_API_TOKEN —
 // that env var was never configured in production (confirmed via `vercel env ls`),
 // so this always silently returned [] and every "competitor" (including their
-// URLs) was 100% Claude-fabricated, with no indication to the user. Replaced with
+// URLs) was 100% model-fabricated, with no indication to the user. Replaced with
 // the same proven, already-paid-for DataForSEO SERP endpoint every other real-data
 // tool in this codebase uses (Ranking Engine, Content Gap grounding, etc.).
 async function fetchRealSERP(

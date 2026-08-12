@@ -1,6 +1,6 @@
 // Layer 2 of the AI Regex tool: applying a pattern to data.
 //
-// The split matters. Layer 1 (src/lib/ai-regex.ts) asks Claude to *write* a pattern
+// The split matters. Layer 1 (src/lib/ai-regex.ts) asks the model to *write* a pattern
 // and explain it in English. Nothing here asks a model what matches — a real regex
 // engine decides that, deterministically, so the same pattern and the same data always
 // produce the same rows. Same division as the grounded SEO tools: the model explains,

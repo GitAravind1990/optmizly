@@ -6,10 +6,10 @@ import { captureServerException } from '@/lib/posthog-server'
 import { fetchKeywordGrounding } from '@/lib/content-grounding'
 
 export const runtime = 'nodejs'
-// Was previously unset (pure Claude call). A keyword-grounded run fires a real SERP
-// lookup + competitor crawl before the Claude call, and on a parse failure retries
-// with a second Claude call — same 90s headroom as /api/gap, confirmed live that
-// crawl + 2 sequential Claude calls can exceed 60s.
+// Was previously unset (pure model call). A keyword-grounded run fires a real SERP
+// lookup + competitor crawl before the model call, and on a parse failure retries
+// with a second model call — same 90s headroom as /api/gap, confirmed live that
+// crawl + 2 sequential model calls can exceed 60s.
 export const maxDuration = 90
 
 const SYSTEM = `You are an AI citation strategy expert. Analyse the content and return ONLY valid JSON:
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Optional — grounds the citation strategy in real SERP features and real
-    // schema types actually found on today's top-ranking pages, instead of Claude
+    // schema types actually found on today's top-ranking pages, instead of the model
     // inventing generic advice. Absent/failed grounding just falls back to today's
     // exact pure-AI behavior.
     const kw = typeof keyword === 'string' ? keyword.trim().slice(0, 200) : ''
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       parsed = extractJSON(raw)
     } catch (parseErr) {
       // Same defensive retry as /api/gap — real crawled schema-type signals can
-      // still leave Claude responding with commentary instead of JSON in rare
+      // still leave the model responding with commentary instead of JSON in rare
       // cases; grounding failing must never make this tool less reliable than
       // before it existed.
       if (!realLines) throw parseErr

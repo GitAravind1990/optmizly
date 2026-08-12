@@ -158,7 +158,7 @@ export async function callLLM(
   return text
 }
 
-/** Thrown when Claude's response can't be parsed as JSON — distinct from a real
+/** Thrown when the model's response can't be parsed as JSON — distinct from a real
  *  server error so callers can surface a "please try again" message instead of
  *  a generic 500. */
 export class AIResponseParseError extends Error {
@@ -204,7 +204,7 @@ export function extractJSON<T = Record<string, unknown>>(text: string): T {
   // Stack-based, not count-based: tracks the actual nesting order of open
   // brackets so it can fix both a truncated response (brackets never closed —
   // the original failure mode this was built for) and a wrong-closer response
-  // (observed live: Claude closed a "plan" array with "}" instead of "]" right
+  // (observed live: the model closed a "plan" array with "}" instead of "]" right
   // before the outer object's own "}" — same bracket *count* on each side, so
   // the old blind "count {, count }, append the difference" approach saw
   // balanced counts and did nothing, then mis-fixed the real problem by

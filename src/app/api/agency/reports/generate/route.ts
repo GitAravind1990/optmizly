@@ -179,7 +179,7 @@ function generateReportHtml(data: {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    // Was getAgencyUser() (tier check only, no quota) — this fires Claude plus
+    // Was getAgencyUser() (tier check only, no quota) — this fires the model plus
     // real OpenPageRank/DataForSEO lookups per request. 'client-reports' was never
     // registered in PLAN_TOOLS, so this route had no quota path to plug into until
     // now (added to the AGENCY tool list alongside this fix).

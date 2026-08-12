@@ -8,10 +8,10 @@ import type { SerpResult } from '@/lib/dataforseo'
 import type { CompetitorPageStats } from '@/lib/competitor-crawl'
 
 export const runtime = 'nodejs'
-// Was previously unset (pure Claude call). A keyword-grounded run fires a real
-// SERP lookup + up to 5-page competitor crawl before the Claude call, and on a
-// parse failure retries with a second Claude call — confirmed live that crawl +
-// 2 sequential Claude calls can exceed 60s (a real "Task timed out" was hit),
+// Was previously unset (pure model call). A keyword-grounded run fires a real
+// SERP lookup + up to 5-page competitor crawl before the model call, and on a
+// parse failure retries with a second model call — confirmed live that crawl +
+// 2 sequential model calls can exceed 60s (a real "Task timed out" was hit),
 // so this needs the same 90s headroom as Local SEO's similarly multi-call route.
 export const maxDuration = 90
 
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     clerkId = user.clerkId
     const { content, summary, keyword } = await req.json()
 
-    // Optional — grounds the analysis in real competitor pages instead of Claude's
+    // Optional — grounds the analysis in real competitor pages instead of the model's
     // own general knowledge. Absent, non-string, or a failed real-data fetch all
     // degrade the same way: today's exact pure-AI behavior, never a hard failure.
     const kw = typeof keyword === 'string' ? keyword.trim().slice(0, 200) : ''
@@ -56,10 +56,10 @@ export async function POST(req: NextRequest) {
     try {
       parsed = extractJSON(raw)
     } catch (parseErr) {
-      // A prompt instruction alone doesn't reliably stop Claude from responding
+      // A prompt instruction alone doesn't reliably stop the model from responding
       // with plain-text commentary instead of JSON when the real crawled excerpts
       // turn out to be irrelevant/boilerplate (observed live: real SERP results
-      // for an edge-case keyword were video-platform nav content, and Claude
+      // for an edge-case keyword were video-platform nav content, and the model
       // narrated about that instead of forcing the schema). Real-data grounding
       // failing must never make this tool LESS reliable than before it existed —
       // retry once, ungrounded, rather than surfacing a hard failure to a user

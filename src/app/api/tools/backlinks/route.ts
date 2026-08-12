@@ -92,7 +92,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    // Was getProUser() (tier check only, no quota) — this fires a real Claude call
+    // Was getProUser() (tier check only, no quota) — this fires a real model call
     // plus an OpenPageRank batch lookup per request, so it belongs behind the same
     // monthly-quota enforcement every other billable analysis in this codebase uses.
     const user = await requireAuth('backlinks')
@@ -134,7 +134,7 @@ Generate highly specific opportunities. Research real publications in the ${nich
 
     let opportunities = (parsed.opportunities ?? []).slice(0, 12)
 
-    // Claude names real-sounding publications from training data with no guarantee
+    // The model names real-sounding publications from training data with no guarantee
     // they exist — cross-check each against OpenPageRank and drop any that don't
     // resolve to a real, indexed domain, rather than let a hallucinated site reach
     // a user's outreach list. If the OPR call itself fails (outage/misconfigured),

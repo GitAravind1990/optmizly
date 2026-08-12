@@ -10,8 +10,8 @@ import { crawlCompetitorPages } from '@/lib/competitor-crawl'
 import { fetchPSIMetrics } from '@/lib/seo-audit/psi'
 
 export const runtime = 'nodejs'
-// Was previously unset (pure Claude call) — now also fires two real DataForSEO
-// lookups in parallel with the Claude call, so give it the same explicit headroom
+// Was previously unset (pure model call) — now also fires two real DataForSEO
+// lookups in parallel with the model call, so give it the same explicit headroom
 // used elsewhere in this codebase instead of the platform default.
 export const maxDuration = 60
 
@@ -27,8 +27,8 @@ const COUNTRY_TO_LOCATION: Record<string, string> = {
   Canada: 'CA', India: 'IN', Germany: 'DE',
 }
 
-// Only the fields this route actually reads/overwrites after Claude's response —
-// everything else Claude returns passes through untyped via the spread in apiSuccess.
+// Only the fields this route actually reads/overwrites after the model's response —
+// everything else the model returns passes through untyped via the spread in apiSuccess.
 type RankingEngineResult = {
   keyword: {
     volume: number; difficulty: number; cpc: string; trend: string; serp_features: string[]
@@ -56,7 +56,7 @@ type RankingEngineResult = {
 }
 
 // score.overall/label are supposed to be a deterministic function of score.factors
-// (per the SYSTEM prompt's own stated rule), but Claude's arithmetic on 6 weighted
+// (per the SYSTEM prompt's own stated rule), but the model's arithmetic on 6 weighted
 // terms isn't reliably correct — observed the displayed overall diverge from what
 // its own factors/weights compute to. Recomputed here in code instead of trusted,
 // same "don't trust the model's math" precedent as the real-data overwrites above.
@@ -83,7 +83,7 @@ function scaleOPR(decimal: number): number {
 // Same log-scale the Gaps tab already uses client-side to turn a raw referring-
 // domain count into a 0-100 score for the competitor-avg bar (client.tsx
 // compScoreFor.backlinks) — mirrored here so the user's own bar is computed with
-// the identical methodology instead of being Claude's independent 0-100 guess.
+// the identical methodology instead of being the model's independent 0-100 guess.
 function scaleRdToScore(rd: number): number {
   return Math.min(100, Math.round(Math.log10(Math.max(2, rd)) * 26))
 }
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
     // Real top-10 SERP (+ real SERP features), real search volume/difficulty/CPC/
     // trend, and the user's own real authority score — fetched concurrently since
     // none of these depend on each other or on the AI call. Fed into the prompt so
-    // Claude's own output (and any fields it invents around them, like per-domain
+    // The model's own output (and any fields it invents around them, like per-domain
     // DA estimates) is at least anchored to the keyword's actual current ranking
     // page — not required for the call to proceed if any of them fail.
     const [serpResult, metricsMap, userOpr, intentMap, realRelated] = await Promise.all([
@@ -134,10 +134,10 @@ export async function POST(req: NextRequest) {
     // Real per-competitor authority/referring-domains/page-content stats, plus real
     // page speed for the user's own domain — all depend on the real SERP domain
     // list (or just `domain`) above, so none can join the first batch, but all run
-    // concurrently with the Claude call instead of adding sequential round trips.
+    // concurrently with the model call instead of adding sequential round trips.
     // PSI gets a much shorter timeout than its 45s default (real Lighthouse runs can
     // take that long) — bounded so a slow PSI run can't dominate this route's total
-    // latency; a timeout just means the technical score falls back to Claude's
+    // latency; a timeout just means the technical score falls back to the model's
     // estimate, same graceful-degradation pattern as every other real call here.
     const [raw, competitorOprMap, rdMap, competitorPageStats, psiMetrics] = await Promise.all([
       callLLM(
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
     ])
     const result = extractJSON<RankingEngineResult>(raw)
 
-    // Real data always wins over whatever Claude produced, regardless of how well
+    // Real data always wins over whatever the model produced, regardless of how well
     // it followed the instructions above — guarantees the keyword numbers, SERP
     // features, competitor domain list, and (wherever each real source has that
     // particular domain) per-domain DA/referring-domains/word-count are accurate
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
     if (psiMetrics?.performanceScore != null) result.website.technical_score = psiMetrics.performanceScore
 
     // score.factors drives the "Ranking Factors" panel and the headline gauge —
-    // was previously left as Claude's independent, unsynced guess even after the
+    // was previously left as the model's independent, unsynced guess even after the
     // two lines above replaced website.da_score/technical_score with real values,
     // so the same domain's authority/technical scores could show two different
     // numbers in two panels. Sync whichever factors have a real source.
@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
       })
       // avg_da/avg_rd/avg_words now mix real and estimated per-domain values
       // (whichever each domain resolved to above) — recompute so the displayed
-      // averages match what the table actually shows instead of Claude's guesses.
+      // averages match what the table actually shows instead of the model's guesses.
       if (result.competitors && result.competitors.top.length > 0) {
         const top = result.competitors.top
         result.competitors.avg_da = Math.round(top.reduce((sum, c) => sum + c.da, 0) / top.length)
@@ -240,13 +240,13 @@ export async function POST(req: NextRequest) {
       }
 
       // Real schema types actually found across the crawled competitor pages —
-      // replaces Claude's guessed list entirely when we have at least one real
+      // replaces the model's guessed list entirely when we have at least one real
       // crawl result (a real "here's what's actually there" beats a partial mix).
       const realSchemaTypes = [...new Set([...competitorPageStats.values()].flatMap(s => s.schemaTypes))]
       if (competitorPageStats.size > 0) result.competitors.schema_types = realSchemaTypes
 
       // Real freshness summary from actual dateModified/datePublished found on the
-      // crawled pages — falls back to Claude's estimate if nothing crawled
+      // crawled pages — falls back to the model's estimate if nothing crawled
       // successfully returned a usable date.
       const freshDates = [...competitorPageStats.values()].map(s => s.lastUpdated).filter((d): d is string => d != null)
       if (freshDates.length > 0) {
@@ -264,16 +264,16 @@ export async function POST(req: NextRequest) {
     }
     // Same for the authority gap: da_score (real OPR, set above) and avg_da (real
     // per-competitor OPR, recomputed above) were both already real independently,
-    // but the gap between them was still Claude's own unsynced guess — caught live
+    // but the gap between them was still the model's own unsynced guess — caught live
     // on forbes.com, where da_score(48) - avg_da(37) is really a +11 advantage,
-    // while Claude's gaps.authority claimed a -10 deficit.
+    // while the model's gaps.authority claimed a -10 deficit.
     if (realUserDa != null && result.website.gaps && typeof result.competitors?.avg_da === 'number') {
       result.website.gaps.authority = realUserDa - result.competitors.avg_da
     }
 
     // overall/label are recomputed deterministically from factors after every
     // possible factor overwrite above (domain authority, technical SEO, backlinks)
-    // — Claude's own arithmetic on its stated "weighted sum / 100" rule isn't
+    // — the model's own arithmetic on its stated "weighted sum / 100" rule isn't
     // reliably self-consistent, so this never trusts result.score.overall/label
     // as returned by the model, real data or not.
     if (result.score?.factors) {

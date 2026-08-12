@@ -16,8 +16,11 @@ export async function GET(_req: NextRequest) {
       prisma.subscription.count(),
     ]);
 
-    const claudeCostPerAnalysis = 0.15;
-    const totalClaudeCost = monthlyAnalyses * claudeCostPerAnalysis;
+    // Flat estimate, not derived from the live provider. Production runs Groq, whose
+    // per-token pricing is well below the Anthropic figure this was chosen against —
+    // treat the cost panel as an upper bound until it is re-based.
+    const aiCostPerAnalysis = 0.15;
+    const totalAiCost = monthlyAnalyses * aiCostPerAnalysis;
     const googleCallsMonthly = monthlyAnalyses * 2;
 
     const dbStats = {
@@ -36,9 +39,9 @@ export async function GET(_req: NextRequest) {
       },
       costs: {
         claude: {
-          costPerAnalysis: '$' + claudeCostPerAnalysis,
+          costPerAnalysis: '$' + aiCostPerAnalysis,
           monthlyAnalyses,
-          estimatedMonthlyCost: '$' + totalClaudeCost.toFixed(2),
+          estimatedMonthlyCost: '$' + totalAiCost.toFixed(2),
         },
         google: {
           callsMonthly: googleCallsMonthly,

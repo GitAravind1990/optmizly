@@ -1,11 +1,11 @@
 // Layer 1 of the AI Regex tool: turning a plain-English description into a pattern.
 //
-// This module asks Claude for a *pattern* and never for an answer. It has no access to
+// This module asks the model for a *pattern* and never for an answer. It has no access to
 // the user's data beyond a handful of sample lines used as context, and nothing it
 // returns is trusted until src/lib/regex-safety.ts has validated it. Matching happens
 // there, in a real engine, deterministically.
 //
-// SERVER ONLY — imports the Anthropic client transitively.
+// SERVER ONLY — imports the LLM client transitively.
 
 import { callLLM, extractJSON } from '@/lib/llm'
 import { validatePattern, sanitiseFlags } from '@/lib/regex-safety'
@@ -118,7 +118,7 @@ function coerce(raw: Record<string, unknown>): GeneratedRegex | null {
 }
 
 /**
- * Asks Claude for a pattern, then refuses to return it unless our own validator agrees
+ * Asks the model for a pattern, then refuses to return it unless our own validator agrees
  * it is safe to run.
  *
  * One retry, and only for a pattern that failed validation — the retry names the exact

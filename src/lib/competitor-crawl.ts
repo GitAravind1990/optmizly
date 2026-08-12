@@ -18,7 +18,7 @@ export interface CompetitorPageStats {
    *  else null — never guessed. */
   lastUpdated: string | null
   /** First N chars of plain-text body — only populated when a caller opts in via
-   *  includeTextExcerpt (Content Gap/Citation feed this into a Claude prompt).
+   *  includeTextExcerpt (Content Gap/Citation feed this into a model prompt).
    *  Ranking Engine's existing callers don't need it and shouldn't pay to retain
    *  full page text for nothing. */
   textExcerpt?: string

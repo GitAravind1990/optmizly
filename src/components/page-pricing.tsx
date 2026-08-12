@@ -410,7 +410,7 @@ const FAQS = [
   },
   {
     q: 'Do I need API keys or anything installed?',
-    a: 'No. Optmizly is fully hosted and all AI analysis is included in your plan — you never need an Anthropic key or any third-party setup to use it. Agency plan users can optionally connect Google Search Console for deeper SEO Audit insights, but it\'s never required.',
+    a: 'No. Optmizly is fully hosted and all AI analysis is included in your plan — you never need an AI provider key or any third-party setup to use it. Agency plan users can optionally connect Google Search Console for deeper SEO Audit insights, but it\'s never required.',
   },
   {
     q: 'Can I upgrade or downgrade?',
