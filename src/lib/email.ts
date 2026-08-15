@@ -343,3 +343,62 @@ export async function sendBlogSubscribeEmail(
   }
 }
 
+// ── Health alert (internal) ───────────────────────────────────────────────────
+/**
+ * Tells the one person who can fix it that a dependency stopped answering.
+ *
+ * Plain HTML rather than a react-email template on purpose: this is a pager, not a
+ * customer email, and it needs to survive being the only thing that still works.
+ *
+ * Failing to send is logged loudly and never thrown. The caller is already returning a
+ * non-200 so the cron run shows as failed in Vercel regardless of whether this lands —
+ * an alerting path that can take down the check it reports on is worse than no alert.
+ */
+export async function sendHealthAlertEmail(
+  failed: { name: string; detail: string }[],
+  all: { name: string; ok: boolean; detail: string; ms: number }[]
+) {
+  const to = process.env.ADMIN_EMAIL
+  try {
+    if (!resend || !to) {
+      console.error(
+        `[Health] UNHEALTHY and no alert channel (resend=${!!resend}, ADMIN_EMAIL=${!!to}): ` +
+          failed.map(f => `${f.name}: ${f.detail}`).join('; ')
+      )
+      return
+    }
+
+    const rows = all
+      .map(
+        c => `<tr>
+          <td style="padding:6px 12px 6px 0;font-weight:600">${c.ok ? '✓' : '✗'} ${c.name}</td>
+          <td style="padding:6px 12px 6px 0;color:${c.ok ? '#475569' : '#b91c1c'}">${c.detail}</td>
+          <td style="padding:6px 0;color:#94a3b8">${c.ms}ms</td>
+        </tr>`
+      )
+      .join('')
+
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `[Optmizly] ${failed.length} health check${failed.length > 1 ? 's' : ''} failing: ${failed.map(f => f.name).join(', ')}`,
+      html: `<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:640px">
+        <h2 style="margin:0 0 4px">Health check failed</h2>
+        <p style="color:#475569;margin:0 0 16px">
+          ${failed.map(f => `<strong>${f.name}</strong>: ${f.detail}`).join('<br>')}
+        </p>
+        <table style="border-collapse:collapse;font-size:14px">${rows}</table>
+        <p style="color:#94a3b8;font-size:12px;margin-top:20px">
+          Tools depending on a failing service keep serving pages and quietly return errors,
+          so this will not be visible on the site. Re-run manually:<br>
+          <code>curl -H "Authorization: Bearer $CRON_SECRET" ${APP_URL}/api/cron/health</code>
+        </p>
+      </div>`,
+    })
+    console.log(`[Health] Alert sent to ${to}`)
+  } catch (e) {
+    // Loud, because this is the failure that hides every other failure.
+    console.error('[Health] FAILED TO SEND ALERT:', e)
+  }
+}
+
