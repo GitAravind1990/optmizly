@@ -153,7 +153,14 @@ The user wants to select: ${trimmed}`
       // with a confident row count is worse than a refusal, and this is the one call in
       // the tool, so the cost difference is a rounding error against getting it right.
       text = await callLLM(SYSTEM_PROMPT, extra ? `${basePrompt}\n\n${extra}` : basePrompt, 700, 'claude-sonnet-4-6')
-    } catch {
+    } catch (e) {
+      // The user-facing string is deliberately vague, but discarding the provider's own
+      // message left a total outage — an expired key, a retired model — looking exactly
+      // like one flaky generation, with nothing recorded anywhere to tell them apart.
+      console.error('[ai-regex] LLM call failed:', {
+        status: (e as { status?: number })?.status,
+        message: e instanceof Error ? e.message : String(e),
+      })
       return { parsed: null, reason: 'The pattern generator is unavailable right now. Please try again.' }
     }
 
