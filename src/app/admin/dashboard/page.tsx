@@ -256,7 +256,7 @@ function UsersTab() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              {['Email', 'Plan', 'Joined', 'Analyses', 'Tokens (in/out)', 'Est. Cost', 'Status', 'Actions'].map(h => (
+              {['Email', 'Plan', 'Joined', 'Analyses', 'Tokens (in/out)', 'Est. Cost', 'Status'].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-semibold text-gray-700">{h}</th>
               ))}
             </tr>
@@ -294,11 +294,11 @@ function UsersTab() {
                       {user.subscription?.status || 'Free'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 space-x-2">
-                    <button className="text-purple-600 hover:underline text-xs font-medium">Upgrade</button>
-                    <span className="text-gray-300">|</span>
-                    <button className="text-red-500 hover:underline text-xs font-medium">Cancel</button>
-                  </td>
+                  {/* An "Upgrade | Cancel" pair sat here with no onClick on either button:
+                      they had never done anything. The endpoint behind them changed plans
+                      in our database without telling DoDo, so wiring them up would have
+                      been worse than leaving them dead — see the note in
+                      /api/admin/health/route.ts. Plan changes go through DoDo. */}
                 </tr>
               );
             })}
@@ -522,16 +522,26 @@ function HealthTab() {
         <h3 className="text-lg font-bold mb-4">Monthly Cost Estimates</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="border rounded-lg p-4">
-            <h4 className="font-semibold mb-3 text-gray-700">LLM API</h4>
-            <div className="text-3xl font-bold mb-1">{health.costs.claude.estimatedMonthlyCost}</div>
+            <h4 className="font-semibold mb-3 text-gray-700">
+              LLM API
+              <span className="ml-2 font-normal text-xs text-gray-400">
+                {health.costs.llm.provider} rates
+              </span>
+            </h4>
+            <div className="text-3xl font-bold mb-1">{health.costs.llm.estimatedMonthlyCost}</div>
             <div className="text-xs text-gray-500">
-              {health.costs.claude.monthlyAnalyses} analyses @ {health.costs.claude.costPerAnalysis}/ea
+              {health.costs.llm.monthlyAnalyses} analyses @ {health.costs.llm.costPerAnalysis}/ea
             </div>
           </div>
-          <div className="border rounded-lg p-4">
-            <h4 className="font-semibold mb-3 text-gray-700">Google APIs</h4>
-            <div className="text-3xl font-bold mb-1">{health.costs.google.estimatedMonthlyCost}</div>
-            <div className="text-xs text-gray-500">{health.costs.google.callsMonthly} API calls</div>
+          {/* Deliberately not a number. A "Google APIs" card sat here reporting
+              analyses × 2 calls at $0.005 each — a figure with no source. */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h4 className="font-semibold mb-3 text-gray-700">Not counted here</h4>
+            <ul className="text-xs text-gray-500 space-y-1.5">
+              {(health.costs.untracked ?? []).map((line: string) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>

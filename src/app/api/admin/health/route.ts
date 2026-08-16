@@ -60,7 +60,6 @@ export async function GET(_req: NextRequest) {
     const allTimeAnalyses = analysisTotal._sum.count ?? 0;
     const aiCostPerAnalysis = allTimeAnalyses > 0 ? allTimeCost / allTimeAnalyses : 0;
     const totalAiCost = monthlyAnalyses * aiCostPerAnalysis;
-    const googleCallsMonthly = monthlyAnalyses * 2;
 
     const dbStats = {
       users: totalUsers,
@@ -111,15 +110,34 @@ export async function GET(_req: NextRequest) {
         recent: recentHealthRuns.map(r => ({ ranAt: r.ranAt, healthy: r.ok })),
       },
       costs: {
-        claude: {
+        // Named for the job, not a provider: these are LLM rates, and which company is
+        // billed for them depends on LLM_PROVIDER. Calling this key `claude` is how the
+        // panel came to price Groq usage at Anthropic's rates in the first place.
+        llm: {
+          // Read from the same env var llm.ts and activeRates() read, so the label and the
+          // arithmetic cannot disagree — they did before, when the card said "Groq haiku
+          // rates" while computing Anthropic's.
+          provider: process.env.LLM_PROVIDER === 'groq' ? 'Groq' : 'Anthropic',
           costPerAnalysis: '$' + aiCostPerAnalysis.toFixed(4),
           monthlyAnalyses,
           estimatedMonthlyCost: '$' + totalAiCost.toFixed(2),
         },
-        google: {
-          callsMonthly: googleCallsMonthly,
-          estimatedMonthlyCost: '$' + (googleCallsMonthly * 0.005).toFixed(2),
-        },
+        // There is deliberately no Google figure here any more. It used to report
+        // `monthlyAnalyses * 2` calls at $0.005 each, which measured nothing that exists:
+        // PageSpeed Insights — the only Google API the server calls — is free, and the one
+        // that does cost money (Maps/Places, in the geogrid tool) runs in the browser
+        // against NEXT_PUBLIC_GOOGLE_MAPS_KEY, so no request reaches us to count. It
+        // survived the August re-basing because that pass only corrected the LLM rates.
+        //
+        // The real recurring spend is DataForSEO, and its live balance is already on this
+        // page: the health check reads it from the vendor each morning and it appears in
+        // the Service Health panel. Restating it here from a different source would just
+        // create a second number to keep true.
+        untracked: [
+          'Google Maps/Places — billed, but called client-side; see Google Cloud console',
+          'PageSpeed Insights — free at our volume',
+          'DataForSEO — live balance shown in Service Health above',
+        ],
       },
       database: dbStats,
       lastChecked: new Date(),
@@ -130,32 +148,16 @@ export async function GET(_req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const admin = await requireAdmin();
-    if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
-
-    const { action, targetUserId } = await req.json();
-
-    if (action === 'refund_user') {
-      await prisma.subscription.updateMany({
-        where: { userId: targetUserId },
-        data: { status: 'CANCELLED' },
-      });
-      return NextResponse.json({ success: true, message: 'User subscription cancelled' });
-    }
-
-    if (action === 'upgrade_user') {
-      await prisma.user.update({
-        where: { id: targetUserId },
-        data: { plan: 'PRO' },
-      });
-      return NextResponse.json({ success: true, message: 'User upgraded to PRO' });
-    }
-
-    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
-  } catch (error) {
-    console.error('Action error:', error);
-    return NextResponse.json({ error: 'Action failed' }, { status: 500 });
-  }
-}
+// A POST handler with `refund_user` and `upgrade_user` actions lived here and was called
+// from nowhere — the dashboard's only request to this route is the GET above. It is
+// removed rather than wired up, because both actions were wrong in ways that would have
+// done real damage the first time someone clicked them:
+//
+//   refund_user   set the subscription to CANCELLED in our database without cancelling
+//                 anything at DoDo, so the customer would keep being charged. It also
+//                 never touched currentPeriodEnd, which is what actually governs access.
+//   upgrade_user  set User.plan to PRO with no Subscription row behind it, leaving a paid
+//                 plan that no webhook owns and that nothing can renew or expire.
+//
+// Doing either properly means calling DoDo and letting its webhook update our side — a
+// real feature, not two buttons. Until then there is nothing here worth calling.
