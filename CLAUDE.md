@@ -104,6 +104,30 @@ and model ids like `claude-haiku-4-5-20251001` all route to Groq in production.
 The source reads as though Anthropic is the provider and nothing contradicts it
 until you read the env — do not infer the live provider from a function name.
 
+## Adding a scheduled job
+
+Every cron here reports only by side effect — an email that arrives, a corpus
+that grows — so one that has stopped firing looks exactly like one with nothing
+to do. A Groq key expired in August and took every AI tool down for three days
+with nothing to show for it; this plan retains no runtime logs, so there was
+nothing to read afterwards either. Three things in the same commit:
+
+- the entry in `vercel.json`
+- an entry in `CRON_JOBS` (`src/lib/cron.ts`) with its schedule and the gap after
+  which its silence is a finding — a job missing from here never appears on the
+  admin dashboard and nothing will notice it stopping
+- `cronAuthFailure(req)` at the top of the route, and `recordCronRun(...)` on
+  **every** exit path: the normal return, early returns, and thrown errors. A
+  `finally` that cannot see a throw records a crash as a successful run.
+
+`CRON_SECRET` is asserted, never interpolated. Left unset,
+`Bearer ${process.env.CRON_SECRET}` is the literal string `"Bearer undefined"` —
+a value anyone on the internet can send.
+
+Judge a mailer by whether anything threw, not by whether it sent. Zero sent is
+the normal state on most days, so "sent > 0" as a success condition marks a
+healthy job unhealthy and trains you to ignore it.
+
 ## Exports must restate what badges show
 
 Live/Est badges, filters and warnings are React-only. CSV and PDF exports

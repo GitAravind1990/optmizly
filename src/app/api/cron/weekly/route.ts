@@ -4,6 +4,7 @@ import { sendWeeklySummaryEmail } from '@/lib/email'
 import { getClerkFirstName } from '@/lib/auth'
 import { PLAN_LIMITS, TRIAL_LIMITS } from '@/lib/plans'
 import { claimDripEmail } from '@/lib/drip-claim'
+import { cronAuthFailure, recordCronRun } from '@/lib/cron'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -16,11 +17,10 @@ function getMondayKey(date: Date): string {
 }
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = cronAuthFailure(req)
+  if (denied) return denied
 
+  const started = Date.now()
   const now = new Date()
   const weekKey = getMondayKey(now)
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -75,5 +75,14 @@ export async function GET(req: NextRequest) {
   }
 
   console.log('[Cron/weekly]', { weekKey, ...results })
+
+  // weekKey is recorded too: it is the dedup key the whole job turns on, so a week that
+  // was skipped or computed wrong is visible in the history rather than inferred from a
+  // timestamp.
+  await recordCronRun('weekly', results.errors === 0, Date.now() - started, {
+    weekKey,
+    ...results,
+  })
+
   return Response.json({ ok: true, weekKey, ...results })
 }

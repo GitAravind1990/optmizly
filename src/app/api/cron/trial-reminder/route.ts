@@ -4,16 +4,16 @@ import { sendTrialEndingEmail } from '@/lib/email'
 import { getClerkFirstName } from '@/lib/auth'
 import { TRIAL_REMINDER_DAYS_BEFORE } from '@/lib/plans'
 import { claimDripEmail } from '@/lib/drip-claim'
+import { cronAuthFailure, recordCronRun } from '@/lib/cron'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = cronAuthFailure(req)
+  if (denied) return denied
 
+  const started = Date.now()
   const reminderCutoff = new Date(Date.now() + TRIAL_REMINDER_DAYS_BEFORE * 24 * 60 * 60 * 1000)
   const results = { sent: 0, errors: 0 }
 
@@ -46,5 +46,12 @@ export async function GET(req: NextRequest) {
   }
 
   console.log('[Cron/trial-reminder]', results)
+
+  // Zero sent is the normal state — there is rarely a trial inside the reminder window —
+  // so the verdict is "nothing threw", and the record is what proves the job still runs.
+  // This is the one mailer whose silence costs money: a missed reminder is a customer
+  // charged for a plan they meant to cancel.
+  await recordCronRun('trial-reminder', results.errors === 0, Date.now() - started, results)
+
   return Response.json({ ok: true, ...results })
 }

@@ -410,6 +410,92 @@ function ServiceHealthPanel({
   );
 }
 
+type CronRow = {
+  job: string;
+  label: string;
+  schedule: string;
+  lastRun: string | null;
+  ok: boolean | null;
+  ageMs: number | null;
+  durationMs: number | null;
+  detail: unknown;
+  stale: boolean;
+};
+
+/** Compact one-line rendering of whatever a job counted, so the row says what happened
+ *  rather than only that something did. */
+function summariseDetail(detail: unknown): string {
+  if (!detail || typeof detail !== 'object') return '';
+  if (Array.isArray(detail)) return ''; // health's Check[] has its own panel above
+  return Object.entries(detail as Record<string, unknown>)
+    .filter(([, v]) => typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string')
+    .map(([k, v]) => `${k} ${v}`)
+    .join(', ');
+}
+
+/**
+ * Every scheduled job in vercel.json, and when it last ran.
+ *
+ * These jobs report only by side effect — an email that arrives, a corpus that grows — so
+ * one that stopped firing months ago would look exactly like one with nothing to do. The
+ * column that matters is the age, not the verdict.
+ */
+function ScheduledJobsPanel({ crons }: { crons: CronRow[] }) {
+  if (crons.length === 0) return null;
+  const stale = crons.filter(c => c.stale).length;
+
+  return (
+    <div className="bg-white border rounded-lg p-6">
+      <div className="flex items-baseline justify-between mb-4">
+        <h3 className="text-lg font-bold">Scheduled Jobs</h3>
+        {stale > 0 && (
+          <span className="text-sm text-amber-700">
+            {stale} of {crons.length} outside their window
+          </span>
+        )}
+      </div>
+
+      <div className="divide-y">
+        {crons.map(c => (
+          <div key={c.job} className="py-3 flex items-baseline gap-3 text-sm">
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                c.stale ? 'bg-amber-500' : c.ok ? 'bg-emerald-500' : 'bg-red-500'
+              }`}
+              aria-hidden
+            />
+            <div className="w-44 shrink-0">
+              <div className="font-medium">{c.label}</div>
+              <div className="text-xs text-gray-400">{c.schedule}</div>
+            </div>
+            <div className="flex-1 min-w-0">
+              {c.lastRun === null ? (
+                <span className="text-amber-700 font-medium">Never recorded a run</span>
+              ) : (
+                <>
+                  <span className={c.stale ? 'text-amber-700 font-medium' : 'text-gray-600'}>
+                    {formatAge(c.ageMs!)}
+                    {c.stale && ' — overdue'}
+                  </span>
+                  <span className="text-gray-400 truncate"> {summariseDetail(c.detail)}</span>
+                </>
+              )}
+            </div>
+            <span className="text-gray-400 text-xs shrink-0">
+              {c.durationMs !== null ? `${c.durationMs}ms` : ''}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-xs text-gray-400 mt-4">
+        A job with nothing to do and a job that stopped firing both send no email. Age is the
+        only thing that separates them.
+      </p>
+    </div>
+  );
+}
+
 function HealthTab() {
   const [health, setHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -430,6 +516,7 @@ function HealthTab() {
   return (
     <div className="space-y-6">
       <ServiceHealthPanel health={health.health} />
+      <ScheduledJobsPanel crons={health.crons ?? []} />
 
       <div className="bg-white border rounded-lg p-6">
         <h3 className="text-lg font-bold mb-4">Monthly Cost Estimates</h3>

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminAuth';
 import { estimateCostRange, activeRates } from '@/lib/llm-pricing';
+import { CRON_JOBS, type CronJob } from '@/lib/cron';
 
 export async function GET(_req: NextRequest) {
   try {
@@ -15,8 +16,8 @@ export async function GET(_req: NextRequest) {
       totalSubscriptions,
       tokenTotals,
       analysisTotal,
-      lastRun,
-      recentRuns,
+      lastRunPerJob,
+      recentHealthRuns,
     ] = await Promise.all([
       prisma.contentOptimization.count({
         where: { analyzedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
@@ -26,11 +27,20 @@ export async function GET(_req: NextRequest) {
       prisma.subscription.count(),
       prisma.user.aggregate({ _sum: { totalInputTokens: true, totalOutputTokens: true } }),
       prisma.usage.aggregate({ _sum: { count: true } }),
-      prisma.healthRun.findFirst({ orderBy: { ranAt: 'desc' } }),
-      prisma.healthRun.findMany({
-        where: { ranAt: { gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) } },
+      // Last run of each job, unbounded in age on purpose: a job that has not run in
+      // three months must still appear, and appear as three months stale, rather than
+      // vanish from the panel because it fell outside a lookback window.
+      Promise.all(
+        (Object.keys(CRON_JOBS) as CronJob[]).map(job =>
+          prisma.cronRun
+            .findFirst({ where: { job }, orderBy: { ranAt: 'desc' } })
+            .then(run => [job, run] as const)
+        )
+      ),
+      prisma.cronRun.findMany({
+        where: { job: 'health', ranAt: { gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) } },
         orderBy: { ranAt: 'desc' },
-        select: { ranAt: true, healthy: true },
+        select: { ranAt: true, ok: true },
       }),
     ]);
 
@@ -63,24 +73,42 @@ export async function GET(_req: NextRequest) {
     // anything, and they read as reassurance during the three days every AI tool on the
     // site was down. Replaced with the daily cron's actual verdict.
     //
-    // "No run recorded in the last 26 hours" is a finding in its own right, not missing
-    // data: the cron runs at 07:00 UTC daily, so a gap means it stopped firing, and a
-    // check that has stopped firing reports nothing rather than reporting a problem.
-    const STALE_AFTER_MS = 26 * 60 * 60 * 1000;
-    const ageMs = lastRun ? Date.now() - lastRun.ranAt.getTime() : null;
+    // "No run recorded inside its window" is a finding in its own right, not missing
+    // data: every one of these is scheduled, so a gap means the job stopped firing, and a
+    // job that has stopped firing reports nothing rather than reporting a problem.
+    const now = Date.now();
+    const crons = lastRunPerJob.map(([job, run]) => {
+      const meta = CRON_JOBS[job];
+      const ageMs = run ? now - run.ranAt.getTime() : null;
+      return {
+        job,
+        label: meta.label,
+        schedule: meta.schedule,
+        lastRun: run?.ranAt ?? null,
+        ok: run?.ok ?? null,
+        ageMs,
+        durationMs: run?.ms ?? null,
+        detail: run?.detail ?? null,
+        stale: ageMs === null || ageMs > meta.staleAfterMs,
+      };
+    });
+
+    const healthCron = crons.find(c => c.job === 'health')!;
 
     return NextResponse.json({
+      crons,
       health: {
-        lastRun: lastRun?.ranAt ?? null,
-        healthy: lastRun?.healthy ?? null,
-        ageMs,
-        stale: ageMs === null || ageMs > STALE_AFTER_MS,
-        durationMs: lastRun?.ms ?? null,
-        checks: lastRun?.checks ?? [],
+        lastRun: healthCron.lastRun,
+        healthy: healthCron.ok,
+        ageMs: healthCron.ageMs,
+        stale: healthCron.stale,
+        durationMs: healthCron.durationMs,
+        // The health job stores its full Check[] as the run detail.
+        checks: healthCron.detail ?? [],
         // Sparkline-ish history so an intermittent failure is visible, not just the
         // latest verdict. A run that flaps daily is a different problem from one dead
         // credential, and the last row alone cannot tell them apart.
-        recent: recentRuns.map(r => ({ ranAt: r.ranAt, healthy: r.healthy })),
+        recent: recentHealthRuns.map(r => ({ ranAt: r.ranAt, healthy: r.ok })),
       },
       costs: {
         claude: {

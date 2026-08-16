@@ -3,16 +3,16 @@ import { prisma } from '@/lib/prisma'
 import { sendDripDay1Email, sendDripDay3Email, sendDripDay7Email } from '@/lib/email'
 import { getClerkFirstName } from '@/lib/auth'
 import { claimDripEmail } from '@/lib/drip-claim'
+import { cronAuthFailure, recordCronRun } from '@/lib/cron'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = cronAuthFailure(req)
+  if (denied) return denied
 
+  const started = Date.now()
   const now = new Date()
   const daysAgo = (n: number) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000)
 
@@ -80,5 +80,11 @@ export async function GET(req: NextRequest) {
   }
 
   console.log('[Cron/drip]', results)
+
+  // Sending zero emails is the normal state on most days — there is usually nobody newly
+  // eligible — so a run is judged by whether anything threw, not by whether it sent. The
+  // signal that matters here is that the job ran at all.
+  await recordCronRun('drip', results.errors === 0, Date.now() - started, results)
+
   return Response.json({ ok: true, ...results })
 }

@@ -1143,24 +1143,29 @@ model LocalSEOTask {
   @@index([status])
 }
 
-/// One row per execution of /api/cron/health.
+/// One row per execution of any scheduled job in vercel.json.
 ///
-/// The health check was built to catch dependencies that fail silently, but a healthy
-/// run of it produced nothing at all: no email (those only go out on failure), no
-/// retained runtime log (this plan keeps none), and no database row. So "ran, all five
-/// green" and "stopped firing weeks ago" were indistinguishable from the outside — the
-/// same silent-failure shape the check exists to prevent, one level up.
+/// Every cron here runs unattended and reports only by side effect — an email that
+/// arrives, a corpus that grows. A run that succeeded produced no record, and neither did
+/// a job that had silently stopped firing weeks earlier, so the two were indistinguishable
+/// from outside. Alerts are failure-only and this plan retains no runtime logs, which left
+/// nothing to inspect after the fact either.
 ///
 /// This is the durable trace. The absence of a recent row is itself the alarm.
-model HealthRun {
-  id      String   @id @default(cuid())
-  ranAt   DateTime @default(now())
-  healthy Boolean
-  /// Wall-clock duration of the whole run, milliseconds.
-  ms      Int
-  /// The full Check[] the route computed: { name, ok, detail, ms }[]. Kept whole so a
-  /// past failure can be read back with its original message rather than a summary.
-  checks  Json
+model CronRun {
+  id String @id @default(cuid())
 
+  /// Matches CronJob in src/lib/cron.ts: health | drip | weekly | trial-reminder | gsc-sync.
+  job   String
+  ranAt DateTime @default(now())
+  ok    Boolean
+  /// Wall-clock duration of the whole run, milliseconds.
+  ms    Int
+  /// Whatever the job counted, kept whole so a past run can be read back with its original
+  /// numbers rather than a summary. For health this is the full Check[]
+  /// ({ name, ok, detail, ms }[]); for the mailers, the sent/skipped/error tallies.
+  detail Json
+
+  @@index([job, ranAt])
   @@index([ranAt])
 }
