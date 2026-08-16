@@ -42,16 +42,15 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
     const summary = analysisResult?.summary ?? ''
     const body = JSON.stringify({ content, summary, keyword: keyword.trim() || undefined })
     try {
-      const [citRes, qRes] = await Promise.all([
-        fetch('/api/citation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }),
-        fetch('/api/queries',  { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }),
-      ])
-      const [citData, qData] = await Promise.all([citRes.json(), qRes.json()])
-      if ([citRes.status, qRes.status].some(s => s === 403 || s === 429)) { setShowUpgradeModal(true); return }
-      if (!citRes.ok) throw new Error(citData.error)
-      if (!qRes.ok)   throw new Error(qData.error)
-      setToolResult('citation', citData)
-      setToolResult('queries',  qData)
+      // One request for both halves. These used to be two parallel calls to /api/citation
+      // and /api/queries with an identical body, which made the same keyword grounding
+      // twice and billed the user twice for a single click.
+      const res = await fetch('/api/citation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
+      const data = await res.json()
+      if (res.status === 403 || res.status === 429) { setShowUpgradeModal(true); return }
+      if (!res.ok) throw new Error(data.error)
+      setToolResult('citation', data.citation)
+      setToolResult('queries',  data.queries)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Tool failed')
     } finally { setLoading(false) }
