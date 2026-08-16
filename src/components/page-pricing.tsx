@@ -398,7 +398,7 @@ const FAQS = [
   },
   {
     q: 'What counts as one analysis?',
-    a: 'Each time you submit content or a URL for scoring, it uses one analysis credit. Most tools cost one credit. A few pull a lot more live data from third-party providers on your behalf — Keyword Research, Competitor Spy, Ranking Engine, Geogrid and the Local SEO suite — and those cost two or three credits per run, which the tool tells you before you run it. Credits reset at the start of each billing month, and the Free plan\'s tools all cost one.',
+    a: 'Each time you submit content or a URL for scoring, it uses one analysis credit. Most tools cost one credit. Tools that pull more live data from third-party providers on your behalf cost more, and each one tells you its cost before you run it. Three credits: Keyword Research, Competitor Spy, Ranking Engine, Geogrid and the Local SEO suite. Two credits: Backlinks, Rank Tracker, SERP Audit, Review Velocity, Client Reports, AI Visibility, Content Gap and Content Planner. Credits reset at the start of each billing month, and the Free plan\'s tools all cost one.',
   },
   {
     q: 'Can I cancel anytime?',

@@ -56,6 +56,33 @@ export const TOOL_COST_UNITS: Record<string, number> = {
   'serp': 2,
   'review-velocity': 2,
   'client-reports': 2,
+
+  // These four were missing, and the reason is worth recording: they read as LLM-only
+  // at the call site. Their DataForSEO usage arrives indirectly — Citation, Gap and
+  // Queries each call fetchKeywordGrounding(), which fires getTopSerpResults,
+  // getRelatedKeywords and getSearchIntent in parallel; Content Planner calls
+  // getKeywordMetrics on every generated idea. The cost model written in August still
+  // lists all of them as "LLM-only, ~$0.00", which was already stale: the grounding
+  // landed in July.
+  //
+  // 2 rather than 3 because it is one SERP call plus two Labs calls — more than SERP
+  // Audit (weight 2, one SERP call), well short of Ranking Engine (weight 3, five calls
+  // plus a crawl). The competitor crawl Citation adds runs on our own crawler, so it
+  // costs time rather than vendor spend.
+  //
+  // Known imprecision, stated rather than hidden: grounding only runs when the user
+  // supplies a keyword, so a run without one now over-charges by 1. Pricing the
+  // possibility is the safe direction to be wrong, and charging by actual API use would
+  // mean metering after the fact instead of before.
+  'citation': 2,
+  'gap': 2,
+  'queries': 2,
+  'content-ideas': 2,
+  // Same tool as 'content-ideas', under the id the sidebar knows it by. requireAuth
+  // charges against 'content-ideas' while the nav badge reads 'ideas' from TOOL_GROUPS,
+  // so listing only one of them would either bill without showing the cost or show a
+  // cost it never bills. Keep the two in step.
+  'ideas': 2,
 }
 
 /** Units consumed by one run. Anything unlisted costs 1, so a new tool is cheap by
