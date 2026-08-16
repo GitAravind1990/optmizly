@@ -309,6 +309,107 @@ function UsersTab() {
   );
 }
 
+function formatAge(ms: number) {
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+type ServiceCheck = { name: string; ok: boolean; detail: string; ms: number };
+
+/**
+ * The daily cron's real verdict, replacing three hardcoded numbers that claimed a 99.2%
+ * success rate regardless of what was actually happening.
+ *
+ * The state worth designing for is the empty one. Every dependency here fails by going
+ * quiet, so a missing run is the alarm, not an absence of news — it is rendered as loudly
+ * as a failing check rather than as a dash.
+ */
+function ServiceHealthPanel({
+  health,
+}: {
+  health: {
+    lastRun: string | null;
+    healthy: boolean | null;
+    ageMs: number | null;
+    stale: boolean;
+    durationMs: number | null;
+    checks: ServiceCheck[];
+    recent: { ranAt: string; healthy: boolean }[];
+  };
+}) {
+  const checks = Array.isArray(health.checks) ? health.checks : [];
+  const failing = checks.filter(c => !c.ok).length;
+
+  const banner = health.stale
+    ? {
+        cls: 'bg-amber-50 border-amber-200 text-amber-900',
+        title: health.lastRun ? 'No health check in over 26 hours' : 'Health check has never run',
+        body: health.lastRun
+          ? `Last run ${formatAge(health.ageMs!)}. It is scheduled daily at 07:00 UTC, so this gap means the cron itself has stopped — the checks below are that old and prove nothing about now.`
+          : 'Nothing has been recorded yet. Until a run lands, the services below are unverified.',
+      }
+    : health.healthy
+      ? {
+          cls: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+          title: 'All services answering',
+          body: `Checked ${formatAge(health.ageMs!)} in ${health.durationMs}ms.`,
+        }
+      : {
+          cls: 'bg-red-50 border-red-200 text-red-900',
+          title: `${failing} service${failing === 1 ? '' : 's'} failing`,
+          body: `Checked ${formatAge(health.ageMs!)}. Tools depending on these keep serving pages and quietly return errors, so this will not be visible on the site.`,
+        };
+
+  return (
+    <div className="bg-white border rounded-lg p-6">
+      <h3 className="text-lg font-bold mb-4">Service Health</h3>
+
+      <div className={`border rounded-lg p-4 mb-4 ${banner.cls}`}>
+        <div className="font-semibold">{banner.title}</div>
+        <div className="text-sm mt-1 opacity-90">{banner.body}</div>
+      </div>
+
+      {checks.length > 0 && (
+        <div className={`divide-y ${health.stale ? 'opacity-50' : ''}`}>
+          {checks.map(c => (
+            <div key={c.name} className="flex items-baseline gap-3 py-2 text-sm">
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${c.ok ? 'bg-emerald-500' : 'bg-red-500'}`}
+                aria-hidden
+              />
+              <span className="font-medium w-32 shrink-0">{c.name}</span>
+              <span className={`flex-1 ${c.ok ? 'text-gray-500' : 'text-red-700 font-medium'}`}>
+                {c.detail}
+              </span>
+              <span className="text-gray-400 text-xs shrink-0">{c.ms}ms</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {health.recent.length > 1 && (
+        <div className="mt-4 pt-4 border-t">
+          <div className="text-xs text-gray-500 mb-2">
+            Last {health.recent.length} runs (newest first)
+          </div>
+          <div className="flex gap-1">
+            {health.recent.map(r => (
+              <span
+                key={r.ranAt}
+                title={`${new Date(r.ranAt).toLocaleString()} — ${r.healthy ? 'healthy' : 'failing'}`}
+                className={`h-6 w-2 rounded-sm ${r.healthy ? 'bg-emerald-400' : 'bg-red-400'}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HealthTab() {
   const [health, setHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -328,23 +429,7 @@ function HealthTab() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-lg font-bold mb-4">API Performance</h3>
-        <div className="grid grid-cols-3 gap-6">
-          <div>
-            <div className="text-sm text-gray-500 mb-1">Avg Response Time</div>
-            <div className="text-2xl font-bold">{health.api.contentOptimizer.avgResponseTime}</div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-500 mb-1">Success Rate</div>
-            <div className="text-2xl font-bold text-green-600">{health.api.contentOptimizer.successRate}</div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-500 mb-1">Errors (24h)</div>
-            <div className="text-2xl font-bold text-red-600">{health.api.contentOptimizer.errors24h}</div>
-          </div>
-        </div>
-      </div>
+      <ServiceHealthPanel health={health.health} />
 
       <div className="bg-white border rounded-lg p-6">
         <h3 className="text-lg font-bold mb-4">Monthly Cost Estimates</h3>

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { callLLM } from '@/lib/llm'
 import { fetchOPRScore } from '@/lib/openpagerank'
@@ -35,12 +36,23 @@ const DFS_LOW_BALANCE_USD = 10
 type Check = { name: string; ok: boolean; detail: string; ms: number }
 
 async function withTimeout<T>(label: string, p: Promise<T>): Promise<T> {
-  return Promise.race([
-    p,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${TIMEOUT_MS}ms`)), TIMEOUT_MS)
-    ),
-  ])
+  // The timer is cleared on the winning path too. Left pending it keeps the event loop
+  // busy for a further 12s after the response has already been sent, which on a
+  // serverless function means the invocation cannot be frozen when it is actually done.
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      p,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} timed out after ${TIMEOUT_MS}ms`)),
+          TIMEOUT_MS
+        )
+      }),
+    ])
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 async function run(name: string, fn: () => Promise<string>): Promise<Check> {
@@ -128,9 +140,21 @@ const checkRedis = () =>
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
+/** Rows older than this are pruned on each run. Long enough to answer "was it already
+ *  failing last month", short enough that the table never needs thinking about. */
+const RETAIN_DAYS = 90
+
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Checked explicitly: without it an unset CRON_SECRET makes the comparison string
+  // "Bearer undefined", which is a value any caller can send. It is set in production,
+  // but the failure is silent and opens every check to the internet, so it is asserted
+  // rather than assumed.
+  const secret = process.env.CRON_SECRET
+  if (!secret) {
+    console.error('[Health] CRON_SECRET is not set — refusing to run')
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  if (req.headers.get('authorization') !== `Bearer ${secret}`) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -151,6 +175,26 @@ export async function GET(req: NextRequest) {
   const summary = { healthy, checks, ms: Date.now() - started }
 
   console.log(`[Health] ${JSON.stringify(summary)}`)
+
+  // Record the verdict. This is the only evidence a *passing* run leaves: alerts are
+  // failure-only and this plan retains no runtime logs, so without a row there is no way
+  // to tell a healthy check from one that quietly stopped being invoked.
+  //
+  // A database outage takes this down with it — the one failure the record cannot
+  // capture is the one that stops it being written. That is why the email and the 503
+  // both stay: three signals that fail independently.
+  try {
+    await prisma.healthRun.create({
+      data: { healthy, ms: summary.ms, checks: checks as unknown as Prisma.InputJsonValue },
+    })
+    await prisma.healthRun.deleteMany({
+      where: { ranAt: { lt: new Date(Date.now() - RETAIN_DAYS * 24 * 60 * 60 * 1000) } },
+    })
+  } catch (e) {
+    // Never fail the run over bookkeeping: the checks above are the point, and their
+    // result still reaches the admin by email and by status code.
+    console.error('[Health] could not record run:', e)
+  }
 
   if (!healthy) {
     // Emailed every day it stays broken rather than once on transition. Tracking

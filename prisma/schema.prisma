@@ -1142,3 +1142,25 @@ model LocalSEOTask {
   @@index([accountId])
   @@index([status])
 }
+
+/// One row per execution of /api/cron/health.
+///
+/// The health check was built to catch dependencies that fail silently, but a healthy
+/// run of it produced nothing at all: no email (those only go out on failure), no
+/// retained runtime log (this plan keeps none), and no database row. So "ran, all five
+/// green" and "stopped firing weeks ago" were indistinguishable from the outside — the
+/// same silent-failure shape the check exists to prevent, one level up.
+///
+/// This is the durable trace. The absence of a recent row is itself the alarm.
+model HealthRun {
+  id      String   @id @default(cuid())
+  ranAt   DateTime @default(now())
+  healthy Boolean
+  /// Wall-clock duration of the whole run, milliseconds.
+  ms      Int
+  /// The full Check[] the route computed: { name, ok, detail, ms }[]. Kept whole so a
+  /// past failure can be read back with its original message rather than a summary.
+  checks  Json
+
+  @@index([ranAt])
+}
