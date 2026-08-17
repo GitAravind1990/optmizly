@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import { callLLM as callLLMShared } from '@/lib/llm';
+import { callLLM as callLLMShared, extractJSON } from '@/lib/llm';
 import { requireAuth, AuthError, getOrCreateUser } from '@/lib/auth';
 import { captureServerException } from '@/lib/posthog-server';
 
@@ -18,17 +18,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Content and target keyword are required' }, { status: 400 });
     }
 
-    // Run all 7 analyses in parallel
+    // Run all 7 analyses in parallel.
+    //
+    // allSettled rather than all, so a failure reports every section that broke instead of
+    // whichever rejected first. With seven concurrent calls against a shared per-minute
+    // token budget, partial failure is the likely shape, and "three sections failed" is a
+    // far more useful error than one name.
+    const settled = await Promise.allSettled([
+      analyzeSearchIntent(content, targetKeyword),
+      analyzeEntities(content, targetKeyword),
+      analyzeLsiKeywords(content, targetKeyword),
+      generateSchemaMarkup(content, targetKeyword),
+      analyzeTopicCoverage(content, targetKeyword),
+      analyzeEEAT(content, targetKeyword),
+      generateImprovements(content, targetKeyword),
+    ]);
+
+    const failures = settled.flatMap(r =>
+      r.status === 'rejected'
+        ? [r.reason instanceof SectionError ? r.reason.section : String(r.reason?.message ?? r.reason)]
+        : []
+    );
+    if (failures.length > 0) {
+      // Nothing is saved. Six of these scores are weighted into overallScore and every
+      // score column is a non-nullable Int, so a partial run cannot be recorded honestly —
+      // it would have to invent the missing pieces, which is exactly what this replaced.
+      console.error(`[ContentOptimizer] ${failures.length}/7 sections failed:`, failures.join('; '));
+      throw new AuthError(
+        502,
+        `Analysis incomplete — could not produce: ${failures.join(', ')}. Nothing was saved. Please try again.`
+      );
+    }
+
     const [intentAnalysis, entityAnalysis, lsiAnalysis, schemaAnalysis, topicAnalysis, eeatAnalysis, improvements] =
-      await Promise.all([
-        analyzeSearchIntent(content, targetKeyword),
-        analyzeEntities(content, targetKeyword),
-        analyzeLsiKeywords(content, targetKeyword),
-        generateSchemaMarkup(content, targetKeyword),
-        analyzeTopicCoverage(content, targetKeyword),
-        analyzeEEAT(content, targetKeyword),
-        generateImprovements(content, targetKeyword),
-      ]);
+      settled.map(r => (r as PromiseFulfilledResult<unknown>).value) as [
+        IntentSection, EntitySection, LsiSection, SchemaSection, TopicSection, EeatSection, ImprovementsSection,
+      ];
 
     const overallScore = Math.round(
       intentAnalysis.matchScore * 0.15 +
@@ -155,14 +180,54 @@ async function callLLM(prompt: string): Promise<string> {
   return callLLMShared('', prompt, 3000, 'claude-sonnet-4-6')
 }
 
-function parseJSON<T>(text: string, fallback: T): T {
-  try {
-    const match = text.match(/\{[\s\S]*\}/);
-    return match ? JSON.parse(match[0]) : fallback;
-  } catch {
-    return fallback;
+/**
+ * Parses one analysis section, or fails loudly.
+ *
+ * This used to take a `fallback` and return it on any parse failure. The fallbacks were not
+ * empty — they carried scores (matchScore 50, score 50, eeat overall 50) which six of the
+ * seven sections feed into the weighted overallScore. So a run where every model call failed
+ * produced a confident "50/100", wrote it to the database as a real analysis, showed it to
+ * the user, and fed it into the admin aggregates. Indistinguishable from a genuine result.
+ *
+ * A missing section is now an error. Persisting an invented score is the one outcome worth
+ * preventing, and the score columns are non-nullable Ints, so there is no way to record
+ * "could not assess" alongside the real ones.
+ *
+ * Uses the shared extractJSON — its bracket-stack scan handles nested objects and trailing
+ * prose, where the greedy /\{[\s\S]*\}/ this replaced would swallow everything between the
+ * first brace and the last one anywhere in the response.
+ */
+class SectionError extends Error {
+  constructor(public section: string) {
+    super(`${section} could not be parsed`);
   }
 }
+
+function parseSection<T>(section: string, text: string): T {
+  try {
+    return extractJSON(text) as T;
+  } catch {
+    throw new SectionError(section);
+  }
+}
+
+// Shapes the seven prompts ask for. Previously these were inferred from the fallback
+// objects, which is how a fabricated score ended up being the type's source of truth.
+// Suggestions and fixes reuse the existing Fix shape — they are written to
+// ContentOptimizationFix through the same path further down.
+interface IntentSection { intent: string; matchScore: number; reasoning: string; suggestions: Fix[] }
+interface EntitySection { entities: unknown[]; score: number; missing: unknown[]; relationships: unknown[]; suggestions: Fix[] }
+interface LsiSection { found: string[]; missing: string[]; score: number; suggestions: Fix[] }
+interface SchemaSection { type: string; reasoning: string; jsonLd: string }
+interface TopicSection {
+  mainTopic: string; covered: string[]; missing: unknown[]; score: number;
+  pillarSuggestion: string; clusterSuggestions: unknown[]; linkingOpportunities: unknown[]; suggestions: Fix[]
+}
+interface EeatSection {
+  experience: number; expertise: number; authority: number; trust: number;
+  overall: number; details: Record<string, string>
+}
+interface ImprovementsSection { contentScore: number; fixes: Fix[]; rewrites: unknown[] }
 
 async function analyzeSearchIntent(content: string, keyword: string) {
   const prompt = `Analyze this content for search intent matching the keyword "${keyword}".
@@ -180,9 +245,7 @@ Return ONLY valid JSON:
     { "issue": "Specific issue", "suggestion": "How to fix", "priority": "critical|warning|info" }
   ]
 }`;
-  return parseJSON(await callLLM(prompt), {
-    intent: 'informational', matchScore: 50, reasoning: '', suggestions: [],
-  });
+  return parseSection<IntentSection>('Search intent', await callLLM(prompt));
 }
 
 async function analyzeEntities(content: string, keyword: string) {
@@ -200,9 +263,7 @@ Return ONLY valid JSON:
   "relationships": [{"entity1": "X", "entity2": "Y", "relationship": "type"}],
   "suggestions": [{"issue": "...", "suggestion": "...", "priority": "warning"}]
 }`;
-  return parseJSON(await callLLM(prompt), {
-    entities: [], score: 50, missing: [], relationships: [], suggestions: [],
-  });
+  return parseSection<EntitySection>('Entities', await callLLM(prompt));
 }
 
 async function analyzeLsiKeywords(content: string, keyword: string) {
@@ -219,9 +280,7 @@ Return ONLY valid JSON:
   "score": 60,
   "suggestions": [{"issue": "...", "suggestion": "...", "priority": "info"}]
 }`;
-  return parseJSON(await callLLM(prompt), {
-    found: [], missing: [], score: 50, suggestions: [],
-  });
+  return parseSection<LsiSection>('LSI keywords', await callLLM(prompt));
 }
 
 async function generateSchemaMarkup(content: string, keyword: string) {
@@ -237,9 +296,7 @@ Return ONLY valid JSON:
   "reasoning": "Why this schema type",
   "jsonLd": "<script type=\\"application/ld+json\\">{ \\"@context\\": \\"https://schema.org\\" }</script>"
 }`;
-  return parseJSON(await callLLM(prompt), {
-    type: 'Article', reasoning: '', jsonLd: '',
-  });
+  return parseSection<SchemaSection>('Schema markup', await callLLM(prompt));
 }
 
 async function analyzeTopicCoverage(content: string, keyword: string) {
@@ -260,10 +317,7 @@ Return ONLY valid JSON:
   "linkingOpportunities": [{"from": "current page", "to": "suggested page", "anchor": "link text"}],
   "suggestions": [{"issue": "...", "suggestion": "...", "priority": "warning"}]
 }`;
-  return parseJSON(await callLLM(prompt), {
-    mainTopic: keyword, covered: [], missing: [], score: 50,
-    pillarSuggestion: '', clusterSuggestions: [], linkingOpportunities: [], suggestions: [],
-  });
+  return parseSection<TopicSection>('Topic coverage', await callLLM(prompt));
 }
 
 async function analyzeEEAT(content: string, keyword: string) {
@@ -287,9 +341,7 @@ Return ONLY valid JSON:
     "trust": "Explanation"
   }
 }`;
-  return parseJSON(await callLLM(prompt), {
-    experience: 50, expertise: 50, authority: 50, trust: 50, overall: 50, details: {},
-  });
+  return parseSection<EeatSection>('E-E-A-T', await callLLM(prompt));
 }
 
 async function generateImprovements(content: string, keyword: string) {
@@ -315,7 +367,5 @@ Return ONLY valid JSON:
     { "section": "Section name", "original": "Current text", "improved": "AI rewrite" }
   ]
 }`;
-  return parseJSON(await callLLM(prompt), {
-    contentScore: 50, fixes: [], rewrites: [],
-  });
+  return parseSection<ImprovementsSection>('Improvements', await callLLM(prompt));
 }
