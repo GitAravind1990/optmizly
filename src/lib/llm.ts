@@ -63,6 +63,19 @@ const GROQ_MODEL_MAP: Record<Model, string> = {
 const GROQ_REASONING_EFFORT = 'medium'
 const GROQ_REASONING_ALLOWANCE = 1_200
 
+/**
+ * Hard ceiling on max_tokens for a single Groq request.
+ *
+ * The account's per-minute token allowance is 8,000 org-wide, and Groq rejects a request
+ * outright — "Request too large", before any work happens — if its max_tokens exceeds
+ * what the bucket can hold. So the retry below cannot simply double: 4,200 → 8,400 is
+ * refused, while 7,500 completes. Kept just under the limit rather than at it, because
+ * anything else running concurrently is drawing on the same bucket.
+ *
+ * Raise this only alongside the account's actual rate limit; it is not a tuning knob.
+ */
+const GROQ_MAX_REQUEST_TOKENS = 7_500
+
 // Map Anthropic model IDs → Bedrock model IDs
 const BEDROCK_MODEL_MAP: Record<Model, string> = {
   'claude-haiku-4-5-20251001': process.env.BEDROCK_HAIKU_MODEL  ?? 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
@@ -89,26 +102,45 @@ async function callGroq(system: string, prompt: string, maxTokens: number, model
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Groq = require('groq-sdk').default
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-  const completion = await groq.chat.completions.create({
-    model: GROQ_MODEL_MAP[model],
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: prompt },
-    ],
-    // Reasoning and answer share this budget — see GROQ_REASONING_ALLOWANCE.
-    max_tokens: maxTokens + GROQ_REASONING_ALLOWANCE,
-    reasoning_effort: GROQ_REASONING_EFFORT,
-    temperature: 0,
-  })
+  const ask = (budget: number) =>
+    groq.chat.completions.create({
+      model: GROQ_MODEL_MAP[model],
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: prompt },
+      ],
+      // Reasoning and answer share this budget — see GROQ_REASONING_ALLOWANCE.
+      max_tokens: budget,
+      reasoning_effort: GROQ_REASONING_EFFORT,
+      temperature: 0,
+    })
 
-  const text = completion.choices[0]?.message?.content ?? ''
+  const firstBudget = Math.min(maxTokens + GROQ_REASONING_ALLOWANCE, GROQ_MAX_REQUEST_TOKENS)
+  const retryBudget = Math.min(firstBudget * 2, GROQ_MAX_REQUEST_TOKENS)
+  let completion = await ask(firstBudget)
+  let choice = completion.choices[0]
 
-  // An empty answer with a full budget means reasoning consumed everything. It is not an
-  // error to the SDK — the call succeeded — so without this it surfaces as an unparseable
-  // response and gets blamed on the prompt. Raise the allowance if this ever fires.
-  if (!text && completion.choices[0]?.finish_reason === 'length') {
+  // Empty content with finish_reason 'length' means reasoning ate the whole budget before
+  // the model wrote a character. The SDK reports success, so without this it would surface
+  // downstream as an unparseable response and get blamed on the prompt.
+  //
+  // Retried rather than simply given a bigger allowance up front, because reasoning cost is
+  // not a property of the tool — measured across real prompts it ranged from 655 tokens
+  // (Content Gap) to 4,198 (Backlinks, which exhausted its entire budget). Sizing every
+  // call for the worst case would inflate cost and burn through the per-minute token limit
+  // for the majority that never need it.
+  if (!choice?.message?.content && choice?.finish_reason === 'length' && retryBudget > firstBudget) {
+    console.warn(
+      `[LLM] ${GROQ_MODEL_MAP[model]} used all ${firstBudget} tokens on reasoning; retrying at ${retryBudget}`
+    )
+    completion = await ask(retryBudget)
+    choice = completion.choices[0]
+  }
+
+  const text = choice?.message?.content ?? ''
+  if (!text && choice?.finish_reason === 'length') {
     throw new Error(
-      `Groq model ${GROQ_MODEL_MAP[model]} spent its whole ${maxTokens + GROQ_REASONING_ALLOWANCE}-token budget on reasoning and returned no content`
+      `Groq model ${GROQ_MODEL_MAP[model]} returned no content at ${retryBudget} tokens — reasoning consumed the entire budget`
     )
   }
 
