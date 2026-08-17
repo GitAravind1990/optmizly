@@ -1,8 +1,7 @@
-import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
-import Anthropic from '@anthropic-ai/sdk';
-import { canUseTool } from '@/lib/plans';
-import { getOrCreateUser } from '@/lib/auth';
+import { callLLM } from '@/lib/llm';
+import { AuthError, requireAuth } from '@/lib/auth';
+import { apiError } from '@/lib/api';
 import { NextRequest, NextResponse } from 'next/server';
 import { captureServerException } from '@/lib/posthog-server';
 import { getTrafficEstimate } from '@/lib/dataforseo';
@@ -12,8 +11,6 @@ function extractDomain(url: string): string {
 }
 
 export const maxDuration = 60;
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 interface AIFix {
   type: string;
@@ -27,18 +24,20 @@ interface AIFix {
 
 // POST — generate AI fixes for an existing audit and update it
 export async function POST(req: NextRequest) {
-  const { userId: clerkId } = await auth();
+  let clerkId: string | null = null;
   try {
-    if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Was getOrCreateUser + canUseTool: a tier check with no quota at all, so this route
+    // generated a model response and spent a real DataForSEO traffic lookup on every
+    // call, unmetered, for as many calls as an Agency account cared to make. requireAuth
+    // does the same tier check and also charges the run.
+    const user = await requireAuth('performance-fixer');
+    clerkId = user.clerkId;
 
     const { auditId } = await req.json();
     if (!auditId) return NextResponse.json({ error: 'auditId required' }, { status: 400 });
 
-    const user = await getOrCreateUser(clerkId);
-    if (!user || !canUseTool(user.plan, 'performance-fixer')) return NextResponse.json({ error: 'Agency only' }, { status: 403 });
-
     const audit = await prisma.performanceFixerAudit.findFirst({
-      where: { id: auditId, userId: user.id },
+      where: { id: auditId, userId: user.userId },
     });
     if (!audit) return NextResponse.json({ error: 'Audit not found' }, { status: 404 });
 
@@ -79,6 +78,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ fixes, projectedScore, roi });
   } catch (error) {
+    // AuthError carries its own status — 401, 403 for the wrong plan, 429 when the
+    // allowance is gone. Without this branch the outer handler would relabel all three
+    // as a 500, and the dashboard's upgrade modal keys off 403/429.
+    if (error instanceof AuthError) return apiError(error);
     const msg = error instanceof Error ? error.message : String(error);
     console.error('AI Fixes error:', msg);
     await captureServerException(clerkId, error, { route: '/api/tools/performance-fixer/fixes' });
@@ -119,19 +122,19 @@ OPPORTUNITIES:
 Return ONLY a valid JSON array with no extra text:
 [{"type":"image|css|js|html|server|network","issue":"specific problem referencing the metric","beforeCode":"original code snippet","afterCode":"optimized code snippet","description":"which metric this fixes and why","estimatedImpact":15,"language":"html|css|javascript|http"}]`;
 
-  try {
-    const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
-    const match = text.match(/\[[\s\S]*\]/);
-    return match ? JSON.parse(match[0]) : [];
-  } catch (error) {
-    console.error('AI generation error:', error);
-    return [];
-  }
+  // Routed through callLLM, which follows LLM_PROVIDER like every other AI call here.
+  // This function used to construct the Anthropic SDK directly against
+  // ANTHROPIC_API_KEY — the one account with no credit on it — so in production every
+  // request returned "credit balance is too low". The provider rename swept the rest of
+  // the codebase but not this file, because it never imported the shared module.
+  const text = await callLLM(
+    'You are a web performance expert. Return only the JSON array requested.',
+    prompt,
+    4000
+  );
+  const match = text.match(/\[[\s\S]*\]/);
+  if (!match) throw new Error('AI returned no parseable fix list');
+  return JSON.parse(match[0]);
 }
 
 function calculateProjectedScore(currentScore: number, fixes: AIFix[]): number {

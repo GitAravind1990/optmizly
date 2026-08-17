@@ -2,7 +2,8 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { canUseTool } from '@/lib/plans';
-import { getOrCreateUser } from '@/lib/auth';
+import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth';
+import { apiError } from '@/lib/api';
 import { captureServerException } from '@/lib/posthog-server';
 
 export const maxDuration = 60;
@@ -74,22 +75,17 @@ function extractMetrics(audits: Record<string, { score?: number | null; numericV
 
 // POST — fetch PSI metrics and store audit, return auditId + metrics
 export async function POST(req: NextRequest) {
-  const { userId: clerkId } = await auth();
+  let clerkId: string | null = null;
   try {
-    if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Was getOrCreateUser + canUseTool, followed by a hardcoded "50 audits per rolling
+    // 30 days" counter — a second quota system, private to this tool, blind to the
+    // account's actual plan and counting a different window from every other tool.
+    // requireAuth does the tier check and draws on the one real allowance instead.
+    const user = await requireAuth('performance-fixer');
+    clerkId = user.clerkId;
 
     const { url, industry } = await req.json();
     if (!url || !url.startsWith('http')) return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
-
-    const user = await getOrCreateUser(clerkId);
-    if (!user || !canUseTool(user.plan, 'performance-fixer')) {
-      return NextResponse.json({ error: 'This tool is exclusive to Agency plan', requiredPlan: 'AGENCY', upgradeUrl: '/pricing' }, { status: 403 });
-    }
-
-    const auditCount = await prisma.performanceFixerAudit.count({
-      where: { userId: user.id, analyzedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-    });
-    if (auditCount >= 50) return NextResponse.json({ error: 'Quota exceeded. 50 audits/month for Agency.' }, { status: 429 });
 
     const psiUrl = new URL('https://www.googleapis.com/pagespeedonline/v5/runPagespeed');
     psiUrl.searchParams.set('url', url);
@@ -113,7 +109,7 @@ export async function POST(req: NextRequest) {
 
     const audit = await prisma.performanceFixerAudit.create({
       data: {
-        userId: user.id,
+        userId: user.userId,
         url,
         industry: industry || null,
         lcp: metrics.lcp,
@@ -138,6 +134,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url, metrics, auditId: audit.id, industryData });
   } catch (error) {
+    // AuthError carries its own status (401 / 403 wrong plan / 429 out of allowance);
+    // the generic handler below would turn all of them into a 500 and break the
+    // dashboard's upgrade modal, which keys off 403 and 429.
+    if (error instanceof AuthError) return apiError(error);
     const msg = error instanceof Error ? error.message : String(error);
     console.error('Performance Fixer error:', msg);
     await captureServerException(clerkId, error, { route: '/api/tools/performance-fixer' });
