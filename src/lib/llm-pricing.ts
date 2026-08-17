@@ -15,12 +15,24 @@ export interface TokenRate {
   output: number
 }
 
-/** The two models llm.ts maps its tiers onto under LLM_PROVIDER=groq, matching the
- *  GROQ_HAIKU_MODEL / GROQ_SONNET_MODEL defaults. Production sets neither override, so
- *  these are what actually runs. */
+/**
+ * The two models llm.ts maps its tiers onto under LLM_PROVIDER=groq.
+ *
+ * STALE AS OF 2026-08-17 — these are the rates for llama-3.1-8b-instant and
+ * llama-3.3-70b-versatile, which Groq retired that day. The tiers now map to
+ * openai/gpt-oss-20b and openai/gpt-oss-120b, whose published rates have NOT been
+ * verified, so the numbers below are left untouched rather than replaced with a guess:
+ * a wrong figure that looks researched is worse than one labelled wrong.
+ *
+ * The admin cost panel reads these, so treat its LLM figure as indicative until they are
+ * checked against Groq's published pricing. Two further caveats when doing that: the
+ * gpt-oss models bill reasoning tokens as output, and llm.ts now adds a
+ * GROQ_REASONING_ALLOWANCE to every request — so real output volume per call is higher
+ * than it was on the Llama models, independently of the per-token rate.
+ */
 export const GROQ_RATES: Record<'small' | 'large', TokenRate> = {
-  small: { input: 0.05, output: 0.08 },  // llama-3.1-8b-instant
-  large: { input: 0.59, output: 0.79 },  // llama-3.3-70b-versatile
+  small: { input: 0.05, output: 0.08 },  // was llama-3.1-8b-instant — now openai/gpt-oss-20b, rate unverified
+  large: { input: 0.59, output: 0.79 },  // was llama-3.3-70b-versatile — now openai/gpt-oss-120b, rate unverified
 }
 
 /** Kept for the day LLM_PROVIDER flips back. Not used while production is on Groq. */

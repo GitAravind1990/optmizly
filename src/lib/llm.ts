@@ -35,11 +35,33 @@ const LLM_PROVIDER = process.env.LLM_PROVIDER ?? 'anthropic'
 
 export type Model = 'claude-haiku-4-5-20251001' | 'claude-sonnet-4-6'
 
-// Map Anthropic model tiers → Groq model IDs
+// Map Anthropic model tiers → Groq model IDs.
+//
+// Was llama-3.1-8b-instant / llama-3.3-70b-versatile until 2026-08-17, when Groq retired
+// both and every AI tool on the site started returning 404 model_not_found. Nothing in the
+// catalogue is a plain instruct model any more — what remains is reasoning models, Whisper
+// and safety classifiers — so the replacements behave differently and callGroq below has
+// to account for that.
 const GROQ_MODEL_MAP: Record<Model, string> = {
-  'claude-haiku-4-5-20251001': process.env.GROQ_HAIKU_MODEL  ?? 'llama-3.1-8b-instant',
-  'claude-sonnet-4-6':         process.env.GROQ_SONNET_MODEL ?? 'llama-3.3-70b-versatile',
+  'claude-haiku-4-5-20251001': process.env.GROQ_HAIKU_MODEL  ?? 'openai/gpt-oss-20b',
+  'claude-sonnet-4-6':         process.env.GROQ_SONNET_MODEL ?? 'openai/gpt-oss-120b',
 }
+
+/**
+ * Reasoning budget the gpt-oss models spend before writing a single visible character.
+ *
+ * They emit into a separate `reasoning` field that shares the max_tokens budget with the
+ * answer, so a caller asking for 1200 tokens got 1200 tokens of reasoning and an **empty
+ * string** back — `finish_reason: length`, no error, nothing to parse.
+ *
+ * `reasoning_effort` is what makes them usable, and the setting is load-bearing rather
+ * than a tuning knob: measured on a real E-E-A-T prompt, `low` spent 36 reasoning tokens
+ * and returned the empty JSON schema echoed straight back, while `medium` spent ~858 and
+ * produced a genuine analysis. So `medium` it is, and every caller's budget is topped up
+ * by this allowance so the numbers they already pass still leave room for an answer.
+ */
+const GROQ_REASONING_EFFORT = 'medium'
+const GROQ_REASONING_ALLOWANCE = 1_200
 
 // Map Anthropic model IDs → Bedrock model IDs
 const BEDROCK_MODEL_MAP: Record<Model, string> = {
@@ -73,11 +95,25 @@ async function callGroq(system: string, prompt: string, maxTokens: number, model
       { role: 'system', content: system },
       { role: 'user', content: prompt },
     ],
-    max_tokens: maxTokens,
+    // Reasoning and answer share this budget — see GROQ_REASONING_ALLOWANCE.
+    max_tokens: maxTokens + GROQ_REASONING_ALLOWANCE,
+    reasoning_effort: GROQ_REASONING_EFFORT,
     temperature: 0,
   })
+
+  const text = completion.choices[0]?.message?.content ?? ''
+
+  // An empty answer with a full budget means reasoning consumed everything. It is not an
+  // error to the SDK — the call succeeded — so without this it surfaces as an unparseable
+  // response and gets blamed on the prompt. Raise the allowance if this ever fires.
+  if (!text && completion.choices[0]?.finish_reason === 'length') {
+    throw new Error(
+      `Groq model ${GROQ_MODEL_MAP[model]} spent its whole ${maxTokens + GROQ_REASONING_ALLOWANCE}-token budget on reasoning and returned no content`
+    )
+  }
+
   return {
-    text: completion.choices[0]?.message?.content ?? '',
+    text,
     inputTokens: completion.usage?.prompt_tokens ?? 0,
     outputTokens: completion.usage?.completion_tokens ?? 0,
   }
