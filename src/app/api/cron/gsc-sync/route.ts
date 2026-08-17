@@ -33,6 +33,10 @@ export async function GET(req: NextRequest) {
 
   const started = Date.now()
   const results = { users: 0, properties: 0, rowsWritten: 0, failed: 0, skipped: 0 }
+  /** Why connections were skipped, tallied by reason (`expired`, `undecryptable`, …).
+   *  The counts alone said a connection was skipped but never why, which is the only part
+   *  that tells you whether a human has to do something or a provider was briefly down. */
+  const skipReasons: Record<string, number> = {}
   let stoppedEarly = false
   let threw: string | null = null
 
@@ -63,8 +67,12 @@ export async function GET(req: NextRequest) {
         const listed = await listSearchConsoleSitesResult(userId)
         if (!listed.ok) {
           // An expired grant is the expected failure here, not an exception: the user has
-          // to reconnect and nothing this job does can fix it. Counted, not thrown.
+          // to reconnect and nothing this job does can fix it. Counted, not thrown — but
+          // counted *with its reason*, because "skipped" on its own is indistinguishable
+          // from "nothing to do". optmizly.com's own connection died on 2026-08-13 and
+          // this job reported a healthy run every time for days afterwards.
           results.skipped++
+          skipReasons[listed.error] = (skipReasons[listed.error] ?? 0) + 1
           console.log(`[GSC Cron] ${userId}: ${listed.error} — skipped`)
           continue
         }
@@ -97,10 +105,22 @@ export async function GET(req: NextRequest) {
     threw = e instanceof Error ? e.message : String(e)
     throw e
   } finally {
-    await recordCronRun('gsc-sync', threw === null && results.failed === 0, Date.now() - started, {
-      ...results,
-      stoppedEarly,
-      ...(threw ? { threw } : {}),
-    })
+    // A run where every connection was skipped is not a success. It completed without
+    // error and synced nothing, which is exactly what a dead grant looks like from the
+    // inside — and marking it ok meant a corpus that had stopped growing reported itself
+    // healthy indefinitely. With no connections at all there is genuinely nothing to do,
+    // so that stays ok.
+    const syncedNothing = results.users > 0 && results.skipped === results.users
+    await recordCronRun(
+      'gsc-sync',
+      threw === null && results.failed === 0 && !syncedNothing,
+      Date.now() - started,
+      {
+        ...results,
+        stoppedEarly,
+        ...(Object.keys(skipReasons).length > 0 ? { skipReasons } : {}),
+        ...(threw ? { threw } : {}),
+      }
+    )
   }
 }
