@@ -9,7 +9,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 /**
- * Daily proof that the things we pay for still answer.
+ * Four-times-daily proof that the things we pay for still answer.
  *
  * Written after a Groq key expired and took every AI tool on the site down for three
  * days without anyone noticing. Nothing was broken in the code and nothing was logged:
@@ -22,8 +22,14 @@ export const maxDuration = 60
  * out of money, and in every case the product keeps serving pages and simply stops
  * working. A check that only pinged our own site would have caught none of it.
  *
- * So each check spends a real call against the real credential. Cheap, but not free — a
- * daily LLM completion costs a fraction of a cent, and that is the price of knowing.
+ * So each check spends a real call against the real credential. Cheap, but not free — an
+ * LLM completion costs a fraction of a cent, and that is the price of knowing.
+ *
+ * Ran daily until 2026-08-18. Groq retired two models mid-morning on the 17th, hours
+ * after that day's check had passed, so a total outage would have gone unreported until
+ * the following morning had it not been found by accident first — the second time an
+ * outage here surfaced that way. Every six hours caps that exposure at six, for four
+ * fractions of a cent instead of one.
  */
 
 const TIMEOUT_MS = 12_000
@@ -173,10 +179,10 @@ export async function GET(req: NextRequest) {
   await recordCronRun('health', healthy, summary.ms, checks)
 
   if (!healthy) {
-    // Emailed every day it stays broken rather than once on transition. Tracking
-    // transitions needs somewhere to store yesterday's verdict, and a daily nag about a
-    // real outage is the failure mode worth having — the alternative is one message lost
-    // in a busy inbox and another three-day silence.
+    // Emailed on every failing run rather than once on transition, so four times a day
+    // while something stays broken. Tracking transitions needs somewhere to store the
+    // previous verdict, and a nag about a real outage is the failure mode worth having —
+    // the alternative is one message lost in a busy inbox and another three-day silence.
     await sendHealthAlertEmail(failed, checks)
   }
 

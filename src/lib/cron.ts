@@ -34,8 +34,12 @@ export const CRON_JOBS: Record<
 > = {
   health: {
     label: 'Health check',
-    schedule: 'daily 07:00 UTC',
-    staleAfterMs: 26 * 60 * 60 * 1000,
+    schedule: 'every 6h (00/06/12/18 UTC)',
+    // One period plus the same two hours of slack the daily jobs get. Raised from daily
+    // on 2026-08-18: Groq retired two models mid-morning on the 17th and the check had
+    // already passed at 07:41, so the outage would have gone unreported until the next
+    // day. It was found by accident instead, for the second time.
+    staleAfterMs: 8 * 60 * 60 * 1000,
   },
   drip: {
     label: 'Drip emails',
