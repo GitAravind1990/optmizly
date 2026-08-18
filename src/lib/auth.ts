@@ -2,7 +2,6 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from './prisma'
 import { PLAN_LIMITS, TRIAL_LIMITS, PLAN_TOOLS, getMonthKey, toolCost } from './plans'
 import { Plan, Prisma } from '@prisma/client'
-import { setTrackingUser } from './llm'
 import { captureServerEvent } from './posthog-server'
 import { sendLimitWarningEmail, sendLimitReachedEmail } from './email'
 
@@ -170,7 +169,10 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
     )
   }
 
-  setTrackingUser(user.id)
+  // No setTrackingUser() here. It used to be, and it silently did nothing: enterWith()
+  // sets the AsyncLocalStorage store for this frame and its descendants, and the route
+  // that awaits this function is neither. Token attribution is resolved inside callLLM
+  // instead — see resolveTrackingUser() in llm.ts for the full account.
 
   return {
     userId: user.id,

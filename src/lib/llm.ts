@@ -165,6 +165,70 @@ async function trackTokens(userId: string, inputTokens: number, outputTokens: nu
   }
 }
 
+/** clerkId -> User.id. The mapping never changes for a given clerkId, so this is safe to
+ *  hold for the life of the process and saves a lookup on every model call.
+ *
+ *  Holds the in-flight promise rather than the resolved id, so the seven parallel calls
+ *  Content Optimizer makes share one query instead of racing to answer the same question
+ *  seven times on a cold process. */
+const userIdByClerkId = new Map<string, Promise<string | null>>()
+
+/**
+ * Who to bill this call to.
+ *
+ * The AsyncLocalStorage store is the fast path, but it only holds a value when
+ * setTrackingUser() was called from the same async frame that later calls callLLM — i.e.
+ * from the route handler itself. That is a much narrower guarantee than it looks, and it
+ * is why every token counter in this product read zero from June until it was noticed on
+ * 2026-08-18:
+ *
+ *   requireAuth() called setTrackingUser() just before returning, which reads as though
+ *   every route using it was covered. It is not. enterWith() applies to the current
+ *   execution context and its descendants, and an awaited callee is not an ancestor of
+ *   its caller's continuation — the route resumes in the context it had at the await,
+ *   with no store. So the value was set into a context that ended the moment
+ *   requireAuth() returned, and callLLM saw undefined on all eighteen routes.
+ *
+ * Two routes (backlinks, content-ideas outline) had a second setTrackingUser() call in
+ * the route body, which does work. Whoever added those found the symptom and patched
+ * around it twice without the cause surfacing, which is the reason attribution now lives
+ * here rather than at each call site: this is the one place every model call passes
+ * through, and a route that forgets a line is indistinguishable from a route that has
+ * nothing to attribute.
+ *
+ * The fallback asks Clerk who is making the current request. That is request-scoped
+ * state Next.js maintains for us, so it needs no cooperation from the caller and cannot
+ * be forgotten by the next route author. Outside a request — the crons, a script — auth()
+ * has no context and throws; unattributed is the right answer there, so it is swallowed.
+ */
+async function resolveTrackingUser(): Promise<string | null> {
+  const fromContext = trackingStorage.getStore()
+  if (fromContext) return fromContext
+
+  try {
+    const { auth } = await import('@clerk/nextjs/server')
+    const { userId: clerkId } = await auth()
+    if (!clerkId) return null
+
+    const cached = userIdByClerkId.get(clerkId)
+    if (cached) return await cached
+
+    const lookup = prisma.user
+      .findUnique({ where: { clerkId }, select: { id: true } })
+      .then(u => u?.id ?? null)
+    userIdByClerkId.set(clerkId, lookup)
+    // Neither a failed lookup nor a miss may be cached as a permanent "unknown" for this
+    // clerkId: users are auto-provisioned on first use, so a miss now can be a hit later
+    // and this map outlives the request that saw it.
+    lookup.then(id => { if (!id) userIdByClerkId.delete(clerkId) }).catch(() => userIdByClerkId.delete(clerkId))
+    return await lookup
+  } catch {
+    // No request context, or Clerk is unavailable. Tokens go unattributed rather than
+    // failing the call the user actually asked for.
+    return null
+  }
+}
+
 function getRetryAfterMs(error: unknown, attempt: number): number {
   const fallbackMs = 1000 * Math.pow(2, attempt) // 1s, 2s, 4s
   const headers = (error as { headers?: { get?(name: string): string | null } })?.headers
@@ -218,7 +282,7 @@ export async function callLLM(
     outputTokens = message.usage.output_tokens
   }
 
-  const userId = trackingStorage.getStore()
+  const userId = await resolveTrackingUser()
   if (userId) {
     void trackTokens(userId, inputTokens, outputTokens)
   }
