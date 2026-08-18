@@ -6,8 +6,8 @@
 // at roughly sixteen times the real input rate. One place to change means the label and
 // the arithmetic cannot drift apart again.
 //
-// Published rates as of 2026-08-12. These are on-demand prices; Groq's batch API and
-// prompt caching each halve them, so a real invoice can be lower than anything here.
+// These are on-demand prices; Groq's batch API and prompt caching each halve them, so a
+// real invoice can be lower than anything here.
 
 /** Per million tokens, in USD. */
 export interface TokenRate {
@@ -18,21 +18,25 @@ export interface TokenRate {
 /**
  * The two models llm.ts maps its tiers onto under LLM_PROVIDER=groq.
  *
- * STALE AS OF 2026-08-17 — these are the rates for llama-3.1-8b-instant and
- * llama-3.3-70b-versatile, which Groq retired that day. The tiers now map to
- * openai/gpt-oss-20b and openai/gpt-oss-120b, whose published rates have NOT been
- * verified, so the numbers below are left untouched rather than replaced with a guess:
- * a wrong figure that looks researched is worse than one labelled wrong.
+ * Verified 2026-08-18 against Groq's own model catalogue (console.groq.com/docs/models),
+ * replacing the retired Llama rates that stood here from 2026-08-12. Those were left
+ * deliberately wrong-but-labelled for a day rather than guessed at; these are the
+ * published figures for the models actually in use.
  *
- * The admin cost panel reads these, so treat its LLM figure as indicative until they are
- * checked against Groq's published pricing. Two further caveats when doing that: the
- * gpt-oss models bill reasoning tokens as output, and llm.ts now adds a
- * GROQ_REASONING_ALLOWANCE to every request — so real output volume per call is higher
- * than it was on the Llama models, independently of the per-token rate.
+ * The 120b is exactly twice the 20b on both input and output, which is why the range
+ * estimateCostRange returns is now narrow — see the note there.
+ *
+ * One thing that does not show up in the per-token rate: the gpt-oss models bill
+ * reasoning tokens as output, and they reason before writing a visible character.
+ * Confirmed by measurement, not by documentation — a trivial "reply OK" call reported
+ * completion_tokens 49 with reasoning_tokens 39 inside it. So the output volume per call
+ * is several times what the visible answer suggests. Nothing to correct for here: Groq
+ * returns reasoning inside usage.completion_tokens, which is the field llm.ts records,
+ * so the token counts these rates are applied to already include it.
  */
 export const GROQ_RATES: Record<'small' | 'large', TokenRate> = {
-  small: { input: 0.05, output: 0.08 },  // was llama-3.1-8b-instant — now openai/gpt-oss-20b, rate unverified
-  large: { input: 0.59, output: 0.79 },  // was llama-3.3-70b-versatile — now openai/gpt-oss-120b, rate unverified
+  small: { input: 0.075, output: 0.30 }, // openai/gpt-oss-20b
+  large: { input: 0.15,  output: 0.60 }, // openai/gpt-oss-120b
 }
 
 /** Kept for the day LLM_PROVIDER flips back. Not used while production is on Groq. */
@@ -58,13 +62,16 @@ export interface CostRange {
  * A range, not a number, because we cannot do better honestly.
  *
  * Token totals are stored per user in aggregate, with no record of which tier produced
- * them. Five routes (ranking-engine, rewrite, serp, content-optimizer, ai-regex) use the
- * large tier and the other thirty call sites use the small one, so the true figure sits
- * somewhere between "all small" and "all large" — an order of magnitude apart.
+ * them. Seven call sites across five files (ranking-engine, rewrite, serp,
+ * content-optimizer, ai-regex) use the large tier and the other twenty-seven use the
+ * small one, so the true figure sits somewhere between "all small" and "all large".
  *
- * Reporting the midpoint alone would be the same false precision the old constant had.
- * Narrowing this properly means recording the model alongside the token counts, which is
- * a schema change; until then the range is the honest answer.
+ * On the Llama rates that gap was an order of magnitude and the midpoint was close to
+ * meaningless. On the gpt-oss pair the large tier is exactly 2x the small one on both
+ * input and output, so max is always exactly 2x min and the midpoint is within 33% of
+ * either end whatever the real mix. The range is still the honest output — narrowing it
+ * properly means recording the model alongside the token counts, which is a schema
+ * change — but it is no longer wide enough to be useless.
  */
 export function estimateCostRange(
   inputTokens: number,

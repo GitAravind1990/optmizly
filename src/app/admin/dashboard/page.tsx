@@ -265,8 +265,10 @@ function UsersTab() {
             {data.users.map((user: any, i: number) => {
               const inTok = user.totalInputTokens ?? 0;
               const outTok = user.totalOutputTokens ?? 0;
-              // Groq haiku rates: $0.05/M input, $0.08/M output
-              const estCost = (inTok * 0.05 + outTok * 0.08) / 1_000_000;
+              // Priced by /api/admin/users, not here. This line used to hold its own
+              // rate literals and they were the retired Llama ones; the browser also
+              // cannot see LLM_PROVIDER, so it has no way to know which card applies.
+              const estCost = user.estCostUsd ?? 0;
               return (
                 <tr key={i} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-800">{user.email}</td>

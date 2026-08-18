@@ -47,7 +47,7 @@ export async function GET(_req: NextRequest) {
     // Derived from real usage rather than a chosen constant. The previous $0.15 per
     // analysis was picked against Anthropic pricing and survived the move to Groq, which
     // put this panel out by roughly two orders of magnitude — a real analysis costs a
-    // fraction of a cent at Llama rates.
+    // fraction of a cent at the gpt-oss rates now in llm-pricing.ts.
     //
     // Per-analysis cost is all-time spend divided by all-time analyses, then applied to
     // the last 30 days' count. Both sides come from stored data, so the figure moves with
