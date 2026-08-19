@@ -183,6 +183,28 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
 }
 
 /**
+ * Give back the units requireAuth() took, for a run that provably did no work.
+ *
+ * requireAuth charges up front — deliberately, so concurrent requests cannot race past the
+ * quota — which means a run that dies before reaching the vendor still costs the user an
+ * analysis. Use this only where nothing was sent and no third party was billed, such as a
+ * request refused locally for want of Groq per-minute capacity. A run that failed *after*
+ * spending vendor calls is not eligible: the money is gone and the charge is honest.
+ *
+ * Never throws. A failed refund must not turn a recoverable error into a 500 on top of it.
+ */
+export async function refundUsage(userId: string, tool: string): Promise<void> {
+  try {
+    await prisma.usage.update({
+      where: { userId_month: { userId, month: getMonthKey() } },
+      data: { count: { decrement: toolCost(tool) } },
+    })
+  } catch {
+    // Nothing to do — the user keeps the charge rather than the request keeping the error.
+  }
+}
+
+/**
  * Validate auth and check tool access WITHOUT touching the monthly analysis quota.
  * Use this for actions that aren't a billable "analysis" — e.g. connecting/checking/
  * disconnecting a third-party integration.

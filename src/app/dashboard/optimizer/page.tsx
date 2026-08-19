@@ -251,7 +251,10 @@ export default function ContentOptimizerPage() {
               {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
               <button onClick={handleAnalyze} disabled={loading || !content || !keyword}
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 text-white py-3 rounded-lg text-sm font-bold transition-all">
-                {loading ? 'Running 7 analyses in parallel… (~30 sec)' : 'Analyze Everything'}
+                {/* The seven sections are queued against the AI provider's per-minute token
+                    limit rather than run all at once, so this takes minutes, not seconds.
+                    Promising 30s here sent people away before their results arrived. */}
+                {loading ? 'Running 7 analyses… this takes 2–3 minutes, keep this tab open' : 'Analyze Everything'}
               </button>
             </div>
             {result && <ResultsDisplay result={result} activeTab={activeTab} setActiveTab={setActiveTab} />}

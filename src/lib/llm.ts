@@ -12,6 +12,9 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { AsyncLocalStorage } from 'async_hooks'
 import { prisma } from './prisma'
+import { reserve, release, sync, markExhausted, estimateTokens, fitBudget } from './groq-limiter'
+
+export { GroqCapacityError } from './groq-limiter'
 
 // This file is SERVER ONLY — never import in client components
 if (typeof window !== 'undefined') {
@@ -61,7 +64,18 @@ const GROQ_MODEL_MAP: Record<Model, string> = {
  * by this allowance so the numbers they already pass still leave room for an answer.
  */
 const GROQ_REASONING_EFFORT = 'medium'
-const GROQ_REASONING_ALLOWANCE = 1_200
+export const GROQ_REASONING_ALLOWANCE = 1_200
+
+/**
+ * How long a call may sit queued waiting for per-minute token capacity before giving up.
+ *
+ * Sized for a 60s route by default: a single call refused on an empty bucket needs about
+ * 20s of refill for a typical 2,500-token budget, so 30s covers it and still leaves the
+ * route time to make the call and do its own work. Callers on a longer maxDuration —
+ * Content Optimizer runs seven sections through one 8,000/min bucket — pass their own,
+ * larger value.
+ */
+const GROQ_DEFAULT_QUEUE_MS = 30_000
 
 /**
  * Hard ceiling on max_tokens for a single Groq request.
@@ -98,25 +112,57 @@ function createAnthropicClient(): Anthropic {
 // Only instantiated when using Anthropic/Bedrock
 export const anthropic = LLM_PROVIDER === 'groq' ? null! : createAnthropicClient()
 
-async function callGroq(system: string, prompt: string, maxTokens: number, model: Model): Promise<{ text: string; inputTokens: number; outputTokens: number }> {
+async function callGroq(system: string, prompt: string, maxTokens: number, model: Model, maxQueueMs: number): Promise<{ text: string; inputTokens: number; outputTokens: number }> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Groq = require('groq-sdk').default
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-  const ask = (budget: number) =>
-    groq.chat.completions.create({
-      model: GROQ_MODEL_MAP[model],
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: prompt },
-      ],
-      // Reasoning and answer share this budget — see GROQ_REASONING_ALLOWANCE.
-      max_tokens: budget,
-      reasoning_effort: GROQ_REASONING_EFFORT,
-      temperature: 0,
-    })
+  const groqModel = GROQ_MODEL_MAP[model]
 
-  const firstBudget = Math.min(maxTokens + GROQ_REASONING_ALLOWANCE, GROQ_MAX_REQUEST_TOKENS)
-  const retryBudget = Math.min(firstBudget * 2, GROQ_MAX_REQUEST_TOKENS)
+  // What the per-minute bucket will actually be charged for this call. Groq bills the
+  // reservation — prompt tokens plus max_tokens — at admission, not what the completion
+  // turns out to need, and never refunds the difference. See groq-limiter.ts.
+  const estimatedInput = estimateTokens(system) + estimateTokens(prompt)
+
+  const ask = async (budget: number) => {
+    const queuedMs = await reserve(groqModel, estimatedInput + budget, maxQueueMs)
+    if (queuedMs > 1_000) {
+      console.warn(`[LLM] ${groqModel} queued ${(queuedMs / 1000).toFixed(1)}s for ${estimatedInput + budget} tokens of per-minute capacity`)
+    }
+    let data, response
+    try {
+      ({ data, response } = await groq.chat.completions.create({
+        model: groqModel,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: prompt },
+        ],
+        // Reasoning and answer share this budget — see GROQ_REASONING_ALLOWANCE.
+        max_tokens: budget,
+        reasoning_effort: GROQ_REASONING_EFFORT,
+        temperature: 0,
+      }).withResponse())
+    } catch (e) {
+      // Groq saying "rate limit" is better information about the bucket than anything this
+      // process inferred. Without recording it, the local bucket still reads as healthy and
+      // every call queued behind this one is admitted into the same refusal.
+      if ((e as { status?: number })?.status === 429) markExhausted(groqModel)
+      throw e
+    }
+    // Give back the part of the prompt estimate that was never charged, before folding in
+    // the header — the header already reflects the true cost, so clamping to it afterwards
+    // keeps a refund from being counted twice when other traffic has moved the bucket.
+    release(groqModel, estimatedInput - (data.usage?.prompt_tokens ?? estimatedInput))
+    // The header is the org-wide truth; this process only ever sees its own share of the
+    // spend, so every response is a chance to correct the local estimate downward.
+    sync(groqModel, Number(response.headers.get('x-ratelimit-remaining-tokens')))
+    return data
+  }
+
+  // fitBudget keeps prompt + max_tokens inside the whole bucket. GROQ_MAX_REQUEST_TOKENS
+  // caps the budget alone, which is not sufficient: 7,500 is legal by itself and still
+  // refused outright once an 800-token prompt is in front of it on an 8,000 bucket.
+  const firstBudget = fitBudget(estimatedInput, Math.min(maxTokens + GROQ_REASONING_ALLOWANCE, GROQ_MAX_REQUEST_TOKENS))
+  const retryBudget = fitBudget(estimatedInput, Math.min(firstBudget * 2, GROQ_MAX_REQUEST_TOKENS))
   let completion = await ask(firstBudget)
   let choice = completion.choices[0]
 
@@ -138,6 +184,16 @@ async function callGroq(system: string, prompt: string, maxTokens: number, model
   }
 
   const text = choice?.message?.content ?? ''
+
+  // Non-empty *and* truncated: the caller gets a partial answer that extractJSON's repair
+  // pass will silently close up, so it arrives looking well-formed with fields missing.
+  // Not retried here — that would double the cost of tools whose output is legitimately
+  // long — but budgets are sized against measured output, so this appearing in the logs
+  // means a budget is now too tight for real content.
+  if (text && choice?.finish_reason === 'length') {
+    console.warn(`[LLM] ${groqModel} truncated at ${retryBudget === firstBudget ? firstBudget : retryBudget} tokens; response is incomplete`)
+  }
+
   if (!text && choice?.finish_reason === 'length') {
     throw new Error(
       `Groq model ${GROQ_MODEL_MAP[model]} returned no content at ${retryBudget} tokens — reasoning consumed the entire budget`
@@ -254,14 +310,20 @@ export async function callLLM(
   system: string,
   prompt: string,
   maxTokens = 1500,
-  model: Model = 'claude-haiku-4-5-20251001'
+  model: Model = 'claude-haiku-4-5-20251001',
+  opts: {
+    /** How long this call may queue for Groq per-minute capacity. Raise it only on a route
+     *  whose maxDuration can absorb the wait. */
+    maxQueueMs?: number
+  } = {}
 ): Promise<string> {
   let text: string
   let inputTokens: number
   let outputTokens: number
 
   if (LLM_PROVIDER === 'groq') {
-    const result = await withRetry(() => callGroq(system, prompt, maxTokens, model))
+    const maxQueueMs = opts.maxQueueMs ?? GROQ_DEFAULT_QUEUE_MS
+    const result = await withRetry(() => callGroq(system, prompt, maxTokens, model, maxQueueMs))
     text = result.text
     inputTokens = result.inputTokens
     outputTokens = result.outputTokens

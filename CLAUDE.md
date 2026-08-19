@@ -142,6 +142,32 @@ Judge a mailer by whether anything threw, not by whether it sent. Zero sent is
 the normal state on most days, so "sent > 0" as a success condition marks a
 healthy job unhealthy and trains you to ignore it.
 
+## Setting max_tokens on a Groq call
+
+**Groq charges the per-minute bucket `prompt_tokens + max_tokens` when it accepts the
+request, and never refunds the part the model did not use.** Measured 2026-08-19: a
+`max_tokens: 3000` call whose completion was 41 tokens decremented
+`x-ratelimit-remaining-tokens` by 3,028, and the bucket then climbed back only at the
+plain refill rate. So `max_tokens` is not a safety ceiling that costs nothing when unused —
+it is the price. Content Optimizer sent seven sections at one copy-pasted 3,000 and was
+charged 33,849 tokens to do 13,573 tokens of work, four times an 8,000/min bucket, which
+is why its seven parallel calls 429'd each other into a 502.
+
+Size budgets from **measured completion tokens on the real prompt at the real model**, and
+from the largest of several samples — reasoning is not stable run to run, and a budget set
+from one sample will truncate on the next. Extract the prompt from the route and call Groq
+directly; the signed-in routes need a Clerk session.
+
+Truncation does not look like truncation downstream: `extractJSON`'s repair pass closes the
+brackets, so a cut-off section arrives well-formed with fields missing. `llm.ts` logs
+`truncated at N tokens` when it sees it — that line means a budget is too tight.
+
+`src/lib/groq-limiter.ts` queues calls against a local mirror of the bucket so they pace
+instead of colliding. It is per-process and starts optimistic, so a cold start can still
+take one 429; that is expected and self-corrects via `markExhausted`. Anything making
+several model calls in one request needs a `maxDuration` that can absorb the queuing —
+seven sections through an 8,000/min bucket is ~160s, not 30.
+
 ## Exports must restate what badges show
 
 Live/Est badges, filters and warnings are React-only. CSV and PDF exports
