@@ -5,6 +5,7 @@ import { captureServerException } from '@/lib/posthog-server'
 import { analyseEeat } from '@/lib/eeat'
 
 export const runtime = 'nodejs'
+export const maxDuration = 30
 
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null

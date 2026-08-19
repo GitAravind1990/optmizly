@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { captureServerEvent, captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
+export const maxDuration = 30
 
 const SYSTEM = `You are an expert SEO and content analyst. Analyse the provided content and return ONLY valid JSON. NO other text.
 

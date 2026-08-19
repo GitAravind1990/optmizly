@@ -4,6 +4,7 @@ import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 
 export const runtime = 'nodejs'
+export const maxDuration = 60
 
 const SYSTEMS: Record<string, (ctx: string, city: string) => string> = {
   entities: (ctx, city) => `You are a hyperlocal SEO expert. Analyse content for local entity gaps. ${ctx}
