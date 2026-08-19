@@ -120,6 +120,20 @@ nothing to read afterwards either. Three things in the same commit:
   **every** exit path: the normal return, early returns, and thrown errors. A
   `finally` that cannot see a throw records a crash as a successful run.
 
+**This is a Hobby plan: one run per day per cron expression, fired anywhere
+inside the scheduled hour.** Anything more frequent — `0 */6 * * *`, `*/30 * * * *`
+— is rejected when you deploy, so it breaks the next deploy of *anything*, not
+just the cron. It also fails quietly in git: a six-hourly health check sat
+committed and unshipped for a day because nothing deploys on push here. Want a
+job several times a day, list it several times, once per hour you want:
+`vercel.json` allows repeated `path` entries and sends `x-vercel-cron-schedule`
+to tell them apart. Budget for the jitter when setting `staleAfterMs` — two runs
+six hours apart can land 6h59m apart.
+
+**`vercel crons ls` shows what Vercel actually has registered** and flags local
+edits as pending deploy. The schedule in `vercel.json` is a request, not a fact;
+this is the only way to see the difference.
+
 `CRON_SECRET` is asserted, never interpolated. Left unset,
 `Bearer ${process.env.CRON_SECRET}` is the literal string `"Bearer undefined"` —
 a value anyone on the internet can send.

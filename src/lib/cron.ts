@@ -34,11 +34,22 @@ export const CRON_JOBS: Record<
 > = {
   health: {
     label: 'Health check',
-    schedule: 'every 6h (00/06/12/18 UTC)',
-    // One period plus the same two hours of slack the daily jobs get. Raised from daily
-    // on 2026-08-18: Groq retired two models mid-morning on the 17th and the check had
-    // already passed at 07:41, so the outage would have gone unreported until the next
-    // day. It was found by accident instead, for the second time.
+    schedule: 'every 6h (00/06/12/18 UTC, ±59m)',
+    // Raised from daily on 2026-08-18: Groq retired two models mid-morning on the 17th
+    // and the check had already passed at 07:41, so the outage would have gone
+    // unreported until the next day. It was found by accident instead, for the second
+    // time.
+    //
+    // This is four separate once-a-day entries in vercel.json, not one `0 *4/6 * * *`.
+    // Hobby rejects any single expression that would fire more than once a day, at
+    // deploy time — the six-hourly version was committed on the 18th and never shipped,
+    // and would have failed the next deploy of anything else. Four daily expressions
+    // are each legal and land on the same four hours. Vercel allows several crons on
+    // one path and sends x-vercel-cron-schedule to tell them apart.
+    //
+    // Hobby also fires within the hour rather than on it, so consecutive runs can be
+    // 6h59m apart. Eight hours is that worst case plus an hour, which still catches a
+    // wholly skipped period.
     staleAfterMs: 8 * 60 * 60 * 1000,
   },
   drip: {

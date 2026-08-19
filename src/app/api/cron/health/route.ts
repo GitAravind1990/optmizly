@@ -30,6 +30,10 @@ export const maxDuration = 60
  * the following morning had it not been found by accident first — the second time an
  * outage here surfaced that way. Every six hours caps that exposure at six, for four
  * fractions of a cent instead of one.
+ *
+ * Scheduled as four separate daily crons on this one path rather than a single
+ * six-hourly expression, which this plan refuses at deploy time. See CRON_JOBS in
+ * src/lib/cron.ts for why, and change both together.
  */
 
 const TIMEOUT_MS = 12_000
