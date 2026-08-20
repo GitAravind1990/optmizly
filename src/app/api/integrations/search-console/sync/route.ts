@@ -29,7 +29,9 @@ export async function GET() {
  * product's estimates checkable. Charging for it would discourage the one thing worth
  * encouraging.
  *
- * Syncs every verified property on the connection unless `siteUrl` is given.
+ * Syncs one property per call — the one named by `siteUrl`, or the first verified one —
+ * and returns the rest in `remaining` for the caller to walk. See the comment on the sync
+ * below for why this is deliberately not done in a single request.
  */
 export async function POST(req: Request) {
   let clerkId: string | null = null
@@ -59,14 +61,30 @@ export async function POST(req: Request) {
       : verified
     if (targets.length === 0) throw new AuthError(400, 'No verified property matched')
 
-    // Serial, not parallel: Google's Search Console quota is per-user, and running
-    // properties concurrently just converts headroom into 429s.
-    const results = []
-    for (const site of targets) {
-      results.push(await syncGscProperty(user.userId, site.siteUrl, months))
-    }
+    // One property per request; the rest are handed back for the client to ask for.
+    //
+    // This used to loop over every verified property in a single POST. Serial by
+    // necessity — Google's quota is per-user, so running properties concurrently just
+    // converts headroom into 429s — which made the request as long as the connection was
+    // wide, with no ceiling but the account's property count.
+    //
+    // That matters beyond patience: an authenticated POST that outlives Clerk's 60s
+    // session token is rejected once it expires, after the work is done, and this handler
+    // never learns it happened (measured 2026-08-19 on Content Optimizer). Bounding the
+    // request to one property is what keeps it near that line. It does not guarantee it —
+    // a single busy property is 16 month-windows of row-at-a-time upserts — so treat a
+    // property that reliably fails as a signal to chunk this further, not as a Google
+    // problem.
+    const [target, ...remaining] = targets
+    const results = [await syncGscProperty(user.userId, target.siteUrl, months)]
 
-    return apiSuccess({ data: { results, corpus: await getGscCorpusStats(user.userId) } })
+    return apiSuccess({
+      data: {
+        results,
+        remaining: remaining.map(s => s.siteUrl),
+        corpus: await getGscCorpusStats(user.userId),
+      },
+    })
   } catch (e) {
     await captureServerException(clerkId, e, { route: '/api/integrations/search-console/sync' })
     return apiError(e)

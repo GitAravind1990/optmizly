@@ -168,6 +168,44 @@ take one 429; that is expected and self-corrects via `markExhausted`. Anything m
 several model calls in one request needs a `maxDuration` that can absorb the queuing —
 seven sections through an 8,000/min bucket is ~160s, not 30.
 
+## Giving a signed-in route a maxDuration over 60
+
+**Clerk's session token expires 61 seconds after it is minted, and the lifetime cannot be
+raised.** Measured on the production instance 2026-08-19: sign-in at 18:48:37 produced a
+token with `exp` 18:49:38. The three session settings in the Clerk dashboard control how
+long a *session* lasts in days; the configurable "token lifetime" belongs to custom JWT
+templates, which are a different token that `auth()` does not read. There is no setting.
+
+Clerk refreshes an expired token by redirecting through a handshake, which only works on a
+**GET**. A POST cannot be refreshed — `session-token-expired-refresh-non-eligible-non-get`
+— so a signed-in POST that runs past ~60s is rejected outright.
+
+It is rejected *after* the handler has finished. Content Optimizer charged the quota at
+18:49:03, ran its seven sections, and the 401 landed at 18:50:59: the user paid a unit,
+the work completed, and the response said "Not authenticated". The route never sees that
+401, so **it cannot refund it, log it, or report it** — none of the usual safety nets are
+reachable. Long GETs are fine; they refresh.
+
+So `maxDuration` above 60 on a route that calls `requireAuth`/`requireToolAccess` is a
+promise the platform will not keep. Before setting one, make the request short instead:
+split it into several client-driven calls, or make the underlying work faster. Where the
+work is a loop over N things, return one result plus the remainder and let the client walk
+it — see `/api/integrations/search-console/sync`.
+
+Judge this by measured wall time, not by the limit: a route capped at 90 that really takes
+20s is fine, and one capped at 300 that takes 160s is broken today.
+
+## Refund the quota when the run does not land
+
+`requireAuth` charges the monthly quota *before* any work happens, so every exit that does
+not return a result owes the user that unit back. Refund centrally in the route's `catch`,
+keyed off a flag set right after `requireAuth`, rather than at each throw site — a refund
+attached to one failure mode is a refund the next failure mode will not have.
+
+Only `content-optimizer` does this. The other thirty charging routes keep the unit when
+they fail, which is worth fixing but has to be judged per route: a route that saves a
+partial result has delivered something, and refunding it would be wrong.
+
 ## Exports must restate what badges show
 
 Live/Est badges, filters and warnings are React-only. CSV and PDF exports

@@ -18,9 +18,14 @@ const SECTION_QUEUE_MS = 240_000;
 
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
+  // requireAuth charges the monthly quota before any work happens, so from here on every
+  // exit that does not return a result has to hand that unit back. Tracked rather than
+  // refunded at each throw site — see the catch at the bottom.
+  let charged: string | null = null
   try {
     const user = await requireAuth('content-optimizer')
     clerkId = user.clerkId
+    charged = user.userId
 
     const { content, targetKeyword, contentUrl } = await req.json();
     if (!content || !targetKeyword) {
@@ -50,7 +55,6 @@ export async function POST(req: NextRequest) {
     const starved = settled.some(r => r.status === 'rejected' && r.reason instanceof GroqCapacityError);
     if (starved) {
       console.error('[ContentOptimizer] ran out of Groq per-minute token capacity');
-      await refundUsage(user.userId, 'content-optimizer');
       throw new AuthError(
         503,
         'The AI provider’s per-minute limit is saturated right now. Nothing was saved and nothing was charged — please try again in a minute.'
@@ -123,6 +127,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // The run produced a durable result, so the unit is earned from here on — a failure
+    // while saving the individual fixes below must not refund an analysis the user can
+    // still open from their history.
+    charged = null;
+
     // Save individual fixes (non-blocking via createMany)
     const allFixes = [
       ...intentAnalysis.suggestions.map((s: Fix) => ({ ...s, category: 'intent' })),
@@ -158,6 +167,18 @@ export async function POST(req: NextRequest) {
       improvements,
     });
   } catch (error) {
+    // Reaching here before the optimization row is written means the user paid a unit for
+    // no result: the 502 names the sections that failed and saves nothing, the 503 never
+    // sent the content at all. Refunded centrally, keyed off `charged`, so a new failure
+    // mode cannot be added without one — and so a failure *after* the result is saved
+    // correctly keeps the charge.
+    //
+    // This cannot cover every way a run fails to reach the user. A request that outlives
+    // Clerk's 60s session token is rejected after this handler has already returned, so
+    // that 401 never arrives here and the unit stays spent; only keeping the request under
+    // 60s fixes that one. See the maxDuration note at the top of this file.
+    if (charged) await refundUsage(charged, 'content-optimizer')
+
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }

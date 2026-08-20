@@ -161,16 +161,40 @@ export default function SettingsPage() {
     setGscSyncing(true)
     setGscSyncMsg(null)
     try {
-      const r = await fetch('/api/integrations/search-console/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(gscSyncTarget ? { siteUrl: gscSyncTarget } : {}),
-      })
-      const d = await r.json()
-      if (!r.ok) throw new Error(d.error || 'Sync failed')
+      // The endpoint syncs one property per request and hands the rest back in
+      // `remaining`, so that no single authenticated POST runs long enough for Clerk's
+      // 60s session token to expire underneath it — which rejects the request after the
+      // work is done. Walking that list here is what keeps a whole connection syncable
+      // without a long request.
+      const syncOne = async (siteUrl?: string) => {
+        const r = await fetch('/api/integrations/search-console/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(siteUrl ? { siteUrl } : {}),
+        })
+        const d = await r.json()
+        if (!r.ok) throw new Error(d.error || 'Sync failed')
+        if (d.data?.corpus) setGscCorpus(d.data.corpus)
+        return {
+          results: (d.data?.results ?? []) as GSCSyncResult[],
+          remaining: (d.data?.remaining ?? []) as string[],
+        }
+      }
 
-      const results: GSCSyncResult[] = d.data?.results ?? []
-      if (d.data?.corpus) setGscCorpus(d.data.corpus)
+      const first = await syncOne(gscSyncTarget || undefined)
+      const results: GSCSyncResult[] = [...first.results]
+
+      // A deliberately chosen property syncs on its own; only an "all properties" run
+      // walks the remainder. Progress is reported as it goes, because this is now several
+      // requests and a silent spinner through all of them reads as a hang.
+      if (!gscSyncTarget && first.remaining.length > 0) {
+        const total = first.remaining.length + 1
+        for (const siteUrl of first.remaining) {
+          setGscSyncMsg({ type: 'success', message: `Syncing property ${results.length + 1} of ${total}...` })
+          const next = await syncOne(siteUrl)
+          results.push(...next.results)
+        }
+      }
 
       const failed = results.filter(x => x.failed)
       const written = results.reduce((n, x) => n + x.rowsWritten, 0)
