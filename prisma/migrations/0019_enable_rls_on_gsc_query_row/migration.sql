@@ -1,0 +1,23 @@
+-- Enable RLS on GscQueryRow, the one table in this database that never had it.
+--
+-- Migration 0003 enabled row level security on every table then in existence, and every
+-- migration that has added a table since has enabled it on the new one — 0011, 0016, 0017
+-- and 0018 all do. 0015 added GscQueryRow and did not, so it sat exposed to PostgREST from
+-- the day the GSC corpus shipped until Supabase's linter flagged it
+-- (rls_disabled_in_public, 2026-08-22).
+--
+-- What was exposed: one row per Search Console query tuple per user — the query strings a
+-- user's site ranks for, with clicks, impressions, CTR and position. Personal data under
+-- the privacy policy, and not something to leave readable by anyone holding the project's
+-- anon key.
+--
+-- No policies, matching the other 44 tables. Access is via Prisma as `postgres`, which has
+-- rolbypassrls, so an RLS-enabled table with no policies denies PostgREST and leaves the
+-- application untouched. Verified before applying: relrowsecurity was the only difference
+-- between this table and the rest.
+--
+-- Written by hand and applied with `prisma migrate deploy` — `migrate dev` cannot run here
+-- because migration 0003 enables RLS on _prisma_migrations, which blocks the shadow
+-- database's non-owner role from tracking its own migrations.
+
+ALTER TABLE "GscQueryRow" ENABLE ROW LEVEL SECURITY;

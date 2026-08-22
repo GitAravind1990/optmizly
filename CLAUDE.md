@@ -248,6 +248,32 @@ none of `apiError`'s branches and falls through to the generic one, so it return
 `500 Internal server error` and throws the message away. Seven routes were reporting
 "Content too short" and "City is required" that way.
 
+## Adding a table
+
+**Enable RLS on it in the same migration**, with no policies:
+
+```sql
+ALTER TABLE "NewTable" ENABLE ROW LEVEL SECURITY;
+```
+
+Every table in this database has row level security (migration 0003 swept the ones that
+existed then). Supabase exposes the `public` schema through PostgREST, so a table without
+it is readable by anyone holding the project's anon key — which is a public credential by
+design. Prisma connects as `postgres`, which has `rolbypassrls`, so RLS with no policies
+denies PostgREST and leaves the application completely unaffected. There is no downside to
+remember and no policy to write.
+
+This has already been missed once. Migrations 0011, 0016, 0017 and 0018 all enable it on
+the tables they add; 0015 added `GscQueryRow` and did not, so every user's Search Console
+query data — the queries their site ranks for, with clicks, impressions and positions — sat
+exposed from the day the GSC corpus shipped until Supabase's linter flagged it more than
+two weeks later. Nothing in the app broke, nothing failed, and no test would have caught
+it: an over-permissive table behaves exactly like a correct one.
+
+**Supabase's database linter is the thing that notices**, not the code and not Prisma.
+`ALTER TABLE ... ENABLE ROW LEVEL SECURITY` is one line at the bottom of the migration; the
+alternative is finding out from a security report.
+
 ## Exports must restate what badges show
 
 Live/Est badges, filters and warnings are React-only. CSV and PDF exports
