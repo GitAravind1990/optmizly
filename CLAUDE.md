@@ -164,9 +164,14 @@ brackets, so a cut-off section arrives well-formed with fields missing. `llm.ts`
 
 `src/lib/groq-limiter.ts` queues calls against a local mirror of the bucket so they pace
 instead of colliding. It is per-process and starts optimistic, so a cold start can still
-take one 429; that is expected and self-corrects via `markExhausted`. Anything making
-several model calls in one request needs a `maxDuration` that can absorb the queuing —
-seven sections through an 8,000/min bucket is ~160s, not 30.
+take one 429; that is expected and self-corrects via `markExhausted`.
+
+Queuing is time, and on a signed-in route time is the thing you cannot spend — seven
+sections through an 8,000/min bucket is ~160s, which no authenticated POST survives. The
+answer is **fewer model calls per request**, not a bigger `maxDuration`: Content Optimizer
+now runs one section per request (`/api/tools/content-optimizer/section`) with the client
+walking the list. Reach for a long `maxDuration` only where nothing signed-in is waiting on
+it, such as a cron.
 
 ## Giving a signed-in route a maxDuration over 60
 
@@ -187,10 +192,19 @@ the work completed, and the response said "Not authenticated". The route never s
 reachable. Long GETs are fine; they refresh.
 
 So `maxDuration` above 60 on a route that calls `requireAuth`/`requireToolAccess` is a
-promise the platform will not keep. Before setting one, make the request short instead:
-split it into several client-driven calls, or make the underlying work faster. Where the
-work is a loop over N things, return one result plus the remainder and let the client walk
-it — see `/api/integrations/search-console/sync`.
+promise the platform will not keep. Before setting one, make the request short instead.
+Two worked examples in this repo:
+
+- **A loop over N things** — return one result plus the remainder and let the client walk
+  it: `/api/integrations/search-console/sync` syncs one property per call.
+- **N model calls that must all finish** — give each its own endpoint and let the client
+  collect them: `/api/tools/content-optimizer/section` runs one of seven analyses, and the
+  client posts the finished set to `/api/tools/content-optimizer` to be scored and stored.
+
+That second shape moves the billing question. Charge on the request that produces something
+the user keeps — the final store — so an abandoned run costs nothing, and use
+`assertQuotaAvailable` on the first step so someone already at their limit is refused before
+the work rather than after it.
 
 Judge this by measured wall time, not by the limit: a route capped at 90 that really takes
 20s is fine, and one capped at 300 that takes 160s is broken today.

@@ -205,6 +205,43 @@ export async function refundUsage(userId: string, tool: string): Promise<void> {
 }
 
 /**
+ * Throw 429 if `tool` would not fit in what is left of the month, WITHOUT spending it.
+ *
+ * For a run split across several requests, the charge belongs on the request that produces
+ * the result — otherwise a run abandoned halfway has taken a unit for nothing. But that
+ * puts the quota check at the *end*, which would let someone who is already out do all the
+ * work and be refused afterwards. This is the up-front half: advisory only, no increment.
+ *
+ * Deliberately not authoritative. Two runs started at once can both pass this and only one
+ * of them fit; that is fine, because `requireAuth` on the finalising request still does the
+ * atomic increment-then-check. This exists to avoid wasted work, not to enforce anything.
+ */
+export async function assertQuotaAvailable(user: AuthedUser, tool: string): Promise<void> {
+  const month = getMonthKey()
+  const [usage, sub] = await Promise.all([
+    prisma.usage.findUnique({
+      where: { userId_month: { userId: user.userId, month } },
+      select: { count: true },
+    }),
+    prisma.subscription.findUnique({ where: { userId: user.userId }, select: { status: true } }),
+  ])
+
+  const limit = sub?.status === 'TRIALING' ? TRIAL_LIMITS[user.plan] : PLAN_LIMITS[user.plan]
+  const cost = toolCost(tool)
+  const used = usage?.count ?? 0
+
+  if (used + cost > limit) {
+    const remaining = Math.max(0, limit - used)
+    throw new AuthError(
+      429,
+      cost > 1 && remaining > 0
+        ? `This tool uses ${cost} of your monthly allowance and you have ${remaining} left of ${limit}. Upgrade to continue.`
+        : `Monthly limit of ${limit} analyses reached. Upgrade to continue.`
+    )
+  }
+}
+
+/**
  * Validate auth and check tool access WITHOUT touching the monthly analysis quota.
  * Use this for actions that aren't a billable "analysis" — e.g. connecting/checking/
  * disconnecting a third-party integration.

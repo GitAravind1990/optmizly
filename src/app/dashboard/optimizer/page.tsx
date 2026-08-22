@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { SECTION_ORDER, SECTION_LABELS } from '@/lib/content-optimizer-sections';
 import { exportContentOptimizerCSV, exportContentOptimizerPDF } from '@/lib/export';
 import { UpgradeModal } from '@/components/upgrade-modal';
 
@@ -138,6 +139,9 @@ export default function ContentOptimizerPage() {
   const [activeTab, setActiveTab]   = useState<TabId>('overview');
   const [error, setError]           = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  // Which section is running. The run is now several requests, so a single spinner
+  // through all seven would read as a hang.
+  const [progress, setProgress] = useState<{ done: number; label: string } | null>(null);
 
   // Rewrite mode state
   const [rwLoading, setRwLoading]   = useState(false);
@@ -171,17 +175,48 @@ export default function ContentOptimizerPage() {
     setRwCopied(true); setTimeout(() => setRwCopied(false), 2000);
   }
 
+  /**
+   * Runs the seven analyses one request at a time, then stores the finished set.
+   *
+   * Deliberately sequential. The sections share one per-minute token bucket at the AI
+   * provider, so firing them together makes them 429 each other — and doing all seven
+   * inside a single request is what used to push the run past Clerk's 61-second session
+   * token, which returns 401 *after* the work is done. Each request here is one section.
+   *
+   * Only the final store call is billed, so abandoning this halfway costs nothing.
+   */
   const handleAnalyze = async () => {
     setLoading(true);
     setResult(null);
     setError('');
+    setProgress({ done: 0, label: SECTION_LABELS[SECTION_ORDER[0]] });
     try {
+      const sections: Record<string, unknown> = {};
+
+      for (let i = 0; i < SECTION_ORDER.length; i++) {
+        const section = SECTION_ORDER[i];
+        setProgress({ done: i, label: SECTION_LABELS[section] });
+
+        const res = await fetch('/api/tools/content-optimizer/section', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ section, content, targetKeyword: keyword }),
+        });
+        const data = await res.json();
+
+        if (res.status === 403 || res.status === 429) { setShowUpgradeModal(true); return; }
+        if (!res.ok) { setError(data.error ?? `${SECTION_LABELS[section]} failed`); return; }
+        sections[section] = data.result;
+      }
+
+      setProgress({ done: SECTION_ORDER.length, label: 'Saving' });
       const res = await fetch('/api/tools/content-optimizer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, targetKeyword: keyword, contentUrl }),
+        body: JSON.stringify({ content, targetKeyword: keyword, contentUrl, sections }),
       });
       const data = await res.json();
+
       if (res.status === 403 || res.status === 429) {
         setShowUpgradeModal(true);
       } else if (res.ok) {
@@ -192,6 +227,7 @@ export default function ContentOptimizerPage() {
       }
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   };
 
@@ -251,10 +287,15 @@ export default function ContentOptimizerPage() {
               {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
               <button onClick={handleAnalyze} disabled={loading || !content || !keyword}
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 text-white py-3 rounded-lg text-sm font-bold transition-all">
-                {/* The seven sections are queued against the AI provider's per-minute token
-                    limit rather than run all at once, so this takes minutes, not seconds.
-                    Promising 30s here sent people away before their results arrived. */}
-                {loading ? 'Running 7 analyses… this takes 2–3 minutes, keep this tab open' : 'Analyze Everything'}
+                {/* The sections run one request at a time against the AI provider's
+                    per-minute token limit, so this takes minutes, not seconds. Naming the
+                    current step matters more now that it is seven requests: a run that
+                    stalls on one section is otherwise indistinguishable from a hang. */}
+                {loading
+                  ? progress
+                    ? `${progress.label}… (${progress.done}/${SECTION_ORDER.length}) — keep this tab open`
+                    : 'Starting…'
+                  : 'Analyze Everything'}
               </button>
             </div>
             {result && <ResultsDisplay result={result} activeTab={activeTab} setActiveTab={setActiveTab} />}
