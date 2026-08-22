@@ -8,6 +8,7 @@ import { ReviewVelocity, type ReviewData } from '@/components/geogrid/ReviewVelo
 import { getRankColor } from '@/components/geogrid/GridMap'
 import { LockedState, Spinner } from '@/components/ui'
 import { UpgradeModal } from '@/components/upgrade-modal'
+import { getGridStats } from '@/lib/geogrid'
 import type { RankedGridPoint, GridStats as GridStatsType } from '@/lib/geogrid'
 
 type Tab = 'geogrid' | 'review-velocity'
@@ -181,18 +182,17 @@ function GeogridContent() {
       .catch(() => setPlan('FREE'))
   }, [])
 
-  // Guards the geogrid progress-bar interval and its eventual setState calls
-  // against firing after unmount — handleGeogridRun starts the interval inside a
-  // click handler (not a useEffect), so nothing previously stopped it if the user
-  // navigated away mid-scan (up to a 9x9 = 81-point grid, tens of seconds).
+  // Guards the scan's setState calls against firing after unmount — handleGeogridRun runs
+  // in a click handler, not a useEffect, so nothing else stops it if the user navigates
+  // away mid-scan. That matters more now, not less: the scan is a sequence of requests
+  // (up to 9 for a 9x9 grid), and each one resolves into a setState.
+  //
+  // The interval ref that used to live here is gone with the simulated progress bar —
+  // progress is now the batch count, so there is no timer to cancel.
   const isMountedRef = useRef(true)
-  const gridIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
     isMountedRef.current = true
-    return () => {
-      isMountedRef.current = false
-      if (gridIntervalRef.current) clearInterval(gridIntervalRef.current)
-    }
+    return () => { isMountedRef.current = false }
   }, [])
 
   const handleGeogridRun = useCallback(async () => {
@@ -204,27 +204,52 @@ function GeogridContent() {
     setGridError('')
     setGridProgress(0)
 
-    gridIntervalRef.current = setInterval(() => {
-      if (!isMountedRef.current) return
-      setGridProgress(p => Math.min(p + Math.random() * 7, 88))
-    }, 500)
-
     try {
-      const r = await fetch('/api/tools/geogrid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName: biz, keyword, centerLat: lat, centerLng: lng, gridSize, spacing, unit }),
+      // One batch of ten points per request.
+      //
+      // The whole grid used to be scanned in a single POST — 115.7s measured on a real
+      // 9x9 — which a signed-in request cannot survive: Clerk's session token expires at
+      // 61s and cannot refresh on a POST, so the response came back 401 after every paid
+      // Maps call had already been made and 3 units charged. Only the last batch bills, so
+      // navigating away part-way now costs nothing.
+      //
+      // Progress is real for the same reason. It used to be a timer incrementing by a
+      // random amount toward a hard ceiling of 88%, which meant it could not distinguish a
+      // slow scan from a dead one.
+      const common = { businessName: biz, keyword, centerLat: lat, centerLng: lng, gridSize, spacing, unit }
+      const ranked: RankedGridPoint[] = []
+      let meta: { keyword: string; businessName: string; center: { lat: number; lng: number }; gridSize: number } | null = null
+      let batches = 1
+
+      for (let i = 0; i < batches; i++) {
+        const r = await fetch('/api/tools/geogrid', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...common, batchIndex: i }),
+        })
+        const d = await r.json()
+        if (!isMountedRef.current) return
+        if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
+        if (!r.ok) throw new Error(d.error)
+
+        batches = d.batches
+        meta = d
+        ranked.push(...(d.ranks as RankedGridPoint[]))
+        setGridProgress(Math.round(((i + 1) / batches) * 100))
+      }
+
+      if (!meta) throw new Error('Analysis failed')
+      setGridResult({
+        grid: ranked,
+        stats: getGridStats(ranked),
+        keyword: meta.keyword,
+        businessName: meta.businessName,
+        center: meta.center,
+        gridSize: meta.gridSize,
       })
-      const d = await r.json()
-      if (!isMountedRef.current) return
-      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
-      if (!r.ok) throw new Error(d.error)
-      setGridProgress(100)
-      setGridResult(d)
     } catch (e) {
       if (isMountedRef.current) setGridError(e instanceof Error ? e.message : 'Analysis failed')
     } finally {
-      if (gridIntervalRef.current) clearInterval(gridIntervalRef.current)
       if (isMountedRef.current) setGridLoading(false)
     }
   }, [biz, keyword, lat, lng, gridSize, spacing, unit])

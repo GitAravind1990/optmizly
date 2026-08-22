@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     if (!clerkId) return apiError({ message: 'Not authenticated', status: 401, name: 'AuthError' })
 
     const { productId, skipTrial } = await req.json()
-    if (!productId) return apiError(new Error('productId is required'))
+    if (!productId) return apiError({ message: 'productId is required', status: 400, name: 'ValidationError' })
 
     const clerkUser = await currentUser()
     const email = clerkUser?.emailAddresses[0]?.emailAddress ?? ''

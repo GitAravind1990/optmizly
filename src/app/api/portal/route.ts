@@ -16,7 +16,10 @@ export async function POST(_req: NextRequest) {
     })
 
     if (!user?.subscription?.dodoCustomerId) {
-      return apiError(new Error('No active subscription found'))
+      // 404 with the real message, not a bare Error: apiError matches none of its
+      // branches on a plain Error and falls through to a 500 "Internal server error",
+      // which is what a Free user saw in an alert box when they clicked Manage billing.
+      return apiError({ message: 'No active subscription found', status: 404, name: 'NotFound' })
     }
 
     // Dodo Payments self-service portal
