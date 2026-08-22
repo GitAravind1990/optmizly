@@ -34,30 +34,28 @@ model User {
   totalInputTokens  Int @default(0)
   totalOutputTokens Int @default(0)
 
-  subscription         Subscription?
-  usage                Usage[]
-  performanceAudits    PerformanceFixerAudit[]
-  contentOptimizations ContentOptimization[]
-  clients              Client[]              @relation("AgencyClients")
-  reportTemplates      ReportTemplate[]      @relation("ReportTemplates")
-  contentIdeaProjects  ContentIdeaProject[]  @relation("ContentIdeaProjects")
-  competitorAnalyses   CompetitorAnalysis[]  @relation("CompetitorAnalyses")
-  competitorComparisons CompetitorComparison[] @relation("CompetitorComparisons")
-  onPageAnalyses       OnPageAnalysis[]      @relation("OnPageAnalyses")
-  rankTrackingProjects RankTrackingProject[] @relation("RankTrackingProjects")
-  keywordListProjects  KeywordListProject[]  @relation("KeywordListProjects")
-  localSEOAccounts     LocalSEOAccount[]     @relation("LocalSEOAccounts")
-  llmVisibilityAnalyses LLMVisibilityAnalysis[] @relation("LLMVisibilityAnalyses")
-  backlinkProjects     BacklinkProject[]     @relation("BacklinkProjects")
-  backlinkAnalyses     BacklinkDomainAnalysis[] @relation("BacklinkDomainAnalyses")
-  seoAudits            SeoAudit[]            @relation("SEOAudits")
-  drippedEmails        DrippedEmail[]
-  analysisHistory      AnalysisHistory[]
+  subscription            Subscription?
+  usage                   Usage[]
+  performanceAudits       PerformanceFixerAudit[]
+  contentOptimizations    ContentOptimization[]
+  clients                 Client[]                 @relation("AgencyClients")
+  reportTemplates         ReportTemplate[]         @relation("ReportTemplates")
+  contentIdeaProjects     ContentIdeaProject[]     @relation("ContentIdeaProjects")
+  competitorAnalyses      CompetitorAnalysis[]     @relation("CompetitorAnalyses")
+  competitorComparisons   CompetitorComparison[]   @relation("CompetitorComparisons")
+  onPageAnalyses          OnPageAnalysis[]         @relation("OnPageAnalyses")
+  rankTrackingProjects    RankTrackingProject[]    @relation("RankTrackingProjects")
+  keywordListProjects     KeywordListProject[]     @relation("KeywordListProjects")
+  localSEOAccounts        LocalSEOAccount[]        @relation("LocalSEOAccounts")
+  llmVisibilityAnalyses   LLMVisibilityAnalysis[]  @relation("LLMVisibilityAnalyses")
+  backlinkProjects        BacklinkProject[]        @relation("BacklinkProjects")
+  backlinkAnalyses        BacklinkDomainAnalysis[] @relation("BacklinkDomainAnalyses")
+  seoAudits               SeoAudit[]               @relation("SEOAudits")
+  drippedEmails           DrippedEmail[]
+  analysisHistory         AnalysisHistory[]
   searchConsoleConnection SearchConsoleConnection?
-  gscQueryRows            GscQueryRow[]         @relation("GscQueryRows")
-  dailyToolUsage          DailyToolUsage[]      @relation("DailyToolUsage")
-
-  @@index([clerkId])
+  gscQueryRows            GscQueryRow[]            @relation("GscQueryRows")
+  dailyToolUsage          DailyToolUsage[]         @relation("DailyToolUsage")
 }
 
 /// Per-day, per-tool usage, for tools capped daily rather than by the monthly Usage
@@ -71,15 +69,14 @@ model DailyToolUsage {
   userId String
   user   User   @relation("DailyToolUsage", fields: [userId], references: [id], onDelete: Cascade)
 
-  tool   String
-  day    String
-  count  Int    @default(0)
+  tool  String
+  day   String
+  count Int    @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, tool, day])
-  @@index([userId, tool, day])
 }
 
 model Client {
@@ -92,8 +89,8 @@ model Client {
   website  String
   industry String?
 
-  reportTemplate String @default("standard")
-  brandColor     String @default("#6366f1")
+  reportTemplate String  @default("standard")
+  brandColor     String  @default("#6366f1")
   logoUrl        String?
 
   trackKeywords String @db.Text
@@ -124,7 +121,7 @@ model ClientReport {
   pageAuthority   Float?
   backlinksTotal  Int?
 
-  reportHtml   String    @db.Text
+  reportHtml   String  @db.Text
   reportPdfUrl String?
 
   emailSent      Boolean   @default(false)
@@ -158,41 +155,37 @@ model ReportTemplate {
 }
 
 model Subscription {
-  id                   String             @id @default(cuid())
-  userId               String             @unique
-  dodoSubscriptionId   String             @unique
-  dodoCustomerId       String
-  dodoProductId        String
-  dodoPaymentId        String?
-  status               SubscriptionStatus @default(ACTIVE)
-  plan                 Plan
-  currentPeriodEnd     DateTime?
-  cancelledAt          DateTime?
-  welcomeEmailSent     Boolean            @default(false)
-  trialConvertedEmailSent Boolean         @default(false)
-  lastWebhookEventAt   DateTime?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  id                      String             @id @default(cuid())
+  userId                  String             @unique
+  dodoSubscriptionId      String             @unique
+  dodoCustomerId          String
+  dodoProductId           String
+  dodoPaymentId           String?
+  status                  SubscriptionStatus @default(ACTIVE)
+  plan                    Plan
+  currentPeriodEnd        DateTime?
+  cancelledAt             DateTime?
+  welcomeEmailSent        Boolean            @default(false)
+  trialConvertedEmailSent Boolean            @default(false)
+  lastWebhookEventAt      DateTime?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([dodoSubscriptionId])
-  @@index([userId])
 }
 
 model Usage {
-  id               String   @id @default(cuid())
-  userId           String
-  month            String   // "2025-06" format
-  count            Int      @default(0)
-  limitEmailSent   Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id             String   @id @default(cuid())
+  userId         String
+  month          String // "2025-06" format
+  count          Int      @default(0)
+  limitEmailSent Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, month])
-  @@index([userId, month])
 }
 
 model PerformanceFixerAudit {
@@ -204,14 +197,14 @@ model PerformanceFixerAudit {
   industry   String?
   analyzedAt DateTime @default(now())
 
-  lcp  Float
-  fid  Float?
-  inp  Float?
-  cls  Float
+  lcp Float
+  fid Float?
+  inp Float?
+  cls Float
 
-  lcpScore    Int
-  fidScore    Int?
-  clsScore    Int
+  lcpScore       Int
+  fidScore       Int?
+  clsScore       Int
   overallScore   Int
   projectedScore Int
 
@@ -282,9 +275,9 @@ model ContentOptimization {
   subtopicsMissing   String @db.Text
   topicCoverageScore Int
 
-  pillarSuggestion    String?
-  clusterSuggestions  String? @db.Text
-  internalLinkingOps  String? @db.Text
+  pillarSuggestion   String?
+  clusterSuggestions String? @db.Text
+  internalLinkingOps String? @db.Text
 
   experienceScore Int
   expertiseScore  Int
@@ -324,7 +317,6 @@ model BlogPost {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  @@index([slug])
   @@index([published, publishedAt])
 }
 
@@ -354,9 +346,9 @@ model ContentOptimizationFix {
 }
 
 model ContentIdeaProject {
-  id             String @id @default(cuid())
-  userId         String
-  user           User   @relation("ContentIdeaProjects", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("ContentIdeaProjects", fields: [userId], references: [id], onDelete: Cascade)
 
   name           String
   industry       String
@@ -364,8 +356,8 @@ model ContentIdeaProject {
   seedKeywords   String @db.Text
   competitors    String @db.Text
 
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
   ideas     ContentIdea[]
   calendar  ContentCalendar[]
 
@@ -382,7 +374,7 @@ model ContentIdea {
   description String?
 
   primaryKeyword  String
-  relatedKeywords String @db.Text
+  relatedKeywords String  @db.Text
   searchVolume    Int
   difficulty      Int
   cpc             Float?
@@ -435,8 +427,8 @@ model CompetitorAnalysis {
   backlinksTotal   Int
   backlinksNew     Int
 
-  topKeywords  String @db.Text
-  keywordCount Int
+  topKeywords   String @db.Text
+  keywordCount  Int
   brandKeywords String @db.Text
 
   topPages         String @db.Text
@@ -450,7 +442,7 @@ model CompetitorAnalysis {
   missingEntities String @db.Text
   contentOpps     String @db.Text
 
-  aiInsights  String? @db.Text
+  aiInsights String? @db.Text
 
   dataQuality    String   @default("high")
   lastAnalyzedAt DateTime @default(now())
@@ -467,8 +459,8 @@ model CompetitorComparison {
   userId String
   user   User   @relation("CompetitorComparisons", fields: [userId], references: [id], onDelete: Cascade)
 
-  name       String
-  yourDomain String
+  name        String
+  yourDomain  String
   competitors String @db.Text
 
   comparisonData String @db.Text
@@ -487,36 +479,36 @@ model OnPageAnalysis {
   userId String
   user   User   @relation("OnPageAnalyses", fields: [userId], references: [id], onDelete: Cascade)
 
-  content        String  @db.Text
-  targetKeyword  String
-  pageUrl        String?
-  pageTitle      String?
+  content       String  @db.Text
+  targetKeyword String
+  pageUrl       String?
+  pageTitle     String?
 
-  overallScore   Int
+  overallScore Int
 
-  keywordScore   Int
-  headerScore    Int
-  metaScore      Int
-  imageScore     Int
-  linkScore      Int
+  keywordScore     Int
+  headerScore      Int
+  metaScore        Int
+  imageScore       Int
+  linkScore        Int
   readabilityScore Int
 
-  keywordDensity   Float
-  keywordCount     Int
-  wordCount        Int
-  keywordData      String @db.Text
+  keywordDensity Float
+  keywordCount   Int
+  wordCount      Int
+  keywordData    String @db.Text
 
-  headers          String @db.Text
-  metaTags         String @db.Text
-  images           String @db.Text
-  links            String @db.Text
-  readabilityData  String @db.Text
+  headers         String @db.Text
+  metaTags        String @db.Text
+  images          String @db.Text
+  links           String @db.Text
+  readabilityData String @db.Text
 
-  fixes            String @db.Text
-  appliedFixes     String @db.Text
+  fixes        String @db.Text
+  appliedFixes String @db.Text
 
-  version          Int      @default(1)
-  previousScore    Int?
+  version       Int  @default(1)
+  previousScore Int?
 
   analyzedAt DateTime @default(now())
   createdAt  DateTime @default(now())
@@ -545,28 +537,28 @@ model ContentCalendar {
 }
 
 model KeywordListProject {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation("KeywordListProjects", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("KeywordListProjects", fields: [userId], references: [id], onDelete: Cascade)
 
   name           String
-  targetLocation String   @default("US")
+  targetLocation String @default("US")
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  keywords       KeywordResearchResult[]
+  keywords KeywordResearchResult[]
 
   @@index([userId])
 }
 
 model KeywordResearchResult {
-  id           String             @id @default(cuid())
-  projectId    String
-  project      KeywordListProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String             @id @default(cuid())
+  projectId String
+  project   KeywordListProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   keyword      String
-  isSeed       Boolean  @default(false)
+  isSeed       Boolean @default(false)
   searchVolume Int?
   difficulty   Int?
   cpc          Float?
@@ -576,32 +568,32 @@ model KeywordResearchResult {
   /// candidates so KD's page-level blind spot can be eyeballed. Null = not checked.
   topDomains   String?
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  @@index([projectId])
   @@unique([projectId, keyword])
+  @@index([projectId])
 }
 
 model RankTrackingProject {
-  id             String    @id @default(cuid())
-  userId         String
-  user           User      @relation("RankTrackingProjects", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("RankTrackingProjects", fields: [userId], references: [id], onDelete: Cascade)
 
   name           String
   domain         String
-  targetLocation String    @default("US")
-  deviceType     String    @default("desktop")
+  targetLocation String @default("US")
+  deviceType     String @default("desktop")
 
-  trackKeywords  String    @db.Text
-  updateFrequency String   @default("daily")
-  lastUpdatedAt  DateTime?
+  trackKeywords   String    @db.Text
+  updateFrequency String    @default("daily")
+  lastUpdatedAt   DateTime?
 
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  keywords       RankTrackingKeyword[]
-  history        RankHistory[]
-  alerts         RankAlert[]
+  keywords RankTrackingKeyword[]
+  history  RankHistory[]
+  alerts   RankAlert[]
 
   @@index([userId])
   @@index([domain])
@@ -612,20 +604,20 @@ model RankTrackingKeyword {
   projectId String
   project   RankTrackingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  keyword          String
-  searchVolume     Int?
-  difficulty       Int?
+  keyword      String
+  searchVolume Int?
+  difficulty   Int?
 
-  currentRank      Int?
-  currentUrl       String?
+  currentRank Int?
+  currentUrl  String?
 
   rankChange30d    Int?
   rankChange7d     Int?
   rankTrendPercent Float?
 
-  status      String    @default("tracking")
+  status       String    @default("tracking")
   achievedRank Int?
-  notes        String?  @db.Text
+  notes        String?   @db.Text
   lastRanked   DateTime?
 
   createdAt DateTime @default(now())
@@ -633,9 +625,9 @@ model RankTrackingKeyword {
 
   history RankHistory[]
 
+  @@unique([projectId, keyword])
   @@index([projectId])
   @@index([currentRank])
-  @@unique([projectId, keyword])
 }
 
 model RankHistory {
@@ -643,18 +635,18 @@ model RankHistory {
   projectId String
   project   RankTrackingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  keywordId   String
-  keyword     RankTrackingKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+  keywordId String
+  keyword   RankTrackingKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
 
-  rank        Int?
-  url         String?
+  rank         Int?
+  url          String?
   searchVolume Int?
   checkedDate  DateTime @default(now())
 
+  @@unique([keywordId, checkedDate])
   @@index([projectId])
   @@index([keywordId])
   @@index([checkedDate])
-  @@unique([keywordId, checkedDate])
 }
 
 model RankAlert {
@@ -662,13 +654,13 @@ model RankAlert {
   projectId String
   project   RankTrackingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  keyword    String
-  alertType  String   // "position_drop", "position_gain", "first_page", "top_3", "lost_ranking"
-  threshold  Int?
-  oldRank    Int?
-  newRank    Int?
-  message    String   @db.Text
-  read       Boolean  @default(false)
+  keyword   String
+  alertType String // "position_drop", "position_gain", "first_page", "top_3", "lost_ranking"
+  threshold Int?
+  oldRank   Int?
+  newRank   Int?
+  message   String  @db.Text
+  read      Boolean @default(false)
 
   createdAt DateTime @default(now())
 
@@ -677,14 +669,14 @@ model RankAlert {
 }
 
 model LocalSEOAccount {
-  id          String @id @default(cuid())
-  userId      String
-  user        User   @relation("LocalSEOAccounts", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("LocalSEOAccounts", fields: [userId], references: [id], onDelete: Cascade)
 
-  name        String
-  accountType String @default("multi-location")
+  name         String
+  accountType  String  @default("multi-location")
   gbpConnected Boolean @default(false)
-  gbpEmail    String?
+  gbpEmail     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -731,9 +723,9 @@ model LocalSEOLocation {
   reviews   LocalReview[]
   citations LocalCitation[]
 
+  @@unique([accountId, gbpId])
   @@index([accountId])
   @@index([city])
-  @@unique([accountId, gbpId])
 }
 
 model LocalKeywordRank {
@@ -758,9 +750,9 @@ model LocalKeywordRank {
 
   history LocalRankHistory[]
 
+  @@unique([locationId, keyword, searchType])
   @@index([locationId])
   @@index([currentRank])
-  @@unique([locationId, keyword, searchType])
 }
 
 model LocalRankHistory {
@@ -771,9 +763,9 @@ model LocalRankHistory {
   rank        Int?
   checkedDate DateTime @default(now())
 
+  @@unique([keywordId, checkedDate])
   @@index([keywordId])
   @@index([checkedDate])
-  @@unique([keywordId, checkedDate])
 }
 
 model LocalReview {
@@ -784,16 +776,16 @@ model LocalReview {
   locationId String
   location   LocalSEOLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
-  source    String
-  reviewText String @db.Text
-  rating    Int
-  author    String?
+  source     String
+  reviewText String  @db.Text
+  rating     Int
+  author     String?
 
   responded    Boolean @default(false)
   responseText String? @db.Text
 
-  flaggedAsNegative Boolean  @default(false)
-  createdAt         DateTime @default(now())
+  flaggedAsNegative Boolean   @default(false)
+  createdAt         DateTime  @default(now())
   reviewedDate      DateTime?
 
   @@index([accountId])
@@ -825,101 +817,101 @@ model LocalCitation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([accountId, locationId, source])
   @@index([accountId])
   @@index([locationId])
-  @@unique([accountId, locationId, source])
 }
 
 model LLMVisibilityAnalysis {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation("LLMVisibilityAnalyses", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("LLMVisibilityAnalyses", fields: [userId], references: [id], onDelete: Cascade)
 
-  websiteUrl      String
-  domain          String
+  websiteUrl String
+  domain     String
 
-  llmVisibilityScore Int
-  semanticRelevance Int
+  llmVisibilityScore  Int
+  semanticRelevance   Int
   retrievalLikelihood Int
-  contentStructure Int
-  answerability   Int
-  technicalAccess Int
+  contentStructure    Int
+  answerability       Int
+  technicalAccess     Int
 
-  pagesAnalyzed   Int
-  totalWords      Int
+  pagesAnalyzed Int
+  totalWords    Int
 
-  topicsFound     Int
-  entitiesFound   Int
-  faqSections     Int
+  topicsFound   Int
+  entitiesFound Int
+  faqSections   Int
 
-  criticalGaps    String    @db.Text
-  warnings        String    @db.Text
-  opportunities   String    @db.Text
-  recommendations String    @db.Text
+  criticalGaps    String @db.Text
+  warnings        String @db.Text
+  opportunities   String @db.Text
+  recommendations String @db.Text
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  pages           LLMVisibilityPage[]
-  queryTests      LLMQueryTest[]
+  pages      LLMVisibilityPage[]
+  queryTests LLMQueryTest[]
 
   @@index([userId])
   @@index([llmVisibilityScore])
 }
 
 model LLMVisibilityPage {
-  id              String    @id @default(cuid())
-  analysisId      String
-  analysis        LLMVisibilityAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  id         String                @id @default(cuid())
+  analysisId String
+  analysis   LLMVisibilityAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
 
-  url             String
-  title           String
+  url   String
+  title String
 
-  pageScore       Int
-  semanticScore   Int
-  structureScore  Int
-  answerScore     Int
+  pageScore      Int
+  semanticScore  Int
+  structureScore Int
+  answerScore    Int
 
-  wordCount       Int
-  headingCount    Int
-  listCount       Int
-  faqCount        Int
+  wordCount    Int
+  headingCount Int
+  listCount    Int
+  faqCount     Int
 
-  mainTopic       String?
-  subtopics       String    @db.Text
-  entities        String    @db.Text
+  mainTopic String?
+  subtopics String  @db.Text
+  entities  String  @db.Text
 
   retrievable     Boolean
   retrievalReason String?
 
-  issues          String    @db.Text
+  issues String @db.Text
 
-  createdAt       DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([analysisId])
   @@index([pageScore])
 }
 
 model LLMQueryTest {
-  id              String    @id @default(cuid())
-  analysisId      String
-  analysis        LLMVisibilityAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  id         String                @id @default(cuid())
+  analysisId String
+  analysis   LLMVisibilityAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
 
-  query           String
-  queryType       String
+  query     String
+  queryType String
 
-  retrieved       Boolean
-  retrievalScore  Float
+  retrieved      Boolean
+  retrievalScore Float
 
-  topRetrievedPage String?
+  topRetrievedPage  String?
   topRetrievedChunk String? @db.Text
 
-  answer          String?   @db.Text
-  answerQuality   Int?
+  answer        String? @db.Text
+  answerQuality Int?
 
-  missingContent  String    @db.Text
+  missingContent String @db.Text
 
-  createdAt       DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([analysisId])
   @@index([retrievalScore])
@@ -937,19 +929,19 @@ model BacklinkDomainAnalysis {
   // raw backlink count (as opposed to unique referring domains) can exceed Postgres
   // INT4's ~2.1B ceiling; github.com alone was observed at 3.43B, which threw an
   // unhandled Prisma overflow error on every real analysis of a sufficiently large site.
-  backlinksTotal      BigInt @default(0)
-  dofollowLinks       BigInt @default(0)
-  nofollowLinks       BigInt @default(0)
-  referringDomains    Int   @default(0)
-  referringIPs        Int   @default(0)
-  spamScore           Int   @default(0)
-  brokenBacklinks     Int   @default(0)
-  newBacklinks14d     Int   @default(0)
-  lostBacklinks14d    Int   @default(0)
-  newReferringDomains14d Int @default(0)
-  lostReferringDomains14d Int @default(0)
-  domainRank          Int   @default(0)
-  oprScore            Float @default(0)
+  backlinksTotal          BigInt @default(0)
+  dofollowLinks           BigInt @default(0)
+  nofollowLinks           BigInt @default(0)
+  referringDomains        Int    @default(0)
+  referringIPs            Int    @default(0)
+  spamScore               Int    @default(0)
+  brokenBacklinks         Int    @default(0)
+  newBacklinks14d         Int    @default(0)
+  lostBacklinks14d        Int    @default(0)
+  newReferringDomains14d  Int    @default(0)
+  lostReferringDomains14d Int    @default(0)
+  domainRank              Int    @default(0)
+  oprScore                Float  @default(0)
 
   // Cached JSON arrays
   topBacklinks        String @db.Text
@@ -963,13 +955,13 @@ model BacklinkDomainAnalysis {
 }
 
 model BacklinkProject {
-  id           String @id @default(cuid())
-  userId       String
-  user         User   @relation("BacklinkProjects", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("BacklinkProjects", fields: [userId], references: [id], onDelete: Cascade)
 
-  name         String
-  domain       String
-  niche        String
+  name           String
+  domain         String
+  niche          String
   targetKeywords String @db.Text
   contentBrief   String @db.Text
 
@@ -977,7 +969,7 @@ model BacklinkProject {
   contactedCount     Int @default(0)
   securedCount       Int @default(0)
 
-  aiSummary    String? @db.Text
+  aiSummary String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -988,7 +980,7 @@ model BacklinkProject {
 }
 
 model BacklinkOpportunity {
-  id        String         @id @default(cuid())
+  id        String          @id @default(cuid())
   projectId String
   project   BacklinkProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -996,14 +988,14 @@ model BacklinkOpportunity {
   siteUrl         String
   domainAuthority String
   linkType        String
-  angle           String  @db.Text
-  whyRelevant     String  @db.Text
-  contactApproach String  @db.Text
+  angle           String @db.Text
+  whyRelevant     String @db.Text
+  contactApproach String @db.Text
   difficulty      String
   impact          String
 
-  status  String @default("prospecting")
-  notes   String? @db.Text
+  status String  @default("prospecting")
+  notes  String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1026,10 +1018,10 @@ model SeoAudit {
   failedChecks Int
   warnChecks   Int
 
-  categoryScores String @db.Text // JSON: { [categoryKey]: number }
-  autoResults    String @db.Text // JSON: { [checkId]: { status, detail } }
-  aiResults      String @db.Text // JSON: { [categoryKey]: { score, issues, fixes } }
-  checklistState String @db.Text // JSON: { [checkId]: 'pass'|'fail'|'na' }
+  categoryScores String  @db.Text // JSON: { [categoryKey]: number }
+  autoResults    String  @db.Text // JSON: { [checkId]: { status, detail } }
+  aiResults      String  @db.Text // JSON: { [categoryKey]: { score, issues, fixes } }
+  checklistState String  @db.Text // JSON: { [checkId]: 'pass'|'fail'|'na' }
   backlinkData   String? @db.Text // JSON: { oprScore, domainRank }
 
   createdAt DateTime @default(now())
@@ -1093,22 +1085,20 @@ model SearchConsoleConnection {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([userId])
 }
 
 model AnalysisHistory {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   contentSnippet String
   contentUrl     String?
   overallScore   Int
   grade          String
-  result         String   @db.Text
+  result         String  @db.Text
 
-  createdAt      DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
 }
@@ -1116,7 +1106,7 @@ model AnalysisHistory {
 model DrippedEmail {
   id        String   @id @default(cuid())
   userId    String
-  emailType String   // 'drip_day1' | 'drip_day3' | 'drip_day7'
+  emailType String // 'drip_day1' | 'drip_day3' | 'drip_day7'
   sentAt    DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1156,11 +1146,11 @@ model CronRun {
   id String @id @default(cuid())
 
   /// Matches CronJob in src/lib/cron.ts: health | drip | weekly | trial-reminder | gsc-sync.
-  job   String
-  ranAt DateTime @default(now())
-  ok    Boolean
+  job    String
+  ranAt  DateTime @default(now())
+  ok     Boolean
   /// Wall-clock duration of the whole run, milliseconds.
-  ms    Int
+  ms     Int
   /// Whatever the job counted, kept whole so a past run can be read back with its original
   /// numbers rather than a summary. For health this is the full Check[]
   /// ({ name, ok, detail, ms }[]); for the mailers, the sent/skipped/error tallies.
