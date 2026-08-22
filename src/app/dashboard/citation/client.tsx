@@ -40,17 +40,38 @@ export function CitationClient({ unlocked }: { unlocked: boolean }) {
     if (content.length < 50) { setError('Paste content and run an analysis first'); return }
     setLoading(true); setError('')
     const summary = analysisResult?.summary ?? ''
-    const body = JSON.stringify({ content, summary, keyword: keyword.trim() || undefined })
     try {
-      // One request for both halves. These used to be two parallel calls to /api/citation
-      // and /api/queries with an identical body, which made the same keyword grounding
-      // twice and billed the user twice for a single click.
-      const res = await fetch('/api/citation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
-      const data = await res.json()
-      if (res.status === 403 || res.status === 429) { setShowUpgradeModal(true); return }
-      if (!res.ok) throw new Error(data.error)
-      setToolResult('citation', data.citation)
-      setToolResult('queries',  data.queries)
+      // One request per half, run in sequence.
+      //
+      // These were originally two parallel calls to /api/citation and /api/queries, which
+      // grounded the same keyword twice and billed twice for one click. Merging them into a
+      // single request fixed that and introduced a different problem: the two model calls
+      // together reserve ~9,400 tokens against an 8,000/min bucket, so the second was
+      // refused for capacity and the whole run 503'd (measured 2026-08-22).
+      //
+      // Split again, but sequential and grounded once: the first response carries the
+      // grounding for the second to reuse, so the paid SERP lookup still happens a single
+      // time, and only the second half is billed.
+      const post = (payload: Record<string, unknown>) =>
+        fetch('/api/citation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, summary, keyword: keyword.trim() || undefined, ...payload }),
+        })
+
+      const firstRes = await post({ half: 'citation' })
+      const first = await firstRes.json()
+      if (firstRes.status === 403 || firstRes.status === 429) { setShowUpgradeModal(true); return }
+      if (!firstRes.ok) throw new Error(first.error)
+      // Rendered as soon as it lands rather than held back for the pair: this is now two
+      // model calls in sequence, and a blank panel for the whole of it reads as a hang.
+      setToolResult('citation', first.result)
+
+      const secondRes = await post({ half: 'queries', grounding: first.grounding })
+      const second = await secondRes.json()
+      if (secondRes.status === 403 || secondRes.status === 429) { setShowUpgradeModal(true); return }
+      if (!secondRes.ok) throw new Error(second.error)
+      setToolResult('queries', second.result)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Tool failed')
     } finally { setLoading(false) }
