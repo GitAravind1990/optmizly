@@ -367,11 +367,27 @@ function normalizeStateName(state: string): string {
   return full ?? state.trim()
 }
 
+/**
+ * "We looked and it is not there" and "we could not look" are different answers.
+ *
+ * This used to return null for both, and the one caller that surfaces the result told the
+ * user to "verify the business name and city match its Google Business Profile" either way.
+ * That is correct advice for a genuine miss and actively misleading for an auth failure, a
+ * rate limit or a network blip - it sends someone to correct data that was never wrong.
+ *
+ * DFS_NO_RESULTS (40102) is a real "no results" answer, not an error, so it belongs with the
+ * genuine miss. Anything else non-20000, and any absent response at all, is upstream.
+ */
+export type BusinessLookup =
+  | { ok: true; coords: BusinessCoordinates }
+  | { ok: false; reason: 'not_found' }
+  | { ok: false; reason: 'upstream'; detail: string }
+
 export async function resolveBusinessCoordinates(
   businessName: string,
   city: string,
   state: string
-): Promise<BusinessCoordinates | null> {
+): Promise<BusinessLookup> {
   const data = await dfsPost<MyBusinessInfoResponse>('/v3/business_data/google/my_business_info/live', [
     {
       keyword: businessName,
@@ -380,18 +396,52 @@ export async function resolveBusinessCoordinates(
     },
   ])
 
+  // dfsPost swallows network and non-2xx responses into null, so no response is upstream.
   const task = data?.tasks?.[0]
-  const item = task?.result?.[0]?.items?.[0]
-  if (!task || task.status_code !== 20000 || !item) return null
-  if (typeof item.latitude !== 'number' || typeof item.longitude !== 'number') return null
+  if (!task) {
+    console.error(`[resolveBusinessCoordinates] no task in response for "${businessName}" in ${city}, ${state}`)
+    return { ok: false, reason: 'upstream', detail: 'no response from the business lookup' }
+  }
+
+  if (task.status_code === DFS_NO_RESULTS) return { ok: false, reason: 'not_found' }
+
+  if (task.status_code !== 20000) {
+    const detail = `status_code=${task.status_code}`
+    console.error(`[resolveBusinessCoordinates] lookup failed for "${businessName}" in ${city}, ${state}: ${detail}`)
+    return { ok: false, reason: 'upstream', detail }
+  }
+
+  // A successful call with nothing in it is a genuine miss, as is a hit with no coordinates
+  // to place it - neither is something the user can fix by retrying.
+  const item = task.result?.[0]?.items?.[0]
+  if (!item) return { ok: false, reason: 'not_found' }
+  if (typeof item.latitude !== 'number' || typeof item.longitude !== 'number') {
+    return { ok: false, reason: 'not_found' }
+  }
 
   return {
-    lat: item.latitude,
-    lng: item.longitude,
-    placeId: item.place_id,
-    rating: typeof item.rating?.value === 'number' ? item.rating.value : null,
-    reviewCount: typeof item.rating?.votes_count === 'number' ? item.rating.votes_count : null,
+    ok: true,
+    coords: {
+      lat: item.latitude,
+      lng: item.longitude,
+      placeId: item.place_id,
+      rating: typeof item.rating?.value === 'number' ? item.rating.value : null,
+      reviewCount: typeof item.rating?.votes_count === 'number' ? item.rating.votes_count : null,
+    },
   }
+}
+
+/**
+ * For callers that only want the coordinates and treat every failure the same way - account
+ * creation enriches a location with its rating and never blocks on the lookup.
+ */
+export async function resolveBusinessCoordinatesOrNull(
+  businessName: string,
+  city: string,
+  state: string
+): Promise<BusinessCoordinates | null> {
+  const r = await resolveBusinessCoordinates(businessName, city, state)
+  return r.ok ? r.coords : null
 }
 
 // ─── Backlinks summary ─────────────────────────────────────────────────────────

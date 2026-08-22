@@ -38,10 +38,16 @@ export async function POST(req: NextRequest) {
     // street address on file — resolve its real Google Business Profile coordinates
     // once per check run (not stored, since geocoding is cheap and this avoids a
     // schema migration for a coordinate cache).
-    const coords = await resolveBusinessCoordinates(location.name, location.city, location.state)
-    if (!coords) {
-      throw new AuthError(502, `Could not find "${location.name}" on Google in ${location.city}, ${location.state}. Verify the business name and city match its Google Business Profile.`)
+    const lookup = await resolveBusinessCoordinates(location.name, location.city, location.state)
+    if (!lookup.ok) {
+      // Two different failures, two different things for the user to do. Telling someone to
+      // check their business name when the lookup service itself is down sends them to fix
+      // data that is already correct.
+      throw lookup.reason === 'not_found'
+        ? new AuthError(404, `Could not find "${location.name}" on Google in ${location.city}, ${location.state}. Verify the business name and city match its Google Business Profile.`)
+        : new AuthError(502, 'The business lookup service is not responding right now. Nothing was saved - please try again in a moment.')
     }
+    const coords = lookup.coords
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)

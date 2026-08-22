@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, getOrCreateUser, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { resolveBusinessCoordinates, settledOrNull } from '@/lib/dataforseo'
+import { resolveBusinessCoordinatesOrNull, settledOrNull } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     // (shown as "—" in the UI).
     const profileResults = await Promise.allSettled(
       validLocations.map((loc: { name: string; city: string; state: string }) =>
-        resolveBusinessCoordinates(loc.name, loc.city, loc.state))
+        resolveBusinessCoordinatesOrNull(loc.name, loc.city, loc.state))
     )
 
     for (let i = 0; i < validLocations.length; i++) {
