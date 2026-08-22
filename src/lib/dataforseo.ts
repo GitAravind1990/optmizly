@@ -775,13 +775,6 @@ export async function getBulkReferringDomains(domains: string[]): Promise<Map<st
 // and 40601 fell through to the generic task_error branch instead.
 const DFS_TASK_IN_QUEUE = 40602
 const DFS_TASK_HANDED = 40601
-const REVIEWS_POLL_INTERVAL_MS = 1500
-// Queue time for this DataForSEO endpoint is genuinely variable — measured live
-// completions ranging from ~22s to ~62s for the same place_id back-to-back, not
-// correlated with location_name or review volume. Route's maxDuration is 120s —
-// this leaves ~10s headroom for the initial task_post round trip and response
-// serialization.
-const REVIEWS_POLL_BUDGET_MS = 110000
 
 type ReviewsTaskPostResponse = {
   tasks: Array<{ id?: string; status_code: number }>
@@ -821,20 +814,19 @@ export type ReviewResult = {
 // bare `null` with zero server-side log line to tell them apart.
 export type ReviewFailure = { reason: 'timeout' | 'not_queued' | 'task_error'; detail: string }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
 /**
- * Real reviews for a business by placeId. Submits an async task and polls for it to
- * complete (typically a few seconds, scales with `depth`) within REVIEWS_POLL_BUDGET_MS
- * — never blocks indefinitely. Returns null if the task fails, or doesn't finish within
- * the poll budget (a real, if uncommon, possibility with this API's async model).
- * location_name is a required field for this endpoint even when place_id already
- * pins the exact listing — "United States" satisfies it without needing the
- * business's city/state on hand.
+ * Google Reviews is task_post + task_get; there is no synchronous endpoint.
+ *
+ * Submitting and polling used to happen inside one request, which blocked for as long as
+ * DataForSEO's queue took - up to a 110s budget, and measured at 76.1s
+ * in production on 2026-08-22. That is far past the point where a signed-in POST can be
+ * rejected for an expired session token, after the work is done and with no way for the
+ * route to know. Split so the client does the waiting: submit returns a task id, and each
+ * poll is its own short request.
+ *
+ * See CLAUDE.md, "Giving a signed-in route a maxDuration over 60".
  */
-export async function getReviewVelocity(placeId: string): Promise<ReviewResult | ReviewFailure> {
+export async function submitReviewsTask(placeId: string): Promise<{ taskId: string } | ReviewFailure> {
   const postData = await dfsPost<ReviewsTaskPostResponse>('/v3/business_data/google/reviews/task_post', [
     {
       place_id: placeId,
@@ -847,50 +839,55 @@ export async function getReviewVelocity(placeId: string): Promise<ReviewResult |
 
   const postTask = postData?.tasks?.[0]
   if (!postTask?.id || postTask.status_code !== 20100) {
-    const detail = `status_code=${postTask?.status_code ?? 'none'} (post request itself may have failed — no response body)`
-    console.error(`[getReviewVelocity] task_post did not queue for place_id=${placeId}: ${detail}`)
+    const detail = `status_code=${postTask?.status_code ?? 'none'} (post request itself may have failed - no response body)`
+    console.error(`[reviews] task_post did not queue for place_id=${placeId}: ${detail}`)
     return { reason: 'not_queued', detail }
   }
-  const taskId = postTask.id
+  return { taskId: postTask.id }
+}
 
-  const deadline = Date.now() + REVIEWS_POLL_BUDGET_MS
-  while (Date.now() < deadline) {
-    const getData = await dfsGet<ReviewsTaskGetResponse>(`/v3/business_data/google/reviews/task_get/${taskId}`)
-    const task = getData?.tasks?.[0]
-    if (task?.status_code === DFS_TASK_IN_QUEUE || task?.status_code === DFS_TASK_HANDED) {
-      await sleep(REVIEWS_POLL_INTERVAL_MS)
-      continue
-    }
-    // A genuinely review-free business is a confirmed empty result, not a failed
-    // lookup — surfacing it as "could not fetch review data" would be misleading.
-    if (task?.status_code === DFS_NO_RESULTS) return { totalReviews: 0, rating: 0, reviews: [] }
-    if (!task || task.status_code !== 20000) {
-      const detail = `status_code=${task?.status_code ?? 'none'} status_message=${task?.status_message ?? 'n/a'}`
-      console.error(`[getReviewVelocity] task_get failed for place_id=${placeId} taskId=${taskId}: ${detail}`)
-      return { reason: 'task_error', detail }
-    }
+/**
+ * One task_get. `pending` means the task is still queued and the caller should ask again -
+ * it is a normal state, not a failure, and reporting it as one is how a real request got
+ * shown as "Could not fetch review data" before 40601 was recognised alongside 40602.
+ */
+export async function pollReviewsTask(
+  taskId: string
+): Promise<ReviewResult | ReviewFailure | { pending: true }> {
+  const getData = await dfsGet<ReviewsTaskGetResponse>(`/v3/business_data/google/reviews/task_get/${taskId}`)
+  const task = getData?.tasks?.[0]
 
-    const result = task.result?.[0]
-    if (!result) {
-      console.error(`[getReviewVelocity] task_get returned status 20000 but no result for place_id=${placeId} taskId=${taskId}`)
-      return { reason: 'task_error', detail: 'empty result on success status' }
-    }
-
-    return {
-      totalReviews: result.reviews_count ?? 0,
-      rating: result.rating?.value ?? 0,
-      reviews: (result.items ?? [])
-        .filter(item => item.type === 'google_reviews_search')
-        .map(item => ({
-          date: item.timestamp ?? '',
-          rating: item.rating?.value ?? 0,
-          text: item.review_text ?? '',
-        })),
-    }
+  if (task?.status_code === DFS_TASK_IN_QUEUE || task?.status_code === DFS_TASK_HANDED) {
+    return { pending: true }
   }
 
-  console.error(`[getReviewVelocity] poll budget (${REVIEWS_POLL_BUDGET_MS}ms) exceeded for place_id=${placeId} taskId=${taskId} — task never left queue`)
-  return { reason: 'timeout', detail: `exceeded ${REVIEWS_POLL_BUDGET_MS}ms poll budget` }
+  // A genuinely review-free business is a confirmed empty result, not a failed lookup -
+  // surfacing it as "could not fetch review data" would be misleading.
+  if (task?.status_code === DFS_NO_RESULTS) return { totalReviews: 0, rating: 0, reviews: [] }
+
+  if (!task || task.status_code !== 20000) {
+    const detail = `status_code=${task?.status_code ?? 'none'} status_message=${task?.status_message ?? 'n/a'}`
+    console.error(`[reviews] task_get failed for taskId=${taskId}: ${detail}`)
+    return { reason: 'task_error', detail }
+  }
+
+  const result = task.result?.[0]
+  if (!result) {
+    console.error(`[reviews] task_get returned status 20000 but no result for taskId=${taskId}`)
+    return { reason: 'task_error', detail: 'empty result on success status' }
+  }
+
+  return {
+    totalReviews: result.reviews_count ?? 0,
+    rating: result.rating?.value ?? 0,
+    reviews: (result.items ?? [])
+      .filter(item => item.type === 'google_reviews_search')
+      .map(item => ({
+        date: item.timestamp ?? '',
+        rating: item.rating?.value ?? 0,
+        text: item.review_text ?? '',
+      })),
+  }
 }
 
 // ─── Competitor Spy (ranked keywords, referring domains, top pages) ───────────

@@ -260,19 +260,45 @@ function GeogridContent() {
     setRvLoading(true)
     setRvError('')
     try {
-      const r = await fetch('/api/tools/review-velocity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ placeId: placeId.trim(), businessName: rvBiz }),
-      })
-      const d = await r.json()
-      if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
-      if (!r.ok) throw new Error(d.error)
-      setRvResult(d)
+      // Submit, then poll.
+      //
+      // Google Reviews is an async task at DataForSEO with genuinely variable queue time -
+      // the same place has completed in 22s and in 62s. The route used to wait it out
+      // inside one request (measured at 76.1s in production), which is long enough for a
+      // signed-in POST to be rejected for an expired session token after the work is done.
+      // The waiting happens here now, where it costs nothing and can be interrupted.
+      const post = (payload: Record<string, unknown>) =>
+        fetch('/api/tools/review-velocity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ businessName: rvBiz, ...payload }),
+        })
+
+      const submitRes = await post({ placeId: placeId.trim() })
+      const submitted = await submitRes.json()
+      if (submitRes.status === 403 || submitRes.status === 429) { setShowUpgradeModal(true); return }
+      if (!submitRes.ok) throw new Error(submitted.error)
+
+      // Bounded by the same 110s the server used to spend, so a task that never leaves the
+      // queue ends with a message rather than an indefinite spinner. Only the submit is
+      // billed, so polling costs the user nothing.
+      const deadline = Date.now() + 110_000
+      for (let attempt = 0; Date.now() < deadline; attempt++) {
+        await new Promise(r => setTimeout(r, 2000))
+        if (!isMountedRef.current) return
+
+        const pollRes = await post({ taskId: submitted.taskId })
+        const polled = await pollRes.json()
+        if (pollRes.status === 403 || pollRes.status === 429) { setShowUpgradeModal(true); return }
+        if (!pollRes.ok) throw new Error(polled.error)
+
+        if (!polled.pending) { setRvResult(polled); return }
+      }
+      throw new Error('The review lookup is taking longer than usual for this business. This is usually transient - please try again in a moment.')
     } catch (e) {
-      setRvError(e instanceof Error ? e.message : 'Failed to fetch reviews')
+      if (isMountedRef.current) setRvError(e instanceof Error ? e.message : 'Failed to fetch reviews')
     } finally {
-      setRvLoading(false)
+      if (isMountedRef.current) setRvLoading(false)
     }
   }, [placeId, rvBiz])
 

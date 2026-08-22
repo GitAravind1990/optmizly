@@ -183,20 +183,33 @@ templates, which are a different token that `auth()` does not read. There is no 
 
 Clerk refreshes an expired token by redirecting through a handshake, which only works on a
 **GET**. A POST cannot be refreshed — `session-token-expired-refresh-non-eligible-non-get`
-— so a signed-in POST that runs past ~60s is rejected outright.
+— so a long signed-in POST can be rejected outright, and rejected *after* the handler has
+finished. Content Optimizer charged the quota at 18:49:03, ran its seven sections, and the
+401 landed at 18:50:59: the user paid a unit, the work completed, and the response said
+"Not authenticated". The route never sees that 401, so **it cannot refund it, log it, or
+report it** — none of the usual safety nets are reachable.
 
-It is rejected *after* the handler has finished. Content Optimizer charged the quota at
-18:49:03, ran its seven sections, and the 401 landed at 18:50:59: the user paid a unit,
-the work completed, and the response said "Not authenticated". The route never sees that
-401, so **it cannot refund it, log it, or report it** — none of the usual safety nets are
-reachable. Long GETs are fine; they refresh.
+**Duration alone does not decide it, and this is not a clean cliff.** Measured 2026-08-22:
+a 76.1s signed-in POST to `/api/tools/review-velocity` returned **200** with real data. So
+~120s has failed, reproducibly and with Clerk naming the cause in its headers, while ~76s
+has passed. What separates them is not established — plausibly how much life the cookie had
+left when the request started, since the token expires 61s from *minting* and not from the
+request. Do not restate the 61s figure as a threshold requests are guaranteed to fail past;
+what is evidenced is that long POSTs fail *sometimes*, silently, after doing the work.
+
+That is reason enough to keep them short. A failure that only shows up on some runs is
+worse than one that always does — it survives testing and reaches users. Long GETs are
+genuinely fine; they refresh.
 
 So `maxDuration` above 60 on a route that calls `requireAuth`/`requireToolAccess` is a
-promise the platform will not keep. Before setting one, make the request short instead.
+promise the platform may not keep. Before setting one, make the request short instead.
 Two worked examples in this repo:
 
 - **A loop over N things** — return one result plus the remainder and let the client walk
   it: `/api/integrations/search-console/sync` syncs one property per call.
+- **A vendor call that submits then polls** — return the task id and let the client poll a
+  GET: `/api/tools/review-velocity` submits to DataForSEO and hands back a `taskId` rather
+  than blocking on a 110s poll loop of its own.
 - **N model calls that must all finish** — give each its own endpoint and let the client
   collect them: `/api/tools/content-optimizer/section` runs one of seven analyses, and the
   client posts the finished set to `/api/tools/content-optimizer` to be scored and stored.
