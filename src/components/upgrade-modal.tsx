@@ -37,7 +37,7 @@ function copyForPlan(plan: string, limit: number | null): PlanCopy {
   }
   return {
     heading: "You've hit your free limit",
-    body: "You've used all your free analyses this month. Upgrade to Pro for more runs across 12 tools.",
+    body: "You've used all your free analyses this month. Upgrade to Pro for more runs across 13 tools.",
     benefits: [
       '50 content analyses every month',
       'All Pro SEO tools unlocked (E-E-A-T, Gap, Rank Tracker…)',

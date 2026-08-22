@@ -34,7 +34,7 @@ export default function SignInPage() {
             </span>
           </h1>
           <p className="text-slate-300 text-lg mb-10 leading-relaxed max-w-sm">
-            22 AI-powered tools for SEO, GEO & AEO. Optimize once, rank everywhere.
+            23 AI-powered tools for SEO, GEO & AEO. Optimize once, rank everywhere.
           </p>
 
           <ul className="space-y-4">
@@ -49,7 +49,7 @@ export default function SignInPage() {
 
         <div className="border-t border-white/10 pt-8">
           <div className="flex gap-8">
-            {[['22', 'AI tools'], ['8', 'Score dims'], ['3', 'Plan tiers']].map(([n, l]) => (
+            {[['23', 'AI tools'], ['8', 'Score dims'], ['3', 'Plan tiers']].map(([n, l]) => (
               <div key={l}>
                 <div className="text-2xl font-black">{n}</div>
                 <div className="text-xs text-slate-400 mt-0.5">{l}</div>
