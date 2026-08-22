@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { callLLM } from '@/lib/llm';
-import { AuthError, requireAuth } from '@/lib/auth';
+import { AuthError, requireAuth, refundUsage } from '@/lib/auth';
 import { apiError } from '@/lib/api';
 import { NextRequest, NextResponse } from 'next/server';
 import { captureServerException } from '@/lib/posthog-server';
@@ -24,6 +24,8 @@ interface AIFix {
 
 // POST — generate AI fixes for an existing audit and update it
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null;
   let clerkId: string | null = null;
   try {
     // Was getOrCreateUser + canUseTool: a tier check with no quota at all, so this route
@@ -32,14 +34,15 @@ export async function POST(req: NextRequest) {
     // does the same tier check and also charges the run.
     const user = await requireAuth('performance-fixer');
     clerkId = user.clerkId;
+    charged = user.userId;
 
     const { auditId } = await req.json();
-    if (!auditId) return NextResponse.json({ error: 'auditId required' }, { status: 400 });
+    if (!auditId) throw new AuthError(400, 'auditId required');
 
     const audit = await prisma.performanceFixerAudit.findFirst({
       where: { id: auditId, userId: user.userId },
     });
-    if (!audit) return NextResponse.json({ error: 'Audit not found' }, { status: 404 });
+    if (!audit) throw new AuthError(404, 'Audit not found');
 
     const metrics = audit.extendedMetrics ? JSON.parse(audit.extendedMetrics) : { overallScore: audit.overallScore };
     const fixes = await generateAIFixes(audit.url, metrics);
@@ -61,6 +64,9 @@ export async function POST(req: NextRequest) {
         fixTime: roi?.fixTime ?? 0,
       },
     });
+    // The fixes are on the audit from here on, so the unit is earned even if recording
+    // the individual generations below fails.
+    charged = null;
 
     if (fixes.length > 0) {
       await prisma.aIFixGeneration.createMany({
@@ -78,6 +84,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ fixes, projectedScore, roi });
   } catch (error) {
+    // requireAuth charged before any work happened, so a run that ends here never
+    // delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'performance-fixer');
+
     // AuthError carries its own status — 401, 403 for the wrong plan, 429 when the
     // allowance is gone. Without this branch the outer handler would relabel all three
     // as a 500, and the dashboard's upgrade modal keys off 403/429.

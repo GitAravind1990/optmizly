@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, requireAuth } from '@/lib/auth'
+import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getKeywordMetrics } from '@/lib/dataforseo'
 
@@ -38,12 +38,15 @@ interface RawIdea {
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Was getProUser() (tier check only, no quota) — this fires the model plus a real
     // DataForSEO keyword-metrics batch call per request.
     const user = await requireAuth('content-ideas')
     clerkId = user.clerkId
+    charged = user.userId
     const { seedKeywords, industry, targetAudience, numberOfIdeas = 10, projectId } = await req.json()
 
     if (!seedKeywords?.length || !industry || !targetAudience) {
@@ -153,6 +156,10 @@ Make searchVolume realistic (100-50000), difficulty 10-90, opportunityScore 30-9
 
     return apiSuccess({ success: true, count: saved.length, projectId: resolvedProjectId, ideas: saved }, 201)
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'content-ideas')
+
     await captureServerException(clerkId, e, { route: '/api/tools/content-ideas/generate' })
     return apiError(e)
   }

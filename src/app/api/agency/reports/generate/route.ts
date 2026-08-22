@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { callLLM } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, requireAuth } from '@/lib/auth'
+import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { getBacklinksSummary, getOrganicRank, getTrafficEstimate, isDataForSEOConfigured, settledOrNull } from '@/lib/dataforseo'
 import { captureServerException } from '@/lib/posthog-server'
@@ -177,6 +177,8 @@ function generateReportHtml(data: {
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Was getAgencyUser() (tier check only, no quota) — this fires the model plus
@@ -185,6 +187,7 @@ export async function POST(req: NextRequest) {
     // now (added to the AGENCY tool list alongside this fix).
     const user = await requireAuth('client-reports')
     clerkId = user.clerkId
+    charged = user.userId
     const { clientId, month, year } = await req.json()
 
     if (!clientId || !month || !year) throw new AuthError(400, 'clientId, month, and year are required')
@@ -294,6 +297,10 @@ Write a professional summary highlighting wins, opportunities, and next steps.`,
 
     return apiSuccess({ id: report.id, success: true, reportUrl: `/agency/reports/${report.id}` }, 201)
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'client-reports')
+
     await captureServerException(clerkId, e, { route: '/api/agency/reports/generate' })
     return apiError(e)
   }

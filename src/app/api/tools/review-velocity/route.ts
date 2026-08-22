@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, refundUsage, AuthError } from '@/lib/auth'
 import { apiError, apiSuccess } from '@/lib/api'
 import { getReviewVelocity } from '@/lib/dataforseo'
 import { captureServerException } from '@/lib/posthog-server'
@@ -33,23 +33,22 @@ function countInRange(reviews: Array<{ date: string }>, daysAgo: number): number
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const authedUser = await requireAuth('review-velocity')
     clerkId = authedUser.clerkId
+    charged = authedUser.userId
 
     const { placeId, businessName } = await req.json()
     if (!placeId) {
-      return apiError({ status: 400, message: 'placeId is required', name: 'ValidationError' })
+      throw new AuthError(400, 'placeId is required')
     }
 
     const data = await getReviewVelocity(String(placeId))
     if ('reason' in data) {
-      return apiError({
-        status: 502,
-        message: FAILURE_MESSAGES[data.reason],
-        name: 'ExternalAPIError',
-      })
+      throw new AuthError(502, FAILURE_MESSAGES[data.reason])
     }
 
     const last30  = countInRange(data.reviews, 30)
@@ -74,6 +73,10 @@ export async function POST(req: NextRequest) {
       reviews: data.reviews.slice(0, 20),
     })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'review-velocity')
+
     await captureServerException(clerkId, e, { route: '/api/tools/review-velocity' })
     return apiError(e)
   }

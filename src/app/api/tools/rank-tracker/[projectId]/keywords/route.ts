@@ -1,19 +1,22 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, requireAuth } from '@/lib/auth'
+import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getKeywordMetrics } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Was getProUser() (tier check only, no quota) — this fires a real DataForSEO
     // keyword-metrics batch call per request.
     const user = await requireAuth('rank-tracker')
     clerkId = user.clerkId
+    charged = user.userId
     const { projectId } = await params
     const { keywords } = await req.json()
 
@@ -49,6 +52,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
 
     return apiSuccess({ data: { added: newKeywords.length } })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'rank-tracker')
+
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]/keywords' })
     return apiError(e)
   }

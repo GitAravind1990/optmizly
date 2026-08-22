@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, refundUsage, AuthError } from '@/lib/auth'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 
@@ -25,12 +25,15 @@ Rules: 4 posts, 6 Q&A pairs, 4 review templates. gbp_description: 750 chars. All
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   try {
     const user = await requireAuth('local')
+    charged = user.userId
     const { content, subTool, businessName, city, service, phone } = await req.json()
 
-    if (!city) return apiError(new Error('City is required'))
-    if (!SYSTEMS[subTool]) return apiError(new Error('Invalid subTool'))
+    if (!city) throw new AuthError(400, 'City is required')
+    if (!SYSTEMS[subTool]) throw new AuthError(400, 'Invalid subTool')
 
     const ctx = `Business: ${businessName || 'local business'} | Location: ${city} | Service: ${service || 'local service'}${phone ? ` | Phone: ${phone}` : ''}`
     const system = SYSTEMS[subTool](ctx, city)
@@ -45,6 +48,10 @@ export async function POST(req: NextRequest) {
     const raw = await callLLM(system, prompts[subTool], 2500)
     return apiSuccess({ ...extractJSON(raw), subTool, userPlan: user.plan })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'local')
+
     return apiError(e)
   }
 }

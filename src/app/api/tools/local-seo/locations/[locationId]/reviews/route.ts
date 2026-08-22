@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { callLLM } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
+import { AuthError, getOrCreateUser, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
@@ -19,6 +19,8 @@ async function getAgencyUser() {
 
 // Generate AI response for a review
 export async function POST(req: NextRequest, { params }: { params: Promise<{ locationId: string }> }) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const { locationId } = await params
@@ -30,6 +32,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ loc
     // way, via getAgencyUser's own PLAN_TOOLS-equivalent gate.
     const user = action === 'generate-response' ? await requireAuth('local-seo') : await getAgencyUser()
     clerkId = user.clerkId
+    // Only the generate-response branch is billed, so only that branch has a unit to
+    // hand back — `flag` goes through getAgencyUser and never charges one.
+    if (action === 'generate-response') charged = user.userId
 
     const location = await prisma.localSEOLocation.findUnique({
       where: { id: locationId },
@@ -80,6 +85,10 @@ Write a 2-3 sentence response:
 
     throw new AuthError(400, 'Unknown action')
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here never
+    // delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'local-seo')
+
     await captureServerException(clerkId, e, { route: '/api/tools/local-seo/locations/[locationId]/reviews' })
     return apiError(e)
   }

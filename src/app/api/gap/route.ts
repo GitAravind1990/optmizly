@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, refundUsage } from '@/lib/auth'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
@@ -20,10 +20,13 @@ const SYSTEM = `You are a content gap analyst. Return ONLY valid JSON:
 Rules: 8 specific content gaps vs what top-ranking competitors cover. All strings concise. Always return this exact JSON schema, never plain text — if real competitor excerpts are provided but turn out thin, irrelevant, or non-substantive (e.g. navigation/boilerplate from a video platform), base your gaps on general best practices for the topic instead, but still return valid JSON matching the schema.`
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const user = await requireAuth('gap')
     clerkId = user.clerkId
+    charged = user.userId
     const { content, summary, keyword } = await req.json()
 
     // Optional — grounds the analysis in real competitor pages instead of the model's
@@ -80,6 +83,10 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'gap')
+
     await captureServerException(clerkId, e, { route: '/api/gap' })
     return apiError(e)
   }

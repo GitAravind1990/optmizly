@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
+import { AuthError, getOrCreateUser, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getKeywordMetrics, getSearchIntent, discoverKeywords, KEYWORDS_PER_SEED } from '@/lib/dataforseo'
 
@@ -55,6 +55,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Fires a real DataForSEO keyword-metrics call, a search-intent call, and a
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
     // content-ideas/generate and rank-tracker's project-create route.
     const user = await requireAuth('keyword-tool')
     clerkId = user.clerkId
+    charged = user.userId
     const { name, targetLocation, seedKeyword } = await req.json()
 
     if (!name?.trim()) throw new AuthError(400, 'List name required')
@@ -108,6 +111,10 @@ export async function POST(req: NextRequest) {
 
     return apiSuccess({ data: project }, 201)
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'keyword-tool')
+
     await captureServerException(clerkId, e, { route: '/api/tools/keyword-tool' })
     return apiError(e)
   }

@@ -198,13 +198,28 @@ Judge this by measured wall time, not by the limit: a route capped at 90 that re
 ## Refund the quota when the run does not land
 
 `requireAuth` charges the monthly quota *before* any work happens, so every exit that does
-not return a result owes the user that unit back. Refund centrally in the route's `catch`,
-keyed off a flag set right after `requireAuth`, rather than at each throw site — a refund
-attached to one failure mode is a refund the next failure mode will not have.
+not return a result owes the user that unit back. All 31 charging routes do this now, in
+one shape — keep it:
 
-Only `content-optimizer` does this. The other thirty charging routes keep the unit when
-they fail, which is worth fixing but has to be judged per route: a route that saves a
-partial result has delivered something, and refunding it would be wrong.
+- `let charged: string | null = null` on the handler, set to `user.userId` immediately
+  after `requireAuth`
+- `if (charged) await refundUsage(charged, '<tool>')` as the **first** statement of the
+  handler's outer `catch`, before anything that returns
+- `charged = null` at the point the run produces something durable the user can still open
+  — a saved report, a created project. A failure after that keeps the charge, because they
+  got something. Most routes write and immediately return, so most do not need this line.
+
+Refund in the `catch`, never at individual throw sites: a refund attached to one failure
+mode is a refund the next failure mode will not have.
+
+That only works if failures actually reach the catch, so **validation exits are `throw new
+AuthError(status, message)`, not `return apiError(...)`**. An early return leaves the
+handler without passing through the catch and keeps the charge.
+
+While converting those: `apiError(new Error(msg))` is **not** a 400. A bare `Error` matches
+none of `apiError`'s branches and falls through to the generic one, so it returns
+`500 Internal server error` and throws the message away. Seven routes were reporting
+"Content too short" and "City is required" that way.
 
 ## Exports must restate what badges show
 

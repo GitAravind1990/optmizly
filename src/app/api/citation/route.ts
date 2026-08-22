@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth, AuthError } from '@/lib/auth'
+import { requireAuth, AuthError, refundUsage } from '@/lib/auth'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
@@ -59,12 +59,15 @@ async function generate(
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Charged once, against 'citation'. Previously this action billed twice — once here
     // and once on /api/queries — for work that overlapped almost entirely.
     const user = await requireAuth('citation')
     clerkId = user.clerkId
+    charged = user.userId
     const { content, summary, keyword } = await req.json()
     if (!content || typeof content !== 'string' || !content.trim()) {
       throw new AuthError(400, 'Content is required')
@@ -127,6 +130,10 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'citation')
+
     await captureServerException(clerkId, e, { route: '/api/citation' })
     return apiError(e)
   }

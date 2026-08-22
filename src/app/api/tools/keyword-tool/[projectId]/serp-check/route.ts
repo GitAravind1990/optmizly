@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, requireAuth } from '@/lib/auth'
+import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getTopSerpResults } from '@/lib/dataforseo'
 import { MAGIC_MAX_KD, MAGIC_MIN_VOLUME } from '@/lib/magic-keywords'
@@ -26,10 +26,13 @@ const CONCURRENCY = 5
  *  huge domain reads as KD 0. Showing who actually ranks lets the user discount those
  *  rows on sight rather than relying on a metric that can silently invert. */
 export async function POST(_req: Request, { params }: { params: Promise<{ projectId: string }> }) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const user = await requireAuth('keyword-tool')
     clerkId = user.clerkId
+    charged = user.userId
     const { projectId } = await params
 
     const project = await prisma.keywordListProject.findUnique({ where: { id: projectId } })
@@ -69,10 +72,19 @@ export async function POST(_req: Request, { params }: { params: Promise<{ projec
       checked += results.filter(Boolean).length
     }
 
+    // The checked keywords are already persisted above, so a failure counting what is
+    // left must not refund them. A throw *inside* the loop still refunds: the response is
+    // an error either way, and a partial check the user cannot see is not a delivered one.
+    charged = null
+
     const remaining = await prisma.keywordResearchResult.count({ where: candidateWhere })
 
     return apiSuccess({ data: { checked, remaining } })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'keyword-tool')
+
     await captureServerException(clerkId, e, { route: '/api/tools/keyword-tool/[projectId]/serp-check' })
     return apiError(e)
   }

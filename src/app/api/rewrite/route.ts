@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth, AuthError } from '@/lib/auth'
+import { requireAuth, AuthError, refundUsage } from '@/lib/auth'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
@@ -115,10 +115,13 @@ Then write the JSON metadata: {"improvements":["","","","",""],"framework_sectio
 Start writing the article now. Do not stop until the full article is complete.`
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const user = await requireAuth('rewrite')
     clerkId = user.clerkId
+    charged = user.userId
     const { content, summary, cachedEeat } = await req.json()
     if (!content || typeof content !== 'string' || !content.trim()) {
       throw new AuthError(400, 'Content is required')
@@ -177,6 +180,10 @@ export async function POST(req: NextRequest) {
       plan: user.plan,
     })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'rewrite')
+
     await captureServerException(clerkId, e, { route: '/api/rewrite' })
     return apiError(e)
   }

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth, type AuthedUser } from '@/lib/auth'
+import { requireAuth, type AuthedUser, refundUsage, AuthError } from '@/lib/auth'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { prisma } from '@/lib/prisma'
@@ -89,13 +89,16 @@ function scaleRdToScore(rd: number): number {
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const user = await requireAuth('ranking-engine')
     clerkId = user.clerkId
+    charged = user.userId
     const { keyword, domain, country, goal } = await req.json()
     if (!keyword || !domain || !country || !goal) {
-      return apiError(new Error('keyword, domain, country and goal are required'))
+      throw new AuthError(400, 'keyword, domain, country and goal are required')
     }
 
     const targetLocation = COUNTRY_TO_LOCATION[country] ?? 'US'
@@ -312,6 +315,10 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'ranking-engine')
+
     await captureServerException(clerkId, e, { route: '/api/ranking-engine' })
     return apiError(e)
   }

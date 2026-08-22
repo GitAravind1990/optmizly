@@ -1,5 +1,5 @@
 ﻿import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, refundUsage, AuthError } from '@/lib/auth'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { validateUrl } from '@/lib/ssrf-guard'
@@ -102,10 +102,13 @@ function plainText(html: string): string {
 interface AICategoryResult { score: number; issues: string[]; fixes: string[] }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const user = await requireAuth('seo-audit')
     clerkId = user.clerkId
+    charged = user.userId
     const { url, html: pastedHtml } = await req.json()
 
     let auditUrl = ''
@@ -133,13 +136,13 @@ export async function POST(req: NextRequest) {
       page = { finalUrl: normalized || 'https://example.com/', html: pastedHtml, status: 200, headers: {}, redirects: [] }
     } else {
       if (!url || typeof url !== 'string') {
-        return apiError({ message: 'A url or pasted html is required', status: 400, name: 'ValidationError' })
+        throw new AuthError(400, 'A url or pasted html is required')
       }
       auditUrl = url.trim()
       if (!/^https?:\/\//i.test(auditUrl)) auditUrl = 'https://' + auditUrl
-      try { new URL(auditUrl) } catch { return apiError({ message: 'Invalid URL', status: 400, name: 'ValidationError' }) }
+      try { new URL(auditUrl) } catch { throw new AuthError(400, 'Invalid URL') }
       try { await validateUrl(auditUrl) } catch (e) {
-        return apiError({ message: e instanceof Error ? e.message : 'Invalid URL', status: 400, name: 'ValidationError' })
+        throw new AuthError(400, e instanceof Error ? e.message : 'Invalid URL')
       }
 
       try {
@@ -149,17 +152,17 @@ export async function POST(req: NextRequest) {
         const cause = fetchErr instanceof Error && fetchErr.cause instanceof Error ? fetchErr.cause.message : ''
         const full = `${msg} ${cause}`
         if (/not allowed/i.test(full)) {
-          return apiError({ message: msg, status: 400, name: 'ValidationError' })
+          throw new AuthError(400, msg)
         }
         const reason = (fetchErr instanceof Error && fetchErr.name === 'AbortError') || /abort/i.test(full)
           ? 'The site took too long to respond'
           : /certificate|cert_|ssl|tls/i.test(full)
             ? 'The site has an SSL certificate problem'
             : 'Could not reach that URL'
-        return apiError({ message: `${reason}. Try the paste-HTML option instead.`, status: 422, name: 'FetchError' })
+        throw new AuthError(422, `${reason}. Try the paste-HTML option instead.`)
       }
       if (!page.html || page.html.length < 50) {
-        return apiError({ message: 'Could not retrieve HTML from that URL. Try the paste-HTML option.', status: 422, name: 'FetchError' })
+        throw new AuthError(422, 'Could not retrieve HTML from that URL. Try the paste-HTML option.')
       }
 
       const origin = new URL(page.finalUrl).origin
@@ -356,6 +359,10 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
       },
     }, 201)
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'seo-audit')
+
     await captureServerException(clerkId, e, { route: '/api/tools/seo-audit/analyze' })
     return apiError(e)
   }

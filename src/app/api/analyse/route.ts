@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth, type AuthedUser } from '@/lib/auth'
+import { requireAuth, type AuthedUser, refundUsage, AuthError } from '@/lib/auth'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { prisma } from '@/lib/prisma'
@@ -55,14 +55,17 @@ RULES:
 - Return ONLY JSON`
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const user = await requireAuth('analyse')
     clerkId = user.clerkId
+    charged = user.userId
     const { content, contentUrl } = await req.json()
 
     if (!content || content.length < 50) {
-      return apiError({ message: 'Content too short', status: 400, name: 'ValidationError' })
+      throw new AuthError(400, 'Content too short')
     }
 
     const raw = await callLLM(
@@ -99,6 +102,10 @@ export async function POST(req: NextRequest) {
 
     return apiSuccess({ ...result, userPlan: user.plan })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'analyse')
+
     await captureServerException(clerkId, e, { route: '/api/analyse' })
     return apiError(e)
   }

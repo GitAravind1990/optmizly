@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, requireAuth } from '@/lib/auth'
+import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getOrganicRank, isDataForSEOConfigured, settledOrNull } from '@/lib/dataforseo'
 import { rankNDaysAgo } from '@/lib/rank-history'
@@ -41,6 +41,8 @@ function detectAlerts(
 }
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Was getProUser() (tier check only, no quota) — this fires one real DataForSEO
@@ -48,6 +50,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
     // on how often a user can re-check the same project.
     const user = await requireAuth('rank-tracker')
     clerkId = user.clerkId
+    charged = user.userId
     const { projectId } = await params
 
     if (!isDataForSEOConfigured()) {
@@ -144,6 +147,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
       },
     })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'rank-tracker')
+
     await captureServerException(clerkId, e, { route: '/api/tools/rank-tracker/[projectId]/check' })
     return apiError(e)
   }

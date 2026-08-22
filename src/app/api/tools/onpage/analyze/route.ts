@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, requireAuth } from '@/lib/auth'
+import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 
 export const runtime = 'nodejs'
@@ -209,6 +209,8 @@ interface AIFix {
 // ─── Main route ───────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Was getUser() — no plan-tier check at all (not even PLAN_TOOLS membership)
@@ -219,6 +221,7 @@ export async function POST(req: NextRequest) {
     // actually apply here like it does everywhere else.
     const user = await requireAuth('onpage')
     clerkId = user.clerkId
+    charged = user.userId
     const { content, targetKeyword, pageUrl, pageTitle, previousAnalysisId } = await req.json()
 
     if (!content || !targetKeyword) {
@@ -358,6 +361,10 @@ Rules:
       },
     }, 201)
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'onpage')
+
     await captureServerException(clerkId, e, { route: '/api/tools/onpage/analyze' })
     return apiError(e)
   }

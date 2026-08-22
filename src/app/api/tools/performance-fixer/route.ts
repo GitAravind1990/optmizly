@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { canUseTool } from '@/lib/plans';
-import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth';
+import { AuthError, getOrCreateUser, requireAuth, refundUsage } from '@/lib/auth';
 import { apiError } from '@/lib/api';
 import { captureServerException } from '@/lib/posthog-server';
 
@@ -75,6 +75,8 @@ function extractMetrics(audits: Record<string, { score?: number | null; numericV
 
 // POST — fetch PSI metrics and store audit, return auditId + metrics
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null;
   let clerkId: string | null = null;
   try {
     // Was getOrCreateUser + canUseTool, followed by a hardcoded "50 audits per rolling
@@ -83,9 +85,10 @@ export async function POST(req: NextRequest) {
     // requireAuth does the tier check and draws on the one real allowance instead.
     const user = await requireAuth('performance-fixer');
     clerkId = user.clerkId;
+    charged = user.userId;
 
     const { url, industry } = await req.json();
-    if (!url || !url.startsWith('http')) return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
+    if (!url || !url.startsWith('http')) throw new AuthError(400, 'Invalid URL');
 
     const psiUrl = new URL('https://www.googleapis.com/pagespeedonline/v5/runPagespeed');
     psiUrl.searchParams.set('url', url);
@@ -98,7 +101,7 @@ export async function POST(req: NextRequest) {
     if (!cwvData.lighthouseResult) {
       const apiError = cwvData.error?.message ?? JSON.stringify(cwvData).slice(0, 200);
       console.error('PageSpeed API error:', apiError);
-      return NextResponse.json({ error: `Failed to analyze URL. ${apiError}` }, { status: 500 });
+      throw new AuthError(500, `Failed to analyze URL. ${apiError}`);
     }
 
     const audits = cwvData.lighthouseResult.audits;
@@ -134,6 +137,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url, metrics, auditId: audit.id, industryData });
   } catch (error) {
+    // requireAuth charged before any work happened, so a run that ends here never
+    // delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'performance-fixer');
+
     // AuthError carries its own status (401 / 403 wrong plan / 429 out of allowance);
     // the generic handler below would turn all of them into a 500 and break the
     // dashboard's upgrade modal, which keys off 403 and 429.

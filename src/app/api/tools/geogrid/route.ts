@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, refundUsage, AuthError } from '@/lib/auth'
 import { apiError, apiSuccess } from '@/lib/api'
 import { generateGrid, getGridStats, type RankedGridPoint } from '@/lib/geogrid'
 import { getLocalRank } from '@/lib/dataforseo'
@@ -18,16 +18,19 @@ export const maxDuration = 180
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const authedUser = await requireAuth('geogrid')
     clerkId = authedUser.clerkId
+    charged = authedUser.userId
 
     const body = await req.json()
     const { businessName, keyword, centerLat, centerLng, gridSize, spacing, unit } = body
 
     if (!businessName || !keyword || centerLat == null || centerLng == null) {
-      return apiError({ status: 400, message: 'businessName, keyword, centerLat and centerLng are required', name: 'ValidationError' })
+      throw new AuthError(400, 'businessName, keyword, centerLat and centerLng are required')
     }
 
     const size = ([5, 7, 9] as const).includes(gridSize) ? (gridSize as 5 | 7 | 9) : 7
@@ -62,6 +65,10 @@ export async function POST(req: NextRequest) {
       gridSize: size,
     })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'geogrid')
+
     await captureServerException(clerkId, e, { route: '/api/tools/geogrid' })
     return apiError(e)
   }

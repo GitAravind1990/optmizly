@@ -2,7 +2,7 @@
 import { prisma } from '@/lib/prisma'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, requireAuth } from '@/lib/auth'
+import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { getTrafficEstimate, getBacklinksSummary, getRankedKeywords, getReferringDomains, getTopPagesByTraffic, getDomainIntersectionGaps, settledOrNull } from '@/lib/dataforseo'
@@ -130,6 +130,8 @@ interface AIInsights {
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Was getProUser() (tier check only, no quota) — this fires the model plus 5
@@ -138,6 +140,7 @@ export async function POST(req: NextRequest) {
     // every other billable analysis.
     const user = await requireAuth('competitor-spy')
     clerkId = user.clerkId
+    charged = user.userId
     const { domainUrl, userDomain: userDomainRaw } = await req.json()
     if (!domainUrl) throw new AuthError(400, 'domainUrl is required')
 
@@ -363,6 +366,10 @@ Rules: base "missingEntities" on topics implied by the competitor's top keywords
       },
     }, 201)
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'competitor-spy')
+
     await captureServerException(clerkId, e, { route: '/api/tools/competitor-spy/analyze' })
     return apiError(e)
   }

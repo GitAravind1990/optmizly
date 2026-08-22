@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, refundUsage, AuthError } from '@/lib/auth'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
@@ -8,13 +8,16 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const user = await requireAuth('tracker')
     clerkId = user.clerkId
+    charged = user.userId
     const { content, pageUrl, queries } = await req.json()
 
-    if (!queries?.length) return apiError(new Error('No queries provided'))
+    if (!queries?.length) throw new AuthError(400, 'No queries provided')
 
     const urlLine = pageUrl ? `Page URL: ${pageUrl}` : 'No specific URL — evaluate content quality alone.'
     const system = `You are an AI citation analyst. Evaluate whether given content would be cited by ChatGPT or Perplexity for each query. ${urlLine}
@@ -44,6 +47,10 @@ ${queries.slice(0, 4).map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')
     const raw = await callLLM(system, prompt, 4000)
     return apiSuccess({ ...extractJSON(raw), userPlan: user.plan })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'tracker')
+
     await captureServerException(clerkId, e, { route: '/api/tracker' })
     return apiError(e)
   }

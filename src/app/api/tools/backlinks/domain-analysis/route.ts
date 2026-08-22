@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { fetchOPRScore } from '@/lib/openpagerank'
 import { getBacklinksSummary } from '@/lib/dataforseo'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
+import { AuthError, getOrCreateUser, requireAuth, refundUsage } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
 import { captureServerException } from '@/lib/posthog-server'
 
@@ -57,6 +57,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Was getProUser() (tier check only, no quota) — real OpenPageRank + DataForSEO
@@ -64,6 +66,7 @@ export async function POST(req: NextRequest) {
     // billable analysis uses.
     const user = await requireAuth('backlinks')
     clerkId = user.clerkId
+    charged = user.userId
     const { domain: rawDomain } = await req.json()
     if (!rawDomain?.trim()) throw new AuthError(400, 'Domain required')
 
@@ -74,11 +77,7 @@ export async function POST(req: NextRequest) {
       opr = await fetchOPRScore(domain)
     } catch (oprErr) {
       console.error('OpenPageRank lookup failed:', oprErr)
-      return apiError({
-        message: 'Could not retrieve domain authority data right now. Please try again in a few minutes.',
-        status: 422,
-        name: 'FetchError',
-      })
+      throw new AuthError(422, 'Could not retrieve domain authority data right now. Please try again in a few minutes.')
     }
 
     // Real backlink profile — independent of OPR, never blocks the analysis if it fails.
@@ -111,6 +110,10 @@ export async function POST(req: NextRequest) {
 
     return apiSuccess({ success: true, analysisId: analysis.id })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'backlinks')
+
     await captureServerException(clerkId, e, { route: '/api/tools/backlinks/domain-analysis' })
     return apiError(e)
   }

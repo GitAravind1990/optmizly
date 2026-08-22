@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { callLLM, extractJSON, setTrackingUser } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
+import { AuthError, getOrCreateUser, requireAuth, refundUsage } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
 import { captureServerException } from '@/lib/posthog-server'
 import { fetchOPRScores } from '@/lib/openpagerank'
@@ -90,6 +90,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Was getProUser() (tier check only, no quota) — this fires a real model call
@@ -97,6 +99,7 @@ export async function POST(req: NextRequest) {
     // monthly-quota enforcement every other billable analysis in this codebase uses.
     const user = await requireAuth('backlinks')
     clerkId = user.clerkId
+    charged = user.userId
     const { name, domain, niche, targetKeywords, contentBrief } = await req.json()
 
     if (!name?.trim()) throw new AuthError(400, 'Project name required')
@@ -189,6 +192,10 @@ Generate highly specific opportunities. Research real publications in the ${nich
 
     return apiSuccess({ success: true, projectId: project.id, opportunityCount: project.opportunities.length })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'backlinks')
+
     await captureServerException(clerkId, e, { route: '/api/tools/backlinks' })
     return apiError(e)
   }

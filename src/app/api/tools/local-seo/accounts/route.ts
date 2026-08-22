@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, getOrCreateUser, requireAuth } from '@/lib/auth'
+import { AuthError, getOrCreateUser, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { resolveBusinessCoordinates, settledOrNull } from '@/lib/dataforseo'
 
@@ -43,6 +43,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Was getAgencyUser() (tier check only, no quota) — this resolves real
@@ -50,6 +52,7 @@ export async function POST(req: NextRequest) {
     // behind monthly-quota enforcement like every other billable analysis.
     const user = await requireAuth('local-seo')
     clerkId = user.clerkId
+    charged = user.userId
     const { name, accountType, locations } = await req.json()
 
     if (!name?.trim()) throw new AuthError(400, 'Account name required')
@@ -62,6 +65,9 @@ export async function POST(req: NextRequest) {
         accountType: accountType ?? 'multi-location',
       },
     })
+    // The account row exists and is listed from here on, so the unit is earned even if
+    // seeding its locations or tasks below fails.
+    charged = null
 
     const validLocations = locations.filter(
       (loc: { name?: string; address?: string; city?: string; state?: string; phone?: string }) =>
@@ -136,6 +142,10 @@ export async function POST(req: NextRequest) {
 
     return apiSuccess(full)
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'local-seo')
+
     await captureServerException(clerkId, e, { route: '/api/tools/local-seo/accounts' })
     return apiError(e)
   }

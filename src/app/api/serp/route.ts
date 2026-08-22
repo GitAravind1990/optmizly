@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, refundUsage, AuthError } from '@/lib/auth'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
@@ -27,13 +27,16 @@ async function fetchRealSERP(
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const user = await requireAuth('serp')
     clerkId = user.clerkId
+    charged = user.userId
     const { url, keyword, position, biztype, city, countryCode } = await req.json()
 
-    if (!url || !keyword) return apiError(new Error('URL and keyword are required'))
+    if (!url || !keyword) throw new AuthError(400, 'URL and keyword are required')
 
     const realSerpData = await fetchRealSERP(keyword, city, countryCode || 'us')
     const serpContext = realSerpData.length > 0 
@@ -65,6 +68,10 @@ Rules: phase1=3 tasks (weeks 1-4), phase2=3 tasks (weeks 5-10), phase3=3 tasks (
 
     return apiSuccess(result)
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'serp')
+
     await captureServerException(clerkId, e, { route: '/api/serp' })
     return apiError(e)
   }

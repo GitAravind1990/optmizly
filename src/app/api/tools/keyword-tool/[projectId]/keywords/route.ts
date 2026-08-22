@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, requireAuth } from '@/lib/auth'
+import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getKeywordMetrics, getSearchIntent, discoverKeywords, KEYWORDS_PER_SEED } from '@/lib/dataforseo'
 
@@ -19,12 +19,15 @@ type CandidateRow = {
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     // Researching another seed keyword into an existing list fires the same
     // metrics/intent/related calls as creating a list — billed the same way.
     const user = await requireAuth('keyword-tool')
     clerkId = user.clerkId
+    charged = user.userId
     const { projectId } = await params
     const { seedKeyword } = await req.json()
 
@@ -77,6 +80,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
 
     return apiSuccess({ data: { added: rows.length } })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'keyword-tool')
+
     await captureServerException(clerkId, e, { route: '/api/tools/keyword-tool/[projectId]/keywords' })
     return apiError(e)
   }

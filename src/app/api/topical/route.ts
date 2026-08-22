@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, refundUsage, AuthError } from '@/lib/auth'
 import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
@@ -37,13 +37,16 @@ function pillarLikelyCovered(pillarSlug: string, urls: string[]): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  // Set once requireAuth has taken the unit, so the catch can hand it back.
+  let charged: string | null = null
   let clerkId: string | null = null
   try {
     const user = await requireAuth('topical')
     clerkId = user.clerkId
+    charged = user.userId
     const { niche, urls = [] } = await req.json()
 
-    if (!niche || niche.length < 3) return apiError(new Error('Niche is required'))
+    if (!niche || niche.length < 3) throw new AuthError(400, 'Niche is required')
     const urlBlock = urls.length ? (urls as string[]).join(', ') : 'none provided'
 
     // Single comprehensive call instead of 5 separate calls
@@ -162,6 +165,10 @@ Generate a complete topical authority map with 3 pillars × 3 clusters each, plu
       userPlan: user.plan,
     })
   } catch (e) {
+    // requireAuth charged before any work happened, so a run that ends here
+    // never delivered what the user paid for. See CLAUDE.md.
+    if (charged) await refundUsage(charged, 'topical')
+
     await captureServerException(clerkId, e, { route: '/api/topical' })
     return apiError(e)
   }
