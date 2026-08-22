@@ -195,7 +195,11 @@ async function callGroq(system: string, prompt: string, maxTokens: number, model
   }
 
   if (!text && choice?.finish_reason === 'length') {
-    throw new Error(
+    // Typed, not a bare Error: this reaches the user through apiError, which has no way to
+    // recognise a plain Error and returns 500 "Internal server error" for it. That is how
+    // /api/citation was reporting a retryable, self-inflicted budget problem as a server
+    // fault (measured 2026-08-22, grounded path, 35.1s).
+    throw new AIEmptyCompletionError(
       `Groq model ${GROQ_MODEL_MAP[model]} returned no content at ${retryBudget} tokens — reasoning consumed the entire budget`
     )
   }
@@ -355,6 +359,20 @@ export async function callLLM(
 /** Thrown when the model's response can't be parsed as JSON — distinct from a real
  *  server error so callers can surface a "please try again" message instead of
  *  a generic 500. */
+/**
+ * The model spent its whole budget on reasoning and wrote no answer.
+ *
+ * Distinct from AIResponseParseError: there the model produced something and it could not
+ * be parsed; here it produced nothing at all. Transient — reasoning length is not stable
+ * run to run — so it is worth retrying, and worth a budget increase if it recurs.
+ */
+export class AIEmptyCompletionError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AIEmptyCompletionError'
+  }
+}
+
 export class AIResponseParseError extends Error {
   constructor(message: string) {
     super(message)

@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { callLLM } from '@/lib/llm';
+import { callLLM, AIEmptyCompletionError, GroqCapacityError } from '@/lib/llm';
 import { AuthError, requireAuth, refundUsage } from '@/lib/auth';
 import { apiError } from '@/lib/api';
 import { NextRequest, NextResponse } from 'next/server';
@@ -91,7 +91,13 @@ export async function POST(req: NextRequest) {
     // AuthError carries its own status — 401, 403 for the wrong plan, 429 when the
     // allowance is gone. Without this branch the outer handler would relabel all three
     // as a 500, and the dashboard's upgrade modal keys off 403/429.
-    if (error instanceof AuthError) return apiError(error);
+    // These two routes end with their own generic 500 rather than deferring to apiError,
+    // so the central AI-error mapping would not reach them. Hand those cases over
+    // explicitly: an empty completion or a saturated token bucket is transient and
+    // retryable, not a server fault.
+    if (error instanceof AuthError
+      || error instanceof AIEmptyCompletionError
+      || error instanceof GroqCapacityError) return apiError(error);
     const msg = error instanceof Error ? error.message : String(error);
     console.error('AI Fixes error:', msg);
     await captureServerException(clerkId, error, { route: '/api/tools/performance-fixer/fixes' });

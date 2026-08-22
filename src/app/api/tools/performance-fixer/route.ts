@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
+import { AIEmptyCompletionError, GroqCapacityError } from '@/lib/llm';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { canUseTool } from '@/lib/plans';
@@ -144,7 +145,13 @@ export async function POST(req: NextRequest) {
     // AuthError carries its own status (401 / 403 wrong plan / 429 out of allowance);
     // the generic handler below would turn all of them into a 500 and break the
     // dashboard's upgrade modal, which keys off 403 and 429.
-    if (error instanceof AuthError) return apiError(error);
+    // These two routes end with their own generic 500 rather than deferring to apiError,
+    // so the central AI-error mapping would not reach them. Hand those cases over
+    // explicitly: an empty completion or a saturated token bucket is transient and
+    // retryable, not a server fault.
+    if (error instanceof AuthError
+      || error instanceof AIEmptyCompletionError
+      || error instanceof GroqCapacityError) return apiError(error);
     const msg = error instanceof Error ? error.message : String(error);
     console.error('Performance Fixer error:', msg);
     await captureServerException(clerkId, error, { route: '/api/tools/performance-fixer' });

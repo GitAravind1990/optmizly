@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { AuthError } from './auth'
 import { ZodError } from 'zod'
-import { AIResponseParseError } from './llm'
+import { AIResponseParseError, AIEmptyCompletionError, GroqCapacityError } from './llm'
 
 export function apiError(error: unknown): NextResponse {
   if (error instanceof AuthError) {
@@ -9,6 +9,27 @@ export function apiError(error: unknown): NextResponse {
   }
   if (error instanceof ZodError) {
     return NextResponse.json({ error: 'Invalid request', details: error.flatten() }, { status: 400 })
+  }
+  // Both of these used to match none of the branches below and fall through to a bare 500
+  // "Internal server error", which is wrong twice over: the condition is transient and
+  // retryable, and the generic message sends people looking for a server fault. Mapped here
+  // rather than per route so every caller of apiError gets it — /api/citation was the one
+  // caught in the act, but nothing made it special.
+  if (error instanceof GroqCapacityError) {
+    console.error('[API Error] AI provider per-minute limit saturated:', error.message)
+    return NextResponse.json(
+      { error: 'The AI provider is at its per-minute limit right now. Nothing was saved — please try again in a minute.' },
+      { status: 503 }
+    )
+  }
+  if (error instanceof AIEmptyCompletionError) {
+    // Logged in full because the message carries the token budget that ran out, which is
+    // the number to raise if this stops being occasional.
+    console.error('[API Error] AI returned an empty completion:', error.message)
+    return NextResponse.json(
+      { error: 'The AI ran out of room before writing an answer. This is usually transient — please try again.' },
+      { status: 502 }
+    )
   }
   if (error instanceof AIResponseParseError) {
     // The AI call itself succeeded but returned something we couldn't parse — a
