@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Badge, Button, LockedState, Spinner } from '@/components/ui'
 import { UpgradeModal } from '@/components/upgrade-modal'
-import { exportProspectProposalPDF, type ProposalFinding } from '@/lib/export'
+import { exportProspectProposalPDF, exportProspectsCSV, type ProposalFinding } from '@/lib/export'
 import { isRoleAddress } from '@/lib/contact-extract'
 
 type OpportunityLevel = 'Low' | 'Moderate' | 'Good' | 'High'
@@ -449,6 +449,25 @@ export default function ClientFinderPage() {
                     }}
                     placeholder="appears on exported proposals"
                     className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-64" />
+
+                  {/* Exports every prospect, not only the working sites: an agency wants the
+                      businesses with no website in the same sheet, since those are often the
+                      easiest conversation. Carries the tracking status so a list worked
+                      offline still knows who has been approached. */}
+                  <button
+                    onClick={() => meta && exportProspectsCSV(
+                      (prospects ?? []).map(p => ({
+                        id: p.id, name: p.name, website: p.website, location: p.location,
+                        opportunityScore: p.opportunityScore, opportunityLevel: p.opportunityLevel,
+                        status: contacts[p.id]?.status ?? p.status,
+                        topIssues: p.topIssues, contacts: p.contacts,
+                        rating: p.rating, phone: p.phone,
+                      })),
+                      { industry: meta.industry, location: meta.location },
+                    )}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700">
+                    Export all as CSV
+                  </button>
                 </div>
               )}
 

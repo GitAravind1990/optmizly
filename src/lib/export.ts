@@ -2109,3 +2109,79 @@ export function exportProspectProposalPDF(prospect: ProposalProspect, agencyName
     interior pages, site speed, backlinks and local listings.</p>
   `)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEO CLIENT FINDER — PROSPECT LIST
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ProspectRow = {
+  id: string
+  name: string
+  website: string | null
+  location: string
+  opportunityScore: number
+  opportunityLevel: string
+  status: string
+  topIssues: string[]
+  contacts: { emails: string[]; phones: string[]; socials: string[]; contactPageUrl: string | null } | null
+  rating: number | null
+  phone: string | null
+}
+
+/**
+ * Neutralises spreadsheet formulas before a cell reaches a file.
+ *
+ * Excel and Sheets execute any cell beginning =, +, - or @, and this export carries text we
+ * pulled off other people's websites: business names, page titles quoted inside issue
+ * descriptions, email addresses. A prospect whose site title begins with = would otherwise
+ * run as a formula on the agency's machine the moment they open the download.
+ *
+ * A leading apostrophe is the standard fix - spreadsheets treat the cell as text and do not
+ * display the character. Deliberately local to this export rather than applied to the shared
+ * downloadCSV: the same gap exists for the other tools' exports, but changing their output
+ * is a separate decision from shipping this one.
+ */
+function csvSafe(v: unknown): string {
+  const s = String(v ?? '')
+  return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s
+}
+
+/**
+ * The prospect list as a spreadsheet, because that is where prospecting actually happens.
+ *
+ * Includes the tracking status, so an exported list can be worked offline and still says
+ * which businesses have been approached.
+ */
+export function exportProspectsCSV(
+  prospects: ProspectRow[],
+  meta: { industry: string; location: string },
+) {
+  const rows: string[][] = [
+    [
+      'Business', 'Website', 'Location', 'SEO Opportunity Score', 'Opportunity Level', 'Status',
+      'Top Issues', 'Emails', 'Phones', 'Social Profiles', 'Contact Page',
+      'Google Rating', 'Google Phone',
+    ],
+    ...prospects.map(p => [
+      p.name,
+      p.website ?? '',
+      p.location,
+      // Not scored is not the same as scoring zero: an unreachable site was never measured.
+      p.status === 'ANALYZED' ? String(p.opportunityScore) : '',
+      p.status === 'ANALYZED' ? p.opportunityLevel : '',
+      p.status === 'NO_WEBSITE' ? 'No website'
+        : p.status === 'WEBSITE_UNAVAILABLE' ? 'Site unreachable'
+        : (p.status || ''),
+      p.topIssues.join('; '),
+      (p.contacts?.emails ?? []).join('; '),
+      (p.contacts?.phones ?? []).join('; '),
+      (p.contacts?.socials ?? []).join('; '),
+      p.contacts?.contactPageUrl ?? '',
+      p.rating !== null ? String(p.rating) : '',
+      p.phone ?? '',
+    ].map(csvSafe)),
+  ]
+
+  const slug = `${meta.industry}-${meta.location}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  downloadCSV(`optmizly-prospects-${slug || 'search'}.csv`, rows)
+}
