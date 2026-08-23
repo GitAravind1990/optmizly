@@ -76,6 +76,12 @@ export default function ClientFinderPage() {
   const [expanded, setExpanded] = useState<string | null>(null)
   // Persisted so an agency types it once, not on every proposal they send.
   const [agencyName, setAgencyName] = useState('')
+  // Drafts are kept per prospect so switching cards does not lose one, and regenerating
+  // is an explicit act rather than a side effect of clicking around.
+  const [drafts, setDrafts] = useState<Record<string, { subject: string; body: string }>>({})
+  const [drafting, setDrafting] = useState<string | null>(null)
+  const [draftError, setDraftError] = useState<Record<string, string>>({})
+  const [copied, setCopied] = useState<string | null>(null)
 
   useEffect(() => {
     try { setAgencyName(localStorage.getItem('optmizly.agencyName') ?? '') } catch { /* private mode */ }
@@ -122,6 +128,39 @@ export default function ClientFinderPage() {
       setLoading(false)
     }
   }, [industry, location, service, limit])
+
+  const draftOutreach = useCallback(async (p: Prospect) => {
+    setDrafting(p.id)
+    setDraftError(prev => ({ ...prev, [p.id]: '' }))
+    try {
+      const res = await fetch('/api/tools/client-finder/outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: p.name,
+          location: p.location,
+          findings: p.findings,
+          agencyName: agencyName.trim() || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (res.status === 403 || res.status === 429) { setShowUpgradeModal(true); return }
+      if (!res.ok) throw new Error(data.error ?? 'Could not draft an email')
+      setDrafts(prev => ({ ...prev, [p.id]: { subject: data.subject, body: data.body } }))
+    } catch (e) {
+      setDraftError(prev => ({ ...prev, [p.id]: e instanceof Error ? e.message : 'Could not draft an email' }))
+    } finally {
+      setDrafting(null)
+    }
+  }, [agencyName])
+
+  const copy = useCallback(async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(id)
+      setTimeout(() => setCopied(null), 2000)
+    } catch { /* clipboard blocked - the textarea is selectable as a fallback */ }
+  }, [])
 
   const withSites = (prospects ?? []).filter(p => p.status === 'ANALYZED')
   const unreachable = (prospects ?? []).filter(p => p.status === 'WEBSITE_UNAVAILABLE')
@@ -288,7 +327,44 @@ export default function ClientFinderPage() {
                       className="text-xs font-bold text-slate-600 hover:text-slate-900 disabled:opacity-40">
                       Export proposal (PDF)
                     </button>
+                    <button
+                      onClick={() => draftOutreach(p)}
+                      disabled={p.findings.length === 0 || drafting === p.id}
+                      className="text-xs font-bold text-slate-600 hover:text-slate-900 disabled:opacity-40">
+                      {drafting === p.id
+                        ? 'Writing…'
+                        : drafts[p.id] ? 'Rewrite outreach email' : 'Write outreach email'}
+                    </button>
                   </div>
+
+                  {draftError[p.id] && (
+                    <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                      {draftError[p.id]}
+                    </p>
+                  )}
+
+                  {drafts[p.id] && (
+                    <div className="mt-3 border border-slate-200 rounded-xl p-3 bg-slate-50">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <p className="text-sm font-bold text-slate-900">{drafts[p.id].subject}</p>
+                        <button
+                          onClick={() => copy(p.id, `Subject: ${drafts[p.id].subject}\n\n${drafts[p.id].body}`)}
+                          className="text-xs font-bold text-blue-600 hover:text-blue-700">
+                          {copied === p.id ? 'Copied' : 'Copy email'}
+                        </button>
+                      </div>
+                      {/* Editable on purpose: this goes out over the agency's name, and the
+                          draft is a starting point rather than something to send unread. */}
+                      <textarea
+                        value={drafts[p.id].body}
+                        onChange={e => setDrafts(prev => ({ ...prev, [p.id]: { ...prev[p.id], body: e.target.value } }))}
+                        rows={9}
+                        className="mt-2 w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white resize-y" />
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Draft only — read it before sending. It references the homepage issues found above.
+                      </p>
+                    </div>
+                  )}
 
                   {expanded === p.id && (
                     <div className="mt-3 space-y-3">

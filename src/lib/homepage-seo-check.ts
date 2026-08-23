@@ -12,8 +12,11 @@
  *    practice - anyone can list a business with any website. Every fetch is SSRF-guarded,
  *    including each redirect hop. See fetchHomepage.
  * 2. The HTML is UNTRUSTED and never leaves this module as raw text. Only the structured
- *    signals and findings below travel onward, so page content cannot reach a model as
- *    instructions.
+ *    signals and findings below travel onward. One caveat worth stating precisely rather
+ *    than claiming immunity: the page's own <title> is quoted into a finding description,
+ *    so a bounded amount of site-authored text does travel. It is capped at 200 characters
+ *    for exactly that reason - findings are what reach a model, and a prospect's homepage
+ *    should not get to write into a prompt at length.
  */
 import { validateUrl } from './ssrf-guard'
 
@@ -296,9 +299,15 @@ export function analyzeHomepage(html: string, finalUrl: string): { findings: SEO
 
   // Title
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
-  const titleText = titleMatch ? stripToText(titleMatch[1]) : ''
-  const titlePresent = titleText.length > 0
-  const titleLength = titleText.length
+  // Capped at 200 characters. The title is the one piece of site-authored text that gets
+  // quoted into a finding description, and findings are the only thing that reaches a
+  // model - so this is the whole surface through which a prospect's own page could try to
+  // put words in a prompt. A real title is under 70 characters; anything beyond 200 is not
+  // a title. Length is measured before the cap so the "too long" check still sees the truth.
+  const titleRaw = titleMatch ? stripToText(titleMatch[1]) : ''
+  const titleText = titleRaw.slice(0, 200)
+  const titlePresent = titleRaw.length > 0
+  const titleLength = titleRaw.length
   // Heuristic, and named as one: a placeholder title, or something so short and
   // undifferentiated it cannot be targeting anything. Separators are the tell - a title
   // written for search almost always carries a service or a place beside the brand.
