@@ -7,6 +7,7 @@ import { captureServerException } from '@/lib/posthog-server'
 import { consumeDailyUsage } from '@/lib/daily-usage'
 import { discoverBusinesses, type DiscoveredBusiness } from '@/lib/places-discovery'
 import { fetchHomepage, analyzeHomepage, type SEOFinding } from '@/lib/homepage-seo-check'
+import { extractContacts, type ExtractedContacts } from '@/lib/contact-extract'
 import { scoreOpportunity, classifyOpportunity, prospectRank, type OpportunityLevel } from '@/lib/opportunity-score'
 import { summarizeProspects } from '@/lib/client-finder-ai'
 
@@ -60,6 +61,7 @@ interface Prospect {
   opportunityLevel: OpportunityLevel
   topIssues: string[]
   findings: SEOFinding[]
+  contacts: ExtractedContacts | null
   salesAngle: string | null
   status: ProspectStatus
   siteReachable: boolean
@@ -111,7 +113,7 @@ const SEVERITY_ORDER: Record<SEOFinding['severity'], number> = {
  * business exists, and dropping it silently would make the result count look wrong.
  */
 async function analyzeBusiness(biz: DiscoveredBusiness): Promise<Prospect> {
-  const base: Omit<Prospect, 'opportunityScore' | 'opportunityLevel' | 'topIssues' | 'findings' | 'status' | 'siteReachable' | 'rank'> = {
+  const base: Omit<Prospect, 'opportunityScore' | 'opportunityLevel' | 'topIssues' | 'findings' | 'contacts' | 'status' | 'siteReachable' | 'rank'> = {
     id: biz.placeId,
     name: biz.name,
     website: biz.website ?? null,
@@ -130,6 +132,7 @@ async function analyzeBusiness(biz: DiscoveredBusiness): Promise<Prospect> {
       opportunityLevel: 'Low',
       topIssues: [],
       findings: [],
+      contacts: null,
       status: 'NO_WEBSITE',
       siteReachable: false,
       rank: 0,
@@ -144,6 +147,7 @@ async function analyzeBusiness(biz: DiscoveredBusiness): Promise<Prospect> {
       opportunityLevel: 'Low',
       topIssues: [],
       findings: [],
+      contacts: null,
       status: 'WEBSITE_UNAVAILABLE',
       siteReachable: false,
       rank: 0,
@@ -151,6 +155,8 @@ async function analyzeBusiness(biz: DiscoveredBusiness): Promise<Prospect> {
   }
 
   const { findings, signals } = analyzeHomepage(page.html, page.finalUrl)
+  // Same HTML, no extra request - the contact details are already in hand.
+  const contacts = extractContacts(page.html, page.finalUrl)
   const opportunityScore = scoreOpportunity(signals)
   const ordered = [...findings].sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])
 
@@ -161,6 +167,7 @@ async function analyzeBusiness(biz: DiscoveredBusiness): Promise<Prospect> {
     opportunityLevel: classifyOpportunity(opportunityScore),
     topIssues: ordered.slice(0, 3).map(f => f.title),
     findings: ordered,
+    contacts,
     status: 'ANALYZED',
     siteReachable: true,
     rank: prospectRank(opportunityScore, true),
@@ -212,7 +219,7 @@ export async function POST(req: NextRequest) {
       return {
         id: biz.placeId, name: biz.name, website: biz.website ?? null, location: biz.address,
         rating: biz.rating ?? null, phone: biz.phone ?? null, salesAngle: null,
-        opportunityScore: 0, opportunityLevel: 'Low' as const, topIssues: [], findings: [],
+        opportunityScore: 0, opportunityLevel: 'Low' as const, topIssues: [], findings: [], contacts: null,
         status: 'WEBSITE_UNAVAILABLE' as const, siteReachable: false, rank: 0,
       }
     })

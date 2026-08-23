@@ -19,6 +19,12 @@ interface Prospect {
   opportunityLevel: OpportunityLevel
   topIssues: string[]
   findings: ProposalFinding[]
+  contacts: {
+    emails: string[]
+    phones: string[]
+    socials: string[]
+    contactPageUrl: string | null
+  } | null
   salesAngle: string | null
   status: ProspectStatus
   siteReachable: boolean
@@ -449,6 +455,28 @@ export default function ClientFinderPage() {
                     <div className="mt-3 flex gap-4 text-xs text-slate-500">
                       {p.rating !== null && <span>{p.rating.toFixed(1)} on Google</span>}
                       {p.phone && <span>{p.phone}</span>}
+                    </div>
+                  )}
+
+                  {p.contacts && (p.contacts.emails.length > 0 || p.contacts.socials.length > 0 || p.contacts.contactPageUrl) && (
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+                      {/* Published by the business on its own site - the same details a
+                          visitor finds by scrolling to the footer. */}
+                      {p.contacts.emails.map(e => (
+                        <a key={e} href={`mailto:${e}`} className="text-blue-600 hover:underline">{e}</a>
+                      ))}
+                      {p.contacts.contactPageUrl && (
+                        <a href={p.contacts.contactPageUrl} target="_blank" rel="noopener noreferrer nofollow"
+                          className="text-slate-500 hover:text-slate-900">Contact page</a>
+                      )}
+                      {p.contacts.socials.map(u => {
+                        let label = 'Profile'
+                        try { label = new URL(u).host.replace(/^www\./, '').split('.')[0] } catch { /* keep default */ }
+                        return (
+                          <a key={u} href={u} target="_blank" rel="noopener noreferrer nofollow"
+                            className="text-slate-500 hover:text-slate-900 capitalize">{label}</a>
+                        )
+                      })}
                     </div>
                   )}
 
