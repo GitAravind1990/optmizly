@@ -57,6 +57,7 @@ model User {
   gscQueryRows            GscQueryRow[]            @relation("GscQueryRows")
   dailyToolUsage          DailyToolUsage[]         @relation("DailyToolUsage")
   clientFinderSearches    ClientFinderSearch[]
+  prospectContacts        ProspectContact[]
 }
 
 /// Per-day, per-tool usage, for tools capped daily rather than by the monthly Usage
@@ -1194,4 +1195,32 @@ model ClientFinderSearch {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+/// Where a prospect stands with this agency, tracked across searches.
+///
+/// Keyed by Google's placeId rather than by a search, because that is the whole point: run
+/// two searches over the same city and the overlapping businesses must remember they were
+/// already contacted. A status stored inside a search blob could not do that.
+///
+/// businessName is denormalised so the list is readable without loading a search that may
+/// since have been pruned by the 50-search retention.
+model ProspectContact {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Google Places id - stable per business, and what search results are matched on.
+  placeId      String
+  businessName String
+
+  /// CONTACTED | REPLIED | WON | DEAD. "Not contacted" is the absence of a row rather than
+  /// a stored value, so the table holds only prospects actually worked.
+  status String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, placeId])
+  @@index([userId, updatedAt])
 }

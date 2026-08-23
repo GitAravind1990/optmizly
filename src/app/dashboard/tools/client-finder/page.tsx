@@ -75,6 +75,14 @@ const SEVERITY_STYLE: Record<ProposalFinding['severity'], { label: string; cls: 
   low:      { label: 'Low',          cls: 'bg-slate-100 text-slate-600 border-slate-200' },
 }
 
+const STATUS_STYLE: Record<string, string> = {
+  '':          'border-slate-200 text-slate-500 bg-white',
+  CONTACTED:   'border-blue-200 text-blue-700 bg-blue-50',
+  REPLIED:     'border-purple-200 text-purple-700 bg-purple-50',
+  WON:         'border-emerald-200 text-emerald-700 bg-emerald-50',
+  DEAD:        'border-slate-200 text-slate-400 bg-slate-50',
+}
+
 const STAGES = ['Finding businesses...', 'Checking websites...', 'Scoring opportunities...']
 
 export default function ClientFinderPage() {
@@ -106,6 +114,10 @@ export default function ClientFinderPage() {
   // Null means the results are not (yet) attached to a saved search and drafts stay
   // in memory rather than silently going nowhere.
   const [searchId, setSearchId] = useState<string | null>(null)
+  // placeId -> status, loaded once and kept across searches. A business found again next
+  // month arrives already marked, which is the entire point of tracking it separately
+  // from the search it came from.
+  const [contacts, setContacts] = useState<Record<string, { status: string }>>({})
 
   useEffect(() => {
     try { setAgencyName(localStorage.getItem('optmizly.agencyName') ?? '') } catch { /* private mode */ }
@@ -126,6 +138,31 @@ export default function ClientFinderPage() {
     ]
     return () => timers.forEach(clearTimeout)
   }, [loading])
+
+  useEffect(() => {
+    fetch('/api/tools/client-finder/contacts')
+      .then(r => r.json())
+      .then(d => setContacts(d.contacts ?? {}))
+      .catch(() => { /* tracking is additive; failing to load it must not block the tool */ })
+  }, [])
+
+  const setContactStatus = useCallback(async (p: Prospect, status: string | null) => {
+    // Applied locally first: this is a list an agency clicks through quickly, and waiting
+    // on a round trip per mark would make it feel broken.
+    setContacts(prev => {
+      const next = { ...prev }
+      if (status === null) delete next[p.id]
+      else next[p.id] = { status }
+      return next
+    })
+    try {
+      await fetch('/api/tools/client-finder/contacts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ placeId: p.id, businessName: p.name, status }),
+      })
+    } catch { /* the optimistic state stands; the next load will correct it */ }
+  }, [])
 
   const refreshSaved = useCallback(async () => {
     try {
@@ -388,6 +425,11 @@ export default function ClientFinderPage() {
                     <span className="font-bold text-slate-900">{meta.found}</span> businesses found for{' '}
                     &ldquo;{meta.industry}&rdquo; in {meta.location}
                     {meta.unreachable > 0 && <> · {meta.unreachable} site{meta.unreachable === 1 ? '' : 's'} unreachable</>}
+                    {(prospects ?? []).some(p => contacts[p.id]) && (
+                      <> · <span className="font-bold text-slate-900">
+                        {(prospects ?? []).filter(p => contacts[p.id]).length}
+                      </span> already worked</>
+                    )}
                   </p>
                   {withSites.length > 1 && (
                     <span className="text-xs text-slate-500">Ranked by opportunity, working sites only</span>
@@ -495,6 +537,18 @@ export default function ClientFinderPage() {
                   )}
 
                   <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-3 flex-wrap">
+                    {/* Status travels with the business, not the search, so this stays set
+                        when the same firm turns up in a search run weeks later. */}
+                    <select
+                      value={contacts[p.id]?.status ?? ''}
+                      onChange={e => setContactStatus(p, e.target.value || null)}
+                      className={`text-xs font-bold rounded-lg border px-2 py-1 ${STATUS_STYLE[contacts[p.id]?.status ?? ''] ?? STATUS_STYLE['']}`}>
+                      <option value="">Not contacted</option>
+                      <option value="CONTACTED">Contacted</option>
+                      <option value="REPLIED">Replied</option>
+                      <option value="WON">Won</option>
+                      <option value="DEAD">Not interested</option>
+                    </select>
                     <button
                       onClick={() => setExpanded(expanded === p.id ? null : p.id)}
                       className="text-xs font-bold text-blue-600 hover:text-blue-700">
