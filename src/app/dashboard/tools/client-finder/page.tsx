@@ -95,6 +95,10 @@ export default function ClientFinderPage() {
   const [saved, setSaved] = useState<SavedSearch[]>([])
   const [loadingSaved, setLoadingSaved] = useState<string | null>(null)
   const [showSaved, setShowSaved] = useState(false)
+  // Which stored row the visible results belong to, so drafts know where to persist.
+  // Null means the results are not (yet) attached to a saved search and drafts stay
+  // in memory rather than silently going nowhere.
+  const [searchId, setSearchId] = useState<string | null>(null)
 
   useEffect(() => {
     try { setAgencyName(localStorage.getItem('optmizly.agencyName') ?? '') } catch { /* private mode */ }
@@ -145,6 +149,8 @@ export default function ClientFinderPage() {
       if (!res.ok) throw new Error(data.error ?? 'Search failed')
       setProspects(data.prospects ?? [])
       setMeta(data.searchMeta ?? null)
+      setSearchId(data.savedSearchId ?? null)
+      setDrafts({})
       refreshSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Search failed')
@@ -177,6 +183,9 @@ export default function ClientFinderPage() {
         // the live search would be wrong here. Hidden rather than shown stale.
         usage: { used: 0, limit: 0, remaining: 0 },
       })
+      setSearchId(data.search.id)
+      // Drafts written against this search come back with it.
+      setDrafts(data.drafts && typeof data.drafts === 'object' ? data.drafts : {})
       setExpanded(null)
       setShowSaved(false)
     } catch (e) {
@@ -192,6 +201,17 @@ export default function ClientFinderPage() {
       setSaved(prev => prev.filter(x => x.id !== id))
     } catch { /* leaving a stale row in the list is harmless */ }
   }, [])
+
+  const persistDraft = useCallback(async (prospectId: string, draft: { subject: string; body: string }) => {
+    if (!searchId) return
+    try {
+      await fetch(`/api/tools/client-finder/searches/${searchId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prospectId, ...draft }),
+      })
+    } catch { /* the draft is on screen either way; a failed save is not worth an error */ }
+  }, [searchId])
 
   const draftOutreach = useCallback(async (p: Prospect) => {
     setDrafting(p.id)
@@ -210,13 +230,15 @@ export default function ClientFinderPage() {
       const data = await res.json()
       if (res.status === 403 || res.status === 429) { setShowUpgradeModal(true); return }
       if (!res.ok) throw new Error(data.error ?? 'Could not draft an email')
-      setDrafts(prev => ({ ...prev, [p.id]: { subject: data.subject, body: data.body } }))
+      const draft = { subject: data.subject, body: data.body }
+      setDrafts(prev => ({ ...prev, [p.id]: draft }))
+      persistDraft(p.id, draft)
     } catch (e) {
       setDraftError(prev => ({ ...prev, [p.id]: e instanceof Error ? e.message : 'Could not draft an email' }))
     } finally {
       setDrafting(null)
     }
-  }, [agencyName])
+  }, [agencyName, persistDraft])
 
   const copy = useCallback(async (id: string, text: string) => {
     try {
@@ -457,10 +479,13 @@ export default function ClientFinderPage() {
                         </button>
                       </div>
                       {/* Editable on purpose: this goes out over the agency's name, and the
-                          draft is a starting point rather than something to send unread. */}
+                          draft is a starting point rather than something to send unread.
+                          Edits save on blur, not per keystroke - one write when the user is
+                          done rather than one per character. */}
                       <textarea
                         value={drafts[p.id].body}
                         onChange={e => setDrafts(prev => ({ ...prev, [p.id]: { ...prev[p.id], body: e.target.value } }))}
+                        onBlur={() => persistDraft(p.id, drafts[p.id])}
                         rows={9}
                         className="mt-2 w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white resize-y" />
                       <p className="text-[11px] text-slate-400 mt-1">

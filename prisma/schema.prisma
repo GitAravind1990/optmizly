@@ -1181,6 +1181,13 @@ model ClientFinderSearch {
   /// The full prospects array exactly as the API returned it, findings included.
   prospects String @db.Text
 
+  /// Outreach drafts keyed by prospect id: { "<placeId>": { subject, body } }.
+  /// A column on the search rather than a table of its own - a draft has no meaning apart
+  /// from the prospect it was written for, and that prospect only exists inside the blob
+  /// above. Defaults to "{}" so rows written before this column existed read as "no drafts"
+  /// rather than null-checking at every use.
+  drafts String @default("{}") @db.Text
+
   found    Int
   analyzed Int
 
