@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { Badge, Button, LockedState, Spinner } from '@/components/ui'
 import { UpgradeModal } from '@/components/upgrade-modal'
 import { exportProspectProposalPDF, type ProposalFinding } from '@/lib/export'
+import { isRoleAddress } from '@/lib/contact-extract'
 
 type OpportunityLevel = 'Low' | 'Moderate' | 'Good' | 'High'
 type ProspectStatus = 'ANALYZED' | 'WEBSITE_UNAVAILABLE' | 'NO_WEBSITE'
@@ -463,7 +464,20 @@ export default function ClientFinderPage() {
                       {/* Published by the business on its own site - the same details a
                           visitor finds by scrolling to the footer. */}
                       {p.contacts.emails.map(e => (
-                        <a key={e} href={`mailto:${e}`} className="text-blue-600 hover:underline">{e}</a>
+                        <span key={e} className="inline-flex items-center gap-1.5">
+                          <a href={`mailto:${e}`} className="text-blue-600 hover:underline">{e}</a>
+                          {/* A named mailbox reaches a person, a role mailbox reaches the
+                              business. Worth showing, because whole trades publish only the
+                              former - among Austin wedding photographers, every single one -
+                              so ranking role addresses first quietly does nothing there. */}
+                          {!isRoleAddress(e) && (
+                            <span
+                              title="A named mailbox — this reaches a person, not a company inbox"
+                              className="rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                              personal
+                            </span>
+                          )}
+                        </span>
                       ))}
                       {p.contacts.contactPageUrl && (
                         <a href={p.contacts.contactPageUrl} target="_blank" rel="noopener noreferrer nofollow"

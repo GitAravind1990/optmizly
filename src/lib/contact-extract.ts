@@ -32,6 +32,22 @@ const NOISE_EMAIL = /(^|@)(noreply|no-reply|donotreply|sentry|wixpress|example|s
 /** Role mailboxes: a business publishing a way to be contacted, not an individual. */
 const ROLE_EMAIL = /^(info|hello|contact|enquiries|inquiries|admin|office|sales|support|team|bookings|reception|mail)@/i
 
+/**
+ * Whether an address is a company mailbox rather than a person's.
+ *
+ * Exported so the interface can mark named mailboxes with the same rule that ranks them,
+ * instead of a second copy of this list drifting out of step with the first. This module
+ * has no imports, so a client component can use it directly.
+ *
+ * Measured 2026-08-23 across seven Austin wedding photographers: every published address
+ * was a named mailbox and not one business offered a role address, so the ranking has
+ * nothing to rank in that market. The ranking alone therefore cannot be the whole
+ * safeguard - hence the marker.
+ */
+export function isRoleAddress(email: string): boolean {
+  return ROLE_EMAIL.test(email.trim())
+}
+
 const SOCIAL_HOSTS = /(facebook|instagram|linkedin|twitter|x)\.com/i
 
 function decodeEntities(v: string): string {
