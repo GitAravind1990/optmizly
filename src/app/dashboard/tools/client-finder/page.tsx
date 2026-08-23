@@ -187,7 +187,8 @@ export default function ClientFinderPage() {
                 <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
                   <span className="font-bold">SEO Opportunity Score</span> measures how many fixable
                   problems a homepage has — how much there is to sell. A higher score means more
-                  work available, not a worse Google ranking.
+                  work available, not a worse Google ranking. Most local business sites we check
+                  score under 20, so anything above that has real work worth pitching.
                 </p>
               )}
 

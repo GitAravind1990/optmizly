@@ -122,10 +122,36 @@ export function scoreOpportunity(signals: SEOSignals): number {
   return Math.max(0, Math.min(100, Math.round(points)))
 }
 
+/**
+ * Bands calibrated against real sites, 2026-08-23, not chosen in advance.
+ *
+ * The first version used 40/60/80 , picked before any data existed. Measured across five
+ * live searches - dentists in Austin, plumbers in Bakersfield, barbers in Toledo,
+ * landscapers in Mobile, accountants in Manchester UK - the actual distribution was:
+ *
+ *     n=31 (sites reachable and analysed)
+ *     min 0   p25 5   median 13   p75 26   p90 39   max 61
+ *
+ * Under the old bands that put 29 of 31 in "Low" and nothing at all in "High". A tool whose
+ * purpose is surfacing opportunity was telling an agency there was none, on every card.
+ *
+ * The reason is structural rather than a bad sample: a functioning small-business site has
+ * HTTPS, a title, a viewport and a description, so it fails perhaps a third of the weighted
+ * checks. Scoring 80 requires missing nearly everything at once, which describes an
+ * abandoned site rather than a prospect - so the top of the old scale was unreachable by
+ * anything worth phoning.
+ *
+ * These bands put roughly 35% / 29% / 19% / 16% of real sites into Low / Moderate / Good /
+ * High, so a ten-result search surfaces one or two genuinely strong leads. The score itself
+ * is unchanged and still means "share of weighted checks failed" - only the labels moved.
+ *
+ * Recalibrate from fresh measurements if the checks or weights change, and record the
+ * distribution here when you do. Do not adjust these to make a demo look better.
+ */
 export function classifyOpportunity(score: number): OpportunityLevel {
-  if (score >= 80) return 'High'
-  if (score >= 60) return 'Good'
-  if (score >= 40) return 'Moderate'
+  if (score >= 35) return 'High'
+  if (score >= 20) return 'Good'
+  if (score >= 10) return 'Moderate'
   return 'Low'
 }
 
