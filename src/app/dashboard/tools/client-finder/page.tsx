@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { Badge, Button, Spinner } from '@/components/ui'
+import { Badge, Button, LockedState, Spinner } from '@/components/ui'
 import { UpgradeModal } from '@/components/upgrade-modal'
 
 type OpportunityLevel = 'Low' | 'Moderate' | 'Good' | 'High'
@@ -63,6 +63,14 @@ export default function ClientFinderPage() {
   const [prospects, setProspects] = useState<Prospect[] | null>(null)
   const [meta, setMeta] = useState<SearchMeta | null>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [plan, setPlan] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/user')
+      .then(r => r.json())
+      .then(d => setPlan(d.plan ?? 'FREE'))
+      .catch(() => setPlan('FREE'))
+  }, [])
 
   useEffect(() => {
     if (!loading) { setStage(0); return }
@@ -107,6 +115,10 @@ export default function ClientFinderPage() {
   // businesses with no website are shown in their own sections rather than interleaved, so
   // every card here is a working site and "functioning first" would order identically.
   const ranked = [...withSites].sort((a, b) => b.opportunityScore - a.opportunityScore)
+
+  if (plan !== null && plan !== 'AGENCY') {
+    return <LockedState tool="SEO Client Finder" plan="Agency" />
+  }
 
   return (
     <>
@@ -285,20 +297,6 @@ export default function ClientFinderPage() {
                 </div>
               )}
 
-              {/* Tied to what they just got, not a generic wall. */}
-              {meta && meta.usage.limit === 1 && withSites.length > 0 && (
-                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-                  <p className="text-sm text-slate-800">
-                    <span className="font-black">You found {meta.found} prospects in one search.</span>{' '}
-                    Agency runs 50 searches a day, so you can work a whole city rather than one
-                    postcode — plus full site audits, white-label client reports, and rank tracking
-                    for the clients you win.
-                  </p>
-                  <a href="/pricing" className="inline-block mt-3 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700">
-                    See Agency
-                  </a>
-                </div>
-              )}
             </div>
           )}
         </div>

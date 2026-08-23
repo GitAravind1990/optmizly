@@ -31,11 +31,18 @@ const MAX_SITES = 10
  *  sockets and blow the memory ceiling on a small function. */
 const CONCURRENCY = 5
 
-/** One free search per day is the lead magnet: enough to reach the moment where an agency
- *  sees a real prospect, not enough to run a prospecting operation on. */
+/**
+  * Agency-only, so only the AGENCY number is reachable - requireToolAccess refuses the
+  * other two before this is read. They stay at 0 rather than being deleted because the
+  * Record must cover every Plan, and a 0 says "not entitled" more clearly than a leftover
+  * allowance that looks live.
+  *
+  * 50 a day is a cost ceiling, not a product limit: each search is one paid Places request
+  * plus up to ten homepage fetches plus one model call.
+  */
 const CLIENT_FINDER_DAILY_LIMITS: Record<Plan, number> = {
-  FREE: 1,
-  PRO: 10,
+  FREE: 0,
+  PRO: 0,
   AGENCY: 50,
 }
 
@@ -162,8 +169,8 @@ async function analyzeBusiness(biz: DiscoveredBusiness): Promise<Prospect> {
 export async function POST(req: NextRequest) {
   let clerkId: string | null = null
   try {
-    // requireToolAccess, not requireAuth: this is a lead magnet on every plan, capped per
-    // day rather than drawn from the monthly analysis allowance. Same shape as AI Regex.
+    // requireToolAccess, not requireAuth: Agency-only and capped per day rather than drawn
+    // from the monthly analysis allowance. Same shape as AI Regex.
     const user = await requireToolAccess('client-finder')
     clerkId = user.clerkId
 
@@ -174,9 +181,7 @@ export async function POST(req: NextRequest) {
     const dailyLimit = CLIENT_FINDER_DAILY_LIMITS[user.plan]
     const usage = await consumeDailyUsage(user.userId, 'client-finder', dailyLimit)
     if (usage.exceeded) {
-      throw new AuthError(429, user.plan === 'FREE'
-        ? `You have used your free search for today. Pro and Agency plans include ${CLIENT_FINDER_DAILY_LIMITS.PRO}+ searches a day.`
-        : `Daily limit of ${dailyLimit} searches reached. It resets tomorrow.`)
+      throw new AuthError(429, `Daily limit of ${dailyLimit} searches reached. It resets tomorrow.`)
     }
 
     const requested = Number(limit)

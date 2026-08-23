@@ -50,7 +50,6 @@ const TOOL_GROUPS = [
     tools: [
       { id: 'content-analyzer', label: 'Content Analyzer', href: '/dashboard',                   minPlan: 'FREE'   },
       { id: 'onpage',           label: 'On-Page SEO',      href: '/dashboard/onpage',            minPlan: 'FREE'   },
-      { id: 'client-finder',     label: 'SEO Client Finder', href: '/dashboard/tools/client-finder', minPlan: 'FREE'   },
     ],
   },
   {
@@ -81,6 +80,7 @@ const TOOL_GROUPS = [
       { id: 'client-reports',    label: 'Client Reports',       href: '/dashboard/agency/clients',    minPlan: 'AGENCY' },
       { id: 'geogrid',           label: 'Geogrid + Review Velocity', href: '/dashboard/tools/geogrid',   minPlan: 'AGENCY' },
       { id: 'ai-regex',          label: 'AI Regex',             href: '/dashboard/tools/ai-regex',    minPlan: 'AGENCY' },
+      { id: 'client-finder',     label: 'SEO Client Finder',    href: '/dashboard/tools/client-finder', minPlan: 'AGENCY' },
     ],
   },
 ]
