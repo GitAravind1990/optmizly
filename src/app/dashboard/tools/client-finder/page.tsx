@@ -257,7 +257,21 @@ export default function ClientFinderPage() {
   // every card here is a working site and "functioning first" would order identically.
   const ranked = [...withSites].sort((a, b) => b.opportunityScore - a.opportunityScore)
 
-  if (plan !== null && plan !== 'AGENCY') {
+  // Three states, not two. Rendering the form while the plan is unknown showed a FREE
+  // account a fully working search box for as long as /api/user took to answer - measured
+  // at over three seconds against a cold function, since it does getOrCreateUser plus two
+  // queries. Locking during that window instead would flash a padlock at the Agency
+  // customers who are entitled to the tool, which layout.tsx explicitly avoids. A neutral
+  // loading state is the only option that is not wrong for somebody.
+  if (plan === null) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <Spinner />
+      </div>
+    )
+  }
+
+  if (plan !== 'AGENCY') {
     return <LockedState tool="SEO Client Finder" plan="Agency" />
   }
 
