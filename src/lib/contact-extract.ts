@@ -77,7 +77,13 @@ function normalizePhone(raw: string): string | null {
   // A national-format number (leading 0, no country code) does not reach 13 digits either.
   // The same site produced "016120720207057" - 15 digits, inside the E.164 bound and still
   // not dialable. Both bounds are needed; neither catches the other's case.
-  if (cleaned.startsWith('0') && digits.length > 12) return null
+  //
+  // "00" is exempt because it is the international dialling prefix across the UK and EU:
+  // 00441617207057 is the same number as +441617207057, is perfectly dialable, and has 14
+  // digits with a leading zero. Without this exemption the rule above would silently drop
+  // valid international numbers - a quieter failure than the junk it was written to catch,
+  // since nothing appears wrong, the contact is simply missing.
+  if (cleaned.startsWith('0') && !cleaned.startsWith('00') && digits.length > 12) return null
 
   return cleaned
 }
