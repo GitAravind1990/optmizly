@@ -7,11 +7,11 @@ import { HomeEmailCapture } from '@/components/home-email-capture'
 
 export const metadata: Metadata = {
   title: 'Optmizly – AI Search Optimization Platform | SEO, GEO & AEO',
-  description: 'Rank on Google and get cited by ChatGPT, Perplexity & AI Overviews. One platform for SEO, GEO & AEO. 17 AI tools, free to start.',
+  description: 'Rank on Google and get cited by ChatGPT, Perplexity & AI Overviews. One platform for SEO, GEO & AEO. 23 AI tools, free to start.',
   alternates: { canonical: '/' },
   openGraph: {
     title: 'Optmizly – AI Search Optimization Platform',
-    description: 'Rank on Google and get cited by ChatGPT, Perplexity & AI Overviews. One platform for SEO, GEO & AEO. 17 AI tools, free to start.',
+    description: 'Rank on Google and get cited by ChatGPT, Perplexity & AI Overviews. One platform for SEO, GEO & AEO. 23 AI tools, free to start.',
     url: '/',
     images: [{ url: '/opengraph-image', width: 1200, height: 628, alt: 'Optmizly – AI Search Optimization Platform' }],
   },

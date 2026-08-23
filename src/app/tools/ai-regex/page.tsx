@@ -108,7 +108,7 @@ export default function PublicAiRegexPage() {
 
         <div className="mt-12 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-6 text-center">
           <p className="text-sm text-slate-700 font-semibold">
-            Optmizly is an SEO platform with 22 tools — rank tracking, content scoring, backlink
+            Optmizly is an SEO platform with 23 tools — rank tracking, content scoring, backlink
             analysis, Search Console integration and more.
           </p>
           <Link
