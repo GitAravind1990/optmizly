@@ -1989,3 +1989,123 @@ export function exportKeywordListPDF(data: KeywordListData) {
 
   downloadPDF('Optmizly Keyword Research', html)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEO CLIENT FINDER — PROSPECT PROPOSAL
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ProposalFinding = {
+  category: string
+  severity: 'critical' | 'high' | 'medium' | 'low'
+  title: string
+  description: string
+  recommendation: string
+}
+
+export type ProposalProspect = {
+  name: string
+  website: string | null
+  location: string
+  findings: ProposalFinding[]
+}
+
+/**
+ * Escapes text before it reaches the proposal's HTML.
+ *
+ * Not optional here. Finding descriptions quote the prospect's own page back at them - the
+ * title text is interpolated into one of them - so this document carries strings authored by
+ * a third-party website we fetched. Writing them into document.write() unescaped is script
+ * execution in the user's browser, which is the same shape as the XSS already fixed once on
+ * the public client-report page.
+ */
+function esc(v: unknown): string {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const SEVERITY_LABELS: Record<ProposalFinding['severity'], string> = {
+  critical: 'Critical', high: 'High priority', medium: 'Worth fixing', low: 'Minor',
+}
+const SEVERITY_CLASS: Record<ProposalFinding['severity'], string> = {
+  critical: 'high', high: 'high', medium: 'medium', low: 'low',
+}
+
+/**
+ * A client-facing SEO audit an agency can send to the prospect.
+ *
+ * Deliberately does NOT carry the SEO Opportunity Score or the AI sales angle. Both are
+ * written for the agency: the score measures how much work there is to sell, and the angle
+ * is a note on how to open the conversation. Putting either in a document addressed to the
+ * business itself would be showing them the wrong side of the transaction.
+ *
+ * What it does carry is every finding, its severity and what to do about it - which is the
+ * part that is true regardless of who is reading.
+ */
+export function exportProspectProposalPDF(prospect: ProposalProspect, agencyName?: string) {
+  const bySeverity = (s: ProposalFinding['severity']) => prospect.findings.filter(f => f.severity === s)
+  const counts = {
+    critical: bySeverity('critical').length,
+    high: bySeverity('high').length,
+    medium: bySeverity('medium').length,
+    low: bySeverity('low').length,
+  }
+  const total = prospect.findings.length
+
+  const summary = total === 0
+    ? 'We reviewed the homepage and found no significant technical or on-page issues.'
+    : `We reviewed the homepage and found ${total} issue${total === 1 ? '' : 's'}: `
+      + [
+          counts.critical ? `${counts.critical} critical` : null,
+          counts.high ? `${counts.high} high priority` : null,
+          counts.medium ? `${counts.medium} worth fixing` : null,
+          counts.low ? `${counts.low} minor` : null,
+        ].filter(Boolean).join(', ') + '.'
+
+  const section = (sev: ProposalFinding['severity']) => {
+    const items = bySeverity(sev)
+    if (items.length === 0) return ''
+    return `<h2>${esc(SEVERITY_LABELS[sev])}</h2>` + items.map(f => `
+      <div style="margin:0 0 14px;padding:10px 12px;border-left:3px solid #2563eb;background:#f8fafc">
+        <p style="margin:0 0 4px"><strong>${esc(f.title)}</strong>
+          <span class="badge ${SEVERITY_CLASS[sev]}">${esc(f.category)}</span></p>
+        <p style="margin:0 0 6px">${esc(f.description)}</p>
+        <p style="margin:0"><strong>Recommendation:</strong> ${esc(f.recommendation)}</p>
+      </div>`).join('')
+  }
+
+  const preparedBy = agencyName?.trim()
+    ? `<p class="meta">Prepared by ${esc(agencyName)}</p>`
+    : ''
+
+  downloadPDF(`SEO Audit - ${prospect.name}`, `
+    <h1>SEO Audit &amp; Proposal</h1>
+    <p class="meta">
+      <strong>${esc(prospect.name)}</strong><br/>
+      ${esc(prospect.location)}<br/>
+      ${prospect.website ? esc(prospect.website) + '<br/>' : ''}
+      ${new Date().toLocaleDateString()}
+    </p>
+    ${preparedBy}
+
+    <h2>Summary</h2>
+    <p>${esc(summary)}</p>
+    <p>Each item below was checked directly against the live homepage. Nothing here is an
+    estimate or a prediction &mdash; it is what the page currently does or does not do.</p>
+
+    ${section('critical')}
+    ${section('high')}
+    ${section('medium')}
+    ${section('low')}
+
+    <h2>Next steps</h2>
+    <p>The critical and high-priority items above are the ones worth addressing first: they
+    affect how search engines read the site and how it appears to visitors. Most can be
+    resolved without redesigning the site.</p>
+    <p class="meta">This audit covers the homepage only. A full review would also examine
+    interior pages, site speed, backlinks and local listings.</p>
+  `)
+}

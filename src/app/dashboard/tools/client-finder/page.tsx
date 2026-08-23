@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Badge, Button, LockedState, Spinner } from '@/components/ui'
 import { UpgradeModal } from '@/components/upgrade-modal'
+import { exportProspectProposalPDF, type ProposalFinding } from '@/lib/export'
 
 type OpportunityLevel = 'Low' | 'Moderate' | 'Good' | 'High'
 type ProspectStatus = 'ANALYZED' | 'WEBSITE_UNAVAILABLE' | 'NO_WEBSITE'
@@ -17,6 +18,7 @@ interface Prospect {
   opportunityScore: number
   opportunityLevel: OpportunityLevel
   topIssues: string[]
+  findings: ProposalFinding[]
   salesAngle: string | null
   status: ProspectStatus
   siteReachable: boolean
@@ -49,6 +51,13 @@ function levelVariant(level: OpportunityLevel): 'green' | 'amber' | 'red' | 'gra
 /** The staged text is honest about being a stage, not a progress bar: this is one request
  *  and the client cannot see inside it, so the steps advance on a timer that matches the
  *  server's actual order rather than pretending to measure it. */
+const SEVERITY_STYLE: Record<ProposalFinding['severity'], { label: string; cls: string }> = {
+  critical: { label: 'Critical',     cls: 'bg-red-50 text-red-700 border-red-200' },
+  high:     { label: 'High',         cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  medium:   { label: 'Medium',       cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  low:      { label: 'Low',          cls: 'bg-slate-100 text-slate-600 border-slate-200' },
+}
+
 const STAGES = ['Finding businesses...', 'Checking websites...', 'Scoring opportunities...']
 
 export default function ClientFinderPage() {
@@ -64,6 +73,13 @@ export default function ClientFinderPage() {
   const [meta, setMeta] = useState<SearchMeta | null>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [plan, setPlan] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  // Persisted so an agency types it once, not on every proposal they send.
+  const [agencyName, setAgencyName] = useState('')
+
+  useEffect(() => {
+    try { setAgencyName(localStorage.getItem('optmizly.agencyName') ?? '') } catch { /* private mode */ }
+  }, [])
 
   useEffect(() => {
     fetch('/api/user')
@@ -196,6 +212,20 @@ export default function ClientFinderPage() {
 
               {/* Stated plainly, because the number is easy to misread as a ranking. */}
               {withSites.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="text-xs text-slate-500">Your agency name</label>
+                  <input
+                    value={agencyName}
+                    onChange={e => {
+                      setAgencyName(e.target.value)
+                      try { localStorage.setItem('optmizly.agencyName', e.target.value) } catch { /* private mode */ }
+                    }}
+                    placeholder="appears on exported proposals"
+                    className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 w-64" />
+                </div>
+              )}
+
+              {withSites.length > 0 && (
                 <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
                   <span className="font-bold">SEO Opportunity Score</span> measures how many fixable
                   problems a homepage has — how much there is to sell. A higher score means more
@@ -241,6 +271,44 @@ export default function ClientFinderPage() {
                     <div className="mt-3 flex gap-4 text-xs text-slate-500">
                       {p.rating !== null && <span>{p.rating.toFixed(1)} on Google</span>}
                       {p.phone && <span>{p.phone}</span>}
+                    </div>
+                  )}
+
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-3 flex-wrap">
+                    <button
+                      onClick={() => setExpanded(expanded === p.id ? null : p.id)}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700">
+                      {expanded === p.id ? 'Hide detailed analysis' : `Detailed analysis (${p.findings.length} issue${p.findings.length === 1 ? '' : 's'})`}
+                    </button>
+                    <button
+                      onClick={() => exportProspectProposalPDF(
+                        { name: p.name, website: p.website, location: p.location, findings: p.findings },
+                        agencyName)}
+                      disabled={p.findings.length === 0}
+                      className="text-xs font-bold text-slate-600 hover:text-slate-900 disabled:opacity-40">
+                      Export proposal (PDF)
+                    </button>
+                  </div>
+
+                  {expanded === p.id && (
+                    <div className="mt-3 space-y-3">
+                      {/* Everything the deterministic checker found, not just the top three.
+                          This is the same set the exported proposal is built from. */}
+                      {p.findings.map((f, i) => (
+                        <div key={i} className="border border-slate-200 rounded-xl p-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${SEVERITY_STYLE[f.severity].cls}`}>
+                              {SEVERITY_STYLE[f.severity].label}
+                            </span>
+                            <span className="text-xs text-slate-400">{f.category}</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-900 mt-1.5">{f.title}</p>
+                          <p className="text-sm text-slate-600 mt-1">{f.description}</p>
+                          <p className="text-sm text-slate-700 mt-2">
+                            <span className="font-bold">Fix:</span> {f.recommendation}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

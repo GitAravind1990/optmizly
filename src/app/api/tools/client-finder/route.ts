@@ -234,9 +234,12 @@ export async function POST(req: NextRequest) {
     }
 
     return apiSuccess({
-      // findings are dropped from the response: the UI shows the top three issues, and
-      // shipping every finding for ten sites is payload nobody reads.
-      prospects: [...analyzed, ...unreachable, ...noWebsite].map(({ findings: _findings, rank: _rank, ...p }) => p),
+      // Findings now travel with the response. They were stripped when the UI only showed
+      // three issues per card, but the detailed analysis and the exported proposal are both
+      // built from the full set - and they are already computed here, so returning them
+      // costs nothing beyond payload where re-deriving them would mean fetching every
+      // homepage a second time. Ten sites of findings is roughly 20KB.
+      prospects: [...analyzed, ...unreachable, ...noWebsite].map(({ rank: _rank, ...p }) => p),
       searchMeta: {
         industry: industry.trim(),
         location: location.trim(),
