@@ -78,7 +78,12 @@ export function extractContacts(html: string, finalUrl: string): ExtractedContac
 
   for (const href of hrefs) {
     if (!/^mailto:/i.test(href)) continue
-    const address = href.replace(/^mailto:/i, '').split('?')[0].trim().toLowerCase()
+    let address = href.replace(/^mailto:/i, '').split('?')[0]
+    // Percent-decoded before anything else. Seen live: mailto:%20info@example.co.uk, which
+    // otherwise yields "%20info@..." beside the clean address - the same mailbox twice, and
+    // the broken copy is the one someone might paste into a mail client.
+    try { address = decodeURIComponent(address) } catch { /* leave as-is if malformed */ }
+    address = address.trim().toLowerCase()
     if (/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(address) && !NOISE_EMAIL.test(address)) emails.add(address)
   }
 
@@ -108,18 +113,32 @@ export function extractContacts(html: string, finalUrl: string): ExtractedContac
   }
 
   // ── Socials ───────────────────────────────────────────────────────────────
-  const socials = new Set<string>()
+  //   host -> profile URL. Keyed by host so one account per network survives: a footer that
+  //   links the profile and three of its posts is one Instagram presence, not four.
+  const socialByHost = new Map<string, string>()
   for (const href of hrefs) {
     if (!/^https?:\/\//i.test(href)) continue
     try {
       const u = new URL(href)
       if (!SOCIAL_HOSTS.test(u.host)) continue
-      // A bare share button points at the network's own root; only profile links are useful.
-      if (u.pathname.replace(/\/+$/, '').length <= 1) continue
-      if (/\/(sharer|share|intent)\b/i.test(u.pathname)) continue
-      socials.add(`${u.origin}${u.pathname.replace(/\/+$/, '')}`)
+
+      const path = u.pathname.replace(/\/+$/, '')
+      // A bare share button points at the network's own root.
+      if (path.length <= 1) continue
+      // Posts, reels, tag pages and share intents are content, not accounts. Seen live: one
+      // prospect produced four Instagram entries that were posts rather than profiles.
+      if (/^\/(p|reel|reels|tv|explore|hashtag|share|sharer|intent|posts|photo|status|search)\b/i.test(path)) continue
+
+      // First path segment is the handle; keep the shortest link to it.
+      const handle = path.split('/').filter(Boolean)[0]
+      if (!handle) continue
+      const host = u.host.replace(/^www\./i, '')
+      const existing = socialByHost.get(host)
+      const candidate = `${u.origin}/${handle}`
+      if (!existing || candidate.length < existing.length) socialByHost.set(host, candidate)
     } catch { /* unparseable href */ }
   }
+  const socials = new Set<string>(socialByHost.values())
 
   // ── Contact page ──────────────────────────────────────────────────────────
   let contactPageUrl: string | null = null
