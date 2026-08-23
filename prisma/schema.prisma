@@ -56,6 +56,7 @@ model User {
   searchConsoleConnection SearchConsoleConnection?
   gscQueryRows            GscQueryRow[]            @relation("GscQueryRows")
   dailyToolUsage          DailyToolUsage[]         @relation("DailyToolUsage")
+  clientFinderSearches    ClientFinderSearch[]
 }
 
 /// Per-day, per-tool usage, for tools capped daily rather than by the monthly Usage
@@ -1158,4 +1159,32 @@ model CronRun {
 
   @@index([job, ranAt])
   @@index([ranAt])
+}
+
+/// One saved SEO Client Finder search, so an agency can revisit prospects without
+/// re-running (and re-paying for) the discovery.
+///
+/// The prospects are stored as a JSON blob rather than normalised into prospect and
+/// finding tables. That is deliberate for this stage: nothing queries across prospects,
+/// the results are a snapshot of a moment rather than living records, and a schema for
+/// prospects would commit to a shape the tool is still changing. Roughly 20-30KB per
+/// search. Normalise when something actually needs to ask a question across them.
+model ClientFinderSearch {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  industry String
+  location String
+  service  String?
+
+  /// The full prospects array exactly as the API returned it, findings included.
+  prospects String @db.Text
+
+  found    Int
+  analyzed Int
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

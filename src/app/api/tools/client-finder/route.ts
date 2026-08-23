@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { Plan } from '@prisma/client'
 import { requireToolAccess, AuthError } from '@/lib/auth'
 import { apiError, apiSuccess } from '@/lib/api'
@@ -233,13 +234,56 @@ export async function POST(req: NextRequest) {
       if (s.topThreeIssues.length > 0) p.topIssues = s.topThreeIssues
     }
 
+    const payload = [...analyzed, ...unreachable, ...noWebsite].map(({ rank: _rank, ...p }) => p)
+
+    // Saved so prospects can be revisited without re-running discovery, which costs a paid
+    // Places request and up to ten homepage fetches. Saved unconditionally rather than
+    // behind a button: the agency does not know at this moment which searches they will
+    // want later, and the cost of keeping one is a few tens of kilobytes.
+    //
+    // Failure here must not fail the search. The user has the results in the response
+    // either way, and losing the ability to revisit them is a far smaller harm than losing
+    // the search that was just paid for.
+    let savedSearchId: string | null = null
+    try {
+      const saved = await prisma.clientFinderSearch.create({
+        data: {
+          userId: user.userId,
+          industry: industry.trim(),
+          location: location.trim(),
+          service: typeof service === 'string' && service.trim() ? service.trim() : null,
+          prospects: JSON.stringify(payload),
+          found: prospects.length,
+          analyzed: analyzed.length,
+        },
+        select: { id: true },
+      })
+      savedSearchId = saved.id
+
+      // Keep the last 50 per user. Unbounded history would grow at ~25KB a search with
+      // nothing ever reading the old ones, and a retention rule nobody wrote is how a
+      // table becomes a problem two years later.
+      const stale = await prisma.clientFinderSearch.findMany({
+        where: { userId: user.userId },
+        orderBy: { createdAt: 'desc' },
+        skip: 50,
+        select: { id: true },
+      })
+      if (stale.length > 0) {
+        await prisma.clientFinderSearch.deleteMany({ where: { id: { in: stale.map(r => r.id) } } })
+      }
+    } catch (e) {
+      console.error('[client-finder] could not save search:', e instanceof Error ? e.message : e)
+    }
+
     return apiSuccess({
+      savedSearchId,
       // Findings now travel with the response. They were stripped when the UI only showed
       // three issues per card, but the detailed analysis and the exported proposal are both
       // built from the full set - and they are already computed here, so returning them
       // costs nothing beyond payload where re-deriving them would mean fetching every
       // homepage a second time. Ten sites of findings is roughly 20KB.
-      prospects: [...analyzed, ...unreachable, ...noWebsite].map(({ rank: _rank, ...p }) => p),
+      prospects: payload,
       searchMeta: {
         industry: industry.trim(),
         location: location.trim(),

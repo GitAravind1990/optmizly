@@ -24,6 +24,16 @@ interface Prospect {
   siteReachable: boolean
 }
 
+interface SavedSearch {
+  id: string
+  industry: string
+  location: string
+  service: string | null
+  found: number
+  analyzed: number
+  createdAt: string
+}
+
 interface SearchMeta {
   industry: string
   location: string
@@ -82,6 +92,9 @@ export default function ClientFinderPage() {
   const [drafting, setDrafting] = useState<string | null>(null)
   const [draftError, setDraftError] = useState<Record<string, string>>({})
   const [copied, setCopied] = useState<string | null>(null)
+  const [saved, setSaved] = useState<SavedSearch[]>([])
+  const [loadingSaved, setLoadingSaved] = useState<string | null>(null)
+  const [showSaved, setShowSaved] = useState(false)
 
   useEffect(() => {
     try { setAgencyName(localStorage.getItem('optmizly.agencyName') ?? '') } catch { /* private mode */ }
@@ -103,6 +116,16 @@ export default function ClientFinderPage() {
     return () => timers.forEach(clearTimeout)
   }, [loading])
 
+  const refreshSaved = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tools/client-finder/searches')
+      const data = await res.json()
+      if (res.ok) setSaved(data.searches ?? [])
+    } catch { /* the list is a convenience; a failure here should not surface as an error */ }
+  }, [])
+
+  useEffect(() => { refreshSaved() }, [refreshSaved])
+
   const run = useCallback(async () => {
     if (!industry.trim() || !location.trim()) {
       setError('Industry and location are both required.')
@@ -122,12 +145,53 @@ export default function ClientFinderPage() {
       if (!res.ok) throw new Error(data.error ?? 'Search failed')
       setProspects(data.prospects ?? [])
       setMeta(data.searchMeta ?? null)
+      refreshSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Search failed')
     } finally {
       setLoading(false)
     }
-  }, [industry, location, service, limit])
+  }, [industry, location, service, limit, refreshSaved])
+
+  /**
+   * Opens a saved search. Costs nothing: it reads stored results rather than re-running
+   * discovery, so no Places request, no homepage fetches, no daily search consumed.
+   */
+  const openSaved = useCallback(async (id: string) => {
+    setLoadingSaved(id)
+    setError('')
+    try {
+      const res = await fetch(`/api/tools/client-finder/searches/${id}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Could not open that search')
+      setProspects(data.prospects ?? [])
+      setMeta({
+        industry: data.search.industry,
+        location: data.search.location,
+        found: data.search.found,
+        analyzed: data.search.analyzed,
+        unreachable: (data.prospects ?? []).filter((p: Prospect) => p.status === 'WEBSITE_UNAVAILABLE').length,
+        noWebsite: (data.prospects ?? []).filter((p: Prospect) => p.status === 'NO_WEBSITE').length,
+        aiSummaries: (data.prospects ?? []).some((p: Prospect) => p.salesAngle),
+        // Reading a saved search does not touch the daily allowance, so the counter from
+        // the live search would be wrong here. Hidden rather than shown stale.
+        usage: { used: 0, limit: 0, remaining: 0 },
+      })
+      setExpanded(null)
+      setShowSaved(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not open that search')
+    } finally {
+      setLoadingSaved(null)
+    }
+  }, [])
+
+  const deleteSaved = useCallback(async (id: string) => {
+    try {
+      await fetch(`/api/tools/client-finder/searches/${id}`, { method: 'DELETE' })
+      setSaved(prev => prev.filter(x => x.id !== id))
+    } catch { /* leaving a stale row in the list is harmless */ }
+  }, [])
 
   const draftOutreach = useCallback(async (p: Prospect) => {
     setDrafting(p.id)
@@ -224,13 +288,52 @@ export default function ClientFinderPage() {
                 {loading && <Spinner size="sm" className="mr-2" />}
                 {loading ? STAGES[stage] : 'Find SEO Opportunities'}
               </Button>
-              {meta && (
+              {meta && meta.usage.limit > 0 && (
                 <span className="text-xs text-slate-500">
                   {meta.usage.used} of {meta.usage.limit} search{meta.usage.limit === 1 ? '' : 'es'} used today
                 </span>
               )}
+              {saved.length > 0 && (
+                <button onClick={() => setShowSaved(v => !v)}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700">
+                  {showSaved ? 'Hide saved searches' : `Saved searches (${saved.length})`}
+                </button>
+              )}
             </div>
           </div>
+
+          {showSaved && saved.length > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h2 className="text-sm font-black text-slate-900">Saved searches</h2>
+              <p className="text-xs text-slate-500 mt-0.5 mb-3">
+                Opening one costs nothing — it reads the stored results rather than searching again.
+              </p>
+              <ul className="divide-y divide-slate-100">
+                {saved.map(sv => (
+                  <li key={sv.id} className="py-2.5 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900">
+                        {sv.industry}{sv.service ? ` ${sv.service}` : ''} · {sv.location}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {sv.found} found · {sv.analyzed} analysed · {new Date(sv.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button onClick={() => openSaved(sv.id)} disabled={loadingSaved === sv.id}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-40">
+                        {loadingSaved === sv.id ? 'Opening…' : 'Open'}
+                      </button>
+                      <button onClick={() => deleteSaved(sv.id)}
+                        className="text-xs font-bold text-slate-400 hover:text-red-600">
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* ── Results ─────────────────────────────────────────────────── */}
           {prospects && (
