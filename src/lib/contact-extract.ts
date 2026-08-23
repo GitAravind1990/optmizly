@@ -65,8 +65,21 @@ function stripped(html: string): string {
  */
 function normalizePhone(raw: string): string | null {
   const cleaned = raw.replace(/^tel:/i, '').replace(/[^\d+]/g, '')
-  if (cleaned.replace(/\D/g, '').length < 7) return null
-  return cleaned.slice(0, 20)
+  const digits = cleaned.replace(/\D/g, '')
+
+  if (digits.length < 7) return null
+
+  // E.164 caps a full international number at 15 digits, so anything longer is not a phone
+  // number. Seen live: one firm's tel: href yielded "20016120720207057", 17 digits, which
+  // looks like two numbers run together by a broken template.
+  if (digits.length > 15) return null
+
+  // A national-format number (leading 0, no country code) does not reach 13 digits either.
+  // The same site produced "016120720207057" - 15 digits, inside the E.164 bound and still
+  // not dialable. Both bounds are needed; neither catches the other's case.
+  if (cleaned.startsWith('0') && digits.length > 12) return null
+
+  return cleaned
 }
 
 export function extractContacts(html: string, finalUrl: string): ExtractedContacts {
