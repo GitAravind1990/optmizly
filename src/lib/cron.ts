@@ -16,7 +16,7 @@ import { prisma } from './prisma'
  * watches, and if one stops firing the only symptom is an email that never arrives.
  */
 
-export type CronJob = 'health' | 'drip' | 'weekly' | 'trial-reminder' | 'gsc-sync'
+export type CronJob = 'health' | 'drip' | 'weekly' | 'gsc-sync'
 
 /**
  * Every scheduled job, with the gap after which its silence is itself a finding.
@@ -54,11 +54,6 @@ export const CRON_JOBS: Record<
   },
   drip: {
     label: 'Drip emails',
-    schedule: 'daily 09:00 UTC',
-    staleAfterMs: 26 * 60 * 60 * 1000,
-  },
-  'trial-reminder': {
-    label: 'Trial reminders',
     schedule: 'daily 09:00 UTC',
     staleAfterMs: 26 * 60 * 60 * 1000,
   },

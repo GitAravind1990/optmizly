@@ -15,7 +15,7 @@ const sections = [
   },
   {
     title: '3. Account Registration and Plans',
-    body: `You must create an account to use Optmizly. You are responsible for maintaining the confidentiality of your login credentials and for all activity under your account. Free accounts are limited to 3 analyses per month. Pro accounts are limited to 50 analyses per month. Agency accounts are limited to 200 analyses per month. Accounts on a free trial are limited to 10 analyses on Pro and 15 on Agency until the trial converts. Most tools count as one analysis. Tools that make more third-party API calls on your behalf count as two or three, and each one tells you its cost before you run it. Counting as three: Keyword Research, Competitor Spy, Ranking Engine, Geogrid and the Local SEO suite. Counting as two: Backlinks, Rank Tracker, SERP Audit, Review Velocity, Client Reports, AI Visibility, Content Gap and Content Planner. Unused analyses do not roll over. Two tools are limited per day instead of by monthly analyses and do not consume them: SEO Client Finder, limited to 50 searches per day, and AI Regex, limited to 1,000 runs per day — both available on Agency only. We reserve the right to modify plan limits with 30 days' notice.`,
+    body: `You must create an account to use Optmizly. You are responsible for maintaining the confidentiality of your login credentials and for all activity under your account. Free accounts are limited to 3 analyses per month. Pro accounts are limited to 50 analyses per month. Agency accounts are limited to 200 analyses per month. Most tools count as one analysis. Tools that make more third-party API calls on your behalf count as two or three, and each one tells you its cost before you run it. Counting as three: Keyword Research, Competitor Spy, Ranking Engine, Geogrid and the Local SEO suite. Counting as two: Backlinks, Rank Tracker, SERP Audit, Review Velocity, Client Reports, AI Visibility, Content Gap and Content Planner. Unused analyses do not roll over. Two tools are limited per day instead of by monthly analyses and do not consume them: SEO Client Finder, limited to 50 searches per day, and AI Regex, limited to 1,000 runs per day — both available on Agency only. We reserve the right to modify plan limits with 30 days' notice.`,
   },
   {
     title: '4. User Obligations',
@@ -27,7 +27,7 @@ const sections = [
   },
   {
     title: '6. Refund Policy',
-    body: `Pro and Agency plans include a 7-day free trial. A payment method is required to start the trial, but you will not be charged until the trial period ends. You may cancel at any time during the trial from your account settings and you will not be charged. Once a trial converts to a paid subscription (or for renewal charges on an existing subscription), charges are non-refundable except where required by applicable law. See our full Refund Policy at /refund-policy.`,
+    body: `Optmizly does not offer a free trial. Paid subscriptions are charged when you subscribe and again at the start of each renewal period. Charges are non-refundable except where required by applicable law, or where a billing error has occurred. You may cancel at any time from your account settings; cancelling stops the next renewal and your access continues until the end of the period you have already paid for. The Free plan requires no payment method and can be used for as long as you like. See our full Refund Policy at /refund-policy.`,
   },
   {
     title: '7. Intellectual Property',

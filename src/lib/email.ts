@@ -3,7 +3,6 @@ import { render } from '@react-email/components'
 import { WelcomeEmail } from '@/emails/welcome'
 import { SubscriptionEmail } from '@/emails/subscription'
 import { TrialStartedEmail } from '@/emails/trial-started'
-import { TrialEndingEmail } from '@/emails/trial-ending'
 import { CancelledEmail } from '@/emails/cancelled'
 import { LimitWarningEmail } from '@/emails/limit-warning'
 import { LimitReachedEmail } from '@/emails/limit-reached'
@@ -105,40 +104,6 @@ export async function sendTrialStartedEmail(
     console.log(`[Email] Trial started email sent to ${to}`)
   } catch (e) {
     console.error('[Email] Failed to send trial started email:', e)
-  }
-}
-
-// ── Trial ending soon ─────────────────────────────────────────────────────────
-export async function sendTrialEndingEmail(
-  to: string,
-  plan: 'Pro' | 'Agency',
-  amount: string,
-  firstName?: string,
-  trialEndDate?: string
-) {
-  try {
-    if (!resend) {
-      console.log(`[Email] Resend not configured, skipping trial ending email to ${to}`)
-      return
-    }
-    const html = await render(
-      TrialEndingEmail({
-        firstName,
-        plan,
-        amount,
-        dashboardUrl: `${APP_URL}/dashboard`,
-        trialEndDate,
-      })
-    )
-    await resend.emails.send({
-      from: FROM,
-      to,
-      subject: `Your Optmizly ${plan} trial ends soon`,
-      html,
-    })
-    console.log(`[Email] Trial ending email sent to ${to}`)
-  } catch (e) {
-    console.error('[Email] Failed to send trial ending email:', e)
   }
 }
 

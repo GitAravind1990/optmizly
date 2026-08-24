@@ -56,7 +56,7 @@ const plans = [
       'AI Visibility (Citation + Queries)',
       'Priority support',
     ],
-    cta: 'Start Pro Trial',
+    cta: 'Get Pro',
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID,
     annualProductId: process.env.NEXT_PUBLIC_DODO_PRO_ANNUAL_PRODUCT_ID,
@@ -80,7 +80,7 @@ const plans = [
       'Topical Authority Mapper',
       'AI Performance Fixer',
     ],
-    cta: 'Start Agency Trial',
+    cta: 'Get Agency',
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PRODUCT_ID,
     // Annual billing exists only on Agency. Absent until the product is configured, and the
@@ -101,13 +101,13 @@ function CheckoutButton({ productId, cta, featured, couponEligible }: {
   /** True only for the Agency annual product - the one plan a code may be used on. */
   couponEligible?: boolean
 }) {
-  const [loading, setLoading] = useState<'trial' | 'now' | null>(null)
+  const [loading, setLoading] = useState(false)
   const [coupon, setCoupon] = useState('')
   const [showCoupon, setShowCoupon] = useState(false)
   const [error, setError] = useState('')
 
-  async function handleCheckout(skipTrial: boolean) {
-    setLoading(skipTrial ? 'now' : 'trial')
+  async function handleCheckout() {
+    setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/checkout', {
@@ -117,7 +117,6 @@ function CheckoutButton({ productId, cta, featured, couponEligible }: {
         // rather than trusting it - see isCouponEligibleProduct - because this is a browser.
         body: JSON.stringify({
           productId,
-          skipTrial,
           ...(couponEligible && coupon.trim() ? { couponCode: coupon.trim() } : {}),
         }),
       })
@@ -130,15 +129,15 @@ function CheckoutButton({ productId, cta, featured, couponEligible }: {
     } catch {
       setError('Could not start checkout. Please try again.')
     } finally {
-      setLoading(null)
+      setLoading(false)
     }
   }
 
   return (
     <div>
       <button
-        onClick={() => handleCheckout(false)}
-        disabled={loading !== null}
+        onClick={handleCheckout}
+        disabled={loading}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           width: '100%', height: 52, borderRadius: 14, cursor: 'pointer',
@@ -149,25 +148,11 @@ function CheckoutButton({ productId, cta, featured, couponEligible }: {
             ? '0 8px 24px -8px rgba(0,0,255,0.45), inset 0 1px 0 rgba(255,255,255,0.2)'
             : '0 1px 3px rgba(11,17,32,0.08)',
           border: featured ? '1px solid transparent' : `1px solid ${T.line}`,
-          opacity: loading !== null ? 0.6 : 1,
+          opacity: loading ? 0.6 : 1,
         }}
       >
-        {loading === 'trial' ? 'Redirecting…' : cta} {loading !== 'trial' && '→'}
+        {loading ? 'Redirecting…' : cta} {!loading && '→'}
       </button>
-      <button
-        onClick={() => handleCheckout(true)}
-        disabled={loading !== null}
-        style={{
-          display: 'block', width: '100%', marginTop: 10, padding: '4px 0',
-          background: 'none', border: 'none', cursor: 'pointer',
-          fontFamily: T.sans, fontSize: 13, fontWeight: 500,
-          color: featured ? 'rgba(255,255,255,0.6)' : T.muted,
-          opacity: loading !== null ? 0.6 : 1,
-        }}
-      >
-        {loading === 'now' ? 'Redirecting…' : 'Skip trial, pay now'}
-      </button>
-
       {couponEligible && (
         <div style={{ marginTop: 10 }}>
           {!showCoupon ? (
@@ -430,7 +415,7 @@ export function PagePricing() {
         textAlign: 'center', marginTop: 36,
         fontSize: 14, fontWeight: 600, color: T.muted, fontFamily: T.sans,
       }}>
-        7-day free trial on Pro & Agency · Cancel anytime · Card required to start trial
+        Cancel anytime · No contract · Free plan needs no card
       </div>
 
       {/* ── FEATURE COMPARISON TABLE ── */}
@@ -543,8 +528,8 @@ const FAQS = [
     a: 'Yes. Cancel from your account settings at any time, no hoops, no waiting. You keep full access until the end of your current billing period.',
   },
   {
-    q: 'How does the free trial work?',
-    a: 'Pro and Agency plans include a 7-day free trial. We ask for a card to start, but you won\'t be charged until the trial ends. Cancel anytime before then from your account settings and you won\'t be charged at all.',
+    q: 'Can I try Optmizly before paying?',
+    a: 'Yes. The Free plan gives you 2 tools and 3 analyses a month with no card required, for as long as you like. Paid plans are charged when you subscribe – there is no free trial – and you can cancel at any time from your account settings, keeping access until the end of the period you have paid for.',
   },
   {
     q: 'Do I need API keys or anything installed?',

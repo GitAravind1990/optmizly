@@ -42,19 +42,19 @@ Adding a nav entry means updating the count in: `/login`, `/signup`, `PRO_BENEFI
 - Postinstall script forces Prisma generation
 - Webhook routes: /api/webhooks/dodo
 
-## Changing plans, limits, trials or billing
+## Changing plans, limits or billing
 
 These facts are stated in eight places and the code is only one of them. Every
 audit so far has found the code correct and the copy stale — the trial cap was
 fixed in the emails in July and still contradicted the Refund Policy three weeks
 later. When you change anything in `src/lib/plans.ts` (`PLAN_LIMITS`,
-`TRIAL_LIMITS`, `PLAN_TOOLS`), trial length, price, or cancellation behaviour,
-update these in the same commit:
+`PLAN_TOOLS`), price, billing frequency, or cancellation behaviour, update
+these in the same commit:
 
-- `/terms` — plan limits, trial caps, billing frequency, what cancelling does
-- `/refund-policy` — trial mechanics, what access survives a cancellation
+- `/terms` — plan limits, billing frequency, what cancelling does
+- `/refund-policy` — when the card is charged, what access survives a cancellation
 - `/privacy` — sub-processors, what is stored and for how long
-- `src/emails/` — `trial-started`, `limit-warning`, `limit-reached`,
+- `src/emails/` — `limit-warning`, `limit-reached`,
   `drip-day1/3/7`, `weekly-summary`, `cancelled`
 - `/pricing` — plan cards, comparison table, FAQ answers
 - Tool-count copy — upgrade modal, welcome banner, homepage dashboard mockup
@@ -68,9 +68,14 @@ they get a `2×`/`3×` badge in the sidebar automatically.
 
 Three rules learned the hard way:
 
-- **State the enforced number, not the marketed one.** A trial is capped at
-  10/15, not the 50/200 the plan advertises. Copy that promises the plan limit
-  sends trial users into a real 429.
+- **There is no free trial.** Removed 2026-08-25: checkout charges immediately
+  on every plan, and none of the four Dodo products carries a product-level
+  trial either. `TRIAL_LIMITS` and the `TRIALING` branches in `auth.ts`, the
+  webhook and `/dashboard/settings` are a deliberate backstop, not a live path —
+  nothing can create a `TRIALING` subscription today. Do not reintroduce trial
+  copy without reintroducing the trial. The free tier is the way to try it.
+- **State the enforced number, not the marketed one.** Copy that promises a
+  limit the code does not grant sends users into a real 429.
 - **Never say access continues if the code revokes it.** Terms, Refund Policy
   and the cancellation email all promise access until `currentPeriodEnd`; the
   webhook must not downgrade before then.

@@ -6,9 +6,9 @@ export const PLAN_LIMITS: Record<Plan, number> = {
   AGENCY: 200,
 }
 
-// Lower usage cap while a subscription is TRIALING, so a trial-and-cancel
-// can't run up the full paid-tier monthly quota's worth of AI/SEO-API cost
-// for free. Reverts to PLAN_LIMITS the moment the trial converts to paid.
+// Optmizly no longer offers a free trial, so nothing creates a TRIALING
+// subscription today. This cap is kept as a backstop: if one ever arrives from
+// Dodo's side, it must not carry the full paid-tier monthly quota.
 export const TRIAL_LIMITS: Record<Plan, number> = {
   FREE: 3,
   PRO: 10,
@@ -94,8 +94,3 @@ export function getMonthKey(): string {
   return new Date().toISOString().slice(0, 7)
 }
 
-// One trial per account, ever -- gated in the checkout route by whether a
-// Subscription row already exists for the user (never deleted except via
-// cascade-on-account-deletion, so this can't be gamed by re-triggering it).
-export const TRIAL_PERIOD_DAYS = 7
-export const TRIAL_REMINDER_DAYS_BEFORE = 3

@@ -6,35 +6,31 @@ export const metadata: Metadata = { title: 'Refund Policy – Optmizly' }
 
 const sections = [
   {
-    title: '1. How the Free Trial Works',
-    body: `Pro and Agency plans include a 7-day free trial. A payment method is required to start the trial, but you will not be charged until the trial period ends. Every tool included in your plan is unlocked for the whole trial. Usage during the trial is capped at 10 analyses on Pro and 15 on Agency, rather than the full monthly allowance of 50 and 200; the full allowance applies as soon as the trial converts to a paid subscription.`,
+    title: '1. Paid Plans and Billing',
+    body: `Optmizly does not offer a free trial. Pro and Agency are paid subscriptions: your payment method is charged when you subscribe, and again at the start of each renewal period. Pro is billed monthly. Agency is billed either monthly or annually, whichever you choose at checkout. If you want to try Optmizly without paying, the Free plan requires no payment method and can be used for as long as you like.`,
   },
   {
-    title: '2. Cancelling During Your Trial',
-    body: `You may cancel at any time during your 7-day trial from your account settings. If you cancel before the trial ends, you will not be charged. Your access continues until the end of the trial period even after cancelling.`,
+    title: '2. Cancelling',
+    body: `You may cancel at any time from your account settings. Cancelling stops the next renewal; it is not a refund of the period you are currently in. Your access to paid features continues until the end of the period you have already paid for. Charges already taken are non-refundable except where required by applicable law or as described below.`,
   },
   {
-    title: '3. After Your Trial Converts to a Paid Subscription',
-    body: `If you do not cancel before your trial ends, your payment method will be automatically charged for the plan you selected, and your subscription will continue on a recurring monthly basis. Charges after your trial converts are non-refundable except where required by applicable law or as described below.`,
-  },
-  {
-    title: '4. Renewals',
+    title: '3. Renewals',
     body: `Subscriptions automatically renew at the end of each billing period. If you do not wish to be charged for a renewal, you must cancel before the renewal date. Cancelling takes effect at the end of your current billing period, and you retain access to paid features until then. No partial refunds are issued for unused time within a billing period.`,
   },
   {
-    title: '5. Billing Errors',
+    title: '4. Billing Errors',
     body: `If you believe you were charged in error – for example, a duplicate charge, or a charge after you cancelled – contact us at support@Optmizly.com with your registered email address and the date of the charge. We will investigate and issue a refund if a billing error is confirmed. We aim to process confirmed refunds within 3–5 business days; depending on your bank or card issuer, it may take an additional 5–10 business days for funds to appear.`,
   },
   {
-    title: '6. Chargebacks',
+    title: '5. Chargebacks',
     body: `We ask that you contact us at support@Optmizly.com before initiating a chargeback with your bank or card issuer. Chargebacks are costly and time-consuming for both parties. If a chargeback is filed without prior contact, we reserve the right to suspend your account pending resolution and to contest the chargeback. Fraudulent chargebacks may result in permanent account termination.`,
   },
   {
-    title: '7. Consumer Rights',
+    title: '6. Consumer Rights',
     body: `Nothing in this Refund Policy limits your statutory rights under applicable consumer protection law. If you are based in the EU or UK, you may have additional rights under the Consumer Rights Directive or Consumer Contracts Regulations, including a statutory cooling-off period for digital services. If you have begun using the Service and subsequently request a cancellation, a proportional deduction may apply under applicable law.`,
   },
   {
-    title: '8. Contact',
+    title: '7. Contact',
     body: `For billing questions or refund requests, contact us at support@Optmizly.com. We aim to respond within 1 business day.`,
   },
 ]
@@ -50,7 +46,7 @@ export default function RefundPolicyPage() {
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-6 py-4 mb-12">
           <p className="text-blue-800 font-semibold text-sm">
-            7-Day Free Trial – Try Pro or Agency free for 7 days. Cancel anytime before your trial ends and you won&apos;t be charged.
+            Free plan, no card required – Try Optmizly on the Free plan for as long as you like. Paid plans are charged when you subscribe and can be cancelled at any time.
           </p>
         </div>
 
