@@ -518,6 +518,10 @@ const FAQS = [
     a: 'No. Optmizly is fully hosted and all AI analysis is included in your plan — you never need an AI provider key or any third-party setup to use it. Agency plan users can optionally connect Google Search Console for deeper SEO Audit insights, but it\'s never required.',
   },
   {
+    q: 'Can I pay annually?',
+    a: 'Agency can be billed monthly at $49 or annually at $588, chosen at checkout \u2013 the annual price is twelve months at the same rate, so paying yearly costs the same and simply renews once instead of twelve times. Pro is monthly only. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full $588 after that.',
+  },
+  {
     q: 'Can I upgrade or downgrade?',
     a: 'Yes. Upgrade instantly from your dashboard settings. The new limits apply immediately. Downgrades take effect at the start of your next billing cycle.',
   },
