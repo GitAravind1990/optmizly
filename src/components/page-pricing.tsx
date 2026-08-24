@@ -59,6 +59,9 @@ const plans = [
     cta: 'Start Pro Trial',
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID,
+    annualProductId: process.env.NEXT_PUBLIC_DODO_PRO_ANNUAL_PRODUCT_ID,
+    annualPrice: '$228',
+    annualPeriod: '/yr',
   },
   {
     name: 'Agency',
@@ -86,6 +89,8 @@ const plans = [
     annualProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_ANNUAL_PRODUCT_ID,
     annualPrice: '$588',
     annualPeriod: '/yr',
+    /** Only this plan accepts a discount code. Mirrors isCouponEligibleProduct on the server. */
+    couponEligible: true,
   },
 ]
 
@@ -206,7 +211,7 @@ function CheckoutButton({ productId, cta, featured, couponEligible }: {
 export function PagePricing() {
   // Only Agency has an annual option, so one flag covers the page. Defaults to monthly so
   // the advertised headline price stays the one people already know.
-  const [agencyAnnual, setAgencyAnnual] = useState(false)
+  const [annualBilling, setAnnualBilling] = useState(false)
 
   return (
     <section id="pricing" style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(64px,8vw,120px) clamp(20px,4vw,32px)' }}>
@@ -240,7 +245,7 @@ export function PagePricing() {
       }}>
         {plans.map((p) => {
         // True only for the Agency card, and only when its annual product is configured.
-        const isAnnual = !!p.annualProductId && agencyAnnual
+        const isAnnual = !!p.annualProductId && annualBilling
         return (
           <div key={p.name} className={p.featured ? 'pricing-card-featured' : ''} style={{
             padding: 32, borderRadius: 24, position: 'relative', overflow: 'hidden',
@@ -293,11 +298,11 @@ export function PagePricing() {
               {p.annualProductId && (
                 <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
                   {([['monthly', 'Monthly'], ['annual', 'Annual']] as const).map(([key, label]) => {
-                    const active = (key === 'annual') === agencyAnnual
+                    const active = (key === 'annual') === annualBilling
                     return (
                       <button
                         key={key}
-                        onClick={() => setAgencyAnnual(key === 'annual')}
+                        onClick={() => setAnnualBilling(key === 'annual')}
                         style={{
                           flex: 1, height: 34, borderRadius: 10, cursor: 'pointer',
                           fontFamily: T.sans, fontSize: 13, fontWeight: 600,
@@ -342,7 +347,7 @@ export function PagePricing() {
                     productId={isAnnual ? p.annualProductId! : p.checkoutProductId}
                     cta={p.cta}
                     featured={p.featured ?? false}
-                    couponEligible={isAnnual}
+                    couponEligible={isAnnual && p.couponEligible === true}
                   />
                 ) : (
                   <Link href="/dashboard" style={{

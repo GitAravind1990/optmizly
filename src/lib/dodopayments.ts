@@ -32,6 +32,8 @@ export const DODO_PRODUCT_IDS = {
   AGENCY: process.env.NEXT_PUBLIC_DODO_AGENCY_PRODUCT_ID || '',
   /** Yearly billing for the same Agency plan. Empty until the product exists in Dodo. */
   AGENCY_ANNUAL: process.env.NEXT_PUBLIC_DODO_AGENCY_ANNUAL_PRODUCT_ID || '',
+  /** Yearly billing for the same Pro plan. Empty until the product exists in Dodo. */
+  PRO_ANNUAL: process.env.NEXT_PUBLIC_DODO_PRO_ANNUAL_PRODUCT_ID || '',
 } as const
 
 /**
@@ -49,6 +51,7 @@ export function getPlanFromProductId(productId: string): 'PRO' | 'AGENCY' | 'FRE
   if (productId === DODO_PRODUCT_IDS.AGENCY) return 'AGENCY'
   if (DODO_PRODUCT_IDS.AGENCY_ANNUAL && productId === DODO_PRODUCT_IDS.AGENCY_ANNUAL) return 'AGENCY'
   if (productId === DODO_PRODUCT_IDS.PRO) return 'PRO'
+  if (DODO_PRODUCT_IDS.PRO_ANNUAL && productId === DODO_PRODUCT_IDS.PRO_ANNUAL) return 'PRO'
   return 'FREE'
 }
 
