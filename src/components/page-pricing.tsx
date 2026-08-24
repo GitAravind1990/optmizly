@@ -80,22 +80,50 @@ const plans = [
     cta: 'Start Agency Trial',
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PRODUCT_ID,
+    // Annual billing exists only on Agency. Absent until the product is configured, and the
+    // toggle simply does not render - so an unset variable degrades to today's behaviour
+    // rather than to a broken checkout.
+    annualProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_ANNUAL_PRODUCT_ID,
+    annualPrice: '$588',
+    annualPeriod: '/yr',
   },
 ]
 
-function CheckoutButton({ productId, cta, featured }: { productId: string; cta: string; featured: boolean }) {
+function CheckoutButton({ productId, cta, featured, couponEligible }: {
+  productId: string
+  cta: string
+  featured: boolean
+  /** True only for the Agency annual product - the one plan a code may be used on. */
+  couponEligible?: boolean
+}) {
   const [loading, setLoading] = useState<'trial' | 'now' | null>(null)
+  const [coupon, setCoupon] = useState('')
+  const [showCoupon, setShowCoupon] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleCheckout(skipTrial: boolean) {
     setLoading(skipTrial ? 'now' : 'trial')
+    setError('')
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, skipTrial }),
+        // The code is only ever sent for the eligible product. The server checks this again
+        // rather than trusting it - see isCouponEligibleProduct - because this is a browser.
+        body: JSON.stringify({
+          productId,
+          skipTrial,
+          ...(couponEligible && coupon.trim() ? { couponCode: coupon.trim() } : {}),
+        }),
       })
       const data = await res.json()
-      if (data.url) window.location.href = data.url
+      if (data.url) { window.location.href = data.url; return }
+      // Previously this branch did nothing at all: a rejected checkout left the button idle
+      // with no explanation. It matters more now, because refusing a code is a 400 with a
+      // message the buyer needs to read.
+      setError(data.error ?? 'Could not start checkout. Please try again.')
+    } catch {
+      setError('Could not start checkout. Please try again.')
     } finally {
       setLoading(null)
     }
@@ -134,11 +162,52 @@ function CheckoutButton({ productId, cta, featured }: { productId: string; cta: 
       >
         {loading === 'now' ? 'Redirecting…' : 'Skip trial, pay now'}
       </button>
+
+      {couponEligible && (
+        <div style={{ marginTop: 10 }}>
+          {!showCoupon ? (
+            <button
+              onClick={() => setShowCoupon(true)}
+              style={{
+                display: 'block', width: '100%', padding: '4px 0',
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: T.sans, fontSize: 13, fontWeight: 500,
+                color: featured ? 'rgba(255,255,255,0.6)' : T.muted,
+              }}
+            >
+              Have a code?
+            </button>
+          ) : (
+            <input
+              value={coupon}
+              onChange={e => setCoupon(e.target.value.toUpperCase())}
+              placeholder="Discount code"
+              autoFocus
+              style={{
+                width: '100%', height: 40, borderRadius: 10, padding: '0 12px',
+                fontFamily: T.sans, fontSize: 14, letterSpacing: 0.5,
+                border: `1px solid ${T.line}`, background: '#fff', color: T.ink,
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {error && (
+        <p style={{
+          margin: '10px 0 0', fontFamily: T.sans, fontSize: 13, lineHeight: 1.4,
+          color: featured ? '#FCA5A5' : '#DC2626',
+        }}>{error}</p>
+      )}
     </div>
   )
 }
 
 export function PagePricing() {
+  // Only Agency has an annual option, so one flag covers the page. Defaults to monthly so
+  // the advertised headline price stays the one people already know.
+  const [agencyAnnual, setAgencyAnnual] = useState(false)
+
   return (
     <section id="pricing" style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(64px,8vw,120px) clamp(20px,4vw,32px)' }}>
       {/* Section head */}
@@ -169,7 +238,10 @@ export function PagePricing() {
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
         gap: 22, marginTop: 60, alignItems: 'start',
       }}>
-        {plans.map((p) => (
+        {plans.map((p) => {
+        // True only for the Agency card, and only when its annual product is configured.
+        const isAnnual = !!p.annualProductId && agencyAnnual
+        return (
           <div key={p.name} className={p.featured ? 'pricing-card-featured' : ''} style={{
             padding: 32, borderRadius: 24, position: 'relative', overflow: 'hidden',
             background: p.featured ? T.ink900 : '#fff',
@@ -208,12 +280,38 @@ export function PagePricing() {
                 <span style={{
                   fontFamily: T.sans, fontSize: 52, fontWeight: 600, letterSpacing: -2.4, lineHeight: 1,
                   color: p.featured ? '#fff' : (p.color === 'amber' ? '#D97706' : T.ink),
-                }}>{p.price}</span>
+                }}>{isAnnual ? p.annualPrice : p.price}</span>
                 <span style={{
                   fontSize: 16,
                   color: p.featured ? 'rgba(255,255,255,0.6)' : T.muted,
-                }}>{p.period}</span>
+                }}>{isAnnual ? p.annualPeriod : p.period}</span>
               </div>
+
+              {/* Billing switch, Agency only. Hidden entirely when the annual product is not
+                  configured, so a missing env var shows today's page rather than a toggle
+                  that leads to a checkout with no product behind it. */}
+              {p.annualProductId && (
+                <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+                  {([['monthly', 'Monthly'], ['annual', 'Annual']] as const).map(([key, label]) => {
+                    const active = (key === 'annual') === agencyAnnual
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setAgencyAnnual(key === 'annual')}
+                        style={{
+                          flex: 1, height: 34, borderRadius: 10, cursor: 'pointer',
+                          fontFamily: T.sans, fontSize: 13, fontWeight: 600,
+                          background: active ? (p.featured ? 'rgba(255,255,255,0.16)' : '#FFF7ED') : 'transparent',
+                          color: active ? (p.featured ? '#fff' : '#D97706') : (p.featured ? 'rgba(255,255,255,0.6)' : T.muted),
+                          border: `1px solid ${active ? (p.featured ? 'rgba(255,255,255,0.28)' : '#FDE68A') : T.line}`,
+                        }}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
 
               <p style={{
                 fontSize: 14, lineHeight: 1.5, margin: '0 0 26px', minHeight: 42,
@@ -240,7 +338,12 @@ export function PagePricing() {
               </SignedOut>
               <SignedIn>
                 {p.checkoutProductId ? (
-                  <CheckoutButton productId={p.checkoutProductId} cta={p.cta} featured={p.featured ?? false} />
+                  <CheckoutButton
+                    productId={isAnnual ? p.annualProductId! : p.checkoutProductId}
+                    cta={p.cta}
+                    featured={p.featured ?? false}
+                    couponEligible={isAnnual}
+                  />
                 ) : (
                   <Link href="/dashboard" style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -287,7 +390,7 @@ export function PagePricing() {
               </div>
             </div>
           </div>
-        ))}
+        )})}
       </div>
 
       <div style={{
