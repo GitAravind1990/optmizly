@@ -524,7 +524,7 @@ const FAQS = [
   },
   {
     q: 'Can I pay annually?',
-    a: 'Agency can be billed monthly at $49 or annually at $588, chosen at checkout \u2013 the annual price is twelve months at the same rate, so paying yearly costs the same and simply renews once instead of twelve times. Pro is monthly only. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full $588 after that.',
+    a: 'Pro is $19 monthly or $228 a year, and Agency is $49 monthly or $588 a year, chosen at checkout \u2013 the annual price is twelve months at the same rate, so paying yearly costs the same and simply renews once instead of twelve times. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full $588 after that.',
   },
   {
     q: 'Can I upgrade or downgrade?',
