@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SignedIn, SignedOut } from './clerk-provider'
 
 const T = {
@@ -213,6 +213,17 @@ export function PagePricing() {
   // the advertised headline price stays the one people already know.
   const [annualBilling, setAnnualBilling] = useState(false)
 
+  // Founding-member availability, read from Dodo's own redemption count. Null while it
+  // loads, and stays null if the code does not exist - the banner simply never appears
+  // rather than showing a placeholder number.
+  const [spots, setSpots] = useState<{ remaining: number | null; limit: number | null; soldOut: boolean } | null>(null)
+  useEffect(() => {
+    fetch('/api/founding-spots')
+      .then(r => r.json())
+      .then(d => { if (d?.configured && typeof d.remaining === 'number') setSpots(d) })
+      .catch(() => { /* a scarcity claim we cannot verify is one we do not make */ })
+  }, [])
+
   return (
     <section id="pricing" style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(64px,8vw,120px) clamp(20px,4vw,32px)' }}>
       {/* Section head */}
@@ -291,6 +302,23 @@ export function PagePricing() {
                   color: p.featured ? 'rgba(255,255,255,0.6)' : T.muted,
                 }}>{isAnnual ? p.annualPeriod : p.period}</span>
               </div>
+
+              {/* Founding Member availability. Shown only where the offer applies - the
+                  Agency card, annual selected - because a scarcity line on a plan the code
+                  cannot be used on is just noise. */}
+              {isAnnual && p.couponEligible && spots && (
+                <div style={{
+                  marginBottom: 14, padding: '8px 12px', borderRadius: 10,
+                  fontFamily: T.sans, fontSize: 13, fontWeight: 600,
+                  background: p.featured ? 'rgba(255,255,255,0.14)' : '#FFF7ED',
+                  color: p.featured ? '#fff' : '#B45309',
+                  border: `1px solid ${p.featured ? 'rgba(255,255,255,0.24)' : '#FDE68A'}`,
+                }}>
+                  {spots.soldOut
+                    ? 'Founding Member places are gone'
+                    : `Founding Member: ${spots.remaining} of ${spots.limit} places left`}
+                </div>
+              )}
 
               {/* Billing switch, Agency only. Hidden entirely when the annual product is not
                   configured, so a missing env var shows today's page rather than a toggle
