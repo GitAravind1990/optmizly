@@ -68,7 +68,11 @@ function normalizeName(name: string): string {
     .trim()
 }
 
+/** Three pages of 20 is the endpoint's practical ceiling for one query. */
+const MAX_PAGES = 3
+
 interface PlacesResponse {
+  nextPageToken?: string
   places?: Array<{
     id?: string
     displayName?: { text?: string }
@@ -99,46 +103,65 @@ export async function discoverBusinesses(
   }
 
   const capped = Math.max(1, Math.min(20, limit))
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 10_000)
 
-  let data: PlacesResponse | null = null
-  try {
-    const res = await fetch(PLACES_ENDPOINT, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': key,
-        'X-Goog-FieldMask': FIELD_MASK,
-      },
-      body: JSON.stringify({
-        textQuery: `${industry} in ${location}`,
-        // Asking for more than needed, because dedupe below removes some and chains often
-        // return the same brand repeatedly.
-        maxResultCount: Math.min(20, capped * 2),
-        languageCode: 'en',
-      }),
-    })
-    data = await res.json().catch(() => null)
-    if (!res.ok) {
-      console.error(`[places-discovery] HTTP ${res.status}: ${data?.error?.status ?? ''} ${data?.error?.message ?? ''}`.trim())
-      return []
+  // Three pages rather than one. The top of a Maps result set is the businesses that need
+  // an agency least - they rank there because their web presence already works - so a
+  // single page systematically hides the prospects this tool exists to find. Measured on
+  // "lawyer in newyork": page one topped out at an opportunity score of 16, nothing above
+  // Moderate.
+  //
+  // Each page is a separately billed Places request, so this is roughly 3x the discovery
+  // cost of a search. That is the deliberate trade for reaching ranks 11-60.
+  const pages: PlacesResponse['places'] = []
+  let pageToken: string | undefined
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 10_000)
+    let data: PlacesResponse | null = null
+    try {
+      const res = await fetch(PLACES_ENDPOINT, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': key,
+          // nextPageToken is only returned when it is asked for in the mask.
+          'X-Goog-FieldMask': `${FIELD_MASK},nextPageToken`,
+        },
+        body: JSON.stringify({
+          textQuery: `${industry} in ${location}`,
+          // 20 is the endpoint's per-page maximum. Always ask for the full page: the point
+          // of paging is depth, and a short page wastes a paid request.
+          maxResultCount: 20,
+          languageCode: 'en',
+          ...(pageToken ? { pageToken } : {}),
+        }),
+      })
+      data = await res.json().catch(() => null)
+      if (!res.ok) {
+        console.error(`[places-discovery] page ${page + 1} HTTP ${res.status}: ${data?.error?.status ?? ''} ${data?.error?.message ?? ''}`.trim())
+        break
+      }
+    } catch (e) {
+      // A later page failing is not a failed search. Keep whatever earlier pages returned
+      // rather than throwing away results the user has already paid for.
+      console.error(`[places-discovery] page ${page + 1} request failed:`, e instanceof Error ? e.message : e)
+      break
+    } finally {
+      clearTimeout(timer)
     }
-  } catch (e) {
-    console.error('[places-discovery] request failed:', e instanceof Error ? e.message : e)
-    return []
-  } finally {
-    clearTimeout(timer)
+
+    pages.push(...(data?.places ?? []))
+    pageToken = data?.nextPageToken
+    // Small markets simply run out; there is nothing deeper to pay for.
+    if (!pageToken) break
   }
 
   const seenDomains = new Set<string>()
   const seenNames = new Set<string>()
-  const out: DiscoveredBusiness[] = []
+  const pool: DiscoveredBusiness[] = []
 
-  for (const p of data?.places ?? []) {
-    if (out.length >= capped) break
-
+  for (const p of pages) {
     const name = p.displayName?.text?.trim()
     if (!name || !p.id) continue
 
@@ -152,7 +175,7 @@ export async function discoverBusinesses(
     if (domain) seenDomains.add(domain)
     if (normalized) seenNames.add(normalized)
 
-    out.push({
+    pool.push({
       placeId: p.id,
       name,
       address: p.formattedAddress?.trim() ?? '',
@@ -163,5 +186,26 @@ export async function discoverBusinesses(
     })
   }
 
-  return out
+  return selectSpread(pool, capped)
+}
+
+/**
+ * Take `count` businesses spread evenly across the whole ranked pool, rather than the first
+ * `count`.
+ *
+ * This is the half of pagination that actually changes anything. Fetching sixty businesses
+ * and then analysing the first ten returns the same ten as before and bills twice as much
+ * for them - the deeper ranks have to be in the sample or the extra pages are wasted.
+ *
+ * An even stride keeps some of the top of the list, where a strong local competitor is
+ * genuinely useful context for a pitch, while reaching the mid and deep ranks where the
+ * fixable sites are. Order within the returned slice is preserved, so results still read
+ * best-ranked first; the caller re-sorts by prospectRank anyway.
+ */
+function selectSpread<T>(pool: T[], count: number): T[] {
+  if (pool.length <= count) return pool
+  const stride = pool.length / count
+  const picked: T[] = []
+  for (let i = 0; i < count; i++) picked.push(pool[Math.floor(i * stride)])
+  return picked
 }
