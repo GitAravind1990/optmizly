@@ -103,65 +103,78 @@ export async function discoverBusinesses(
   }
 
   const capped = Math.max(1, Math.min(20, limit))
+  const textQuery = `${industry} in ${location}`
 
-  // Three pages rather than one. The top of a Maps result set is the businesses that need
-  // an agency least - they rank there because their web presence already works - so a
-  // single page systematically hides the prospects this tool exists to find. Measured on
-  // "lawyer in newyork": page one topped out at an opportunity score of 16, nothing above
-  // Moderate.
-  //
-  // Each page is a separately billed Places request, so this is roughly 3x the discovery
-  // cost of a search. That is the deliberate trade for reaching ranks 11-60.
-  const pages: PlacesResponse['places'] = []
-  let pageToken: string | undefined
-  for (let page = 0; page < MAX_PAGES; page++) {
+  async function page(
+    mask: string,
+    extra: Record<string, unknown>,
+  ): Promise<PlacesResponse | null> {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 10_000)
-    let data: PlacesResponse | null = null
     try {
       const res = await fetch(PLACES_ENDPOINT, {
         method: 'POST',
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'X-Goog-Api-Key': key,
-          // nextPageToken is only returned when it is asked for in the mask.
-          'X-Goog-FieldMask': `${FIELD_MASK},nextPageToken`,
+          'X-Goog-Api-Key': key!,
+          'X-Goog-FieldMask': mask,
         },
-        body: JSON.stringify({
-          textQuery: `${industry} in ${location}`,
-          // 20 is the endpoint's per-page maximum. Always ask for the full page: the point
-          // of paging is depth, and a short page wastes a paid request.
-          maxResultCount: 20,
-          languageCode: 'en',
-          ...(pageToken ? { pageToken } : {}),
-        }),
+        body: JSON.stringify({ textQuery, languageCode: 'en', ...extra }),
       })
-      data = await res.json().catch(() => null)
+      const data: PlacesResponse | null = await res.json().catch(() => null)
       if (!res.ok) {
-        console.error(`[places-discovery] page ${page + 1} HTTP ${res.status}: ${data?.error?.status ?? ''} ${data?.error?.message ?? ''}`.trim())
-        break
+        console.error(`[places-discovery] HTTP ${res.status}: ${data?.error?.status ?? ''} ${data?.error?.message ?? ''}`.trim())
+        return null
       }
+      return data
     } catch (e) {
-      // A later page failing is not a failed search. Keep whatever earlier pages returned
-      // rather than throwing away results the user has already paid for.
-      console.error(`[places-discovery] page ${page + 1} request failed:`, e instanceof Error ? e.message : e)
-      break
+      console.error('[places-discovery] request failed:', e instanceof Error ? e.message : e)
+      return null
     } finally {
       clearTimeout(timer)
     }
+  }
 
-    pages.push(...(data?.places ?? []))
-    pageToken = data?.nextPageToken
-    // Small markets simply run out; there is nothing deeper to pay for.
-    if (!pageToken) break
+  const raw: NonNullable<PlacesResponse['places']> = []
+
+  // First page with the paginated request shape: `pageSize` (which supersedes the
+  // deprecated `maxResultCount`) and `nextPageToken` in the field mask, since the token is
+  // only returned when the mask asks for it.
+  const first = await page(`${FIELD_MASK},nextPageToken`, { pageSize: 20 })
+
+  if (first) {
+    raw.push(...(first.places ?? []))
+    let pageToken = first.nextPageToken
+    // Two more pages, to reach ranks 21-60. The top of a Maps result set is the businesses
+    // that need an agency least, so depth is the whole point of paging here.
+    for (let i = 1; i < MAX_PAGES && pageToken; i++) {
+      const next = await page(`${FIELD_MASK},nextPageToken`, { pageSize: 20, pageToken })
+      // A later page failing is not a failed search: keep what earlier pages returned
+      // rather than discarding results the user has already paid for.
+      if (!next) break
+      raw.push(...(next.places ?? []))
+      pageToken = next.nextPageToken
+    }
+  } else {
+    // The paginated shape was rejected. Fall back to the exact request that worked before
+    // pagination existed, so a search still returns its first page of results.
+    //
+    // This branch is not hypothetical: the first attempt at paging sent `maxResultCount`
+    // together with a `nextPageToken` field mask, the endpoint rejected it, and because
+    // discovery returning [] makes the route exit early with "no prospects found", the
+    // tool reported an empty market rather than an error. One page is a worse result than
+    // three; zero pages looks like a broken product.
+    console.error('[places-discovery] paginated request rejected, falling back to single page')
+    const legacy = await page(FIELD_MASK, { maxResultCount: 20 })
+    raw.push(...(legacy?.places ?? []))
   }
 
   const seenDomains = new Set<string>()
   const seenNames = new Set<string>()
   const pool: DiscoveredBusiness[] = []
 
-  for (const p of pages) {
+  for (const p of raw) {
     const name = p.displayName?.text?.trim()
     if (!name || !p.id) continue
 
