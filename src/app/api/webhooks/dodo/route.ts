@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { Plan } from '@prisma/client'
 import { captureServerEvent } from '@/lib/posthog-server'
 import { sendSubscriptionEmail, sendCancelledEmail, sendTrialStartedEmail } from '@/lib/email'
-import { getClerkFirstName } from '@/lib/auth'
+import { getClerkFirstName, isAlwaysAgency } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 
@@ -156,11 +156,15 @@ export async function POST(req: NextRequest) {
               ...(isNewCycle ? { welcomeEmailSent: false, trialConvertedEmailSent: false } : {}),
             },
           })
-          await prisma.user.update({ where: { id: userId }, data: { plan } })
+          // Fetched before the plan write so a pinned account can be recognised. getOrCreateUser
+          // would restore Agency on the next request anyway, but leaving FREE in the database
+          // makes the admin dashboard and every export disagree with what the user actually has.
+          const dbUser = await prisma.user.findUnique({ where: { id: userId } })
+          if (!isAlwaysAgency(dbUser?.email)) {
+            await prisma.user.update({ where: { id: userId }, data: { plan } })
+          }
           console.log(`[Dodo Webhook] Upserted subscription ${sub.subscription_id} → ${planKey}`)
 
-          // Fire revenue event + send confirmation email after verified webhook
-          const dbUser = await prisma.user.findUnique({ where: { id: userId } })
           if (dbUser) {
             if (dbUser.clerkId) {
               await captureServerEvent(dbUser.clerkId, 'subscription_activated', {

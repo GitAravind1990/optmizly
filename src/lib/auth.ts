@@ -47,6 +47,22 @@ export class AuthError extends Error {
  * returns stays nominally PRO in the database, which is harmless — nothing is granted
  * without a request passing through this function first.
  */
+/**
+ * Accounts that always hold Agency, whatever the subscription table says.
+ *
+ * Deliberately a constant and not an env var: an unset variable fails silently and the
+ * only symptom would be the founder account quietly dropping to FREE, which is the exact
+ * failure this exists to prevent. ADMIN_EMAIL is not reused for the same reason - it is
+ * read from the environment and can be missing.
+ *
+ * Compared lowercased because Clerk preserves whatever case the user typed at sign-up.
+ */
+const ALWAYS_AGENCY = new Set(['gkm.aravind@gmail.com'])
+
+export function isAlwaysAgency(email?: string | null): boolean {
+  return !!email && ALWAYS_AGENCY.has(email.trim().toLowerCase())
+}
+
 function hasLapsed(sub: { status: string; currentPeriodEnd: Date | null } | null): boolean {
   if (!sub || sub.status !== 'CANCELLED') return false
   // A cancellation with no period end recorded has nothing left to honour.
@@ -87,6 +103,17 @@ export async function getOrCreateUser(clerkId: string) {
       user = isEmailCollision ? await prisma.user.findUnique({ where: { email }, include: withSub }) : null
       if (!user) throw e
     }
+  }
+
+  // Applied last, after the lapse downgrade and after account creation, so there is no
+  // path out of this function that returns a pinned account on anything but Agency.
+  // Persisted rather than patched in memory, so admin views and exports agree with it.
+  if (user && isAlwaysAgency(user.email) && user.plan !== Plan.AGENCY) {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { plan: Plan.AGENCY },
+      include: { subscription: { select: { status: true, currentPeriodEnd: true } } },
+    })
   }
   return user
 }
