@@ -102,7 +102,10 @@ export async function discoverBusinesses(
     return []
   }
 
-  const capped = Math.max(1, Math.min(20, limit))
+  // 60 is three full pages, the practical ceiling for one query. The caller asks for the
+  // whole pool now rather than ten of it: a deep scan walks the pool across several
+  // requests and needs all of it, and trimming here would silently cap the scan.
+  const capped = Math.max(1, Math.min(60, limit))
   const textQuery = `${industry} in ${location}`
 
   async function page(

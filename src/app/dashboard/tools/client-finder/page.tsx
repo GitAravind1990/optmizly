@@ -44,12 +44,23 @@ interface SavedSearch {
 interface SearchMeta {
   industry: string
   location: string
-  found: number
-  analyzed: number
-  unreachable: number
-  noWebsite: number
   aiSummaries: boolean
   usage: { used: number; limit: number; remaining: number }
+}
+
+/**
+ * Progress of a deep scan.
+ *
+ * `examined` is the honest denominator: only Good and High opportunities are shown, so a
+ * short list means a saturated market rather than a weak tool - but only if the user can
+ * see how many businesses were looked at to produce it.
+ */
+interface ScanState {
+  examined: number
+  poolSize: number
+  qualified: number
+  target: number
+  done: boolean
 }
 
 const INPUT = 'w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400'
@@ -89,12 +100,12 @@ export default function ClientFinderPage() {
   const [industry, setIndustry] = useState('')
   const [location, setLocation] = useState('')
   const [service, setService] = useState('')
-  const [limit, setLimit] = useState(10)
 
   const [loading, setLoading] = useState(false)
   const [stage, setStage] = useState(0)
   const [error, setError] = useState('')
   const [prospects, setProspects] = useState<Prospect[] | null>(null)
+  const [scan, setScan] = useState<ScanState | null>(null)
   const [meta, setMeta] = useState<SearchMeta | null>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [plan, setPlan] = useState<string | null>(null)
@@ -186,22 +197,48 @@ export default function ClientFinderPage() {
       const res = await fetch('/api/tools/client-finder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ industry, location, service: service.trim() || undefined, limit }),
+        body: JSON.stringify({ industry, location, service: service.trim() || undefined }),
       })
       const data = await res.json()
       if (res.status === 403 || res.status === 429) { setShowUpgradeModal(true); return }
       if (!res.ok) throw new Error(data.error ?? 'Search failed')
+
+      const id: string | null = data.savedSearchId ?? null
       setProspects(data.prospects ?? [])
       setMeta(data.searchMeta ?? null)
-      setSearchId(data.savedSearchId ?? null)
+      setSearchId(id)
+      setScan(data.scan ?? null)
       setDrafts({})
+
+      // Walk the rest of the pool. Each call analyses one batch and returns everything
+      // qualifying so far, so results appear as they are found rather than after a wait
+      // with nothing on screen. The loop is bounded twice over - by `done` from the
+      // server, and by the pool being at most sixty businesses - so it cannot spin.
+      let state: ScanState | null = data.scan ?? null
+      while (id && state && !state.done) {
+        const more = await fetch('/api/tools/client-finder/continue', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ searchId: id }),
+        })
+        const moreData = await more.json()
+        // A failed batch ends the scan with what it has. The leads already on screen are
+        // real and saved; throwing them away over one bad batch would be the worse error.
+        if (!more.ok) {
+          setScan({ ...state, done: true })
+          break
+        }
+        setProspects(moreData.prospects ?? [])
+        state = moreData.scan ?? { ...state, done: true }
+        setScan(state)
+      }
       refreshSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Search failed')
     } finally {
       setLoading(false)
     }
-  }, [industry, location, service, limit, refreshSaved])
+  }, [industry, location, service, refreshSaved])
 
   /**
    * Opens a saved search. Costs nothing: it reads stored results rather than re-running
@@ -218,16 +255,20 @@ export default function ClientFinderPage() {
       setMeta({
         industry: data.search.industry,
         location: data.search.location,
-        found: data.search.found,
-        analyzed: data.search.analyzed,
-        unreachable: (data.prospects ?? []).filter((p: Prospect) => p.status === 'WEBSITE_UNAVAILABLE').length,
-        noWebsite: (data.prospects ?? []).filter((p: Prospect) => p.status === 'NO_WEBSITE').length,
         aiSummaries: (data.prospects ?? []).some((p: Prospect) => p.salesAngle),
         // Reading a saved search does not touch the daily allowance, so the counter from
         // the live search would be wrong here. Hidden rather than shown stale.
         usage: { used: 0, limit: 0, remaining: 0 },
       })
       setSearchId(data.search.id)
+      // A reopened search is finished by definition - it is being read, not run.
+      setScan({
+        examined: data.search.examined ?? 0,
+        poolSize: data.search.found ?? 0,
+        qualified: (data.prospects ?? []).length,
+        target: 10,
+        done: true,
+      })
       // Drafts written against this search come back with it.
       setDrafts(data.drafts && typeof data.drafts === 'object' ? data.drafts : {})
       setExpanded(null)
@@ -351,12 +392,6 @@ export default function ClientFinderPage() {
                 <input value={service} onChange={e => setService(e.target.value)}
                   placeholder="e.g. emergency" className={INPUT} />
               </div>
-              <div>
-                <label className={LABEL}>Prospects</label>
-                <select value={limit} onChange={e => setLimit(Number(e.target.value))} className={INPUT}>
-                  {[5, 10].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
             </div>
 
             {error && (
@@ -380,6 +415,17 @@ export default function ClientFinderPage() {
                 </button>
               )}
             </div>
+
+            {/* A deep scan can look at sixty sites, so it needs to show its working -
+                otherwise a search that is finding nothing yet is indistinguishable from
+                one that has hung. */}
+            {loading && scan && !scan.done && (
+              <p className="mt-3 text-xs text-slate-500">
+                Examined <span className="font-bold text-slate-700">{scan.examined}</span> of {scan.poolSize} businesses
+                {' · '}
+                <span className="font-bold text-slate-700">{scan.qualified}</span> qualifying so far
+              </p>
+            )}
           </div>
 
           {showSaved && saved.length > 0 && (
@@ -419,12 +465,26 @@ export default function ClientFinderPage() {
           {prospects && (
             <div className="space-y-5">
 
+              {/* Fewer than ten is a fact about the market, not a failure of the scan, and
+                  saying so is the difference between a credible tool and one that looks
+                  broken. Padding the list with Moderate leads would hide it. */}
+              {scan && scan.done && scan.qualified < scan.target && scan.examined > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p className="text-sm text-amber-900">
+                    <span className="font-bold">{scan.qualified} of {scan.examined}</span> businesses examined scored
+                    Good or High. The rest already have decent sites, which is usually what a competitive
+                    area looks like — a smaller town or a narrower service will normally yield more.
+                  </p>
+                </div>
+              )}
+
               {meta && (
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <p className="text-sm text-slate-600">
-                    <span className="font-bold text-slate-900">{meta.found}</span> businesses found for{' '}
+                    <span className="font-bold text-slate-900">{scan?.qualified ?? withSites.length}</span>{' '}
+                    qualifying lead{(scan?.qualified ?? withSites.length) === 1 ? '' : 's'} for{' '}
                     &ldquo;{meta.industry}&rdquo; in {meta.location}
-                    {meta.unreachable > 0 && <> · {meta.unreachable} site{meta.unreachable === 1 ? '' : 's'} unreachable</>}
+                    {scan && scan.examined > 0 && <> · from {scan.examined} businesses examined</>}
                     {(prospects ?? []).some(p => contacts[p.id]) && (
                       <> · <span className="font-bold text-slate-900">
                         {(prospects ?? []).filter(p => contacts[p.id]).length}
@@ -432,7 +492,7 @@ export default function ClientFinderPage() {
                     )}
                   </p>
                   {withSites.length > 1 && (
-                    <span className="text-xs text-slate-500">Ranked by opportunity, working sites only</span>
+                    <span className="text-xs text-slate-500">Only Good and High opportunities, ranked</span>
                   )}
                 </div>
               )}

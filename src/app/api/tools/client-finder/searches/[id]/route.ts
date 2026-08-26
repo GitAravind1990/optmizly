@@ -15,7 +15,7 @@ export const runtime = 'nodejs'
 async function ownedSearch(userId: string, id: string) {
   const row = await prisma.clientFinderSearch.findFirst({
     where: { id, userId },
-    select: { id: true, industry: true, location: true, service: true, prospects: true, drafts: true, found: true, analyzed: true, createdAt: true },
+    select: { id: true, industry: true, location: true, service: true, prospects: true, drafts: true, found: true, analyzed: true, examined: true, createdAt: true },
   })
   if (!row) throw new AuthError(404, 'Saved search not found')
   return row
@@ -53,7 +53,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return apiSuccess({
       search: {
         id: row.id, industry: row.industry, location: row.location, service: row.service,
-        found: row.found, analyzed: row.analyzed, createdAt: row.createdAt,
+        found: row.found, analyzed: row.analyzed, examined: row.examined, createdAt: row.createdAt,
       },
       prospects,
       drafts,

@@ -1189,6 +1189,21 @@ model ClientFinderSearch {
   /// rather than null-checking at every use.
   drafts String @default("{}") @db.Text
 
+  /// Every business discovered for this search, in the order they will be analysed.
+  /// Held server-side so a deep scan can resume across requests without re-paying for
+  /// discovery - and so the browser never hands us back a list of URLs to fetch, which
+  /// would turn a resumable scan into an SSRF gadget. "[]" on rows written before scans
+  /// existed.
+  pool String @default("[]") @db.Text
+
+  /// How many of `pool` have been analysed so far. The scan resumes here.
+  cursor Int @default(0)
+
+  /// How many sites were examined to produce `prospects`. This is the honest denominator
+  /// behind "6 qualifying leads from 54 examined" - without it a short list of leads looks
+  /// like a weak tool rather than a saturated market.
+  examined Int @default(0)
+
   found    Int
   analyzed Int
 
