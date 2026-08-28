@@ -316,49 +316,58 @@ export function HomeHero() {
         maxWidth: 1100, margin: '0 auto', padding: '96px 32px 0', textAlign: 'center',
         overflow: 'hidden',
       }}>
-        {/* Headline */}
+        {/* Headline. One idea, stated the way the product is positioned: Google AND AI
+            search, which is the distinction the whole page is built to make memorable. */}
         <h1 style={{
-          fontFamily: T.sans, fontSize: 'clamp(44px, 6.5vw, 76px)',
-          fontWeight: 600, letterSpacing: -3, lineHeight: 1.02,
-          margin: '0 auto 24px', maxWidth: 900,
+          fontFamily: T.sans, fontSize: 'clamp(40px, 6vw, 72px)',
+          fontWeight: 600, letterSpacing: -3, lineHeight: 1.03,
+          margin: '0 auto 24px', maxWidth: 940,
         }}>
-          Rank higher everywhere{' '}
+          Optimize your website for{' '}
           <span style={{
             background: T.gradText,
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
           }}>
-            search happens.
+            Google + AI search.
           </span>
         </h1>
 
         <p style={{
-          fontSize: 'clamp(16px, 1.8vw, 20px)', lineHeight: 1.55, color: T.body,
-          maxWidth: 640, margin: '0 auto 36px',
+          fontSize: 'clamp(17px, 1.8vw, 21px)', lineHeight: 1.55, color: T.body,
+          maxWidth: 620, margin: '0 auto 16px', fontWeight: 500,
         }}>
-          Optimize your website for Google Search and AI search engines like ChatGPT, Gemini, Claude &amp; Perplexity, one intelligent platform for SEO, GEO &amp; AEO.
+          SEO + GEO + AEO optimization powered by AI.
+        </p>
+        <p style={{
+          fontSize: 'clamp(15px, 1.6vw, 17px)', lineHeight: 1.6, color: T.muted,
+          maxWidth: 560, margin: '0 auto 36px',
+        }}>
+          One platform to rank on Google and get cited by ChatGPT, Gemini, Claude and Perplexity.
         </p>
 
-        {/* CTAs */}
+        {/* CTAs. One dominant action — the free audit, which is the only thing here that
+            gives before it asks — and one quiet secondary. "Start Free" moved into the
+            header, so the hero is not two competing signup buttons. */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 22, flexWrap: 'wrap' }}>
           <SignedOut>
-            <Link href="/signup" style={{
+            <Link href="#free-audit" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '0 28px', height: 52, borderRadius: 14,
-              fontFamily: T.sans, fontSize: 16, fontWeight: 600,
+              padding: '0 30px', height: 56, borderRadius: 14,
+              fontFamily: T.sans, fontSize: 17, fontWeight: 600,
               background: T.grad, color: '#fff', textDecoration: 'none',
-              boxShadow: '0 8px 24px -8px rgba(0,0,255,0.5), inset 0 1px 0 rgba(255,255,255,0.22)',
+              boxShadow: '0 10px 30px -8px rgba(0,0,255,0.55), inset 0 1px 0 rgba(255,255,255,0.22)',
             }}>
-              Start Free <Icon name="arrow" size={16} color="#fff" />
+              Analyze My Website Free <Icon name="arrow" size={17} color="#fff" />
             </Link>
-            <Link href="#pricing" style={{
+            <Link href="#how-it-works" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '0 28px', height: 52, borderRadius: 14,
+              padding: '0 28px', height: 56, borderRadius: 14,
               fontFamily: T.sans, fontSize: 16, fontWeight: 600,
               background: '#fff', color: T.ink, textDecoration: 'none',
               border: `1px solid ${T.line}`,
               boxShadow: '0 1px 3px rgba(11,17,32,0.06)',
             }}>
-              View Plans
+              See How It Works
             </Link>
           </SignedOut>
           <SignedIn>
@@ -380,7 +389,7 @@ export function HomeHero() {
           justifyContent: 'center', gap: 22, flexWrap: 'wrap', marginBottom: 56,
           fontFamily: T.sans,
         }}>
-          {['Cancel anytime', 'Free forever tier', 'Setup in 2 minutes'].map((s) => (
+          {['No signup for the audit', 'Free plan needs no card', 'Cancel anytime'].map((s) => (
             <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
               <Icon name="check" size={15} color={T.good} />{s}
             </span>

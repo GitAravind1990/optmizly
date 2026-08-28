@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import posthog from 'posthog-js'
 import { SignedIn, SignedOut } from './clerk-provider'
 
 const T = {
@@ -20,11 +21,26 @@ const T = {
   grad: 'linear-gradient(118deg, #0000FF 0%, #3B5BFF 45%, #4DEEFF 100%)',
 }
 
+/**
+ * Three tiers, read left to right.
+ *
+ * `audience` is the compromise-effect half of this: a visitor comparing three prices with
+ * no idea who each is for defaults to the cheapest. Naming the buyer on each card turns the
+ * question from "how little can I spend" into "which one am I", which is the question that
+ * has a correct answer. Pro is `featured` — the middle option, and the one most people
+ * comparing the three should land on.
+ *
+ * `anchor` states the usage difference in plain arithmetic rather than leaving three
+ * numbers to be compared in the reader's head. Both are copy, not pricing: the prices,
+ * limits and product ids below are unchanged.
+ */
 const plans = [
   {
     name: 'Free',
+    audience: 'For one site you want to understand',
     price: '$0',
     period: '/forever',
+    anchor: '3 analyses a month, no card',
     tagline: 'For trying AI search optimization on one site.',
     color: 'gray',
     featured: false,
@@ -41,8 +57,10 @@ const plans = [
   },
   {
     name: 'Pro',
+    audience: 'For marketers optimizing every week',
     price: '$19',
     period: '/mo',
+    anchor: '50 analyses a month — 16× the Free plan, for $19',
     tagline: 'For growth teams optimizing across every search surface.',
     color: 'blue',
     featured: true,
@@ -65,8 +83,10 @@ const plans = [
   },
   {
     name: 'Agency',
+    audience: 'For agencies managing several clients',
     price: '$49',
     period: '/mo',
+    anchor: '200 analyses a month, plus client reporting and prospecting',
     tagline: 'For agencies & brands running search at scale.',
     color: 'amber',
     featured: false,
@@ -94,12 +114,14 @@ const plans = [
   },
 ]
 
-function CheckoutButton({ productId, cta, featured, couponEligible }: {
+function CheckoutButton({ productId, cta, featured, couponEligible, planName, isAnnual }: {
   productId: string
   cta: string
   featured: boolean
   /** True only for the Agency annual product - the one plan a code may be used on. */
   couponEligible?: boolean
+  planName: string
+  isAnnual: boolean
 }) {
   const [loading, setLoading] = useState(false)
   const [coupon, setCoupon] = useState('')
@@ -109,6 +131,14 @@ function CheckoutButton({ productId, cta, featured, couponEligible }: {
   async function handleCheckout() {
     setLoading(true)
     setError('')
+    // Client-side counterpart to the server's checkout_started. Fired before the request
+    // so a plan chosen but never reached — a refused code, a network failure — still
+    // appears in the funnel rather than vanishing.
+    posthog.capture('pricing_plan_selected', {
+      plan: planName.toUpperCase(),
+      billing: isAnnual ? 'annual' : 'monthly',
+      signed_in: true,
+    })
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -273,9 +303,13 @@ export function PagePricing() {
 
             <div style={{ position: 'relative' }}>
               <div style={{
-                fontSize: 15, fontWeight: 600, marginBottom: 16,
+                fontSize: 15, fontWeight: 600, marginBottom: 4,
                 color: p.featured ? '#fff' : T.ink, fontFamily: T.sans,
               }}>{p.name}</div>
+              <div style={{
+                fontSize: 13, marginBottom: 16, fontFamily: T.sans, lineHeight: 1.4,
+                color: p.featured ? 'rgba(255,255,255,0.62)' : T.muted,
+              }}>{p.audience}</div>
 
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 10 }}>
                 <span style={{
@@ -287,6 +321,14 @@ export function PagePricing() {
                   color: p.featured ? 'rgba(255,255,255,0.6)' : T.muted,
                 }}>{isAnnual ? p.annualPeriod : p.period}</span>
               </div>
+
+              {/* What that price buys, stated rather than left to be worked out from three
+                  numbers in three cards. */}
+              <div style={{
+                fontSize: 13, fontWeight: 500, marginBottom: 14, lineHeight: 1.45,
+                fontFamily: T.sans,
+                color: p.featured ? T.cyan : (p.color === 'amber' ? '#D97706' : T.body),
+              }}>{p.anchor}</div>
 
               {/* Founding Member availability. Shown only where the offer applies - the
                   Agency card, annual selected - because a scarcity line on a plan the code
@@ -339,7 +381,14 @@ export function PagePricing() {
 
               {/* CTA button */}
               <SignedOut>
-                <Link href={p.signedOutHref} style={{
+                <Link
+                  href={p.signedOutHref}
+                  onClick={() => posthog.capture('pricing_plan_selected', {
+                    plan: p.name.toUpperCase(),
+                    billing: isAnnual ? 'annual' : 'monthly',
+                    signed_in: false,
+                  })}
+                  style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   width: '100%', height: 52, borderRadius: 14,
                   fontFamily: T.sans, fontSize: 15, fontWeight: 600, letterSpacing: -0.2,
@@ -361,6 +410,8 @@ export function PagePricing() {
                     cta={p.cta}
                     featured={p.featured ?? false}
                     couponEligible={isAnnual && p.couponEligible === true}
+                    planName={p.name}
+                    isAnnual={isAnnual}
                   />
                 ) : (
                   <Link href="/dashboard" style={{
