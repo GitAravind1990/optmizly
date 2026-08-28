@@ -19,10 +19,16 @@ import {
   HOME_FAQS,
 } from '@/components/marketing/sections'
 
+/**
+ * Title and description are both kept inside the lengths this site's own readiness audit
+ * checks for — 65 and 165 characters. Running optmizly.com through the tool on the homepage
+ * is the first thing a sceptical visitor will do, and it should not come back with our own
+ * title flagged as too long. It did, at 72 and 171, until this.
+ */
 export const metadata: Metadata = {
-  title: 'Optmizly – Optimize Your Website for Google + AI Search | SEO, GEO & AEO',
+  title: 'Optmizly — Optimize Your Website for Google + AI Search',
   description:
-    'SEO + GEO + AEO optimization powered by AI. Run a free AI search readiness audit — no signup — then rank on Google and get cited by ChatGPT, Gemini, Claude and Perplexity.',
+    'SEO + GEO + AEO optimization powered by AI. Run a free AI search readiness audit, no signup needed, and see what an AI crawler sees on your site.',
   alternates: { canonical: '/' },
   openGraph: {
     title: 'Optmizly – Optimize Your Website for Google + AI Search',
@@ -51,9 +57,42 @@ const faqJsonLd = JSON.stringify({
   })),
 })
 
+/**
+ * Organization and WebSite markup — the entity signals this page spends a whole section
+ * telling other people to add. The homepage had FAQPage and nothing else, which its own
+ * audit scored 50 for structured data.
+ *
+ * `sameAs` is the part that resolves "Optmizly" to a known entity rather than a word.
+ * It lists only profiles that actually exist; add to it as more do.
+ */
+const orgJsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': 'https://optmizly.com/#organization',
+      name: 'Optmizly',
+      url: 'https://optmizly.com',
+      logo: 'https://optmizly.com/logo.png',
+      description:
+        'AI search optimization platform covering SEO, GEO and AEO — auditing, optimizing and monitoring how websites appear in Google and in AI-generated answers.',
+      email: 'hello@optmizly.com',
+      sameAs: ['https://x.com/optmizly', 'https://linkedin.com/company/optmizly'],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://optmizly.com/#website',
+      url: 'https://optmizly.com',
+      name: 'Optmizly',
+      publisher: { '@id': 'https://optmizly.com/#organization' },
+    },
+  ],
+})
+
 export default function HomePage() {
   return (
     <div style={{ background: T.bg, color: T.ink, fontFamily: T.sans }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: orgJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqJsonLd }} />
       <style>{`
         @media (max-width: 639px) {
