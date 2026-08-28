@@ -210,8 +210,18 @@ function stripToText(html: string): string {
     .trim()
 }
 
+/**
+ * One attribute's value, or null when the attribute is absent.
+ *
+ * Null and '' are different answers and callers depend on the difference: `alt=""` is a
+ * deliberately decorative image, no `alt` at all is an omission.
+ *
+ * The leading `(^|[\s/])` matters. Without it the name matched anywhere inside the tag, so
+ * asking for `alt` also matched `data-alt="…"` and asking for `name` matched `itemname`,
+ * silently returning another attribute's value.
+ */
 function attr(tag: string, name: string): string | null {
-  const m = tag.match(new RegExp(`${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i'))
+  const m = tag.match(new RegExp(`(?:^|[\\s/])${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i'))
   return m ? (m[2] ?? m[3] ?? m[4] ?? '').trim() : null
 }
 
@@ -385,14 +395,23 @@ export function analyzeHomepage(html: string, finalUrl: string): { findings: SEO
   }
 
   // Images
+  //
+  // `alt=""` is NOT a missing alt attribute. An empty alt is the correct, deliberate way to
+  // mark a decorative image — a spacer, an icon beside text that already says the same
+  // thing — and both WCAG and every screen reader treat it as "skip this". Counting it as a
+  // fault flagged sites whose markup was right, and told them to describe images that
+  // should not be described.
+  //
+  // Only an image with no alt attribute at all is an omission, which `attr` reports as null
+  // and an empty alt reports as ''.
   const imgTags = html.match(/<img\b[^>]*>/gi) ?? []
   const imageCount = imgTags.length
-  const imagesWithAlt = imgTags.filter(t => (attr(t, 'alt') ?? '').length > 0).length
+  const imagesWithAlt = imgTags.filter(t => attr(t, 'alt') !== null).length
   const altCoverage = imageCount === 0 ? 1 : imagesWithAlt / imageCount
   if (imageCount > 0 && altCoverage < 0.8) {
     add('Accessibility', altCoverage < 0.5 ? 'medium' : 'low', 'Images missing alt text',
-      `${imageCount - imagesWithAlt} of ${imageCount} images have no alt text.`,
-      'Describe each meaningful image in its alt attribute.')
+      `${imageCount - imagesWithAlt} of ${imageCount} images have no alt attribute at all.`,
+      'Describe each meaningful image in its alt attribute, and give purely decorative ones an empty alt="".')
   }
 
   // Structured data

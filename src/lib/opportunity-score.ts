@@ -147,6 +147,29 @@ export function scoreOpportunity(signals: SEOSignals): number {
  *
  * Recalibrate from fresh measurements if the checks or weights change, and record the
  * distribution here when you do. Do not adjust these to make a demo look better.
+ *
+ * ── 2026-08-29: alt-text check corrected, bands deliberately NOT moved ───────────────────
+ *
+ * `imagesWithAlt` used to count `alt=""` as a missing alt attribute. An empty alt is the
+ * correct markup for a decorative image, so sites whose markup was right were being faulted
+ * for it, worth up to the full 6 points of `imageAlt`.
+ *
+ * Measured before and after across the 41 reachable sites among the 51 real prospects
+ * stored in production:
+ *
+ *     score delta (old - new): mean 1.83, max 6, unchanged on 24 of 41
+ *     bands before: Low 19, Moderate 12, Good 8, High 2
+ *     bands after:  Low 23, Moderate  9, Good 7, High 2
+ *     five sites moved down one band, four Moderate->Low and one Good->Moderate
+ *
+ * The bands stay at 10/20/35 on purpose. Every point removed was a fault the site did not
+ * have, so the sites that moved down moved down correctly - they are less of an opportunity
+ * than we thought. Re-banding to restore the old distribution would put that fabricated
+ * opportunity straight back in under a different number, which is the thing this comment
+ * exists to prevent.
+ *
+ * Knock-on worth knowing: Client Finder's qualify rate drops slightly (Good-or-High was
+ * 10 of 41 here, now 9), so a deep scan examines a few more sites to reach ten leads.
  */
 export function classifyOpportunity(score: number): OpportunityLevel {
   if (score >= 35) return 'High'
