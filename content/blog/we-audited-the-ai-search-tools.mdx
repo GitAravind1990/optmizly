@@ -1,0 +1,98 @@
+---
+title: "We Ran 10 AI Search Tools Through an AI Search Audit"
+description: "We audited the homepages of ten tools that sell AI search visibility, using the same checks we sell. Three of them give AI crawlers nothing to read — including one whose schema is there, but only after JavaScript runs."
+date: "2026-08-29"
+readingTime: "8 min read"
+category: "AI Search"
+---
+
+There is a fair test for any tool that promises to make you visible in AI search: point it at the company selling it.
+
+So on 29 August 2026 we ran ten of them through our own [AI Search Readiness Audit](/tools/ai-search-readiness) — the free one, no signup, the same checks anyone can run on any URL. One page each, their homepage, exactly as an AI crawler would fetch it.
+
+The results are less flattering than we expected, and the most interesting one is not a company doing nothing. It is a company doing the work in a way that no AI crawler can see.
+
+## What was measured
+
+The audit reads the HTML a page returns and scores six things: technical foundation, on-page signals, content extractability, structured data, AEO readiness and GEO readiness. Every check is deterministic. Nothing is estimated, and no language model is involved in the scoring.
+
+One property matters more than any other for what follows: **the audit reads the initial HTML response, and does not execute JavaScript.** That is a deliberate choice, because it is the position most AI crawlers are in. Google renders JavaScript before indexing. The crawlers behind AI answers largely do not — they fetch, read and move on.
+
+So when this audit says "no schema markup found", it means: not in the response. It does not mean the site has no schema. Sometimes those are the same thing. Sometimes, as below, they are very much not.
+
+## The scores
+
+Ranked, out of 100:
+
+- **frase.io — 86** (strong)
+- **marketmuse.com — 85** (strong)
+- **ranked.ai — 76** (strong)
+- **semrush.com — 73** (moderate)
+- **surferseo.com — 72** (moderate)
+- **writesonic.com — 70** (moderate)
+- **clearscope.io — 58** (moderate)
+- **tryprofound.com — 58** (moderate)
+- **peec.ai — 55** (moderate)
+- **otterly.ai — could not be read** (403 to our crawler and to a browser user-agent alike, which is their bot protection rather than a fault on the page)
+
+Optmizly's own homepage scores 90, and you should discount that number heavily. We wrote the scoring and then spent a day fixing what it told us — the site went from 70 to 90 in a single session because we knew exactly which checks we were being marked against. The comparison worth reading is the one between the other nine.
+
+Every site above clears the basics. All ten score 100 on technical foundation or close to it: HTTPS, a mobile viewport, a canonical tag. Nobody is failing at 2015-era SEO. The gap opens up entirely in the two newest categories.
+
+## The finding: schema that exists, but not for AI
+
+**Profound, Peec AI and Clearscope all score 0 on structured data.** Three companies whose product is AI search visibility, giving AI engines nothing structured to work with on their own front page.
+
+For Peec and Clearscope, that is straightforward: there is no JSON-LD in the HTML at all. Both run Google Tag Manager, which could inject some at runtime, but a crawler that does not run JavaScript will not see that either.
+
+Profound is the interesting one, and we nearly reported it wrong.
+
+A first pass found the string `application/ld+json` in their HTML — so we went and looked, because a tool that reports a false negative about a competitor is a tool nobody should trust. What is actually there is this:
+
+```
+real <script type="application/ld+json"> tags: 0
+
+found instead:
+16:["$","$L20",null,{"type":"application/ld+json","children":
+"{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"Organization\",
+\"@id\":\"https://www.tryprofound.com/#organization\",\"name\":\"Profound\"...
+```
+
+Their schema markup is real, and it is good — a proper `@graph` with an Organization node. But it exists only inside the React Flight payload that Next.js ships to the browser. React creates the `<script>` tag on the client, after hydration. There is no such tag in the response.
+
+The practical consequence is a split:
+
+- **Google will see it.** Googlebot renders the page, React runs, the tag appears, the schema is read.
+- **A crawler that does not render will not.** It receives a document with zero structured data and moves on.
+
+This is not a company that forgot to add schema. It is a company that added schema in a way that survives for search engines and disappears for answer engines — which is precisely the distinction their product exists to sell.
+
+And it is exactly the failure a conventional SEO audit cannot catch. Most crawlers in SEO tooling render the page before analysing it, so they would report "structured data: present" and move on. The gap only shows up if you look at what came back over the wire.
+
+## What else showed up
+
+**Almost nobody has FAQ schema.** Of the ten, only frase.io marks up questions and answers on its homepage. `FAQPage` is the cheapest AEO win available — it takes an hour, it maps a question to its answer in a form a machine can lift whole, and eight out of ten AI-optimization tools have not done it on the page where they explain themselves.
+
+**Nobody blocks AI answer crawlers.** Not one robots.txt in the group disallows ChatGPT-User, OAI-SearchBot, PerplexityBot or Claude-Web. Worth stating plainly, because "check your robots.txt" is common advice in this space and in this sample it was never the problem. For contrast, we ran the same audit on nytimes.com, which blocks all four — a deliberate and defensible editorial choice, and one that a robots.txt check does catch.
+
+**The biggest company had the thinnest markup.** Semrush scores 25 on structured data: a `Corporation`, a `PostalAddress`, a `WebSite`, and nothing else.
+
+**Content extractability was not a problem.** Eight of the ten score 88 or 100 — their text is in the HTML, server-rendered, readable without JavaScript. Whatever else is missing, the words themselves are reachable. This is the one place the category is in good shape.
+
+## What to take from this
+
+If you sell to an audience that will check your claims, the checking is going to start on your own homepage. But the useful lesson here is technical, not rhetorical:
+
+**Rendering-dependent markup is invisible markup, for a growing share of the crawlers that matter.** Anything injected after page load — schema via a tag manager, structured data rendered by your framework, content that only appears once JavaScript runs — is present for Google and absent for most AI crawlers. Two audiences, one page, different documents.
+
+Three things worth checking on your own site today:
+
+1. **View source, not inspect element.** The Elements panel shows you the DOM after JavaScript. `curl` or "View Page Source" shows you what a crawler received. If your JSON-LD is in the first and not the second, only rendering crawlers can read it.
+2. **Move critical schema server-side.** In Next.js that means emitting the `<script type="application/ld+json">` from a server component, not from a client component or an effect. Same for any tag-manager-injected markup you care about.
+3. **Add `FAQPage` to the pages that answer questions.** Mark up questions you already answer, not invented ones. It is the highest-return AEO change available and the category has almost entirely skipped it.
+
+## Run it yourself
+
+Every number here is reproducible. The [AI Search Readiness Audit](/tools/ai-search-readiness) is free, needs no account, and returns the complete result — every category and every finding, not a score with the useful half locked. Point it at any of the sites above and you should get what we got, allowing for whatever they have shipped since 29 August 2026.
+
+Point it at your own site first, though. That is the one where the answer changes what you do next.
