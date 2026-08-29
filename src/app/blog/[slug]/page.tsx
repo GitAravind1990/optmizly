@@ -2,10 +2,28 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
+import remarkGfm from 'remark-gfm'
 import { getAllPosts, getPost, getRelatedPosts } from '@/lib/blog'
 import { PageHeader } from '@/components/page-header'
 import { BlogSubscribeForm } from '@/components/blog-subscribe-form'
 import { extractFaqPairs, buildFaqJsonLd, buildArticleJsonLd } from '@/lib/faq-schema'
+
+/**
+ * Tailwind's typography plugin styles a table but does not make it scroll, so a table
+ * whose columns cannot compress pushes the whole page sideways on a narrow phone —
+ * measured at 377px of content in a 360px viewport before this wrapper existed.
+ *
+ * Scrolling the table inside its own box rather than the document is the same fix the
+ * pricing comparison table uses. The wrapper is a plain div, so `.prose table` still
+ * matches and the typography styles are untouched.
+ */
+const MDX_COMPONENTS = {
+  table: (props: React.ComponentPropsWithoutRef<'table'>) => (
+    <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
+      <table {...props} />
+    </div>
+  ),
+}
 
 export async function generateStaticParams() {
   const posts = await getAllPosts()
@@ -103,7 +121,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <div className="prose prose-slate prose-headings:font-bold prose-headings:tracking-tight prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-code:bg-slate-100 prose-code:px-1 prose-code:rounded prose-code:text-sm prose-strong:text-slate-900 max-w-none">
           {post.contentType === 'html'
             ? <div dangerouslySetInnerHTML={{ __html: post.content }} />
-            : <MDXRemote source={post.content} />
+            : <MDXRemote
+                source={post.content}
+                // Without remark-gfm, MDX renders only CommonMark — so a GFM table came out
+                // as literal "| Factor | Weight |" rows in the body text. That was live on
+                // topical-authority-seo-guide, which has a real table in it. Also turns on
+                // strikethrough, task lists, footnotes and bare-URL autolinking.
+                options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+                components={MDX_COMPONENTS}
+              />
           }
         </div>
 

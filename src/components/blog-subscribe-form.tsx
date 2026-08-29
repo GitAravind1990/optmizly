@@ -52,13 +52,18 @@ export function BlogSubscribeForm() {
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-3">
+        {/* min-w-0 on the email field is load-bearing. `flex-1` sets flex-basis to 0, but a
+            flex item keeps min-width:auto, and an email input's intrinsic minimum is around
+            190px — so the row could not compress below 128 + 8 + 192 + 48 of padding = 376px
+            and pushed every blog post sideways on a 360px phone. Measured before the fix:
+            scrollWidth 377 against a 360 viewport, on all three posts checked. */}
         <div className="flex gap-2">
           <input
             type="text"
             value={firstName}
             onChange={e => setFirstName(e.target.value)}
             placeholder="First name"
-            className="w-32 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-32 shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           <input
             type="email"
@@ -66,7 +71,7 @@ export function BlogSubscribeForm() {
             onChange={e => setEmail(e.target.value)}
             placeholder="Your email address"
             required
-            className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
         <button
