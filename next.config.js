@@ -26,6 +26,18 @@ const securityHeaders = [
  *   2. the last commit at all — right when a shallow clone cannot see further back
  *   3. build time — right in the sense that this is when the served page was produced
  *
+ * **In production it is source 3, and that is worth knowing rather than assuming.**
+ * Deploys here go out through `vercel deploy`, which uploads a source tarball with no
+ * `.git` directory, so both git lookups fail and the build timestamp is what ships —
+ * confirmed on the live page, which carries a `dateModified` ending in `Z` rather than the
+ * `+05:30` a local commit produces. The published meaning is therefore "last deployed",
+ * which is true, and close to "last changed" for a site where nearly every deploy touches
+ * the marketing surface. It does move on an unrelated deploy; if that ever matters, the fix
+ * is a build step that writes the commit date into the tarball, not a literal in here.
+ *
+ * Sources 1 and 2 still earn their place: they are what `next build` uses locally, which is
+ * where the value gets eyeballed before it ships.
+ *
  * Wrapped so a missing git, a shallow clone or a detached build can never fail a build.
  * A slightly less precise date is not worth blocking a deploy over.
  */
