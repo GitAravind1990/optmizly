@@ -58,12 +58,30 @@ const faqJsonLd = JSON.stringify({
 })
 
 /**
- * Organization and WebSite markup — the entity signals this page spends a whole section
- * telling other people to add. The homepage had FAQPage and nothing else, which its own
- * audit scored 50 for structured data.
+ * When this site first went live: the repository's initial commit,
+ * "Initial commit: Optmizly SaaS platform setup". A fixed historical fact, so a constant
+ * rather than something derived at build — deriving it would read the oldest commit a
+ * clone happens to contain, and Vercel clones shallowly, so a truncated history would
+ * silently publish a wrong founding date.
+ */
+const SITE_PUBLISHED = '2026-06-03'
+
+/**
+ * Last changed, resolved from git at build time. See resolveLastModified in next.config.js
+ * for why it is not a literal and not `new Date()`.
+ */
+const SITE_MODIFIED = process.env.SITE_LAST_MODIFIED ?? SITE_PUBLISHED
+
+/**
+ * Organization, WebSite and WebPage markup — the entity signals this page spends a whole
+ * section telling other people to add. The homepage had FAQPage and nothing else, which its
+ * own audit scored 50 for structured data.
  *
  * `sameAs` is the part that resolves "Optmizly" to a known entity rather than a word.
  * It lists only profiles that actually exist; add to it as more do.
+ *
+ * The dates sit on the WebPage node rather than on Organization, because they describe this
+ * page, not the company.
  */
 const orgJsonLd = JSON.stringify({
   '@context': 'https://schema.org',
@@ -85,6 +103,17 @@ const orgJsonLd = JSON.stringify({
       url: 'https://optmizly.com',
       name: 'Optmizly',
       publisher: { '@id': 'https://optmizly.com/#organization' },
+    },
+    {
+      '@type': 'WebPage',
+      '@id': 'https://optmizly.com/#webpage',
+      url: 'https://optmizly.com',
+      name: 'Optmizly — Optimize Your Website for Google + AI Search',
+      isPartOf: { '@id': 'https://optmizly.com/#website' },
+      about: { '@id': 'https://optmizly.com/#organization' },
+      datePublished: SITE_PUBLISHED,
+      dateModified: SITE_MODIFIED,
+      inLanguage: 'en',
     },
   ],
 })
@@ -180,7 +209,17 @@ export default function HomePage() {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             flexWrap: 'wrap', gap: 12, fontFamily: T.sans, fontSize: 13, color: T.muted,
           }}>
-            <div>© 2026 Optmizly, Inc. All rights reserved.</div>
+            {/* Shown, not just marked up. Our own audit's recommendation for a missing date
+                is "expose it in your schema, and show a last-updated date on the page", and
+                a machine-readable <time> is the half a reader can actually check. */}
+            <div>
+              © 2026 Optmizly, Inc. All rights reserved. · Last updated{' '}
+              <time dateTime={SITE_MODIFIED}>
+                {new Date(SITE_MODIFIED).toLocaleDateString('en-GB', {
+                  day: 'numeric', month: 'long', year: 'numeric',
+                })}
+              </time>
+            </div>
             <div style={{ display: 'flex', gap: 20 }}>
               <Link href="/privacy" style={{ color: T.muted, textDecoration: 'none' }}>Privacy</Link>
               <Link href="/terms" style={{ color: T.muted, textDecoration: 'none' }}>Terms</Link>

@@ -13,8 +13,51 @@ const securityHeaders = [
   { key: 'X-XSS-Protection', value: '1; mode=block' },
 ]
 
+/**
+ * When the marketing pages last actually changed, resolved at build time.
+ *
+ * Feeds `dateModified` on the homepage. It has to come from something real: a hardcoded
+ * date goes stale the day after it is written, and `new Date()` at render time would claim
+ * the page changed on every request, which is a freshness signal that is always "today" —
+ * fabricating exactly the kind of number this codebase refuses to fabricate elsewhere.
+ *
+ * Three sources, each a truthful reading of "last changed", degrading in precision:
+ *   1. the last commit touching the marketing sources — the accurate answer
+ *   2. the last commit at all — right when a shallow clone cannot see further back
+ *   3. build time — right in the sense that this is when the served page was produced
+ *
+ * Wrapped so a missing git, a shallow clone or a detached build can never fail a build.
+ * A slightly less precise date is not worth blocking a deploy over.
+ */
+function resolveLastModified() {
+  const { execFileSync } = require('child_process')
+  const paths = [
+    'src/app/page.tsx',
+    'src/components/marketing',
+    'src/components/home-hero.tsx',
+    'src/components/page-pricing.tsx',
+    'src/components/page-header.tsx',
+  ]
+  const git = args => {
+    try {
+      const out = execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+      return out && !Number.isNaN(Date.parse(out)) ? out : null
+    } catch {
+      return null
+    }
+  }
+  return (
+    git(['log', '-1', '--format=%cI', '--', ...paths]) ??
+    git(['log', '-1', '--format=%cI']) ??
+    new Date().toISOString()
+  )
+}
+
 const nextConfig = {
   poweredByHeader: false,
+  env: {
+    SITE_LAST_MODIFIED: resolveLastModified(),
+  },
   // re2 is a native addon (.node binary) — bundling it breaks the require, so it must
   // stay external and be resolved at runtime, same as the Prisma client.
   serverExternalPackages: ['@prisma/client', 're2'],
