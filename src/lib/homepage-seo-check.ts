@@ -74,6 +74,22 @@ export interface HomepageFetch {
   status: number
 }
 
+/** How one guarded request should behave. The SSRF handling is not optional and is not
+ *  in here — every request this module makes is pinned regardless of these. */
+export interface GuardedOptions {
+  /** Whole-operation budget, redirects and body read included. Default 8s. */
+  timeoutMs?: number
+  /** Accept header. Default asks for HTML. */
+  accept?: string
+  userAgent?: string
+  /** Refuse anything that is not HTML — for page fetches. */
+  requireHtml?: boolean
+  /** Refuse anything that IS HTML — for text side files like robots.txt. */
+  rejectHtml?: boolean
+  /** Cap on decompressed bytes. Default 2MB. */
+  maxBytes?: number
+}
+
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
 /**
@@ -86,7 +102,7 @@ export interface HomepageFetch {
  *
  * Redirects are not followed here. The caller walks them so each hop is re-validated.
  */
-function requestOnce(target: string, deadline: number): Promise<{
+function requestOnce(target: string, deadline: number, opts: GuardedOptions): Promise<{
   status: number
   location: string | null
   contentType: string
@@ -113,8 +129,8 @@ function requestOnce(target: string, deadline: number): Promise<{
         lookup: safeLookup,
         timeout: remaining,
         headers: {
-          'User-Agent': UA,
-          Accept: 'text/html,application/xhtml+xml',
+          'User-Agent': opts.userAgent ?? UA,
+          Accept: opts.accept ?? 'text/html,application/xhtml+xml',
           // Worth asking for: measured on moz.com, identity is 168,632 bytes against 25,993
           // brotli — 6.5x the transfer on a path Client Finder walks up to 60 times per
           // search. The decompression-bomb risk that argues against it is handled by
@@ -134,9 +150,14 @@ function requestOnce(target: string, deadline: number): Promise<{
         }
         if (status >= 400) { res.destroy(); return finish(null) }
 
-        // Only HTML is worth reading. A PDF or a 200MB video would otherwise be pulled into
-        // memory and regexed for <title>.
-        if (!/text\/html|application\/xhtml\+xml/i.test(contentType)) { res.destroy(); return finish(null) }
+        // Only HTML is worth reading for a page. A PDF or a 200MB video would otherwise be
+        // pulled into memory and regexed for <title>.
+        const isHtml = /text\/html|application\/xhtml\+xml/i.test(contentType)
+        if (opts.requireHtml && !isHtml) { res.destroy(); return finish(null) }
+        // For a text side file the opposite: hosts that answer every path with the app shell
+        // would otherwise have their HTML parsed as a robots.txt, which reads as "no rules"
+        // and therefore "everything allowed".
+        if (opts.rejectHtml && isHtml) { res.destroy(); return finish(null) }
 
         // Decompress if the server compressed. What bounds a decompression bomb here is the
         // byte counter below, which measures DECOMPRESSED bytes and destroys both streams at
@@ -150,17 +171,18 @@ function requestOnce(target: string, deadline: number): Promise<{
         const encoding = String(res.headers['content-encoding'] ?? '').toLowerCase().trim()
         let stream: NodeJS.ReadableStream = res
         if (encoding === 'gzip' || encoding === 'x-gzip') {
-          stream = res.pipe(zlib.createGunzip({ maxOutputLength: MAX_BYTES }))
+          stream = res.pipe(zlib.createGunzip({ maxOutputLength: opts.maxBytes ?? MAX_BYTES }))
         } else if (encoding === 'deflate') {
-          stream = res.pipe(zlib.createInflate({ maxOutputLength: MAX_BYTES }))
+          stream = res.pipe(zlib.createInflate({ maxOutputLength: opts.maxBytes ?? MAX_BYTES }))
         } else if (encoding === 'br') {
-          stream = res.pipe(zlib.createBrotliDecompress({ maxOutputLength: MAX_BYTES }))
+          stream = res.pipe(zlib.createBrotliDecompress({ maxOutputLength: opts.maxBytes ?? MAX_BYTES }))
         } else if (encoding && encoding !== 'identity') {
           // An encoding we cannot read is not worth guessing at.
           res.destroy()
           return finish(null)
         }
 
+        const maxBytes = opts.maxBytes ?? MAX_BYTES
         const chunks: Buffer[] = []
         let total = 0
         const collected = () => chunks.length > 0 ? Buffer.concat(chunks).toString('utf8') : null
@@ -172,7 +194,7 @@ function requestOnce(target: string, deadline: number): Promise<{
           // Stop at the cap rather than buffering everything and measuring afterwards —
           // the point of a cap is to not hold the bytes. A truncated homepage still
           // analyses fine: everything measured below lives near the top of the document.
-          if (total >= MAX_BYTES) stop()
+          if (total >= maxBytes) stop()
         })
         stream.on('end', () => finish({ status, location: null, contentType, body: collected() }))
         // Fires instead of 'end' when the cap, the deadline or a decompression failure cut
@@ -218,7 +240,26 @@ function requestOnce(target: string, deadline: number): Promise<{
  *     cannot add up to five timeouts.
  */
 export async function fetchHomepage(url: string): Promise<HomepageFetch | null> {
-  const deadline = Date.now() + FETCH_TIMEOUT_MS
+  const res = await fetchGuarded(url, { requireHtml: true })
+  return res ? { finalUrl: res.finalUrl, html: res.body, status: res.status } : null
+}
+
+/**
+ * The guarded fetch, for anything else that has to pull a URL a stranger chose.
+ *
+ * Exported so there is exactly one implementation of "connect somewhere untrusted" in this
+ * codebase. The readiness audit's robots.txt and llms.txt requests used plain `fetch` when
+ * the page fetch was hardened, which left two unpinned connections behind a fix whose whole
+ * claim was that connections are pinned. One door bolted and two beside it open is not a
+ * fixed building.
+ */
+export async function fetchGuarded(url: string, options: GuardedOptions = {}): Promise<{
+  finalUrl: string
+  body: string
+  contentType: string
+  status: number
+} | null> {
+  const deadline = Date.now() + (options.timeoutMs ?? FETCH_TIMEOUT_MS)
   let current = url
 
   try {
@@ -230,7 +271,7 @@ export async function fetchHomepage(url: string): Promise<HomepageFetch | null> 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     if (Date.now() >= deadline) return null
 
-    const res = await requestOnce(current, deadline)
+    const res = await requestOnce(current, deadline, options)
     if (!res) return null
 
     if (res.status >= 300 && res.status < 400) {
@@ -245,7 +286,7 @@ export async function fetchHomepage(url: string): Promise<HomepageFetch | null> 
     }
 
     if (res.body === null) return null
-    return { finalUrl: current, html: res.body, status: res.status }
+    return { finalUrl: current, body: res.body, contentType: res.contentType, status: res.status }
   }
 
   return null   // too many redirects

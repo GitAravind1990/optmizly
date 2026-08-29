@@ -27,8 +27,7 @@
  * They are deliberately separate functions over separate signals; do not merge them.
  */
 
-import { validateUrl } from './ssrf-guard'
-import { fetchHomepage, analyzeHomepage, type SEOFinding, type SEOSignals } from './homepage-seo-check'
+import { fetchHomepage, fetchGuarded, analyzeHomepage, type SEOFinding, type SEOSignals } from './homepage-seo-check'
 
 /** Budget for the two small side files. The page fetch has its own inside fetchHomepage. */
 const SIDE_FILE_TIMEOUT_MS = 4_000
@@ -153,33 +152,29 @@ async function fetchSideFile(origin: string, path: string): Promise<string | nul
   let target: string
   try {
     target = new URL(path, origin).toString()
-    await validateUrl(target)
   } catch {
     return null
   }
 
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), SIDE_FILE_TIMEOUT_MS)
-  try {
-    const res = await fetch(target, {
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: { 'User-Agent': UA, Accept: 'text/plain,*/*' },
-    })
-    if (!res.ok) return null
+  // fetchGuarded rather than fetch, for the same reason the page fetch uses it: the address
+  // approved by the private-range check has to be the address the socket connects to. These
+  // two requests were left on plain fetch when the page fetch was pinned, which meant a
+  // rebinding attack simply moved one door along — to an internal /robots.txt instead of an
+  // internal homepage.
+  const res = await fetchGuarded(target, {
+    timeoutMs: SIDE_FILE_TIMEOUT_MS,
+    accept: 'text/plain,*/*',
+    // Identify as the readiness tool rather than as Client Finder. A site owner reading
+    // their logs should be able to tell which of ours asked for their robots.txt.
+    userAgent: UA,
+    // Some hosts answer every path with the HTML app shell. A robots.txt that is actually a
+    // web page would otherwise parse as "no rules", which reads as "everything allowed".
+    rejectHtml: true,
+    maxBytes: SIDE_FILE_MAX_BYTES,
+  })
+  if (!res) return null
 
-    // Some hosts answer every path with the HTML app shell. A robots.txt that is actually
-    // a web page would otherwise parse as "no rules", which reads as "everything allowed".
-    const type = res.headers.get('content-type') ?? ''
-    if (/text\/html/i.test(type)) return null
-
-    const body = await res.text()
-    return body.length > SIDE_FILE_MAX_BYTES ? body.slice(0, SIDE_FILE_MAX_BYTES) : body
-  } catch {
-    return null
-  } finally {
-    clearTimeout(timer)
-  }
+  return res.body.length > SIDE_FILE_MAX_BYTES ? res.body.slice(0, SIDE_FILE_MAX_BYTES) : res.body
 }
 
 // ─── robots.txt ───────────────────────────────────────────────────────────────
