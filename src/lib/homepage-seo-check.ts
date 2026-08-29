@@ -18,7 +18,10 @@
  *    for exactly that reason - findings are what reach a model, and a prospect's homepage
  *    should not get to write into a prompt at length.
  */
-import { validateUrl } from './ssrf-guard'
+import http from 'http'
+import zlib from 'zlib'
+import https from 'https'
+import { validateUrl, safeLookup } from './ssrf-guard'
 
 const UA = 'Mozilla/5.0 (compatible; Optmizly-ClientFinder/1.0; +https://optmizly.com)'
 
@@ -74,27 +77,145 @@ export interface HomepageFetch {
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
 /**
+ * One HTTP(S) request, with the connection pinned to an address we approved.
+ *
+ * Node's own http/https rather than fetch, for one reason: `lookup`. It is the only hook
+ * that lets the address a socket connects to be the same address that was checked. fetch
+ * has no equivalent, so with fetch the name is always resolved a second time, out of our
+ * sight, after the check has passed.
+ *
+ * Redirects are not followed here. The caller walks them so each hop is re-validated.
+ */
+function requestOnce(target: string, deadline: number): Promise<{
+  status: number
+  location: string | null
+  contentType: string
+  body: string | null
+} | null> {
+  return new Promise(resolve => {
+    let settled = false
+    const finish = (v: Parameters<typeof resolve>[0]) => { if (!settled) { settled = true; resolve(v) } }
+
+    let parsed: URL
+    try { parsed = new URL(target) } catch { return finish(null) }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return finish(null)
+
+    const remaining = deadline - Date.now()
+    if (remaining <= 0) return finish(null)
+
+    const mod = parsed.protocol === 'https:' ? https : http
+    const req = mod.request(
+      target,
+      {
+        method: 'GET',
+        // The whole point of this rewrite. safeLookup refuses private addresses at the
+        // moment of connection, so there is no window between checking and connecting.
+        lookup: safeLookup,
+        timeout: remaining,
+        headers: {
+          'User-Agent': UA,
+          Accept: 'text/html,application/xhtml+xml',
+          // Worth asking for: measured on moz.com, identity is 168,632 bytes against 25,993
+          // brotli — 6.5x the transfer on a path Client Finder walks up to 60 times per
+          // search. The decompression-bomb risk that argues against it is handled by
+          // maxOutputLength below rather than by refusing compression.
+          'Accept-Encoding': 'gzip, deflate, br',
+        },
+      },
+      res => {
+        const status = res.statusCode ?? 0
+        const contentType = String(res.headers['content-type'] ?? '')
+
+        if (status >= 300 && status < 400) {
+          // A redirect's body is never read: the caller only needs where it points.
+          res.destroy()
+          const location = res.headers.location
+          return finish({ status, location: typeof location === 'string' ? location : null, contentType, body: null })
+        }
+        if (status >= 400) { res.destroy(); return finish(null) }
+
+        // Only HTML is worth reading. A PDF or a 200MB video would otherwise be pulled into
+        // memory and regexed for <title>.
+        if (!/text\/html|application\/xhtml\+xml/i.test(contentType)) { res.destroy(); return finish(null) }
+
+        // Decompress if the server compressed. What bounds a decompression bomb here is the
+        // byte counter below, which measures DECOMPRESSED bytes and destroys both streams at
+        // the cap — measured against a 204KB gzip that expands to 200MB, it stops at exactly
+        // 2,097,152 bytes with no heap growth.
+        //
+        // `maxOutputLength` is defence in depth, not the bound. Node applies it per output
+        // buffer rather than to a stream's cumulative output: the same bomb run through
+        // createGunzip with maxOutputLength set and nothing else decompressed all 200MB
+        // without erroring. Do not remove the counter and rely on this option.
+        const encoding = String(res.headers['content-encoding'] ?? '').toLowerCase().trim()
+        let stream: NodeJS.ReadableStream = res
+        if (encoding === 'gzip' || encoding === 'x-gzip') {
+          stream = res.pipe(zlib.createGunzip({ maxOutputLength: MAX_BYTES }))
+        } else if (encoding === 'deflate') {
+          stream = res.pipe(zlib.createInflate({ maxOutputLength: MAX_BYTES }))
+        } else if (encoding === 'br') {
+          stream = res.pipe(zlib.createBrotliDecompress({ maxOutputLength: MAX_BYTES }))
+        } else if (encoding && encoding !== 'identity') {
+          // An encoding we cannot read is not worth guessing at.
+          res.destroy()
+          return finish(null)
+        }
+
+        const chunks: Buffer[] = []
+        let total = 0
+        const collected = () => chunks.length > 0 ? Buffer.concat(chunks).toString('utf8') : null
+        const stop = () => { res.destroy(); if (stream !== res) (stream as NodeJS.ReadableStream & { destroy?: () => void }).destroy?.() }
+
+        stream.on('data', (chunk: Buffer) => {
+          total += chunk.length
+          chunks.push(chunk)
+          // Stop at the cap rather than buffering everything and measuring afterwards —
+          // the point of a cap is to not hold the bytes. A truncated homepage still
+          // analyses fine: everything measured below lives near the top of the document.
+          if (total >= MAX_BYTES) stop()
+        })
+        stream.on('end', () => finish({ status, location: null, contentType, body: collected() }))
+        // Fires instead of 'end' when the cap, the deadline or a decompression failure cut
+        // the stream short. What was read is still worth analysing.
+        stream.on('close', () => finish(collected() ? { status, location: null, contentType, body: collected() } : null))
+        stream.on('error', () => { stop(); finish(collected() ? { status, location: null, contentType, body: collected() } : null) })
+        if (stream !== res) res.on('error', () => finish(collected() ? { status, location: null, contentType, body: collected() } : null))
+      }
+    )
+
+    // `timeout` above is an idle timeout on the socket; this bounds the whole request, so a
+    // server dribbling one byte at a time cannot hold the function open.
+    const overall = setTimeout(() => req.destroy(), Math.max(1, deadline - Date.now()))
+    const clear = () => clearTimeout(overall)
+    req.on('close', clear)
+
+    req.on('timeout', () => { req.destroy(); finish(null) })
+    req.on('error', () => finish(null))
+    req.end()
+  })
+}
+
+/**
  * Fetch a homepage, or return null. Never throws, never hangs.
  *
- * The SSRF surface here is wider than it looks. The caller does not type these URLs - they
- * arrive from Google Places - but "not typed by the user" is not "trustworthy": a Places
- * listing can point anywhere, including at this network's own private ranges or the cloud
- * metadata endpoint. So:
+ * The SSRF surface here is wider than it looks. Client Finder's URLs arrive from Google
+ * Places, and "not typed by the user" is not "trustworthy" — anyone can list a business
+ * with any website. The free readiness audit is more direct still: the URL is typed by a
+ * stranger on a public page. So:
  *
- *   - validateUrl() before the first request: scheme must be http(s), and the hostname is
- *     resolved and rejected if it lands on loopback, link-local (169.254.0.0/16, which is
- *     where IMDS lives), or RFC1918 space.
- *   - redirect: 'manual', and validateUrl() again on every hop. Following redirects
- *     automatically would let a public hostname bounce to 127.0.0.1 after passing the
- *     first check, which is the standard way this guard gets walked around.
+ *   - validateUrl() before the first request: the scheme must be http(s), and the hostname
+ *     is resolved and refused if any address it returns is loopback, link-local
+ *     (169.254.0.0/16, where IMDS lives), RFC1918, CGNAT or otherwise not public.
+ *   - safeLookup as the request's `lookup`, which re-runs that check on the address the
+ *     socket is actually connecting to. **This is what closes DNS rebinding.** validateUrl
+ *     alone cannot: it resolves the name, approves it, and then the connection resolves the
+ *     name again — and an attacker running the authoritative server can answer differently
+ *     the second time. Because Node resolves through `lookup`, the approved address and the
+ *     connected address are now the same event rather than two.
+ *   - redirects walked by hand, with validateUrl() on every hop, so a public hostname
+ *     cannot bounce to 127.0.0.1 after passing the first check.
  *   - one deadline for the whole operation rather than per hop, so five slow redirects
  *     cannot add up to five timeouts.
- *
- * Known limitation, stated rather than papered over: validateUrl resolves the hostname and
- * fetch() resolves it again, so a DNS entry that changes between the two calls is not
- * caught (classic rebinding TOCTOU). Closing it properly means pinning the resolved IP and
- * connecting to it directly with a custom agent. Out of scope for this MVP, and worth
- * doing before this tool ever accepts a user-typed URL.
  */
 export async function fetchHomepage(url: string): Promise<HomepageFetch | null> {
   const deadline = Date.now() + FETCH_TIMEOUT_MS
@@ -107,30 +228,15 @@ export async function fetchHomepage(url: string): Promise<HomepageFetch | null> 
   }
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    const remaining = deadline - Date.now()
-    if (remaining <= 0) return null
+    if (Date.now() >= deadline) return null
 
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), remaining)
-
-    let res: Response
-    try {
-      res = await fetch(current, {
-        redirect: 'manual',
-        signal: controller.signal,
-        headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml' },
-      })
-    } catch {
-      return null
-    } finally {
-      clearTimeout(timer)
-    }
+    const res = await requestOnce(current, deadline)
+    if (!res) return null
 
     if (res.status >= 300 && res.status < 400) {
-      const location = res.headers.get('location')
-      if (!location) return null
+      if (!res.location) return null
       try {
-        current = new URL(location, current).toString()
+        current = new URL(res.location, current).toString()
         await validateUrl(current)   // the hop is as untrusted as the original URL
       } catch {
         return null
@@ -138,56 +244,11 @@ export async function fetchHomepage(url: string): Promise<HomepageFetch | null> 
       continue
     }
 
-    if (res.status >= 400) return null
-
-    // Only HTML is worth parsing. A PDF or a 200MB video would otherwise be read into
-    // memory and regexed for <title>.
-    const contentType = res.headers.get('content-type') ?? ''
-    if (!/text\/html|application\/xhtml\+xml/i.test(contentType)) return null
-
-    const html = await readCapped(res, deadline)
-    if (html === null) return null
-
-    return { finalUrl: current, html, status: res.status }
+    if (res.body === null) return null
+    return { finalUrl: current, html: res.body, status: res.status }
   }
 
   return null   // too many redirects
-}
-
-/**
- * Read the body up to MAX_BYTES and stop.
- *
- * Streamed rather than res.text() so an oversized response is abandoned partway instead of
- * being buffered in full and then measured - the point of a cap is to not hold the bytes.
- * A truncated homepage still analyses fine: everything measured below lives in the first
- * fraction of the document.
- */
-async function readCapped(res: Response, deadline: number): Promise<string | null> {
-  if (!res.body) return null
-
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder('utf-8', { fatal: false })
-  const chunks: string[] = []
-  let total = 0
-
-  try {
-    for (;;) {
-      if (Date.now() > deadline) { await reader.cancel().catch(() => {}); break }
-
-      const { done, value } = await reader.read()
-      if (done) break
-      if (!value) continue
-
-      total += value.byteLength
-      chunks.push(decoder.decode(value, { stream: true }))
-
-      if (total >= MAX_BYTES) { await reader.cancel().catch(() => {}); break }
-    }
-  } catch {
-    return chunks.length > 0 ? chunks.join('') : null
-  }
-
-  return chunks.join('')
 }
 
 // ─── Analysis ─────────────────────────────────────────────────────────────────

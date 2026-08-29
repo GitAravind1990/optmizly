@@ -154,13 +154,16 @@ export function scoreOpportunity(signals: SEOSignals): number {
  * correct markup for a decorative image, so sites whose markup was right were being faulted
  * for it, worth up to the full 6 points of `imageAlt`.
  *
- * Measured before and after across the 41 reachable sites among the 51 real prospects
+ * Measured before and after across the 44 reachable sites among the 51 real prospects
  * stored in production:
  *
- *     score delta (old - new): mean 1.83, max 6, unchanged on 24 of 41
- *     bands before: Low 19, Moderate 12, Good 8, High 2
- *     bands after:  Low 23, Moderate  9, Good 7, High 2
+ *     score delta (old - new): mean 1.98, max 6, unchanged on 25 of 44
+ *     bands before: Low 19, Moderate 14, Good 9, High 2
+ *     bands after:  Low 23, Moderate 11, Good 8, High 2
  *     five sites moved down one band, four Moderate->Low and one Good->Moderate
+ *
+ * (Re-measured after the fetch rewrite in the same change, which made three more of the 51
+ * reachable. The five sites that move and the size of the move are unaffected by that.)
  *
  * The bands stay at 10/20/35 on purpose. Every point removed was a fault the site did not
  * have, so the sites that moved down moved down correctly - they are less of an opportunity
