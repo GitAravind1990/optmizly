@@ -139,6 +139,32 @@ six hours apart can land 6h59m apart.
 edits as pending deploy. The schedule in `vercel.json` is a request, not a fact;
 this is the only way to see the difference.
 
+**It writes every line to stderr, and stdout is empty.** So `vercel crons ls | ...`
+pipes nothing, and `... 2>&1 | Select-Object -Last N` buffers the whole run and emits
+only on completion — kill it early and you get *zero* output, which reads exactly like
+a command that hung without printing. It is not hung. Use:
+
+```powershell
+$env:NO_UPDATE_NOTIFIER = '1'; vercel crons ls 2>&1 | Select-Object -First 40
+```
+
+Expect ~8s, of which the actual API call is ~300ms. The rest is Node startup plus two
+subprocesses the CLI spawns *at exit* — an npm update check and a telemetry flush —
+both spawned with `stdio: ["inherit","inherit","inherit","ipc"]`, so they hold the
+parent's stderr handle and a PowerShell pipeline can outlive the finished command.
+`NO_UPDATE_NOTIFIER=1` stops the update worker spawning (verified: 1 spawn line → 0);
+`VERCEL_TELEMETRY_DISABLED=1` does not stop the telemetry one.
+
+The update worker can never succeed on this machine — it is killed when the parent
+exits, before it writes its cache, so it re-runs on every invocation and leaves a lock
+file it never releases (`%LOCALAPPDATA%\com.vercel.cli\Cache\package-updates\`). Deleting
+the lock does not fix it; the next run recreates it. Harmless, but it is why a stray
+`vercel` command can occasionally stall far longer than 8s.
+
+**Its "pending changes" diff is positional**, so with duplicate `path` entries it reports
+phantom `modified` rows — four `/api/cron/health` entries reliably show three. Trust the
+registered list above it, not the diff.
+
 `CRON_SECRET` is asserted, never interpolated. Left unset,
 `Bearer ${process.env.CRON_SECRET}` is the literal string `"Bearer undefined"` —
 a value anyone on the internet can send.
