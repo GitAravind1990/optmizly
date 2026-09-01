@@ -287,19 +287,35 @@ export function PagePricing() {
         @media (max-width: 639px) {
           .pricing-card-featured { transform: none !important; }
         }
+
+        /* Explicit column counts rather than auto-fit.
+           With four plans, 'repeat(auto-fit, minmax(280px, 1fr))' could not fit a fourth
+           column inside this section — 4x280 plus three 22px gaps is 1186px against a
+           1136px content box — so it silently wrapped to 3 + 1 and left an orphan card on
+           its own row. auto-fit also has no way to express "never 3", which is the actual
+           requirement: 4, then 2x2, then stacked. */
+        .pricing-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        @media (max-width: 1139px) { .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 639px)  { .pricing-grid { grid-template-columns: minmax(0, 1fr); } }
+
+        /* Four across leaves each card ~267px, where 32px of padding either side eats a
+           quarter of the width. Roomier again as soon as there are only two columns. */
+        .pricing-card { padding: 26px; }
+        @media (max-width: 1139px) { .pricing-card { padding: 32px; } }
       `}</style>
 
       {/* Cards */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: 22, marginTop: 60, alignItems: 'start',
+      <div className="pricing-grid" style={{
+        display: 'grid', gap: 22, marginTop: 60, alignItems: 'start',
       }}>
         {plans.map((p) => {
         // True only for the Agency card, and only when its annual product is configured.
         const isAnnual = !!p.annualProductId && annualBilling
         return (
-          <div key={p.name} className={p.featured ? 'pricing-card-featured' : ''} style={{
-            padding: 32, borderRadius: 24, position: 'relative', overflow: 'hidden',
+          <div key={p.name} className={`pricing-card${p.featured ? ' pricing-card-featured' : ''}`} style={{
+            // Padding lives in CSS, not here, because it now varies with column count and an
+            // inline value would outrank the media query trying to change it.
+            borderRadius: 24, position: 'relative', overflow: 'hidden',
             background: p.featured ? T.ink900 : '#fff',
             color: p.featured ? '#fff' : T.ink,
             border: p.featured ? '1px solid transparent' : `1px solid ${T.line}`,
@@ -512,15 +528,20 @@ export function PagePricing() {
           Compare all features
         </h3>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.sans, fontSize: 14, minWidth: 560 }}>
+          {/* Raised from 560 with the fourth plan column: five columns at 560 crushed the
+              feature labels to two words a line. The wrapper above scrolls horizontally, so
+              a wider minimum costs nothing on a phone. */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.sans, fontSize: 14, minWidth: 720 }}>
             <thead>
               <tr>
-                <th style={{ padding: '14px 16px', textAlign: 'left', color: T.muted, fontWeight: 600, fontSize: 13, borderBottom: `2px solid ${T.line}`, width: '44%' }}>Feature</th>
-                {['Free', 'Pro', 'Agency'].map((plan, i) => (
+                <th style={{ padding: '14px 16px', textAlign: 'left', color: T.muted, fontWeight: 600, fontSize: 13, borderBottom: `2px solid ${T.line}`, width: '34%' }}>Feature</th>
+                {/* Pro stays the highlighted column, but it is index 2 now that Starter sits
+                    between Free and Pro. The old `i === 1` would have highlighted Starter. */}
+                {['Free', 'Starter', 'Pro', 'Agency'].map((plan, i) => (
                   <th key={plan} style={{
                     padding: '14px 16px', textAlign: 'center', fontWeight: 700,
                     borderBottom: `2px solid ${T.line}`, fontSize: 14,
-                    color: i === 1 ? T.blue : T.ink,
+                    color: i === 2 ? T.blue : T.ink,
                   }}>{plan}</th>
                 ))}
               </tr>
@@ -530,7 +551,7 @@ export function PagePricing() {
                 row.type === 'category'
                   ? (
                     <tr key={i} style={{ background: T.line2 }}>
-                      <td colSpan={4} style={{
+                      <td colSpan={5} style={{
                         padding: '8px 16px', fontSize: 11, fontWeight: 700,
                         letterSpacing: '0.08em', textTransform: 'uppercase', color: T.muted,
                       }}>{row.label}</td>
@@ -538,13 +559,15 @@ export function PagePricing() {
                   ) : (
                     <tr key={i} style={{ borderBottom: `1px solid ${T.line2}` }}>
                       <td style={{ padding: '13px 16px', color: T.ink }}>{row.label}</td>
-                      {[row.free, row.pro, row.agency].map((val, ci) => (
+                      {/* `row.starter ?? row.free` — see COMPARISON_ROWS. Column indices
+                          shifted by one, so Pro's accent is ci === 2, not 1. */}
+                      {[row.free, row.starter ?? row.free, row.pro, row.agency].map((val, ci) => (
                         <td key={ci} style={{ padding: '13px 16px', textAlign: 'center' }}>
                           {val === true
-                            ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={ci === 1 ? T.blue : T.good} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M5 12l5 5L20 7"/></svg>
+                            ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={ci === 2 ? T.blue : T.good} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M5 12l5 5L20 7"/></svg>
                             : val === false
                             ? <span style={{ color: T.muted, fontSize: 18, lineHeight: 1 }}>—</span>
-                            : <span style={{ fontWeight: 600, color: ci === 1 ? T.blue : T.ink }}>{val}</span>
+                            : <span style={{ fontWeight: 600, color: ci === 2 ? T.blue : T.ink }}>{val}</span>
                           }
                         </td>
                       ))}
@@ -571,12 +594,21 @@ export function PagePricing() {
   )
 }
 
+/**
+ * `starter` is optional and falls back to `free` when omitted.
+ *
+ * Starter is the Free tool set with a bigger allowance, so on 15 of these 17 rows the two
+ * columns are identical by definition. Defaulting keeps them that way permanently — adding
+ * a tool to Free can never leave Starter silently showing a dash — and means only the two
+ * rows that genuinely differ carry a value. If Starter ever gains a tool of its own, give
+ * that row an explicit `starter`.
+ */
 const COMPARISON_ROWS: Array<
   | { type: 'category'; label: string }
-  | { type: 'row'; label: string; free: boolean | string; pro: boolean | string; agency: boolean | string }
+  | { type: 'row'; label: string; free: boolean | string; starter?: boolean | string; pro: boolean | string; agency: boolean | string }
 > = [
   { type: 'category', label: 'Usage limits' },
-  { type: 'row', label: 'Analyses / month', free: '3', pro: '50', agency: '200' },
+  { type: 'row', label: 'Analyses / month', free: '3', starter: '15', pro: '50', agency: '200' },
   { type: 'category', label: 'Content & SEO' },
   { type: 'row', label: '8-dimension content score', free: true, pro: true, agency: true },
   { type: 'row', label: 'SEO, GEO & AEO scores', free: true, pro: true, agency: true },
@@ -595,7 +627,7 @@ const COMPARISON_ROWS: Array<
   { type: 'row', label: 'Local SEO Suite (4 tools)', free: false, pro: false, agency: true },
   { type: 'row', label: 'AI Performance Fixer', free: false, pro: false, agency: true },
   { type: 'category', label: 'Support' },
-  { type: 'row', label: 'Support', free: 'Community', pro: 'Priority', agency: 'Priority' },
+  { type: 'row', label: 'Support', free: 'Community', starter: 'Email', pro: 'Priority', agency: 'Priority' },
 ]
 
 const FAQS = [
