@@ -6,7 +6,7 @@ import {
 interface LimitReachedEmailProps {
   firstName?: string
   limit: number
-  plan: 'FREE' | 'PRO' | 'AGENCY'
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'AGENCY'
   pricingUrl: string
 }
 
@@ -21,7 +21,24 @@ export function LimitReachedEmail({
 }: LimitReachedEmailProps) {
   const isFree = plan === 'FREE'
   const isAgency = plan === 'AGENCY'
-  const planLabel = isFree ? 'free' : plan === 'PRO' ? 'Pro' : 'Agency'
+  const planLabel = isFree ? 'free' : plan === 'STARTER' ? 'Starter' : plan === 'PRO' ? 'Pro' : 'Agency'
+
+  // The upsell is always the *next* tier up, never the top one. Before STARTER existed
+  // this was a two-way choice, so "not free" could safely mean "offer Agency"; with a
+  // tier between them that same branch would skip Pro entirely and quote a Starter user
+  // $49 when their next step costs $19.
+  const nextTier =
+    isFree || plan === 'STARTER'
+      ? {
+          heading: 'Upgrade to Pro ($19/month)',
+          detail:
+            '50 analyses/month plus E-E-A-T analysis, AI rewriter, content gap finder, rank tracker, backlink finder and more.',
+        }
+      : {
+          heading: 'Upgrade to Agency ($49/month)',
+          detail:
+            '200 analyses/month plus SERP audits, local SEO suite, topical authority mapping, client reports and more.',
+        }
 
   return (
     <Html>
@@ -47,12 +64,10 @@ export function LimitReachedEmail({
               {!isAgency && (
                 <Section className="bg-blue-50 rounded-xl border border-blue-100 px-5 py-4 mb-6">
                   <Text className="text-sm font-bold text-blue-900 m-0 mb-1">
-                    {isFree ? 'Upgrade to Pro ($19/month)' : 'Upgrade to Agency ($49/month)'}
+                    {nextTier.heading}
                   </Text>
                   <Text className="text-sm text-blue-700 m-0">
-                    {isFree
-                      ? '50 analyses/month plus E-E-A-T analysis, AI rewriter, content gap finder, rank tracker, backlink finder and more.'
-                      : '200 analyses/month plus SERP audits, local SEO suite, topical authority mapping, client reports and more.'}
+                    {nextTier.detail}
                   </Text>
                 </Section>
               )}

@@ -1,0 +1,14 @@
+-- Adds the STARTER plan: $9/mo, 15 analyses, same tools as FREE.
+--
+-- Placed BEFORE 'PRO' so the enum's declaration order still reads cheapest to dearest.
+-- Nothing sorts on it today, but an enum whose order contradicts its meaning is a trap
+-- for the first ORDER BY that ever touches it.
+--
+-- Additive only: no existing row changes, and no row can hold the new value until the
+-- application starts writing it. `ALTER TYPE ... ADD VALUE` is permitted inside a
+-- transaction on PostgreSQL 12+ provided the new value is not *used* in the same
+-- transaction, which is why this file adds the label and nothing else.
+--
+-- No RLS statement here because this migration adds no table. Plan lives on "User" and
+-- "Subscription", both of which already have row level security enabled.
+ALTER TYPE "Plan" ADD VALUE 'STARTER' BEFORE 'PRO';

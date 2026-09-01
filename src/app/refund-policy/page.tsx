@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'Refund Policy – Optmizly' }
 const sections = [
   {
     title: '1. Paid Plans and Billing',
-    body: `Optmizly does not offer a free trial. Pro and Agency are paid subscriptions: your payment method is charged when you subscribe, and again at the start of each renewal period. Pro is billed monthly. Agency is billed either monthly or annually, whichever you choose at checkout. If you want to try Optmizly without paying, the Free plan requires no payment method and can be used for as long as you like.`,
+    body: `Optmizly does not offer a free trial. Starter, Pro and Agency are paid subscriptions: your payment method is charged when you subscribe, and again at the start of each renewal period. Pro is billed monthly. Agency is billed either monthly or annually, whichever you choose at checkout. If you want to try Optmizly without paying, the Free plan requires no payment method and can be used for as long as you like.`,
   },
   {
     title: '2. Cancelling',

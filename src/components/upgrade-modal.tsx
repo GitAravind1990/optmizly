@@ -35,6 +35,22 @@ function copyForPlan(plan: string, limit: number | null): PlanCopy {
       cta: { label: 'Upgrade to Agency ($49/mo) →', href: '/pricing' },
     }
   }
+  // Starter is a paid plan, so it needs its own branch rather than the free fallback
+  // below — a paying customer told they have "hit your free limit" is being described
+  // as something they are not, and the upsell has to name Pro's tools as the thing they
+  // are actually buying, since Starter's own tool list is identical to Free's.
+  if (plan === 'STARTER') {
+    return {
+      heading: "You've hit your Starter limit",
+      body: `You've used all ${limit ?? 15} analyses this month. Upgrade to Pro for more runs and 10 more tools.`,
+      benefits: [
+        '50 analyses every month (vs 15 on Starter)',
+        'All Pro tools unlocked (E-E-A-T, Gap, Rank Tracker…)',
+        'Ranking Engine, Backlinks & AI citation optimiser',
+      ],
+      cta: { label: 'Upgrade to Pro ($19/mo) →', href: '/pricing' },
+    }
+  }
   return {
     heading: "You've hit your free limit",
     body: "You've used all your free analyses this month. Upgrade to Pro for more runs across 12 tools.",

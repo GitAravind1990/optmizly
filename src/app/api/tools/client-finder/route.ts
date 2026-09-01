@@ -42,6 +42,7 @@ const POOL_LIMIT = 60
  */
 const CLIENT_FINDER_DAILY_LIMITS: Record<Plan, number> = {
   FREE: 0,
+  STARTER: 0,
   PRO: 0,
   AGENCY: 50,
 }

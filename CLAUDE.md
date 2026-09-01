@@ -11,8 +11,14 @@ marketing figures. Counts are cumulative by tier, since each plan sees the tiers
 | Tier | Sees | Claim to use |
 |---|---|---|
 | Free | 2 | — |
+| Starter | 2 | never "more tools" — Starter buys volume, not access |
 | Pro | 12 | "12 Pro tools", never "all tools" |
 | Agency | 23 | "all 23 tools" |
+
+**Starter is deliberately the same two tools as Free**, at 15 analyses a month instead of
+3. That is the whole reason adding it did not touch any tool-count copy: no tier's count
+changed. Give Starter a third tool and every count above has to be rechecked along with
+the six places listed below.
 
 Pro does **not** get everything, so a Pro-facing upgrade prompt must say 12, not 23.
 Adding a nav entry means updating the count in: `/login`, `/signup`, `PRO_BENEFITS` in

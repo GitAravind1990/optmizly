@@ -7,7 +7,7 @@ interface LimitWarningEmailProps {
   firstName?: string
   used: number
   limit: number
-  plan: 'FREE' | 'PRO' | 'AGENCY'
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'AGENCY'
   pricingUrl: string
 }
 
@@ -26,7 +26,7 @@ export function LimitWarningEmail({
   const remaining = limit - used
   const isFree = plan === 'FREE'
   const isAgency = plan === 'AGENCY'
-  const planLabel = isFree ? 'free' : plan === 'PRO' ? 'Pro' : 'Agency'
+  const planLabel = isFree ? 'free' : plan === 'STARTER' ? 'Starter' : plan === 'PRO' ? 'Pro' : 'Agency'
   const analysesLabel = isFree ? 'free analyses' : `${planLabel} plan analyses`
 
   return (

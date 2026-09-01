@@ -21,6 +21,7 @@ export const maxDuration = 60
  */
 const OUTREACH_DAILY_LIMITS: Record<Plan, number> = {
   FREE: 0,
+  STARTER: 0,
   PRO: 0,
   AGENCY: 200,
 }

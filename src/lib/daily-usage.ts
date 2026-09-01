@@ -22,6 +22,7 @@ export function getDayKey(d = new Date()): string {
  *  normal use while still bounding a runaway script. */
 export const AI_REGEX_DAILY_LIMITS: Record<Plan, number> = {
   FREE: 5,
+  STARTER: 5,
   PRO: 200,
   AGENCY: 1000,
 }

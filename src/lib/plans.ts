@@ -2,6 +2,7 @@ import { Plan } from '@prisma/client'
 
 export const PLAN_LIMITS: Record<Plan, number> = {
   FREE: 3,
+  STARTER: 15,
   PRO: 50,
   AGENCY: 200,
 }
@@ -11,12 +12,22 @@ export const PLAN_LIMITS: Record<Plan, number> = {
 // Dodo's side, it must not carry the full paid-tier monthly quota.
 export const TRIAL_LIMITS: Record<Plan, number> = {
   FREE: 3,
+  // Deliberately equal to the paid STARTER allowance rather than lower. The backstop
+  // exists to stop a stray TRIALING subscription handing out a *large* quota; 15 is
+  // already the smallest paid tier, so there is nothing to claw back.
+  STARTER: 15,
   PRO: 10,
   AGENCY: 15,
 }
 
 export const PLAN_TOOLS: Record<Plan, string[]> = {
   FREE: ['analyse', 'onpage'],
+  // STARTER buys volume, not access: the same two tools as FREE with 15 runs a month
+  // instead of 3. Keeping the tool list identical is what stops this plan touching the
+  // tool-count copy in /login, /signup, PRO_BENEFITS, the upgrade modal and the welcome
+  // banner — none of those numbers change, because no tier's tool count changed.
+  // Give it more tools and every one of those places needs updating in the same commit.
+  STARTER: ['analyse', 'onpage'],
   PRO: ['analyse', 'onpage', 'eeat', 'citation', 'gap', 'rewrite', 'content-ideas', 'content-optimizer', 'competitor-spy', 'rank-tracker', 'ranking-engine', 'backlinks', 'keyword-tool'],
   AGENCY: ['analyse', 'onpage', 'client-finder', 'eeat', 'citation', 'gap', 'rewrite', 'serp', 'topical', 'local', 'tracker', 'content-ideas', 'content-optimizer', 'competitor-spy', 'rank-tracker', 'local-seo', 'seo-audit', 'geogrid', 'review-velocity', 'ranking-engine', 'backlinks', 'performance-fixer', 'search-console', 'client-reports', 'keyword-tool', 'ai-regex'],
 }

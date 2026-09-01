@@ -1,19 +1,31 @@
-﻿import {
+import {
   Body, Button, Container, Head, Heading, Hr, Html,
   Preview, Section, Text, Tailwind,
 } from '@react-email/components'
 
 interface SubscriptionEmailProps {
   firstName?: string
-  plan: 'Pro' | 'Agency'
+  plan: 'Starter' | 'Pro' | 'Agency'
   amount: string
   dashboardUrl: string
   nextBillingDate?: string
 }
 
 const PLAN_TOOLS: Record<string, string[]> = {
+  // Starter buys volume, not tools: the same two as the free tier with a bigger monthly
+  // allowance. Saying so plainly is better than listing features it does not include and
+  // having the first run refuse them.
+  Starter: ['Content Analysis', 'On-Page SEO', '15 analyses every month'],
   Pro: ['E-E-A-T Analysis', 'Relevant Backlinks', 'AI Rewrite (with framework)', 'Citation Plan', 'Content Gap', 'AI Queries'],
   Agency: ['Everything in Pro', 'AI Cite Tracker', 'Local SEO Suite (4 tools)', 'SERP Competitor Audit', 'Topical Authority Mapper ★'],
+}
+
+/** Monthly allowance by plan label, mirroring PLAN_LIMITS in src/lib/plans.ts. Stated per
+ *  tier rather than as "Agency or else 50", which quoted every non-Agency plan at 50. */
+const PLAN_LIMIT_LABEL: Record<string, string> = {
+  Starter: '15',
+  Pro: '50',
+  Agency: '200',
 }
 
 export function SubscriptionEmail({
@@ -25,7 +37,7 @@ export function SubscriptionEmail({
 }: SubscriptionEmailProps) {
   const isAgency = plan === 'Agency'
   const accentColor = isAgency ? '#d97706' : '#2563eb'
-  const limit = isAgency ? '200' : '50'
+  const limit = PLAN_LIMIT_LABEL[plan] ?? '50'
 
   return (
     <Html>

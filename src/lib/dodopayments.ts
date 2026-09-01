@@ -28,6 +28,14 @@ export const dodo = new Proxy({}, {
 }) as DodoPayments
 
 export const DODO_PRODUCT_IDS = {
+  /**
+   * Starter, $9/mo. Empty until the product is created in Dodo — this integration is
+   * live-mode only, so the product has to be made by hand in the dashboard and its id
+   * set as NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID. While it is empty the plan is simply
+   * unbuyable: the pricing card hides its button and getPlanFromProductId cannot match
+   * it, which is the safe direction for a half-configured tier.
+   */
+  STARTER: process.env.NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID || '',
   PRO: process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID || '',
   AGENCY: process.env.NEXT_PUBLIC_DODO_AGENCY_PRODUCT_ID || '',
   /** Yearly billing for the same Agency plan. Empty until the product exists in Dodo. */
@@ -44,7 +52,7 @@ export const DODO_PRODUCT_IDS = {
  * it would at full price. Deriving the plan from the amount would break the moment any
  * coupon existed.
  */
-export function getPlanFromProductId(productId: string): 'PRO' | 'AGENCY' | 'FREE' {
+export function getPlanFromProductId(productId: string): 'STARTER' | 'PRO' | 'AGENCY' | 'FREE' {
   // Guarded against the empty string, because an unset env var would otherwise match an
   // empty productId and silently grant a plan. Cheap to write, expensive to discover.
   if (!productId) return 'FREE'
@@ -52,6 +60,9 @@ export function getPlanFromProductId(productId: string): 'PRO' | 'AGENCY' | 'FRE
   if (DODO_PRODUCT_IDS.AGENCY_ANNUAL && productId === DODO_PRODUCT_IDS.AGENCY_ANNUAL) return 'AGENCY'
   if (productId === DODO_PRODUCT_IDS.PRO) return 'PRO'
   if (DODO_PRODUCT_IDS.PRO_ANNUAL && productId === DODO_PRODUCT_IDS.PRO_ANNUAL) return 'PRO'
+  // Guarded like the annual ids rather than compared directly: STARTER is empty until the
+  // product exists, and an unguarded comparison would be the empty-string bug above.
+  if (DODO_PRODUCT_IDS.STARTER && productId === DODO_PRODUCT_IDS.STARTER) return 'STARTER'
   return 'FREE'
 }
 

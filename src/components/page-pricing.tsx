@@ -56,6 +56,31 @@ const plans = [
     signedInHref: '/dashboard',
   },
   {
+    name: 'Starter',
+    audience: 'For one site you have outgrown the free plan on',
+    price: '$9',
+    period: '/mo',
+    anchor: '15 analyses a month — 5× the Free plan, same two tools',
+    tagline: 'For running the core analysis often enough to act on it.',
+    color: 'gray',
+    featured: false,
+    /**
+     * Starter sells volume, not access. The features list says so in its second line
+     * rather than implying more: a plan whose first run refuses a tool the card seemed to
+     * promise is worse than one that never promised it.
+     */
+    features: [
+      'Everything in Free, plus:',
+      '15 analyses / month (5× the Free plan)',
+      'Same two tools as Free — Content Analysis and On-Page SEO',
+      'Analysis history kept',
+      'Email support',
+    ],
+    cta: 'Get Starter',
+    signedOutHref: '/signup',
+    checkoutProductId: process.env.NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID,
+  },
+  {
     name: 'Pro',
     audience: 'For marketers optimizing every week',
     price: '$19',
@@ -315,11 +340,13 @@ export function PagePricing() {
                 <span style={{
                   fontFamily: T.sans, fontSize: 52, fontWeight: 600, letterSpacing: -2.4, lineHeight: 1,
                   color: p.featured ? '#fff' : (p.color === 'amber' ? '#D97706' : T.ink),
-                }}>{isAnnual ? p.annualPrice : p.price}</span>
+                }}>{/* Free and Starter have no annual product, so on the annual toggle they
+                      keep showing their real monthly price rather than rendering `undefined`. */}
+                  {(isAnnual ? p.annualPrice : p.price) ?? p.price}</span>
                 <span style={{
                   fontSize: 16,
                   color: p.featured ? 'rgba(255,255,255,0.6)' : T.muted,
-                }}>{isAnnual ? p.annualPeriod : p.period}</span>
+                }}>{(isAnnual ? p.annualPeriod : p.period) ?? p.period}</span>
               </div>
 
               {/* What that price buys, stated rather than left to be worked out from three
@@ -404,9 +431,15 @@ export function PagePricing() {
                 </Link>
               </SignedOut>
               <SignedIn>
-                {p.checkoutProductId ? (
+                {/* Resolve the id for the *selected* billing period before deciding whether
+                    a checkout is possible. Starter is monthly-only, so on the annual toggle
+                    it has no product to buy — the old `annualProductId!` assertion would have
+                    handed checkout `undefined` and failed at the payment provider instead of
+                    here. Falling through to the dashboard link is the same safe branch an
+                    unconfigured product already uses. */}
+                {(isAnnual ? p.annualProductId : p.checkoutProductId) ? (
                   <CheckoutButton
-                    productId={isAnnual ? p.annualProductId! : p.checkoutProductId}
+                    productId={(isAnnual ? p.annualProductId : p.checkoutProductId)!}
                     cta={p.cta}
                     featured={p.featured ?? false}
                     couponEligible={isAnnual && p.couponEligible === true}
@@ -588,7 +621,7 @@ const FAQS = [
   },
   {
     q: 'Can I pay annually?',
-    a: 'Pro is $19 monthly or $228 a year, and Agency is $49 monthly or $588 a year, chosen at checkout \u2013 the annual price is twelve months at the same rate, so paying yearly costs the same and simply renews once instead of twelve times. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full $588 after that.',
+    a: 'Starter is $9 monthly only. Pro is $19 monthly or $228 a year, and Agency is $49 monthly or $588 a year, chosen at checkout \u2013 the annual price is twelve months at the same rate, so paying yearly costs the same and simply renews once instead of twelve times. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full $588 after that.',
   },
   {
     q: 'Can I upgrade or downgrade?',
