@@ -26,6 +26,11 @@ export async function POST(req: NextRequest) {
       const posts = await getAllPosts()
       const latest = posts[0]
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://optmizly.com'
+      // The subscriber row is already committed, so a failed welcome email must not turn
+      // a successful subscription into a 400. Swallowing here is safe *because*
+      // sendBlogSubscribeEmail now reports its own failures to PostHog before returning —
+      // it used to fail silently, which made this catch look like the culprit when the
+      // real blind spot was an unset RESEND_API_KEY returning success from inside.
       await sendBlogSubscribeEmail(
         email,
         firstName?.trim() || undefined,

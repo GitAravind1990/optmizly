@@ -12,10 +12,29 @@ import { DripDay7Email } from '@/emails/drip-day7'
 import { BlogSubscribeEmail } from '@/emails/blog-subscribe'
 import { WeeklySummaryEmail } from '@/emails/weekly-summary'
 import { AgencyReportEmail } from '@/emails/agency-report'
+import { captureServerException } from '@/lib/posthog-server'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM = process.env.EMAIL_FROM ?? 'Optmizly <hello@Optmizly.com>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://Optmizly.com'
+
+/**
+ * Reports a send that did not happen, somewhere that outlives the request.
+ *
+ * `console.error` on its own is close to useless here: this plan retains no runtime
+ * logs, so a failure in production leaves nothing to read afterwards — the same blind
+ * spot that hid a dead Groq key for three days. PostHog is where the evidence survives.
+ *
+ * The recipient is deliberately kept out of the PostHog payload. Subscriber addresses
+ * reaching an analytics vendor would be a new category of personal data going to a
+ * sub-processor, which is a `/privacy` change, not a logging change.
+ *
+ * Never throws — reporting a failure must not become one.
+ */
+async function reportEmailFailure(kind: string, to: string, error: unknown): Promise<void> {
+  console.error(`[Email] Failed to send ${kind} to ${to}:`, error)
+  await captureServerException(null, error, { emailKind: kind })
+}
 
 // ── Welcome ───────────────────────────────────────────────────────────────────
 export async function sendWelcomeEmail(to: string, firstName?: string) {
@@ -35,7 +54,7 @@ export async function sendWelcomeEmail(to: string, firstName?: string) {
     })
     console.log(`[Email] Welcome sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send welcome:', e)
+    await reportEmailFailure('welcome', to, e)
   }
 }
 
@@ -69,7 +88,7 @@ export async function sendSubscriptionEmail(
     })
     console.log(`[Email] Subscription confirmation sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send subscription email:', e)
+    await reportEmailFailure('subscription confirmation', to, e)
   }
 }
 
@@ -103,7 +122,7 @@ export async function sendTrialStartedEmail(
     })
     console.log(`[Email] Trial started email sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send trial started email:', e)
+    await reportEmailFailure('trial started', to, e)
   }
 }
 
@@ -116,7 +135,10 @@ export async function sendLimitWarningEmail(
   plan: 'FREE' | 'PRO' | 'AGENCY' = 'FREE',
 ) {
   try {
-    if (!resend) return
+    // Raised, not returned, so an unset key reaches reportEmailFailure below rather than
+    // vanishing. The call site in auth.ts swallows the throw, so behaviour is unchanged —
+    // what changes is that the failure is now recorded somewhere.
+    if (!resend) throw new Error('RESEND_API_KEY is not set')
     const html = await render(
       LimitWarningEmail({ firstName, used, limit, plan, pricingUrl: `${APP_URL}/pricing` })
     )
@@ -128,7 +150,7 @@ export async function sendLimitWarningEmail(
     })
     console.log(`[Email] Limit warning sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send limit warning:', e)
+    await reportEmailFailure('limit warning', to, e)
   }
 }
 
@@ -140,7 +162,10 @@ export async function sendLimitReachedEmail(
   plan: 'FREE' | 'PRO' | 'AGENCY' = 'FREE',
 ) {
   try {
-    if (!resend) return
+    // auth.ts flips `limitEmailSent` false→true *before* calling this, so a silent no-op
+    // on an unset key burns this user's limit email for the rest of the month. Raised so
+    // it is at least recorded; the call site still swallows, so nothing else changes.
+    if (!resend) throw new Error('RESEND_API_KEY is not set')
     const html = await render(
       LimitReachedEmail({ firstName, limit, plan, pricingUrl: `${APP_URL}/pricing` })
     )
@@ -152,19 +177,24 @@ export async function sendLimitReachedEmail(
     })
     console.log(`[Email] Limit reached sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send limit reached email:', e)
+    await reportEmailFailure('limit reached', to, e)
   }
 }
 
 // ── Drip: Day 1 ──────────────────────────────────────────────────────────────
 export async function sendDripDay1Email(to: string, firstName?: string) {
   try {
-    if (!resend) return
+    // Throws rather than returning quietly, unlike the non-cron mailers below.
+    // `claimDripEmail` writes the dedup row *before* this runs, so a silent no-op on an
+    // unset key burns day1 permanently for every user in the batch — they can never
+    // become eligible again — while the run still records `ok: true`. Raising it puts
+    // the failure in the cron's error tally, which is the only place anyone looks.
+    if (!resend) throw new Error('RESEND_API_KEY is not set')
     const html = await render(DripDay1Email({ firstName, dashboardUrl: `${APP_URL}/dashboard` }))
     await resend.emails.send({ from: FROM, to, subject: 'One thing to try in Optmizly today', html })
     console.log(`[Email] Drip day1 sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send drip day1:', e)
+    await reportEmailFailure('drip day1', to, e)
     throw e
   }
 }
@@ -172,12 +202,13 @@ export async function sendDripDay1Email(to: string, firstName?: string) {
 // ── Drip: Day 3 ──────────────────────────────────────────────────────────────
 export async function sendDripDay3Email(to: string, firstName?: string) {
   try {
-    if (!resend) return
+    // Claim-before-send, so this throws rather than no-opping. See sendDripDay1Email.
+    if (!resend) throw new Error('RESEND_API_KEY is not set')
     const html = await render(DripDay3Email({ firstName, pricingUrl: `${APP_URL}/pricing` }))
     await resend.emails.send({ from: FROM, to, subject: 'What 15 more Optmizly tools look like', html })
     console.log(`[Email] Drip day3 sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send drip day3:', e)
+    await reportEmailFailure('drip day3', to, e)
     throw e
   }
 }
@@ -185,12 +216,13 @@ export async function sendDripDay3Email(to: string, firstName?: string) {
 // ── Drip: Day 7 ──────────────────────────────────────────────────────────────
 export async function sendDripDay7Email(to: string, firstName?: string, isFree = true) {
   try {
-    if (!resend) return
+    // Claim-before-send, so this throws rather than no-opping. See sendDripDay1Email.
+    if (!resend) throw new Error('RESEND_API_KEY is not set')
     const html = await render(DripDay7Email({ firstName, isFree, dashboardUrl: `${APP_URL}/dashboard`, pricingUrl: `${APP_URL}/pricing` }))
     await resend.emails.send({ from: FROM, to, subject: `Still working on your SEO, ${firstName ?? 'there'}?`, html })
     console.log(`[Email] Drip day7 sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send drip day7:', e)
+    await reportEmailFailure('drip day7', to, e)
     throw e
   }
 }
@@ -223,7 +255,7 @@ export async function sendCancelledEmail(
     })
     console.log(`[Email] Cancellation email sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send cancellation email:', e)
+    await reportEmailFailure('cancellation', to, e)
   }
 }
 
@@ -240,7 +272,8 @@ export async function sendWeeklySummaryEmail(
   }
 ) {
   try {
-    if (!resend) return
+    // Claim-before-send (weekly_<date> rows), so this throws. See sendDripDay1Email.
+    if (!resend) throw new Error('RESEND_API_KEY is not set')
     const { weekAnalyses } = opts
     const subject = weekAnalyses > 0
       ? `Your Optmizly week — ${weekAnalyses} ${weekAnalyses === 1 ? 'analysis' : 'analyses'} run`
@@ -253,7 +286,7 @@ export async function sendWeeklySummaryEmail(
     await resend.emails.send({ from: FROM, to, subject, html })
     console.log(`[Email] Weekly summary sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send weekly summary:', e)
+    await reportEmailFailure('weekly summary', to, e)
     throw e
   }
 }
@@ -294,7 +327,10 @@ export async function sendBlogSubscribeEmail(
   latestPostUrl?: string,
 ) {
   try {
-    if (!resend) return
+    // Raised so an unset key is reported rather than returning a silent success. The
+    // subscriber row is already written by this point, so the caller is right to keep
+    // returning 200 — losing the welcome email must not fail the subscription.
+    if (!resend) throw new Error('RESEND_API_KEY is not set')
     const html = await render(BlogSubscribeEmail({ firstName, latestPostTitle, latestPostUrl }))
     await resend.emails.send({
       from: FROM,
@@ -304,7 +340,7 @@ export async function sendBlogSubscribeEmail(
     })
     console.log(`[Email] Blog subscribe confirmation sent to ${to}`)
   } catch (e) {
-    console.error('[Email] Failed to send blog subscribe email:', e)
+    await reportEmailFailure('blog subscribe confirmation', to, e)
   }
 }
 
