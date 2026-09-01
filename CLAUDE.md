@@ -135,6 +135,26 @@ job several times a day, list it several times, once per hour you want:
 to tell them apart. Budget for the jitter when setting `staleAfterMs` — two runs
 six hours apart can land 6h59m apart.
 
+**A production deploy landing inside a cron's scheduled hour can cost that run.**
+Deploying re-registers the crons and reassigns their within-hour offset, and a run
+that had not fired yet is simply lost for the day. Measured over Aug 20-27: every
+missed run sat in an hour containing a deploy — Aug 23 lost both 06:00 health
+(deploys 05:59, 06:12, 06:39 UTC) and 09:00 drip (09:28, 09:52), Aug 25 lost 09:00
+drip (08:52, 09:33) — and every scheduled hour with no deploy in it fired. The
+offsets prove the re-registration: drip sat at 09:05-09:06, then 09:17, then locked
+to 09:26:1x, changing at exactly the two gaps. It is not certain, though: Aug 24 had
+deploys at 18:03 and 18:12 and the 18:00 health run still fired at 18:06. Since
+nothing deploys on push here, this is only ever a manual deploy — so if a given day's
+run matters, do not ship during its hour.
+
+**Write mailers as backlog drains, and a missed run costs nothing but latency.** The
+drip queries are `createdAt <= daysAgo(N)` *and* `drippedEmails: { none: ... }` —
+"eligible and never sent", not "became eligible today" — so whoever a skipped run
+would have caught is picked up by the next one. Both gaps above sent zero emails and
+left zero backlog. An exact-day window would have dropped those users permanently
+instead, which is the trap: the bug would be invisible, because the symptom is an
+email that never arrives.
+
 **`vercel crons ls` shows what Vercel actually has registered** and flags local
 edits as pending deploy. The schedule in `vercel.json` is a request, not a fact;
 this is the only way to see the difference.
