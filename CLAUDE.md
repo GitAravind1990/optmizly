@@ -128,12 +128,31 @@ nothing to read afterwards either. Three things in the same commit:
 **This is a Hobby plan: one run per day per cron expression, fired anywhere
 inside the scheduled hour.** Anything more frequent — `0 */6 * * *`, `*/30 * * * *`
 — is rejected when you deploy, so it breaks the next deploy of *anything*, not
-just the cron. It also fails quietly in git: a six-hourly health check sat
-committed and unshipped for a day because nothing deploys on push here. Want a
-job several times a day, list it several times, once per hour you want:
+just the cron — and a rejected `vercel.json` takes the whole deploy with it, so the
+symptom is unrelated work not shipping. (A six-hourly health check once sat committed
+and unshipped for a day. That was recorded here as "nothing deploys on push"; see the
+correction below — pushing now builds, so today the same mistake surfaces as a failed
+deployment rather than silence.) Want a job several times a day, list it several
+times, once per hour you want:
 `vercel.json` allows repeated `path` entries and sends `x-vercel-cron-schedule`
 to tell them apart. Budget for the jitter when setting `staleAfterMs` — two runs
 six hours apart can land 6h59m apart.
+
+**Pushing to `main` deploys to production, within seconds.** The project has a live
+GitHub integration — deployments carry `githubDeployment: "1"` and full commit
+metadata — so there is no separate ship step and no such thing as a pushed-but-unshipped
+commit. Verified 2026-09-01: three commits pushed that day each produced a `READY`
+production deployment, one of them 30 seconds after the push.
+
+This corrects a claim that stood in this file and in several session notes — that
+nothing deploys on push here. It is wrong today and it misleads in the worst
+direction, because it invites you to push freely on the assumption nothing ships.
+Treat a push as a production release.
+
+`vercel deploy --prod` from the local CLI is a *separate* path and currently fails
+`Not authorized` on this machine, while read commands on the same credential work
+fine. That is a local credential problem, not a deploy problem — GitHub ships
+everything anyway, so it only bites if you ever need to deploy something unpushed.
 
 **A production deploy landing inside a cron's scheduled hour can cost that run.**
 Deploying re-registers the crons and reassigns their within-hour offset, and a run
@@ -143,9 +162,9 @@ missed run sat in an hour containing a deploy — Aug 23 lost both 06:00 health
 drip (08:52, 09:33) — and every scheduled hour with no deploy in it fired. The
 offsets prove the re-registration: drip sat at 09:05-09:06, then 09:17, then locked
 to 09:26:1x, changing at exactly the two gaps. It is not certain, though: Aug 24 had
-deploys at 18:03 and 18:12 and the 18:00 health run still fired at 18:06. Since
-nothing deploys on push here, this is only ever a manual deploy — so if a given day's
-run matters, do not ship during its hour.
+deploys at 18:03 and 18:12 and the 18:00 health run still fired at 18:06. A push is a
+deploy, so this includes pushing — if a given day's run matters, do not ship during
+its hour.
 
 **Write mailers as backlog drains, and a missed run costs nothing but latency.** The
 drip queries are `createdAt <= daysAgo(N)` *and* `drippedEmails: { none: ... }` —
