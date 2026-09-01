@@ -1,7 +1,19 @@
 'use client'
 
 import Link from 'next/link'
+import posthog from 'posthog-js'
 import { SignedIn, SignedOut } from './clerk-provider'
+
+/**
+ * The hero's CTAs were the only untracked step in the funnel.
+ *
+ * `free_audit_started` fires when someone interacts with the audit widget itself, which
+ * means every visitor who clicked the page's dominant CTA and then bounced on the way
+ * down to it was invisible — exactly the drop-off worth knowing about. Same event shape
+ * as `header_cta_clicked` in page-header.tsx, distinguished by `location`.
+ */
+const trackHeroCta = (location: string) => () =>
+  posthog.capture('hero_cta_clicked', { location })
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -350,7 +362,7 @@ export function HomeHero() {
             header, so the hero is not two competing signup buttons. */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 22, flexWrap: 'wrap' }}>
           <SignedOut>
-            <Link href="#free-audit" style={{
+            <Link href="#free-audit" onClick={trackHeroCta('hero_primary')} style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '0 30px', height: 56, borderRadius: 14,
               fontFamily: T.sans, fontSize: 17, fontWeight: 600,
@@ -359,7 +371,7 @@ export function HomeHero() {
             }}>
               Analyze My Website Free <Icon name="arrow" size={17} color="#fff" />
             </Link>
-            <Link href="#how-it-works" style={{
+            <Link href="#how-it-works" onClick={trackHeroCta('hero_secondary')} style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '0 28px', height: 56, borderRadius: 14,
               fontFamily: T.sans, fontSize: 16, fontWeight: 600,
