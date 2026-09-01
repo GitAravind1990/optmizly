@@ -149,10 +149,15 @@ nothing deploys on push here. It is wrong today and it misleads in the worst
 direction, because it invites you to push freely on the assumption nothing ships.
 Treat a push as a production release.
 
-`vercel deploy --prod` from the local CLI is a *separate* path and currently fails
-`Not authorized` on this machine, while read commands on the same credential work
-fine. That is a local credential problem, not a deploy problem — GitHub ships
-everything anyway, so it only bites if you ever need to deploy something unpushed.
+**`vercel deploy --prod` works too, but it lies about failing.** On 2026-09-01 it
+printed `{"status":"error","reason":"deploy_failed","message":"Not authorized"}` and
+exited 1 — while the deployment it had just created went `READY` and served
+production. That is the second recorded case of this CLI reporting failure for a
+build that succeeded; the first died with `read ECONNRESET` while polling. **Check
+`vercel ls` against the commit before retrying a failed deploy**, or you will ship
+the same commit twice. In `vercel ls --format json`, a CLI deploy carries
+`meta.actor` (`claude-code_*`) and a push-triggered one does not — that is how to
+tell which of two same-sha deployments came from where.
 
 **A production deploy landing inside a cron's scheduled hour can cost that run.**
 Deploying re-registers the crons and reassigns their within-hour offset, and a run
