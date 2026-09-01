@@ -63,6 +63,23 @@ export function getPlanFromProductId(productId: string): 'STARTER' | 'PRO' | 'AG
   // Guarded like the annual ids rather than compared directly: STARTER is empty until the
   // product exists, and an unguarded comparison would be the empty-string bug above.
   if (DODO_PRODUCT_IDS.STARTER && productId === DODO_PRODUCT_IDS.STARTER) return 'STARTER'
+
+  // ────────────────────────────────────────────────────────────────────────────────────
+  // TEMPORARY — REMOVE AFTER THE STARTER PAYMENT TEST
+  //
+  // `Optmizly Test PRO ($1)`, unarchived on 2026-09-02 and mapped to STARTER so a real
+  // end-to-end purchase can be made for $1 instead of $9. This integration is live-mode
+  // only, so there is no sandbox and a real charge is the only way to exercise the
+  // webhook, the plan mapping and the new Starter confirmation email.
+  //
+  // Deliberately hard-coded rather than an env var: the recorded pattern for this repo is
+  // never to touch the real DODO_PRODUCT_IDS variables for a test, because a half-reverted
+  // env var is invisible in code review and would silently sell the $9 plan for $1.
+  //
+  // To revert: delete this block, redeploy, archive the product, cancel the subscription.
+  // ────────────────────────────────────────────────────────────────────────────────────
+  if (productId === 'pdt_0NjFU4xQWGt6nWlUwy7j6') return 'STARTER'
+
   return 'FREE'
 }
 
