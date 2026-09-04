@@ -15,18 +15,37 @@ import { prisma } from '@/lib/prisma'
 import { getDayKey } from '@/lib/daily-usage'
 
 /**
- * Google Places, billed per request at roughly $0.032 (Text Search, New).
+ * Google Places daily request ceiling.
  *
- * 150 requests is about **$4.80 a day, ~$145 a month** at the ceiling. Sized against
- * today's reality rather than an ambition: total measured spend across every vendor is
- * currently under $2 a month, and there is no revenue, so a four-figure annual Google bill
- * is not a risk worth carrying for a tool that has run eight times.
+ * ── The rate, confirmed against Google's published pricing 2026-09-04 ──────────────
  *
- * What it buys: one search is up to 3 requests, so 150 is ~50 searches a day globally —
- * three Agency accounts at their full 15/day, or a respectable first day for a public
- * prospect finder. Raise it deliberately when there is revenue to pay for it, and change
- * this constant rather than adding an env override: a spend ceiling with two sources of
- * truth is a ceiling nobody can state with confidence.
+ * Text Search bills at **the highest SKU any requested field belongs to**, and our field
+ * mask asks for `websiteUri`, `rating` and `nationalPhoneNumber` — all three are
+ * **Enterprise** fields. So every request is:
+ *
+ *     Text Search Enterprise (E967-44BC-B44D): $35.00 / 1,000 = $0.035
+ *     Free allowance: 1,000 requests per month, per billing account
+ *
+ * **The Enterprise tier is not avoidable here.** Dropping `rating` and
+ * `nationalPhoneNumber` would not demote us to Pro ($32/1,000, 5,000 free), because
+ * `websiteUri` is itself an Enterprise field — and a prospecting tool that cannot see a
+ * business's website has no product left. Do not "optimize" the field mask expecting a
+ * cheaper SKU; the only lever is fewer requests.
+ *
+ * ── What 150/day costs ────────────────────────────────────────────────────────────
+ *
+ *     150/day = 4,500/month, less 1,000 free = 3,500 billed = ~$122.50/month at the ceiling
+ *
+ * That is a ceiling, not a forecast. Actual spend to date is **$0**: the tool has run 8
+ * times in its life, about 24 requests, entirely inside the monthly free allowance.
+ *
+ * One search is up to 3 requests, so 150 is ~50 searches a day globally — three Agency
+ * accounts at their full 15/day, or a respectable first day for a public prospect finder.
+ * The first ~333 searches each month are free.
+ *
+ * Raise it deliberately when there is revenue to pay for it, and change this constant
+ * rather than adding an env override: a spend ceiling with two sources of truth is a
+ * ceiling nobody can state with confidence.
  */
 export const PLACES_DAILY_REQUEST_BUDGET = 150
 
