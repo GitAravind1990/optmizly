@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
 import { PagePricing } from '@/components/page-pricing'
+import { FreeToolsSection } from '@/components/free-tools-section'
 
 const sans = "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
 const muted = '#8A93A3'
@@ -26,6 +27,9 @@ export default function PricingPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqJsonLd }} />
       <PageHeader />
       <PagePricing />
+      {/* After the plans here, rather than before them: a reader on /pricing arrived to
+          compare prices, and the free tools are what to offer the ones who decide not to. */}
+      <FreeToolsSection />
       <footer style={{ background: '#FAFAFA', borderTop: `1px solid ${line2}` }}>
         <div style={{
           maxWidth: 1200, margin: '0 auto', padding: '24px 32px',

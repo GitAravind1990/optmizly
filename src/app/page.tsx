@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/page-header'
 import { HomeHero } from '@/components/home-hero'
 import { PagePricing } from '@/components/page-pricing'
 import { HomeEmailCapture } from '@/components/home-email-capture'
+import { FreeToolsSection } from '@/components/free-tools-section'
 import { T } from '@/components/marketing/tokens'
 import {
   ProblemSection,
@@ -145,6 +146,12 @@ export default function HomePage() {
           statement, so the question the section raises is answerable in the next scroll. */}
       <ProblemSection />
       <FreeAuditSection />
+
+      {/* Directly after the audit, not down beside pricing where it started life at 77% of
+          a 13,790px page. Someone who has just been given a free result is the reader most
+          receptive to three more free things, so the reciprocity block stays in one piece
+          instead of being split across the fold. */}
+      <FreeToolsSection />
 
       {/* Understanding: what the three letters mean, then how the product joins them up. */}
       <PillarsSection />
