@@ -15,6 +15,8 @@ type Client = {
 
 export default function AgencyClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
+  /** null means unlimited — Infinity has no JSON representation, so the API sends null. */
+  const [clientLimit, setClientLimit] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -23,12 +25,19 @@ export default function AgencyClientsPage() {
     name: '', email: '', website: '', industry: '', keywords: '', competitors: '',
   })
 
+  /** Unlimited (null) is never "at the limit", which is the whole point of the higher tier. */
+  const atClientLimit = clientLimit !== null && clients.length >= clientLimit
+
   useEffect(() => { loadClients() }, [])
 
   async function loadClients() {
     setLoading(true)
     const res = await fetch('/api/agency/clients')
-    if (res.ok) setClients(await res.json())
+    if (res.ok) {
+      const data = await res.json()
+      setClients(data.clients ?? [])
+      setClientLimit(data.limit ?? null)
+    }
     setLoading(false)
   }
 
@@ -68,15 +77,39 @@ export default function AgencyClientsPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-extrabold text-slate-900">Client Reports</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage clients and generate monthly SEO reports</p>
+            <p className="text-sm text-slate-500 mt-1">
+              Manage clients and generate monthly SEO reports
+              {clientLimit !== null && (
+                <> · <span className={atClientLimit ? 'font-semibold text-amber-700' : ''}>
+                  {clients.length} of {clientLimit} clients
+                </span></>
+              )}
+            </p>
           </div>
+          {/* Disabled at the limit rather than letting the form open and fail on submit.
+              The server still enforces it — this only saves the user filling in six fields
+              to be refused at the end. */}
           <button
             onClick={() => setShowForm(v => !v)}
-            className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 transition-colors"
+            disabled={atClientLimit && !showForm}
+            title={atClientLimit && !showForm ? `Your plan includes ${clientLimit} clients` : undefined}
+            className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-brand-600"
           >
             {showForm ? 'Cancel' : '+ Add Client'}
           </button>
         </div>
+
+        {atClientLimit && !showForm && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
+            <p className="text-sm font-semibold text-amber-900 m-0">
+              You&rsquo;ve used all {clientLimit} client slots on your plan
+            </p>
+            <p className="text-sm text-amber-800 mt-1 mb-0">
+              Remove a client you no longer report on to free a slot. Analyses and prospect
+              searches are counted separately and are unaffected.
+            </p>
+          </div>
+        )}
 
         {/* Add client form */}
         {showForm && (

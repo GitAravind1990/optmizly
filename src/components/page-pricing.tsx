@@ -622,6 +622,7 @@ const COMPARISON_ROWS: Array<
   { type: 'row', label: 'LLM Citation Tracker', free: false, pro: false, agency: true },
   { type: 'category', label: 'Agency tools' },
   { type: 'row', label: 'SEO Client Finder', free: false, pro: false, agency: '15 searches / day' },
+  { type: 'row', label: 'Client projects', free: false, pro: false, agency: '10' },
   { type: 'row', label: 'SERP Competitor Audit', free: false, pro: false, agency: true },
   { type: 'row', label: 'Topical Authority Mapper', free: false, pro: false, agency: true },
   { type: 'row', label: 'Local SEO Suite (4 tools)', free: false, pro: false, agency: true },

@@ -37,6 +37,36 @@ export function canUseTool(plan: Plan, tool: string): boolean {
 }
 
 /**
+ * How many client records each plan may hold.
+ *
+ * Zero for every tier below Agency because client management is Agency-gated at the route,
+ * so those numbers are unreachable — a 0 says "not entitled" more clearly than a leftover
+ * allowance that looks live, the same convention CLIENT_FINDER_DAILY_LIMITS uses.
+ *
+ * **This limit is not a cost control.** A client is a database row and costs nothing to
+ * keep; all the real spend sits in analyses and prospect searches, which are metered
+ * separately and stay metered regardless of client count. That is what makes "unlimited
+ * clients" a headline a higher tier can honour honestly and indefinitely, and it is why
+ * this cap is a product boundary rather than a ceiling that has to hold under race.
+ *
+ * A future unlimited tier sets `Number.POSITIVE_INFINITY` here. Note that
+ * `JSON.stringify(Infinity)` is `null`, so any route returning this value must convert it
+ * deliberately — see `serializeClientLimit`. Writing that now means the unlimited tier
+ * cannot ship a silent `null` into the UI later.
+ */
+export const CLIENT_LIMITS: Record<Plan, number> = {
+  FREE: 0,
+  STARTER: 0,
+  PRO: 0,
+  AGENCY: 10,
+}
+
+/** `null` means unlimited, because Infinity is not representable in JSON. */
+export function serializeClientLimit(limit: number): number | null {
+  return Number.isFinite(limit) ? limit : null
+}
+
+/**
  * How much of the monthly allowance a single run of each tool consumes.
  *
  * Every tool used to cost exactly 1, which meant a content analysis costing nothing and

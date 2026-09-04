@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
 import { Plan } from '@prisma/client'
 import { AuthError, getOrCreateUser } from '@/lib/auth'
+import { CLIENT_LIMITS, serializeClientLimit } from '@/lib/plans'
 
 export const runtime = 'nodejs'
 
@@ -23,7 +24,14 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
       include: { _count: { select: { reports: true } } },
     })
-    return apiSuccess(clients)
+    // Returns the allowance alongside the list rather than the bare array it used to.
+    // A cap the user cannot see is not an upgrade trigger, it is a surprise at the moment
+    // they are trying to add an eleventh client.
+    return apiSuccess({
+      clients,
+      used: clients.length,
+      limit: serializeClientLimit(CLIENT_LIMITS[user.plan]),
+    })
   } catch (e) {
     return apiError(e)
   }
@@ -42,6 +50,24 @@ export async function POST(req: NextRequest) {
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       throw new AuthError(400, 'Invalid email address')
+    }
+
+    // Checked after validation so a malformed submission is reported as malformed rather
+    // than as a limit problem the user cannot act on.
+    //
+    // A count-then-create is not atomic, and deliberately so: two simultaneous submissions
+    // could both pass and leave eleven clients. That matters for a cost ceiling and does
+    // not matter here — clients are free to store, this is a product boundary, and the
+    // races available to a human filling in one form are not worth a transaction.
+    const limit = CLIENT_LIMITS[user.plan]
+    if (Number.isFinite(limit)) {
+      const existing = await prisma.client.count({ where: { agencyId: user.id } })
+      if (existing >= limit) {
+        throw new AuthError(
+          403,
+          `Your plan includes ${limit} client${limit === 1 ? '' : 's'} and you have ${existing}. Remove a client to add another, or upgrade for more.`,
+        )
+      }
     }
 
     const keywordsArr = (keywords ?? '')
