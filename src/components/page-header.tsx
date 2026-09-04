@@ -24,7 +24,10 @@ const sans = "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-seri
  */
 const NAV_LINKS: Array<{ label: string; href: string }> = [
   { label: 'How it works', href: '/#how-it-works' },
-  { label: 'Free tools', href: '/#free-audit' },
+  // Points at the four-tool section, not the hero's single audit widget. The label is
+  // plural and the "Analyze Free" button already owns #free-audit, so sending both to the
+  // same anchor spent a nav slot on a link the page already had.
+  { label: 'Free tools', href: '/#free-tools' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Blog', href: '/blog' },
 ]

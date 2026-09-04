@@ -589,7 +589,10 @@ export function PagePricing() {
           this far and not chosen a plan is the one person on this page most likely to leave,
           and the honest thing to offer them is the work we give away rather than a smaller
           discount. Everything here runs without an account. */}
-      <div style={{ marginTop: 80 }}>
+      {/* `id` is the nav's "Free tools" destination. It used to point at #free-audit, the
+          single hero widget, which made a plural label deliver one tool — and duplicated
+          the "Analyze Free" button that already goes there. */}
+      <div id="free-tools" style={{ marginTop: 80, scrollMarginTop: 96 }}>
         <h3 style={{
           fontFamily: T.sans, fontSize: 'clamp(22px, 3vw, 30px)',
           fontWeight: 700, letterSpacing: -1, color: T.ink,
