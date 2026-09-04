@@ -72,6 +72,49 @@ function dailyKey(req: NextRequest | Request, bucket: string): string {
   return `pub:${bucket}:${day}:${clientIp(req)}`
 }
 
+function monthlyKey(req: NextRequest | Request, bucket: string): string {
+  // Same trick one unit up: the UTC month is in the key, so "resets on the 1st" is true
+  // without a reset job, and a visitor cannot get a fresh allowance by waiting for midnight.
+  const month = new Date().toISOString().slice(0, 7)
+  return `pub:${bucket}:${month}:${clientIp(req)}`
+}
+
+/**
+ * Consumes one unit of a per-IP **monthly** allowance.
+ *
+ * For tools where a daily allowance is too generous to give away. The prospect finder costs
+ * three billed Google requests per run, so five a day per IP would be 150 searches a month
+ * from a single visitor — far past the point where a free tool is a lead magnet rather than
+ * a service.
+ *
+ * **Fails closed**, exactly like the daily version and for the same reason: with no Redis
+ * there is no way to bound spend on a public endpoint.
+ */
+export async function consumeMonthlyIpQuota(
+  req: NextRequest | Request,
+  bucket: string,
+  limit: number
+): Promise<RateVerdict> {
+  if (!limiter) return { allowed: false, remaining: 0, unavailable: true }
+
+  const active = limiter
+  const key = monthlyKey(req, bucket)
+  // 32 days outlives the longest month, so a key set on the 1st survives to the 31st and
+  // then clears itself rather than granting a second allowance mid-month.
+  const verdict = await active.consume(key, limit, 32 * 24 * 60 * 60)
+
+  return {
+    ...verdict,
+    refund: async () => {
+      try {
+        await active.refund(key)
+      } catch {
+        // A refund that throws would turn a recoverable error into a 500.
+      }
+    },
+  }
+}
+
 /**
  * Consumes one unit of a per-IP daily allowance.
  *

@@ -185,6 +185,7 @@ export default function HomePage() {
             {/* Link columns */}
             {[
               ['Free tools', [
+                ['Find Your Next SEO Client', '/tools/find-clients'],
                 ['AI Search Readiness Audit', '/tools/ai-search-readiness'],
                 ['E-E-A-T Checker', '/tools/eeat'],
                 ['AI Regex Generator', '/tools/ai-regex'],

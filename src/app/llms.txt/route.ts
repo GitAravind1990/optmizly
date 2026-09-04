@@ -48,8 +48,10 @@ Optmizly exists because being found no longer means one thing. A page can rank o
 
 ## Free tools, no account required
 
-These need no signup, no card, and store nothing. Five uses per day each.
+These need no signup and no card. Five uses per day each, except the prospect finder,
+which is three searches a month because every search buys live business data.
 
+- [Find Your Next SEO Client](${APP_URL}/tools/find-clients): Enter an industry and a city and get ten local businesses whose websites have fixable SEO problems, each with an opportunity score and its top issues. For agencies looking for prospects.
 - [AI Search Readiness Audit](${APP_URL}/tools/ai-search-readiness): Enter a URL and get a measured readiness score across technical foundation, on-page signals, content extractability, structured data, AEO and GEO — including whether AI answer crawlers are allowed in robots.txt and whether the content survives without JavaScript. Every check is deterministic; nothing is estimated.
 - [E-E-A-T Checker](${APP_URL}/tools/eeat): Paste content and score it against Experience, Expertise, Authoritativeness and Trustworthiness, with the specific weaknesses to fix first.
 - [AI Regex Generator](${APP_URL}/tools/ai-regex): Describe a pattern in plain English and get a working regular expression, for filtering SEO exports and keyword lists.
