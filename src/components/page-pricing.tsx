@@ -333,11 +333,32 @@ export function PagePricing() {
            the same 900px boundary as the grid so padding and column count never disagree. */
         @media (max-width: 899px) { .pricing-card { padding: 32px; } }
 
+        /* Reserved heights, so the price row and the CTA land on the same line in all five
+           cards. Sized for the worst wrap at five columns and released once the cards are
+           wide enough that these strings fit on fewer lines — holding three lines open on a
+           350px card would just be a gap. */
+        .pricing-audience       { min-height: 36px; }
+        .pricing-anchor         { min-height: 57px; }
+        .pricing-toggle-spacer  { height: 48px; }
+        @media (max-width: 1279px) {
+          .pricing-audience     { min-height: 20px; }
+          .pricing-anchor       { min-height: 38px; }
+        }
+        @media (max-width: 899px) {
+          .pricing-audience     { min-height: 0; }
+          .pricing-anchor       { min-height: 0; }
+          .pricing-toggle-spacer { height: 0; }
+        }
+
       `}</style>
 
       {/* Cards */}
+      {/* `stretch`, not `start`. With five tiers the feature lists run from five items to
+          nine, so start-aligned cards ended up between 654px and 1020px tall and the row
+          had a ragged bottom edge. Stretching makes every card the height of the tallest,
+          which is what makes a price table read as one object rather than five. */}
       <div className="pricing-grid" style={{
-        display: 'grid', gap: 22, marginTop: 60, alignItems: 'start',
+        display: 'grid', gap: 22, marginTop: 60, alignItems: 'stretch',
       }}>
         {plans.map((p) => {
         // True only for the Agency card, and only when its annual product is configured.
@@ -373,12 +394,16 @@ export function PagePricing() {
               </>
             )}
 
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div style={{
                 fontSize: 15, fontWeight: 600, marginBottom: 4,
                 color: p.featured ? '#fff' : T.ink, fontFamily: T.sans,
               }}>{p.name}</div>
-              <div style={{
+              {/* Fixed height so the price sits on the same line across all five cards.
+                  "For agencies managing several clients" wraps to two lines at five columns
+                  while "For marketers optimizing every week" takes one, and without this
+                  every card below started at a different offset. */}
+              <div className="pricing-audience" style={{
                 fontSize: 13, marginBottom: 16, fontFamily: T.sans, lineHeight: 1.4,
                 color: p.featured ? 'rgba(255,255,255,0.62)' : T.muted,
               }}>{p.audience}</div>
@@ -398,7 +423,10 @@ export function PagePricing() {
 
               {/* What that price buys, stated rather than left to be worked out from three
                   numbers in three cards. */}
-              <div style={{
+              {/* Reserves three lines. At five columns these run from one line ("3 analyses
+                  a month, no card") to three, and that difference alone put the five CTA
+                  buttons at five different heights. */}
+              <div className="pricing-anchor" style={{
                 fontSize: 13, fontWeight: 500, marginBottom: 14, lineHeight: 1.45,
                 fontFamily: T.sans,
                 color: p.featured ? T.cyan : (p.color === 'amber' ? '#D97706' : T.body),
@@ -424,8 +452,12 @@ export function PagePricing() {
               {/* Billing switch, Agency only. Hidden entirely when the annual product is not
                   configured, so a missing env var shows today's page rather than a toggle
                   that leads to a checkout with no product behind it. */}
+              {/* The space is reserved on every card, not just the two that have a toggle.
+                  Without it Free, Starter and Agency Plus pulled their buttons ~48px higher
+                  than Pro and Agency, which is the difference the eye actually notices. */}
+              {!p.annualProductId && <div className="pricing-toggle-spacer" />}
               {p.annualProductId && (
-                <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+                <div className="pricing-toggle" style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
                   {([['monthly', 'Monthly'], ['annual', 'Annual']] as const).map(([key, label]) => {
                     const active = (key === 'annual') === annualBilling
                     return (
@@ -447,11 +479,12 @@ export function PagePricing() {
                 </div>
               )}
 
-              <p style={{
-                fontSize: 14, lineHeight: 1.5, margin: '0 0 26px', minHeight: 42,
-                color: p.featured ? 'rgba(255,255,255,0.72)' : T.body,
-                fontFamily: T.sans,
-              }}>{p.tagline}</p>
+              {/* `tagline` is deliberately not rendered.
+                  It said the same thing as `audience` in different words — "For one site you
+                  want to understand" above "For trying AI search optimization on one site" —
+                  and at five columns each was wrapping to three lines. Two paragraphs of the
+                  same idea is what was pushing the CTAs to five different heights. The field
+                  is kept on the data so the wording is not lost if a use for it appears. */}
 
               {/* CTA button */}
               <SignedOut>
