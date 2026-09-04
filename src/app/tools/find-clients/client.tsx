@@ -30,6 +30,9 @@ export function PublicProspectFinder() {
   const [error, setError] = useState('')
   const [prospects, setProspects] = useState<PublicProspect[] | null>(null)
   const [remaining, setRemaining] = useState<number | null>(null)
+  /** How many businesses were checked, so "4 prospects" reads as 4-of-10 rather than a
+   *  thin result. Plenty of sites are simply fine, which is a real answer. */
+  const [scanned, setScanned] = useState<number | null>(null)
   const [notice, setNotice] = useState('')
 
   // Capacity fallback — the shared daily Google ceiling, not the visitor's own allowance.
@@ -70,6 +73,7 @@ export function PublicProspectFinder() {
 
       setProspects(data.prospects ?? [])
       setRemaining(typeof data.remaining === 'number' ? data.remaining : null)
+      setScanned(typeof data.scanned === 'number' ? data.scanned : null)
       if (data.message) setNotice(data.message)
       posthog.capture('prospect_finder_completed', {
         location: 'public',
@@ -189,11 +193,15 @@ export function PublicProspectFinder() {
       {prospects && prospects.length > 0 && (
         <div className="mt-8">
           <h2 className="text-lg font-bold text-slate-900">
-            {prospects.length} prospects worth a conversation
+            {prospects.length} {prospects.length === 1 ? 'prospect' : 'prospects'} worth a conversation
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Scored on what we could see from their public website. A higher score means more
-            fixable SEO problems — which means more to sell.
+            {scanned !== null && (
+              <>Out of {scanned} local businesses checked. </>
+            )}
+            Scored on what we could see from their public website — a higher score means more
+            fixable SEO problems, which means more to sell. The ones left out looked fine
+            already, so there is less to pitch.
           </p>
 
           <ul className="mt-5 space-y-3 list-none pl-0">

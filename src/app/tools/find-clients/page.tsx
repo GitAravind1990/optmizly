@@ -56,7 +56,7 @@ const SCHEMA = {
           name: 'Is it really free?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Three searches a month with no account and no card. Each search returns ten real prospects with real scores and issues. Contact details, CSV export, saved searches and drafted outreach are part of the paid Agency plan.',
+            text: 'Three searches a month with no account and no card. Each search checks ten local businesses and shows you the ones with fixable SEO problems — often four or five of the ten, since plenty of sites are already fine. Contact details, CSV export, saved searches and drafted outreach are part of the paid Agency plan.',
           },
         },
         {
