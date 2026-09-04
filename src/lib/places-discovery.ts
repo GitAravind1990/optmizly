@@ -20,6 +20,13 @@ export interface DiscoveredBusiness {
   hasWebsite: boolean
 }
 
+import {
+  reserveVendorRequests,
+  VendorBudgetExceededError,
+  VENDOR_GOOGLE_PLACES,
+  PLACES_DAILY_REQUEST_BUDGET,
+} from '@/lib/vendor-budget'
+
 const PLACES_ENDPOINT = 'https://places.googleapis.com/v1/places:searchText'
 
 const FIELD_MASK = [
@@ -90,6 +97,12 @@ interface PlacesResponse {
  * Returns [] rather than throwing on any upstream problem: a search that finds nothing is a
  * result the UI can show, where a thrown error takes the whole tool down for what is often a
  * typo in the location.
+ *
+ * **One exception: it throws `VendorBudgetExceededError`** when the system-wide daily Places
+ * ceiling is reached before any page succeeds. That is not an upstream problem but our own
+ * deliberate refusal to spend, and returning [] for it would tell the user their market has
+ * no businesses in it — a false statement the tool would then charge them for. If the
+ * ceiling is hit *after* the first page, partial results are returned instead.
  */
 export async function discoverBusinesses(
   industry: string,
@@ -112,6 +125,13 @@ export async function discoverBusinesses(
     mask: string,
     extra: Record<string, unknown>,
   ): Promise<PlacesResponse | null> {
+    // Reserved here rather than in the route because this is where the money is actually
+    // spent: one call to page() is one billed Places request. Guarding the route instead
+    // would have to know how many requests a search costs, and would miss the next caller
+    // entirely. Deliberately outside the try below, so a budget stop propagates instead of
+    // being flattened into the null that means "upstream problem".
+    await reserveVendorRequests(VENDOR_GOOGLE_PLACES, 1, PLACES_DAILY_REQUEST_BUDGET)
+
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 10_000)
     try {
@@ -144,6 +164,9 @@ export async function discoverBusinesses(
   // First page with the paginated request shape: `pageSize` (which supersedes the
   // deprecated `maxResultCount`) and `nextPageToken` in the field mask, since the token is
   // only returned when the mask asks for it.
+  //
+  // A budget stop on this first page has nothing to salvage, so it propagates to the route
+  // and becomes a message the user can act on.
   const first = await page(`${FIELD_MASK},nextPageToken`, { pageSize: 20 })
 
   if (first) {
@@ -152,7 +175,16 @@ export async function discoverBusinesses(
     // Two more pages, to reach ranks 21-60. The top of a Maps result set is the businesses
     // that need an agency least, so depth is the whole point of paging here.
     for (let i = 1; i < MAX_PAGES && pageToken; i++) {
-      const next = await page(`${FIELD_MASK},nextPageToken`, { pageSize: 20, pageToken })
+      let next: PlacesResponse | null
+      try {
+        next = await page(`${FIELD_MASK},nextPageToken`, { pageSize: 20, pageToken })
+      } catch (e) {
+        // The ceiling landed mid-scan. Twenty prospects beat an error page, and the spend
+        // for those has already happened — same reasoning as the `!next` break below,
+        // which keeps earlier pages when a later one fails.
+        if (e instanceof VendorBudgetExceededError) break
+        throw e
+      }
       // A later page failing is not a failed search: keep what earlier pages returned
       // rather than discarding results the user has already paid for.
       if (!next) break

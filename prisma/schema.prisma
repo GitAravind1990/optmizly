@@ -67,6 +67,32 @@ model User {
 /// corrupt those counts. `day` is a 'YYYY-MM-DD' string in UTC, matching how Usage
 /// stores 'YYYY-MM' — a string key makes the unique constraint do the resetting, with no
 /// job to run at midnight.
+/// A day's billed request count for one metered third-party vendor, across the whole
+/// system rather than per user.
+///
+/// Per-user caps bound what any one account can spend; they cannot bound what a thousand
+/// accounts spend on the same day. Google Places is billed per request and is the only
+/// vendor here whose cost is invisible in both the DataForSEO invoice and the admin cost
+/// panel, so an aggregate ceiling is the sole protection against a launch-day bill.
+///
+/// Keyed by a UTC day string like DailyToolUsage, so the unique constraint does the
+/// resetting and there is no midnight job to run or miss.
+model DailyVendorSpend {
+  id     String @id @default(cuid())
+  /// Stable vendor id, e.g. "google-places".
+  vendor String
+  /// UTC day, YYYY-MM-DD.
+  day    String
+  /// Billed requests reserved today. Reserved, not confirmed - see reserveVendorRequests.
+  units  Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([vendor, day])
+  @@index([day])
+}
+
 model DailyToolUsage {
   id     String @id @default(cuid())
   userId String

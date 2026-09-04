@@ -4,8 +4,9 @@ import { Plan } from '@prisma/client'
 import { requireToolAccess, AuthError } from '@/lib/auth'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
-import { consumeDailyUsage } from '@/lib/daily-usage'
+import { consumeDailyUsage, refundDailyUsage } from '@/lib/daily-usage'
 import { discoverBusinesses } from '@/lib/places-discovery'
+import { VendorBudgetExceededError } from '@/lib/vendor-budget'
 import {
   spreadOrder, runBatch,
   BATCH_SIZE, QUALIFIED_TARGET,
@@ -88,7 +89,24 @@ export async function POST(req: NextRequest) {
       ? `${industry.trim()} ${service.trim()}`
       : industry.trim()
 
-    const discovered = await discoverBusinesses(query, location.trim(), POOL_LIMIT)
+    // A budget stop is told apart from an empty market here, because the two look identical
+    // to the user and only one of them is their problem. The daily search that was consumed
+    // before this point is handed back: refusing to do the work and still charging for it is
+    // the same defect the monthly quota refunds exist to prevent.
+    let discovered
+    try {
+      discovered = await discoverBusinesses(query, location.trim(), POOL_LIMIT)
+    } catch (e) {
+      if (e instanceof VendorBudgetExceededError) {
+        await refundDailyUsage(user.userId, 'client-finder').catch(() => {})
+        throw new AuthError(
+          503,
+          'Prospect search has reached its limit for today across all accounts. It resets at midnight UTC — this search has not been counted against your daily allowance.',
+        )
+      }
+      throw e
+    }
+
     if (discovered.length === 0) {
       return apiSuccess({
         savedSearchId: null,

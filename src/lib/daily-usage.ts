@@ -59,6 +59,27 @@ export async function consumeDailyUsage(userId: string, tool: string, limit: num
   }
 }
 
+/**
+ * Hands back one consumed daily use.
+ *
+ * The mirror of the trade documented above: consuming before the work is what makes the
+ * cap race-proof, but it also means a run that never happened has already been counted.
+ * That is the right default for a failure we caused by spending — the count reflects real
+ * cost. It is the wrong answer when we refused to do the work at all, which is what a
+ * vendor budget stop is: the user asked, we declined, nothing was spent on their behalf.
+ *
+ * Floors at zero rather than trusting the caller. A double refund would otherwise hand out
+ * allowance that was never consumed, and this runs on the error path where retries are
+ * most likely.
+ */
+export async function refundDailyUsage(userId: string, tool: string): Promise<void> {
+  const day = getDayKey()
+  await prisma.dailyToolUsage.updateMany({
+    where: { userId, tool, day, count: { gt: 0 } },
+    data: { count: { decrement: 1 } },
+  })
+}
+
 /** Read-only view of today's usage, for showing "X of 5 left" before the user acts.
  *  Never increments. */
 export async function peekDailyUsage(userId: string, tool: string, limit: number): Promise<DailyUsageState> {
