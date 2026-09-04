@@ -498,22 +498,6 @@ export function PagePricing() {
                 color: p.featured ? T.cyan : (p.color === 'amber' ? '#D97706' : T.body),
               }}>{p.anchor}</div>
 
-              {/* Founding Member availability. Shown only where the offer applies - the
-                  Agency card, annual selected - because a scarcity line on a plan the code
-                  cannot be used on is just noise. */}
-              {isAnnual && p.couponEligible && spots && (
-                <div style={{
-                  marginBottom: 14, padding: '8px 12px', borderRadius: 10,
-                  fontFamily: T.sans, fontSize: 13, fontWeight: 600,
-                  background: p.featured ? 'rgba(255,255,255,0.14)' : '#FFF7ED',
-                  color: p.featured ? '#fff' : '#B45309',
-                  border: `1px solid ${p.featured ? 'rgba(255,255,255,0.24)' : '#FDE68A'}`,
-                }}>
-                  {spots.soldOut
-                    ? 'Founding Member places are gone'
-                    : `Founding Member: ${spots.remaining} of ${spots.limit} places left`}
-                </div>
-              )}
 
               {/* What choosing annual actually saves, on the card whose price just changed.
                   The headline "$490 /yr" is a bigger number than "$49 /mo", so without this
@@ -589,6 +573,28 @@ export function PagePricing() {
                   </Link>
                 )}
               </SignedIn>
+
+              {/* Founding Member availability. Shown only where the offer applies - the
+                  Agency card, annual selected - because a scarcity line on a plan the code
+                  cannot be used on is just noise.
+
+                  Sits BELOW the button, not above it. Above, it appeared on one card in one
+                  billing mode and pushed that card's CTA ~44px lower than the other four,
+                  breaking the row the rest of this layout works to keep. Below, it is still
+                  next to the action it qualifies and costs nothing to the alignment. */}
+              {isAnnual && p.couponEligible && spots && (
+                <div style={{
+                  marginTop: 12, padding: '8px 12px', borderRadius: 10,
+                  fontFamily: T.sans, fontSize: 13, fontWeight: 600,
+                  background: p.featured ? 'rgba(255,255,255,0.14)' : '#FFF7ED',
+                  color: p.featured ? '#fff' : '#B45309',
+                  border: `1px solid ${p.featured ? 'rgba(255,255,255,0.24)' : '#FDE68A'}`,
+                }}>
+                  {spots.soldOut
+                    ? 'Founding Member places are gone'
+                    : `Founding Member: ${spots.remaining} of ${spots.limit} places left`}
+                </div>
+              )}
 
               {/* Features */}
               <div style={{
