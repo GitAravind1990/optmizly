@@ -287,7 +287,11 @@ export function PagePricing() {
   }, [])
 
   return (
-    <section id="pricing" style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(64px,8vw,120px) clamp(20px,4vw,32px)' }}>
+    {/* Wider than the 1200 the prose sections use. Five cards inside 1200 left each one
+        210px, where "SEO Client Finder — find local businesses to pitch" wrapped to three
+        lines. 1360 with a tighter gutter gives ~250px, which is the difference between a
+        feature reading as a phrase and reading as a column of fragments. */}
+    <section id="pricing" style={{ maxWidth: 1360, margin: '0 auto', padding: 'clamp(64px,8vw,120px) clamp(20px,4vw,32px)' }}>
       {/* Section head */}
       <div style={{ textAlign: 'center', maxWidth: 720, margin: '0 auto' }}>
         <div style={{
@@ -338,7 +342,7 @@ export function PagePricing() {
            wide enough that these strings fit on fewer lines — holding three lines open on a
            350px card would just be a gap. */
         .pricing-audience       { min-height: 36px; }
-        .pricing-anchor         { min-height: 57px; }
+        .pricing-anchor         { min-height: 38px; }
         .pricing-toggle-spacer  { height: 48px; }
         @media (max-width: 1279px) {
           .pricing-audience     { min-height: 20px; }
@@ -358,7 +362,7 @@ export function PagePricing() {
           had a ragged bottom edge. Stretching makes every card the height of the tallest,
           which is what makes a price table read as one object rather than five. */}
       <div className="pricing-grid" style={{
-        display: 'grid', gap: 22, marginTop: 60, alignItems: 'stretch',
+        display: 'grid', gap: 18, marginTop: 60, alignItems: 'stretch',
       }}>
         {plans.map((p) => {
         // True only for the Agency card, and only when its annual product is configured.
