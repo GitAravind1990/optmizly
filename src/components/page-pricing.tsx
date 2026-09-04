@@ -79,6 +79,9 @@ const plans = [
     cta: 'Get Starter',
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID,
+    annualProductId: process.env.NEXT_PUBLIC_DODO_STARTER_ANNUAL_PRODUCT_ID,
+    annualPrice: '$108',
+    annualPeriod: '/yr',
   },
   {
     name: 'Pro',
@@ -158,6 +161,9 @@ const plans = [
     cta: 'Get Agency Plus',
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_PRODUCT_ID,
+    annualProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_ANNUAL_PRODUCT_ID,
+    annualPrice: '$1,188',
+    annualPeriod: '/yr',
   },
 ]
 
@@ -217,7 +223,7 @@ function CheckoutButton({ productId, cta, featured, couponEligible, planName, is
         disabled={loading}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          width: '100%', height: 52, borderRadius: 14, cursor: 'pointer',
+          width: '100%', height: 46, borderRadius: 12, cursor: 'pointer',
           fontFamily: T.sans, fontSize: 15, fontWeight: 600, letterSpacing: -0.2,
           background: featured ? T.grad : '#fff',
           color: featured ? '#fff' : T.ink,
@@ -501,7 +507,7 @@ export function PagePricing() {
                   })}
                   style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  width: '100%', height: 52, borderRadius: 14,
+                  width: '100%', height: 46, borderRadius: 12,
                   fontFamily: T.sans, fontSize: 15, fontWeight: 600, letterSpacing: -0.2,
                   textDecoration: 'none',
                   background: p.featured ? T.grad : (p.color === 'amber' ? 'linear-gradient(135deg, #F59E0B, #D97706)' : '#fff'),
@@ -533,7 +539,7 @@ export function PagePricing() {
                 ) : (
                   <Link href="/dashboard" style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    width: '100%', height: 52, borderRadius: 14,
+                    width: '100%', height: 46, borderRadius: 12,
                     fontFamily: T.sans, fontSize: 15, fontWeight: 600,
                     textDecoration: 'none',
                     background: '#fff', color: T.ink,
@@ -727,7 +733,7 @@ const FAQS = [
   },
   {
     q: 'Can I pay annually?',
-    a: 'Starter is $9 monthly only. Pro is $19 monthly or $228 a year, and Agency is $49 monthly or $588 a year, chosen at checkout \u2013 the annual price is twelve months at the same rate, so paying yearly costs the same and simply renews once instead of twelve times. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full $588 after that.',
+    a: 'Every paid plan can be billed monthly or once a year, chosen at checkout: Starter $9 or $108, Pro $19 or $228, Agency $49 or $588, Agency Plus $99 or $1,188 \u2013 the annual price is twelve months at the same rate, so paying yearly costs the same and simply renews once instead of twelve times. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full $588 after that.',
   },
   {
     q: 'Can I upgrade or downgrade?',
