@@ -71,6 +71,9 @@ const CLIENT_FINDER_DAILY_LIMITS: Record<Plan, number> = {
   STARTER: 0,
   PRO: 0,
   AGENCY: 5,
+  // 900 requests a month, ~$31.50 against $99 — the same share of revenue as Agency's 5,
+  // which is what makes it a coherent step up rather than an arbitrary bigger number.
+  AGENCY_PLUS: 10,
 }
 
 export async function POST(req: NextRequest) {

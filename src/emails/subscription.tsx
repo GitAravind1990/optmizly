@@ -5,7 +5,7 @@ import {
 
 interface SubscriptionEmailProps {
   firstName?: string
-  plan: 'Starter' | 'Pro' | 'Agency'
+  plan: 'Starter' | 'Pro' | 'Agency' | 'Agency Plus'
   amount: string
   dashboardUrl: string
   nextBillingDate?: string
@@ -18,6 +18,7 @@ const PLAN_TOOLS: Record<string, string[]> = {
   Starter: ['Content Analysis', 'On-Page SEO', '15 analyses every month'],
   Pro: ['E-E-A-T Analysis', 'Relevant Backlinks', 'AI Rewrite (with framework)', 'Citation Plan', 'Content Gap', 'AI Queries'],
   Agency: ['Everything in Pro', 'AI Cite Tracker', 'Local SEO Suite (4 tools)', 'SERP Competitor Audit', 'Topical Authority Mapper ★'],
+  'Agency Plus': ['Everything in Agency', 'Unlimited client projects', '5 team seats', '500 analyses every month', '10 prospect searches a day'],
 }
 
 /** Monthly allowance by plan label, mirroring PLAN_LIMITS in src/lib/plans.ts. Stated per
@@ -26,6 +27,7 @@ const PLAN_LIMIT_LABEL: Record<string, string> = {
   Starter: '15',
   Pro: '50',
   Agency: '200',
+  'Agency Plus': '500',
 }
 
 export function SubscriptionEmail({

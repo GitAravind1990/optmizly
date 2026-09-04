@@ -62,7 +62,7 @@ export async function sendWelcomeEmail(to: string, firstName?: string) {
 // ── Subscription confirmed ────────────────────────────────────────────────────
 export async function sendSubscriptionEmail(
   to: string,
-  plan: 'Starter' | 'Pro' | 'Agency',
+  plan: 'Starter' | 'Pro' | 'Agency' | 'Agency Plus',
   amount: string,
   firstName?: string,
   nextBillingDate?: string
@@ -96,7 +96,7 @@ export async function sendSubscriptionEmail(
 // ── Trial started ─────────────────────────────────────────────────────────────
 export async function sendTrialStartedEmail(
   to: string,
-  plan: 'Starter' | 'Pro' | 'Agency',
+  plan: 'Starter' | 'Pro' | 'Agency' | 'Agency Plus',
   amount: string,
   firstName?: string,
   trialEndDate?: string
@@ -133,7 +133,7 @@ export async function sendLimitWarningEmail(
   used: number,
   limit: number,
   firstName?: string,
-  plan: 'FREE' | 'STARTER' | 'PRO' | 'AGENCY' = 'FREE',
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'AGENCY' | 'AGENCY_PLUS' = 'FREE',
 ) {
   try {
     // Raised, not returned, so an unset key reaches reportEmailFailure below rather than
@@ -160,7 +160,7 @@ export async function sendLimitReachedEmail(
   to: string,
   limit: number,
   firstName?: string,
-  plan: 'FREE' | 'STARTER' | 'PRO' | 'AGENCY' = 'FREE',
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'AGENCY' | 'AGENCY_PLUS' = 'FREE',
 ) {
   try {
     // auth.ts flips `limitEmailSent` false→true *before* calling this, so a silent no-op

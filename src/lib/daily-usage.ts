@@ -25,6 +25,7 @@ export const AI_REGEX_DAILY_LIMITS: Record<Plan, number> = {
   STARTER: 5,
   PRO: 200,
   AGENCY: 1000,
+  AGENCY_PLUS: 1000,
 }
 
 export interface DailyUsageState {

@@ -138,6 +138,27 @@ const plans = [
     /** Only this plan accepts a discount code. Mirrors isCouponEligibleProduct on the server. */
     couponEligible: true,
   },
+  {
+    name: 'Agency Plus',
+    audience: 'For agencies past ten clients',
+    price: '$99',
+    period: '/mo',
+    anchor: 'Unlimited clients, 5 seats, 500 analyses a month',
+    tagline: 'For agencies running search for a full book of clients.',
+    color: 'amber',
+    featured: false,
+    features: [
+      'Everything in Agency, plus:',
+      'Unlimited client projects, instead of 10',
+      '5 team seats — a whole team in one account',
+      '500 analyses / month',
+      '10 prospect searches / day',
+      'Priority support',
+    ],
+    cta: 'Get Agency Plus',
+    signedOutHref: '/signup',
+    checkoutProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_PRODUCT_ID,
+  },
 ]
 
 function CheckoutButton({ productId, cta, featured, couponEligible, planName, isAnnual }: {
@@ -295,7 +316,10 @@ export function PagePricing() {
            1136px content box — so it silently wrapped to 3 + 1 and left an orphan card on
            its own row. auto-fit also has no way to express "never 3", which is the actual
            requirement: 4, then 2x2, then stacked. */
-        .pricing-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        /* Five plans. Three across then 2+1 would orphan a card, so it is 5 / 3 / 2 / 1 and
+           only the widest layout puts them all on one row. */
+        .pricing-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        @media (max-width: 1279px) { .pricing-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         @media (max-width: 1139px) { .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 639px)  { .pricing-grid { grid-template-columns: minmax(0, 1fr); } }
 
@@ -530,16 +554,16 @@ export function PagePricing() {
           Compare all features
         </h3>
         <div style={{ overflowX: 'auto' }}>
-          {/* Raised from 560 with the fourth plan column: five columns at 560 crushed the
+          {/* Raised again with the fifth plan column — six columns at 720 crushed the
               feature labels to two words a line. The wrapper above scrolls horizontally, so
               a wider minimum costs nothing on a phone. */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.sans, fontSize: 14, minWidth: 720 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.sans, fontSize: 14, minWidth: 860 }}>
             <thead>
               <tr>
                 <th style={{ padding: '14px 16px', textAlign: 'left', color: T.muted, fontWeight: 600, fontSize: 13, borderBottom: `2px solid ${T.line}`, width: '34%' }}>Feature</th>
                 {/* Pro stays the highlighted column, but it is index 2 now that Starter sits
                     between Free and Pro. The old `i === 1` would have highlighted Starter. */}
-                {['Free', 'Starter', 'Pro', 'Agency'].map((plan, i) => (
+                {['Free', 'Starter', 'Pro', 'Agency', 'Agency Plus'].map((plan, i) => (
                   <th key={plan} style={{
                     padding: '14px 16px', textAlign: 'center', fontWeight: 700,
                     borderBottom: `2px solid ${T.line}`, fontSize: 14,
@@ -553,7 +577,7 @@ export function PagePricing() {
                 row.type === 'category'
                   ? (
                     <tr key={i} style={{ background: T.line2 }}>
-                      <td colSpan={5} style={{
+                      <td colSpan={6} style={{
                         padding: '8px 16px', fontSize: 11, fontWeight: 700,
                         letterSpacing: '0.08em', textTransform: 'uppercase', color: T.muted,
                       }}>{row.label}</td>
@@ -563,7 +587,7 @@ export function PagePricing() {
                       <td style={{ padding: '13px 16px', color: T.ink }}>{row.label}</td>
                       {/* `row.starter ?? row.free` — see COMPARISON_ROWS. Column indices
                           shifted by one, so Pro's accent is ci === 2, not 1. */}
-                      {[row.free, row.starter ?? row.free, row.pro, row.agency].map((val, ci) => (
+                      {[row.free, row.starter ?? row.free, row.pro, row.agency, row.agencyPlus ?? row.agency].map((val, ci) => (
                         <td key={ci} style={{ padding: '13px 16px', textAlign: 'center' }}>
                           {val === true
                             ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={ci === 2 ? T.blue : T.good} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M5 12l5 5L20 7"/></svg>
@@ -604,13 +628,17 @@ export function PagePricing() {
  * a tool to Free can never leave Starter silently showing a dash — and means only the two
  * rows that genuinely differ carry a value. If Starter ever gains a tool of its own, give
  * that row an explicit `starter`.
+ *
+ * `agencyPlus` works the same way and defaults to `agency`. Agency Plus has the identical
+ * tool set — it sells volume, unlimited clients and seats — so only the four rows measuring
+ * those carry a value of their own.
  */
 const COMPARISON_ROWS: Array<
   | { type: 'category'; label: string }
-  | { type: 'row'; label: string; free: boolean | string; starter?: boolean | string; pro: boolean | string; agency: boolean | string }
+  | { type: 'row'; label: string; free: boolean | string; starter?: boolean | string; pro: boolean | string; agency: boolean | string; agencyPlus?: boolean | string }
 > = [
   { type: 'category', label: 'Usage limits' },
-  { type: 'row', label: 'Analyses / month', free: '3', starter: '15', pro: '50', agency: '200' },
+  { type: 'row', label: 'Analyses / month', free: '3', starter: '15', pro: '50', agency: '200', agencyPlus: '500' },
   { type: 'category', label: 'Content & SEO' },
   { type: 'row', label: '8-dimension content score', free: true, pro: true, agency: true },
   { type: 'row', label: 'SEO, GEO & AEO scores', free: true, pro: true, agency: true },
@@ -623,9 +651,9 @@ const COMPARISON_ROWS: Array<
   { type: 'row', label: 'AI Visibility Queries', free: false, pro: true, agency: true },
   { type: 'row', label: 'LLM Citation Tracker', free: false, pro: false, agency: true },
   { type: 'category', label: 'Agency tools' },
-  { type: 'row', label: 'SEO Client Finder', free: false, pro: false, agency: '5 searches / day' },
-  { type: 'row', label: 'Client projects', free: false, pro: false, agency: '10' },
-  { type: 'row', label: 'Team seats', free: '1', pro: '1', agency: '2' },
+  { type: 'row', label: 'SEO Client Finder', free: false, pro: false, agency: '5 searches / day', agencyPlus: '10 searches / day' },
+  { type: 'row', label: 'Client projects', free: false, pro: false, agency: '10', agencyPlus: 'Unlimited' },
+  { type: 'row', label: 'Team seats', free: '1', pro: '1', agency: '2', agencyPlus: '5' },
   { type: 'row', label: 'SERP Competitor Audit', free: false, pro: false, agency: true },
   { type: 'row', label: 'Topical Authority Mapper', free: false, pro: false, agency: true },
   { type: 'row', label: 'Local SEO Suite (4 tools)', free: false, pro: false, agency: true },

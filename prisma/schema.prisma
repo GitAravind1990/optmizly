@@ -13,6 +13,7 @@ enum Plan {
   STARTER
   PRO
   AGENCY
+  AGENCY_PLUS
 }
 
 enum SubscriptionStatus {

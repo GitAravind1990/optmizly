@@ -36,6 +36,9 @@ export const DODO_PRODUCT_IDS = {
    * it, which is the safe direction for a half-configured tier.
    */
   STARTER: process.env.NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID || '',
+  /** Agency Plus, $99/mo. Empty until the product exists in Dodo, which makes the plan
+   *  unbuyable rather than half-configured — the safe direction. */
+  AGENCY_PLUS: process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_PRODUCT_ID || '',
   PRO: process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID || '',
   AGENCY: process.env.NEXT_PUBLIC_DODO_AGENCY_PRODUCT_ID || '',
   /** Yearly billing for the same Agency plan. Empty until the product exists in Dodo. */
@@ -52,7 +55,7 @@ export const DODO_PRODUCT_IDS = {
  * it would at full price. Deriving the plan from the amount would break the moment any
  * coupon existed.
  */
-export function getPlanFromProductId(productId: string): 'STARTER' | 'PRO' | 'AGENCY' | 'FREE' {
+export function getPlanFromProductId(productId: string): 'STARTER' | 'PRO' | 'AGENCY' | 'AGENCY_PLUS' | 'FREE' {
   // Guarded against the empty string, because an unset env var would otherwise match an
   // empty productId and silently grant a plan. Cheap to write, expensive to discover.
   if (!productId) return 'FREE'
@@ -63,6 +66,9 @@ export function getPlanFromProductId(productId: string): 'STARTER' | 'PRO' | 'AG
   // Guarded like the annual ids rather than compared directly: STARTER is empty until the
   // product exists, and an unguarded comparison would be the empty-string bug above.
   if (DODO_PRODUCT_IDS.STARTER && productId === DODO_PRODUCT_IDS.STARTER) return 'STARTER'
+  // Checked before AGENCY would be wrong — these are distinct ids, so order does not
+  // matter — but guarded like the others so an unset variable cannot match an empty id.
+  if (DODO_PRODUCT_IDS.AGENCY_PLUS && productId === DODO_PRODUCT_IDS.AGENCY_PLUS) return 'AGENCY_PLUS'
   return 'FREE'
 }
 

@@ -6,7 +6,7 @@ import { TRIAL_LIMITS } from '@/lib/plans'
 
 interface TrialStartedEmailProps {
   firstName?: string
-  plan: 'Starter' | 'Pro' | 'Agency'
+  plan: 'Starter' | 'Pro' | 'Agency' | 'Agency Plus'
   amount: string
   dashboardUrl: string
   trialEndDate?: string

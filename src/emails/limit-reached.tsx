@@ -6,7 +6,7 @@ import {
 interface LimitReachedEmailProps {
   firstName?: string
   limit: number
-  plan: 'FREE' | 'STARTER' | 'PRO' | 'AGENCY'
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'AGENCY' | 'AGENCY_PLUS'
   pricingUrl: string
 }
 
@@ -20,25 +20,39 @@ export function LimitReachedEmail({
   pricingUrl,
 }: LimitReachedEmailProps) {
   const isFree = plan === 'FREE'
-  const isAgency = plan === 'AGENCY'
-  const planLabel = isFree ? 'free' : plan === 'STARTER' ? 'Starter' : plan === 'PRO' ? 'Pro' : 'Agency'
+  // "Nothing left to upgrade to", which is now Agency Plus rather than Agency. Named for
+  // what it means instead of for one plan, so the next tier added cannot silently make it
+  // wrong again — as adding Agency Plus just did to `isAgency`.
+  const isTopTier = plan === 'AGENCY_PLUS'
+  const planLabel = isFree
+    ? 'free'
+    : plan === 'STARTER' ? 'Starter'
+    : plan === 'PRO' ? 'Pro'
+    : plan === 'AGENCY' ? 'Agency'
+    : 'Agency Plus'
 
-  // The upsell is always the *next* tier up, never the top one. Before STARTER existed
-  // this was a two-way choice, so "not free" could safely mean "offer Agency"; with a
-  // tier between them that same branch would skip Pro entirely and quote a Starter user
-  // $49 when their next step costs $19.
-  const nextTier =
-    isFree || plan === 'STARTER'
-      ? {
-          heading: 'Upgrade to Pro ($19/month)',
-          detail:
-            '50 analyses/month plus E-E-A-T analysis, AI rewriter, content gap finder, rank tracker, backlink finder and more.',
-        }
-      : {
-          heading: 'Upgrade to Agency ($49/month)',
-          detail:
-            '200 analyses/month plus SERP audits, local SEO suite, topical authority mapping, client reports and more.',
-        }
+  // Always the *next* tier up, never the top one. This has now been wrong twice for the
+  // same reason — a two-way branch outliving the two-tier world it was written in — so it
+  // is a lookup rather than a chain of ternaries.
+  const NEXT: Record<string, { heading: string; detail: string }> = {
+    FREE: {
+      heading: 'Upgrade to Pro ($19/month)',
+      detail: '50 analyses/month plus E-E-A-T analysis, AI rewriter, content gap finder, rank tracker, backlink finder and more.',
+    },
+    STARTER: {
+      heading: 'Upgrade to Pro ($19/month)',
+      detail: '50 analyses/month plus E-E-A-T analysis, AI rewriter, content gap finder, rank tracker, backlink finder and more.',
+    },
+    PRO: {
+      heading: 'Upgrade to Agency ($49/month)',
+      detail: '200 analyses/month plus SERP audits, local SEO suite, topical authority mapping, client reports and more.',
+    },
+    AGENCY: {
+      heading: 'Upgrade to Agency Plus ($99/month)',
+      detail: '500 analyses/month, unlimited client projects, 5 team seats and double the prospect searches.',
+    },
+  }
+  const nextTier = NEXT[plan]
 
   return (
     <Html>
@@ -58,10 +72,10 @@ export function LimitReachedEmail({
               </Heading>
               <Text className="text-slate-600 text-base leading-relaxed mb-5">
                 Hi {firstName}, you've used all <strong>{limit} {planLabel} {limit === 1 ? 'analysis' : 'analyses'}</strong> for this month.
-                {isAgency ? ' Your analyses reset on the 1st.' : ' Your analyses reset on the 1st, or upgrade now to keep going.'}
+                {isTopTier ? ' Your analyses reset on the 1st.' : ' Your analyses reset on the 1st, or upgrade now to keep going.'}
               </Text>
 
-              {!isAgency && (
+              {!isTopTier && nextTier && (
                 <Section className="bg-blue-50 rounded-xl border border-blue-100 px-5 py-4 mb-6">
                   <Text className="text-sm font-bold text-blue-900 m-0 mb-1">
                     {nextTier.heading}
@@ -72,12 +86,12 @@ export function LimitReachedEmail({
                 </Section>
               )}
 
-              {!isAgency && (
+              {!isTopTier && nextTier && (
                 <Button
                   href={pricingUrl}
                   className="bg-blue-600 text-white font-bold text-sm px-8 py-3 rounded-xl no-underline block text-center"
                 >
-                  Upgrade Now →
+                  Upgrade Now â†’
                 </Button>
               )}
 
@@ -87,7 +101,7 @@ export function LimitReachedEmail({
             </Section>
 
             <Section className="text-center">
-              <Text className="text-xs text-slate-400 m-0">Optmizly · AI-powered content optimization</Text>
+              <Text className="text-xs text-slate-400 m-0">Optmizly Â· AI-powered content optimization</Text>
             </Section>
 
           </Container>

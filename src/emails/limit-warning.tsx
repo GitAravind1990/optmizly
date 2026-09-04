@@ -7,7 +7,7 @@ interface LimitWarningEmailProps {
   firstName?: string
   used: number
   limit: number
-  plan: 'FREE' | 'STARTER' | 'PRO' | 'AGENCY'
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'AGENCY' | 'AGENCY_PLUS'
   pricingUrl: string
 }
 

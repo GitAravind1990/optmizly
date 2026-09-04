@@ -5,6 +5,7 @@ export const PLAN_LIMITS: Record<Plan, number> = {
   STARTER: 15,
   PRO: 50,
   AGENCY: 200,
+  AGENCY_PLUS: 500,
 }
 
 // Optmizly no longer offers a free trial, so nothing creates a TRIALING
@@ -18,6 +19,7 @@ export const TRIAL_LIMITS: Record<Plan, number> = {
   STARTER: 15,
   PRO: 10,
   AGENCY: 15,
+  AGENCY_PLUS: 15,
 }
 
 export const PLAN_TOOLS: Record<Plan, string[]> = {
@@ -30,7 +32,16 @@ export const PLAN_TOOLS: Record<Plan, string[]> = {
   STARTER: ['analyse', 'onpage'],
   PRO: ['analyse', 'onpage', 'eeat', 'citation', 'gap', 'rewrite', 'content-ideas', 'content-optimizer', 'competitor-spy', 'rank-tracker', 'ranking-engine', 'backlinks', 'keyword-tool'],
   AGENCY: ['analyse', 'onpage', 'client-finder', 'eeat', 'citation', 'gap', 'rewrite', 'serp', 'topical', 'local', 'tracker', 'content-ideas', 'content-optimizer', 'competitor-spy', 'rank-tracker', 'local-seo', 'seo-audit', 'geogrid', 'review-velocity', 'ranking-engine', 'backlinks', 'performance-fixer', 'search-console', 'client-reports', 'keyword-tool', 'ai-regex'],
+  // Filled from AGENCY below rather than retyped. Agency already sees every tool, so this
+  // tier cannot add one — it sells volume, unlimited clients and seats. Deriving it means a
+  // tool added to Agency reaches Agency Plus automatically, which is the only version of
+  // this that stays correct without anyone remembering to.
+  AGENCY_PLUS: [],
 }
+
+// Assigned after the literal, because a Record cannot reference its own key while being
+// built. Kept adjacent so the relationship is impossible to miss.
+PLAN_TOOLS.AGENCY_PLUS = [...PLAN_TOOLS.AGENCY]
 
 export function canUseTool(plan: Plan, tool: string): boolean {
   return PLAN_TOOLS[plan]?.includes(tool) ?? false
@@ -59,6 +70,9 @@ export const CLIENT_LIMITS: Record<Plan, number> = {
   STARTER: 0,
   PRO: 0,
   AGENCY: 10,
+  // The unlimited tier this was written for. Honourable indefinitely because a client is a
+  // database row: the cost lives in analyses and searches, which stay metered above.
+  AGENCY_PLUS: Number.POSITIVE_INFINITY,
 }
 
 /** `null` means unlimited, because Infinity is not representable in JSON. */
@@ -85,6 +99,7 @@ export const SEAT_LIMITS: Record<Plan, number> = {
   STARTER: 1,
   PRO: 1,
   AGENCY: 2,
+  AGENCY_PLUS: 5,
 }
 
 /**

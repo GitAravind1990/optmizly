@@ -11,16 +11,30 @@ type PlanCopy = {
 }
 
 function copyForPlan(plan: string, limit: number | null): PlanCopy {
-  if (plan === 'AGENCY') {
+  // Top of the ladder: nothing to offer but the reset date. Agency is no longer this
+  // branch — it has Agency Plus above it now.
+  if (plan === 'AGENCY_PLUS') {
     return {
       heading: "You've reached this month's limit",
-      body: `You've used all ${limit ?? 200} analyses in your Agency plan this month. Your quota resets on the 1st of next month.`,
+      body: `You've used all ${limit ?? 500} analyses in your Agency Plus plan this month. Your quota resets on the 1st of next month.`,
       benefits: [
         'Your usage resets automatically every month',
         'All your saved audits, trackers and reports stay available',
-        'Need a higher limit for your team? Reach out from the settings page',
+        'Need more than this? Reach out from the settings page',
       ],
       cta: null,
+    }
+  }
+  if (plan === 'AGENCY') {
+    return {
+      heading: "You've hit your Agency limit",
+      body: `You've used all ${limit ?? 200} analyses this month. Agency Plus has 500, unlimited client projects and 5 seats.`,
+      benefits: [
+        '500 analyses every month (vs 200 on Agency)',
+        'Unlimited client projects, instead of 10',
+        '5 team seats and double the prospect searches',
+      ],
+      cta: { label: 'Upgrade to Agency Plus ($99/mo) →', href: '/pricing' },
     }
   }
   if (plan === 'PRO') {

@@ -24,6 +24,8 @@ const OUTREACH_DAILY_LIMITS: Record<Plan, number> = {
   STARTER: 0,
   PRO: 0,
   AGENCY: 200,
+  // Drafting is LLM-only, so this bounds a runaway script rather than a vendor bill.
+  AGENCY_PLUS: 400,
 }
 
 const SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low']

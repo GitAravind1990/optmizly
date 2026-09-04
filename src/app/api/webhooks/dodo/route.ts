@@ -186,7 +186,10 @@ export async function POST(req: NextRequest) {
             // Fallback only — the payload's own amount is preferred. Listed per tier so a
             // missing amount cannot quote Starter at the Agency price.
             const fallbackAmount =
-              planKey === 'STARTER' ? '$9' : planKey === 'PRO' ? '$19' : '$49'
+              planKey === 'STARTER' ? '$9'
+              : planKey === 'PRO' ? '$19'
+              : planKey === 'AGENCY_PLUS' ? '$99'
+              : '$49'
             const amount = rawAmount ? `$${(rawAmount / 100).toFixed(0)}` : fallbackAmount
             const nextBilling = periodEnd
               ? periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -195,7 +198,10 @@ export async function POST(req: NextRequest) {
             // called every non-Agency plan "Pro", so a Starter subscriber would have been
             // emailed a confirmation for a plan they did not buy.
             const planLabel =
-              planKey === 'AGENCY' ? 'Agency' : planKey === 'STARTER' ? 'Starter' : 'Pro'
+              planKey === 'AGENCY_PLUS' ? 'Agency Plus'
+              : planKey === 'AGENCY' ? 'Agency'
+              : planKey === 'STARTER' ? 'Starter'
+              : 'Pro'
 
             if (status === 'TRIALING') {
               const claimed = await prisma.subscription.updateMany({

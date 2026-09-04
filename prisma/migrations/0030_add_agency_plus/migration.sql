@@ -1,0 +1,13 @@
+-- Adds AGENCY_PLUS: $99/mo, 500 analyses, unlimited clients, 5 seats, 10 searches/day.
+--
+-- Appended after AGENCY rather than inserted, so the enum's declaration order still reads
+-- cheapest to dearest without a BEFORE clause.
+--
+-- Additive only: no existing row changes, and nothing can hold the new value until the
+-- application writes it. ALTER TYPE ... ADD VALUE is allowed inside a transaction on
+-- PostgreSQL 12+ so long as the value is not *used* in the same one, which is why this file
+-- adds the label and nothing else.
+--
+-- No RLS statement: this adds no table. Plan lives on "User" and "Subscription", both of
+-- which already have row level security enabled.
+ALTER TYPE "Plan" ADD VALUE 'AGENCY_PLUS';
