@@ -80,7 +80,7 @@ const plans = [
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID,
     annualProductId: process.env.NEXT_PUBLIC_DODO_STARTER_ANNUAL_PRODUCT_ID,
-    annualPrice: '$108',
+    annualPrice: '$90',
     annualPeriod: '/yr',
   },
   {
@@ -106,7 +106,7 @@ const plans = [
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID,
     annualProductId: process.env.NEXT_PUBLIC_DODO_PRO_ANNUAL_PRODUCT_ID,
-    annualPrice: '$228',
+    annualPrice: '$190',
     annualPeriod: '/yr',
   },
   {
@@ -136,7 +136,7 @@ const plans = [
     // toggle simply does not render - so an unset variable degrades to today's behaviour
     // rather than to a broken checkout.
     annualProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_ANNUAL_PRODUCT_ID,
-    annualPrice: '$588',
+    annualPrice: '$490',
     annualPeriod: '/yr',
     /** Only this plan accepts a discount code. Mirrors isCouponEligibleProduct on the server. */
     couponEligible: true,
@@ -162,7 +162,7 @@ const plans = [
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_PRODUCT_ID,
     annualProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_ANNUAL_PRODUCT_ID,
-    annualPrice: '$1,188',
+    annualPrice: '$990',
     annualPeriod: '/yr',
   },
 ]
@@ -733,7 +733,7 @@ const FAQS = [
   },
   {
     q: 'Can I pay annually?',
-    a: 'Every paid plan can be billed monthly or once a year, chosen at checkout: Starter $9 or $108, Pro $19 or $228, Agency $49 or $588, Agency Plus $99 or $1,188 \u2013 the annual price is twelve months at the same rate, so paying yearly costs the same and simply renews once instead of twelve times. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full $588 after that.',
+    a: 'Every paid plan can be billed monthly or once a year, chosen at checkout: Starter $9 or $90, Pro $19 or $190, Agency $49 or $490, Agency Plus $99 or $990 \u2013 paying yearly costs ten months instead of twelve, so you save about 17%. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full annual price after that.',
   },
   {
     q: 'Can I upgrade or downgrade?',
