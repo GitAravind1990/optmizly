@@ -105,6 +105,34 @@ export default function ClientFinderPage() {
   const [stage, setStage] = useState(0)
   const [error, setError] = useState('')
   const [prospects, setProspects] = useState<Prospect[] | null>(null)
+  /** Set when the shared daily data ceiling is spent — offers the capacity notice. */
+  const [capacityMessage, setCapacityMessage] = useState('')
+  const [waitlistDone, setWaitlistDone] = useState(false)
+  const [waitlistBusy, setWaitlistBusy] = useState(false)
+
+  /**
+   * Signed-in users are not asked for an email — we have it. The endpoint reads the session
+   * and fills it in, so the button is a single click rather than a form asking for
+   * something the product already knows. The public prospect finder will pass an email to
+   * the same endpoint.
+   */
+  async function joinWaitlist() {
+    setWaitlistBusy(true)
+    try {
+      const res = await fetch('/api/tools/client-finder/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ industry, location }),
+      })
+      if (res.ok) setWaitlistDone(true)
+      else {
+        const d = await res.json().catch(() => ({}))
+        setError(d.error ?? 'Could not add you to the list. Please try again.')
+      }
+    } finally {
+      setWaitlistBusy(false)
+    }
+  }
   const [scan, setScan] = useState<ScanState | null>(null)
   const [meta, setMeta] = useState<SearchMeta | null>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
@@ -193,6 +221,7 @@ export default function ClientFinderPage() {
     setLoading(true)
     setError('')
     setProspects(null)
+    setCapacityMessage('')
     try {
       const res = await fetch('/api/tools/client-finder', {
         method: 'POST',
@@ -202,6 +231,16 @@ export default function ClientFinderPage() {
       const data = await res.json()
       if (res.status === 403 || res.status === 429) { setShowUpgradeModal(true); return }
       if (!res.ok) throw new Error(data.error ?? 'Search failed')
+
+      // Not an error: the search did not run because the shared daily ceiling for live
+      // business data is spent. Offer the notice instead of a red box - the allowance was
+      // handed back, so there is nothing to apologise for and something useful to offer.
+      if (data.capacityReached) {
+        setCapacityMessage(data.message ?? 'Daily capacity reached.')
+        setMeta(data.searchMeta ?? null)
+        setWaitlistDone(false)
+        return
+      }
 
       const id: string | null = data.savedSearchId ?? null
       setProspects(data.prospects ?? [])
@@ -396,6 +435,33 @@ export default function ClientFinderPage() {
 
             {error && (
               <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+            )}
+
+            {/* Amber, not red: nothing failed and the user did nothing wrong. The search
+                is queued rather than lost, and their daily allowance was handed back. */}
+            {capacityMessage && (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
+                <p className="text-sm font-semibold text-amber-900 m-0">
+                  Live business data is at today&rsquo;s limit
+                </p>
+                <p className="text-sm text-amber-800 mt-1 mb-0">{capacityMessage}</p>
+
+                {waitlistDone ? (
+                  <p className="text-sm font-medium text-amber-900 mt-3 mb-0">
+                    We&rsquo;ll email you as soon as it resets — nothing else to do.
+                  </p>
+                ) : (
+                  <div className="mt-3 flex items-center gap-3 flex-wrap">
+                    <Button onClick={joinWaitlist} disabled={waitlistBusy}>
+                      {waitlistBusy && <Spinner size="sm" className="mr-2" />}
+                      Email me when it resets
+                    </Button>
+                    <span className="text-xs text-amber-800">
+                      We&rsquo;ll run nothing without you — just a note that capacity is back.
+                    </span>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="mt-5 flex items-center gap-3 flex-wrap">

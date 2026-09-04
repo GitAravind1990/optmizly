@@ -16,7 +16,7 @@ import { prisma } from './prisma'
  * watches, and if one stops firing the only symptom is an email that never arrives.
  */
 
-export type CronJob = 'health' | 'drip' | 'weekly' | 'gsc-sync'
+export type CronJob = 'health' | 'drip' | 'weekly' | 'gsc-sync' | 'prospect-waitlist'
 
 /**
  * Every scheduled job, with the gap after which its silence is itself a finding.
@@ -66,6 +66,14 @@ export const CRON_JOBS: Record<
     label: 'Search Console sync',
     schedule: 'Mondays 04:00 UTC',
     staleAfterMs: 8 * 24 * 60 * 60 * 1000,
+  },
+  'prospect-waitlist': {
+    label: 'Prospect capacity notices',
+    // 01:00 rather than 00:00 so it lands after DailyVendorSpend has rolled to a new day
+    // key. Hobby fires anywhere inside the hour, so an 00:00 entry could run at 00:05 on
+    // the *old* day's budget and promise capacity that is not there yet.
+    schedule: 'daily 01:00 UTC',
+    staleAfterMs: 26 * 60 * 60 * 1000,
   },
 }
 

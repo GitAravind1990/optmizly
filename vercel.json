@@ -13,6 +13,10 @@
       "schedule": "0 4 * * 1"
     },
     {
+      "path": "/api/cron/prospect-waitlist",
+      "schedule": "0 1 * * *"
+    },
+    {
       "path": "/api/cron/health",
       "schedule": "0 0 * * *"
     },

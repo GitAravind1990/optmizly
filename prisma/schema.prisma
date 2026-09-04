@@ -53,6 +53,7 @@ model User {
   backlinkAnalyses        BacklinkDomainAnalysis[] @relation("BacklinkDomainAnalyses")
   seoAudits               SeoAudit[]               @relation("SEOAudits")
   drippedEmails           DrippedEmail[]
+  prospectWaitlist        ProspectWaitlist[] @relation("ProspectWaitlist")
   analysisHistory         AnalysisHistory[]
   searchConsoleConnection SearchConsoleConnection?
   gscQueryRows            GscQueryRow[]            @relation("GscQueryRows")
@@ -67,6 +68,42 @@ model User {
 /// corrupt those counts. `day` is a 'YYYY-MM-DD' string in UTC, matching how Usage
 /// stores 'YYYY-MM' — a string key makes the unique constraint do the resetting, with no
 /// job to run at midnight.
+/// Someone who asked for a prospect search while the daily Places ceiling was spent.
+///
+/// The ceiling has to exist or a launch is a large Google bill, but an outage that returns
+/// nothing wastes the visitor entirely. This turns the ceiling into the one thing the tool
+/// wants anyway - a reachable email and the search they came to run.
+///
+/// `userId` is null for anonymous visitors, which is the case the public prospect finder
+/// will hit. Signed-in users are recorded too, but for them this is a notification rather
+/// than a lead: their email is already known, and what they need is to hear when capacity
+/// returns instead of guessing.
+model ProspectWaitlist {
+  id String @id @default(cuid())
+
+  email    String
+  industry String
+  location String
+
+  /// Null when the request came from someone with no account.
+  userId String?
+  user   User?   @relation("ProspectWaitlist", fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Where the request came from, e.g. "dashboard" or "public". Kept so the public tool's
+  /// capture rate can be told apart from a paying user's outage.
+  source String @default("dashboard")
+
+  /// Set when the "capacity is back" email goes out. Null means still waiting, and is what
+  /// the notifier selects on - so a failed send is retried rather than silently dropped.
+  notifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([email, industry, location, createdAt])
+  @@index([notifiedAt])
+  @@index([userId])
+}
+
 /// A day's billed request count for one metered third-party vendor, across the whole
 /// system rather than per user.
 ///

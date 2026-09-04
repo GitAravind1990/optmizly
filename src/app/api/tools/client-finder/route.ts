@@ -110,10 +110,27 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       if (e instanceof VendorBudgetExceededError) {
         await refundDailyUsage(user.userId, 'client-finder').catch(() => {})
-        throw new AuthError(
-          503,
-          'Prospect search has reached its limit for today across all accounts. It resets at midnight UTC — this search has not been counted against your daily allowance.',
-        )
+        // A 200 carrying `capacityReached`, not an error status. The search genuinely did
+        // not run, but the useful response is an offer rather than a failure — and an
+        // error status would have the UI render its generic red box, which is the outage
+        // this whole mechanism exists to avoid.
+        return apiSuccess({
+          capacityReached: true,
+          message:
+            'Prospect search has reached its daily limit across all accounts. It resets at midnight UTC, and this search has not been counted against your allowance.',
+          searchMeta: {
+            industry: industry.trim(),
+            location: location.trim(),
+            aiSummaries: false,
+            // Post-refund figures. Reporting the consumed count next to a message saying
+            // the search was not counted would contradict itself on screen.
+            usage: {
+              used: Math.max(0, usage.used - 1),
+              limit: usage.limit,
+              remaining: Math.min(usage.limit, usage.remaining + 1),
+            },
+          },
+        })
       }
       throw e
     }

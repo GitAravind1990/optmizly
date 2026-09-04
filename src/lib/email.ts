@@ -12,6 +12,7 @@ import { DripDay7Email } from '@/emails/drip-day7'
 import { BlogSubscribeEmail } from '@/emails/blog-subscribe'
 import { WeeklySummaryEmail } from '@/emails/weekly-summary'
 import { AgencyReportEmail } from '@/emails/agency-report'
+import { ProspectCapacityEmail } from '@/emails/prospect-capacity'
 import { captureServerException } from '@/lib/posthog-server'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -341,6 +342,39 @@ export async function sendBlogSubscribeEmail(
     console.log(`[Email] Blog subscribe confirmation sent to ${to}`)
   } catch (e) {
     await reportEmailFailure('blog subscribe confirmation', to, e)
+  }
+}
+
+// ── Prospect search capacity restored ─────────────────────────────────────────
+/**
+ * Throws on an unset key rather than returning, like the other cron mailers: the notifier
+ * claims its row before sending, so a silent no-op would mark someone notified who never
+ * heard from us, and they can never be picked up again.
+ */
+export async function sendProspectCapacityEmail(
+  to: string,
+  industry: string,
+  location: string,
+) {
+  try {
+    if (!resend) throw new Error('RESEND_API_KEY is not set')
+    const html = await render(
+      ProspectCapacityEmail({
+        industry,
+        location,
+        searchUrl: `${APP_URL}/dashboard/tools/client-finder`,
+      })
+    )
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `Your prospect search for ${industry} is ready`,
+      html,
+    })
+    console.log(`[Email] Prospect capacity notice sent to ${to}`)
+  } catch (e) {
+    await reportEmailFailure('prospect capacity', to, e)
+    throw e
   }
 }
 
