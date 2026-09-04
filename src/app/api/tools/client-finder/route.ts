@@ -41,25 +41,36 @@ const POOL_LIMIT = 60
  * This is a cost ceiling, not a product limit. One search is up to three paid Places
  * requests plus up to sixty homepage fetches spread over the scan.
  *
- * **Lowered 50 -> 15 on 2026-09-04.** At roughly $0.10 a search — three Places requests at
- * Google's ~$32/1,000 Text Search rate — a 50/day ceiling is about $144 a month of billable
- * Google spend against a $49 plan. Nobody had noticed because the tool has run 8 times in
- * its life, all during development: the exposure is invisible precisely until the moment
- * someone actually uses the product.
+ * **Lowered 50 -> 15 -> 5 across 2026-09-04.** One search is up to three Places requests,
+ * billed at the Text Search **Enterprise** SKU — $35/1,000, or $0.035 each — because the
+ * field mask asks for `websiteUri`, `rating` and `nationalPhoneNumber`. That tier is not
+ * avoidable: `websiteUri` alone forces Enterprise, and a prospecting tool that cannot see a
+ * business's website has no product.
  *
- * 15 a day is still 450 searches a month, and each returns up to sixty scanned businesses,
- * so it is far beyond real prospecting use while capping Google spend near $45. Raising it
- * for someone who genuinely hits it is an easy conversation; discovering the bill after a
- * launch is not.
+ * What each ceiling costs a fully-active account, at 3 requests a search:
+ *
+ *     50/day = 4,500 req/mo = $157/mo   |  15/day = 1,350 = $47/mo  |  5/day = 450 = $15.75/mo
+ *
+ * against $49 of revenue. Google's 1,000 free requests a month are *per billing account*,
+ * not per user, so they cover roughly the first two active accounts and then stop helping —
+ * which is why the marginal figures above ignore them. 5/day is still 150 searches a month,
+ * each returning up to sixty scanned businesses, so it remains far beyond real prospecting
+ * use while keeping Places under a third of the plan's revenue at full tilt.
+ *
+ * **Agency Plus, when it exists, gets 10/day** (900 req/mo, ~$31.50) against $99 — the same
+ * proportion of revenue, and the visible reason to upgrade. Add the entry here when the
+ * plan is added to the Plan enum; there is deliberately no dead AGENCY_PLUS key in the
+ * meantime, because a Record key for a tier nobody can hold is a limit nobody enforces.
  *
  * Note this cost is billed by Google, not DataForSEO, so it appears in neither the
- * DataForSEO invoice nor the admin cost panel. Changing this number is the only control.
+ * DataForSEO invoice nor the admin cost panel. Changing this number is the only control,
+ * and `reserveVendorRequests` is the system-wide backstop underneath it.
  */
 const CLIENT_FINDER_DAILY_LIMITS: Record<Plan, number> = {
   FREE: 0,
   STARTER: 0,
   PRO: 0,
-  AGENCY: 15,
+  AGENCY: 5,
 }
 
 export async function POST(req: NextRequest) {

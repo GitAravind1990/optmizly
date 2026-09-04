@@ -621,7 +621,7 @@ const COMPARISON_ROWS: Array<
   { type: 'row', label: 'AI Visibility Queries', free: false, pro: true, agency: true },
   { type: 'row', label: 'LLM Citation Tracker', free: false, pro: false, agency: true },
   { type: 'category', label: 'Agency tools' },
-  { type: 'row', label: 'SEO Client Finder', free: false, pro: false, agency: '15 searches / day' },
+  { type: 'row', label: 'SEO Client Finder', free: false, pro: false, agency: '5 searches / day' },
   { type: 'row', label: 'Client projects', free: false, pro: false, agency: '10' },
   { type: 'row', label: 'SERP Competitor Audit', free: false, pro: false, agency: true },
   { type: 'row', label: 'Topical Authority Mapper', free: false, pro: false, agency: true },
@@ -638,7 +638,7 @@ const FAQS = [
   },
   {
     q: 'What counts as one analysis?',
-    a: 'Each time you submit content or a URL for scoring, it uses one analysis credit. Most tools cost one credit. Tools that pull more live data from third-party providers on your behalf cost more, and each one tells you its cost before you run it. Three credits: Keyword Research, Competitor Spy, Ranking Engine, Geogrid and the Local SEO suite. Two credits: Backlinks, Rank Tracker, SERP Audit, Review Velocity, Client Reports, AI Visibility, Content Gap and Content Planner. Credits reset at the start of each billing month, and the Free plan\'s tools all cost one. SEO Client Finder is the exception: it does not use analysis credits at all, and has its own limit of 15 searches a day.',
+    a: 'Each time you submit content or a URL for scoring, it uses one analysis credit. Most tools cost one credit. Tools that pull more live data from third-party providers on your behalf cost more, and each one tells you its cost before you run it. Three credits: Keyword Research, Competitor Spy, Ranking Engine, Geogrid and the Local SEO suite. Two credits: Backlinks, Rank Tracker, SERP Audit, Review Velocity, Client Reports, AI Visibility, Content Gap and Content Planner. Credits reset at the start of each billing month, and the Free plan\'s tools all cost one. SEO Client Finder is the exception: it does not use analysis credits at all, and has its own limit of 5 searches a day.',
   },
   {
     q: 'Can I cancel anytime?',
