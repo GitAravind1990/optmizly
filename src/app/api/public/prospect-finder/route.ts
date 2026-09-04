@@ -12,8 +12,26 @@ export const maxDuration = 60
 /** Free searches per IP per calendar month. */
 const FREE_MONTHLY_SEARCHES = 3
 
-/** Prospects shown. Enough to be obviously useful, short of a usable prospect list. */
-const FREE_RESULT_COUNT = 10
+/**
+ * Businesses checked per free search, and the cap on prospects returned.
+ *
+ * Cut from 10 to 6 for wall time: a live run took 12.2s, which is a long wait on a public
+ * page someone arrived at out of curiosity. Six is also exactly one wave at the
+ * concurrency below, where 10 was two — the second wave is what the time was going into.
+ *
+ * The trade is real and worth stating: fewer checked means fewer shown. Roughly 40% of
+ * sites qualify, so six businesses is typically two or three prospects rather than four.
+ * The page reports found-out-of-checked so that reads as a real answer rather than a thin
+ * one — plenty of sites are simply fine.
+ */
+const FREE_RESULT_COUNT = 6
+
+/**
+ * One wave, not two. The paid scan uses 5 because it runs ten sites and a sixth socket
+ * buys it nothing; here 6 is the whole batch, so matching them removes an entire round
+ * trip from the critical path.
+ */
+const FREE_CONCURRENCY = 6
 
 /**
  * How many businesses to pull from Places. One page, not the three the paid tool walks.
@@ -92,7 +110,12 @@ export async function POST(req: NextRequest) {
     }
 
     const ordered = spreadOrder(discovered)
-    const { qualified } = await runBatch(ordered.slice(0, FREE_RESULT_COUNT))
+    // No AI summaries: salesAngle is stripped before responding, so generating one would
+    // be buying an answer to discard, on the critical path of a page someone is watching.
+    const { qualified } = await runBatch(ordered.slice(0, FREE_RESULT_COUNT), {
+      concurrency: FREE_CONCURRENCY,
+      aiSummaries: false,
+    })
 
     return apiSuccess({
       prospects: qualified.slice(0, FREE_RESULT_COUNT).map(toPublicProspect),

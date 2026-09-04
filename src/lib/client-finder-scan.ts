@@ -213,12 +213,39 @@ export function placeholderProspect(biz: DiscoveredBusiness): Prospect {
  * five as on batch one. Two copies of this would drift, and a lead scored differently
  * depending on which request happened to reach it is a bug nobody would think to look for.
  */
-export async function runBatch(businesses: DiscoveredBusiness[]): Promise<{
+/**
+ * Options exist for the free public finder, whose constraints are the opposite of the paid
+ * scan's: it is a stranger waiting on a page rather than a customer working a list, so wall
+ * time matters more than depth, and nothing it produces may cost more than it has to.
+ *
+ * Both default to today's behaviour, so the paid path is untouched.
+ */
+export interface RunBatchOptions {
+  /** Sites in flight. Defaults to CONCURRENCY (5). */
+  concurrency?: number
+  /**
+   * Whether to spend a model call on sales angles. Defaults true.
+   *
+   * The public tool passes false: it strips `salesAngle` before responding, so paying to
+   * generate one is buying an answer to throw away — and the call sits on the critical
+   * path of a page someone is watching. `topIssues` survives either way; the deterministic
+   * findings already populate it and the model only rewrites them when it runs.
+   */
+  aiSummaries?: boolean
+}
+
+export async function runBatch(
+  businesses: DiscoveredBusiness[],
+  opts: RunBatchOptions = {},
+): Promise<{
   qualified: Prospect[]
   examined: number
   aiSummaries: boolean
 }> {
-  const prospects = await pool(businesses, CONCURRENCY, analyzeBusiness, (biz, e) => {
+  const concurrency = opts.concurrency ?? CONCURRENCY
+  const wantSummaries = opts.aiSummaries ?? true
+
+  const prospects = await pool(businesses, concurrency, analyzeBusiness, (biz, e) => {
     console.error(`[client-finder] ${biz.name} threw during analysis:`, e instanceof Error ? e.message : e)
     return placeholderProspect(biz)
   })
@@ -226,6 +253,10 @@ export async function runBatch(businesses: DiscoveredBusiness[]): Promise<{
   // Only Good and High survive. Ranked by prospectRank rather than raw opportunity: a
   // dead site scores high and is a poor lead. See opportunity-score.ts.
   const qualified = prospects.filter(isQualified).sort((a, b) => b.rank - a.rank)
+
+  if (!wantSummaries) {
+    return { qualified, examined: prospects.length, aiSummaries: false }
+  }
 
   // One model call per batch, over the qualifying prospects only. Summarising the
   // discarded ones would be paying to describe leads nobody will ever see.
