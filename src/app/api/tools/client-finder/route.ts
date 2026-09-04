@@ -37,14 +37,28 @@ const POOL_LIMIT = 60
  * Record must cover every Plan, and a 0 says "not entitled" more clearly than a leftover
  * allowance that looks live.
  *
- * 50 a day is a cost ceiling, not a product limit. One search is now up to three paid
- * Places requests plus up to sixty homepage fetches spread over the scan.
+ * This is a cost ceiling, not a product limit. One search is up to three paid Places
+ * requests plus up to sixty homepage fetches spread over the scan.
+ *
+ * **Lowered 50 -> 15 on 2026-09-04.** At roughly $0.10 a search — three Places requests at
+ * Google's ~$32/1,000 Text Search rate — a 50/day ceiling is about $144 a month of billable
+ * Google spend against a $49 plan. Nobody had noticed because the tool has run 8 times in
+ * its life, all during development: the exposure is invisible precisely until the moment
+ * someone actually uses the product.
+ *
+ * 15 a day is still 450 searches a month, and each returns up to sixty scanned businesses,
+ * so it is far beyond real prospecting use while capping Google spend near $45. Raising it
+ * for someone who genuinely hits it is an easy conversation; discovering the bill after a
+ * launch is not.
+ *
+ * Note this cost is billed by Google, not DataForSEO, so it appears in neither the
+ * DataForSEO invoice nor the admin cost panel. Changing this number is the only control.
  */
 const CLIENT_FINDER_DAILY_LIMITS: Record<Plan, number> = {
   FREE: 0,
   STARTER: 0,
   PRO: 0,
-  AGENCY: 50,
+  AGENCY: 15,
 }
 
 export async function POST(req: NextRequest) {
