@@ -67,6 +67,27 @@ export function serializeClientLimit(limit: number): number | null {
 }
 
 /**
+ * How many people may work inside one account, **including the owner**.
+ *
+ * Counting the owner is the honest reading of "2 seats" and the one a buyer assumes; a
+ * limit that quietly meant "2 people plus you" would be a pleasant surprise exactly once
+ * and a support question every time after.
+ *
+ * 1 everywhere below Agency, which makes those tiers single-user without needing a separate
+ * "teams enabled" flag — the seat check and the plan check are the same check.
+ *
+ * Seats are the feature a bigger number cannot fake, which is why they are worth building
+ * before a higher tier is sold on them: more than one person logging in is a real constraint
+ * for an agency today, and no amount of extra analyses solves it.
+ */
+export const SEAT_LIMITS: Record<Plan, number> = {
+  FREE: 1,
+  STARTER: 1,
+  PRO: 1,
+  AGENCY: 2,
+}
+
+/**
  * How much of the monthly allowance a single run of each tool consumes.
  *
  * Every tool used to cost exactly 1, which meant a content analysis costing nothing and

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { UserButton, useUser } from '@clerk/nextjs'
 import { Card, Badge, Button, Spinner, ScoreBar } from '@/components/ui'
+import { TeamSeats } from '@/components/team-seats'
 
 type GSCStatus = {
   connected: boolean
@@ -292,6 +293,12 @@ export default function SettingsPage() {
         {/* â"€â"€ ACCOUNT TAB â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
         {!loading && tab === 'account' && (
           <div className="space-y-4">
+
+            {/* Renders nothing for a member: the API answers 403 and the component hides,
+                so ownership is decided in one place rather than by a client-side flag. */}
+            <Card>
+              <TeamSeats />
+            </Card>
 
             <Card>
               <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Profile</div>

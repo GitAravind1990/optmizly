@@ -54,6 +54,7 @@ model User {
   seoAudits               SeoAudit[]               @relation("SEOAudits")
   drippedEmails           DrippedEmail[]
   prospectWaitlist        ProspectWaitlist[] @relation("ProspectWaitlist")
+  teamMembers             TeamMember[]       @relation("TeamOwner")
   analysisHistory         AnalysisHistory[]
   searchConsoleConnection SearchConsoleConnection?
   gscQueryRows            GscQueryRow[]            @relation("GscQueryRows")
@@ -68,6 +69,53 @@ model User {
 /// corrupt those counts. `day` is a 'YYYY-MM-DD' string in UTC, matching how Usage
 /// stores 'YYYY-MM' — a string key makes the unique constraint do the resetting, with no
 /// job to run at midnight.
+enum TeamMemberStatus {
+  /// Invited by email, has not signed in yet. Carries no clerkId.
+  PENDING
+  /// Signed in and resolving to the owner's account.
+  ACTIVE
+}
+
+/// A second person working inside someone else's account.
+///
+/// Deliberately NOT a rename of User into Account. Every table here keys on `userId` and
+/// the whole app resolves through getOrCreateUser, so introducing a separate Account entity
+/// would mean touching every one of those and every route that reads them. A membership row
+/// beside the existing model gets the same result by changing one lookup: a member's session
+/// resolves to the owner's User, so clients, quota, reports and history are shared by
+/// construction rather than by a new sharing rule that each feature has to remember.
+///
+/// The consequence, stated because it is surprising: an active membership *wins* over the
+/// member's own account. Someone who had a free account and is then invited will see the
+/// team's workspace, not their own. That is what an agency expects when it invites a
+/// colleague, and revoking the seat gives them their own account back untouched.
+model TeamMember {
+  id String @id @default(cuid())
+
+  /// The account being shared. Everything the member does bills and belongs here.
+  ownerId String
+  owner   User   @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// Invited address, lowercased. The join key until the person first signs in.
+  email String
+
+  /// Filled in on first sign-in, which is also what flips PENDING to ACTIVE.
+  clerkId String?
+
+  status TeamMemberStatus @default(PENDING)
+
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  /// One invite per address per account.
+  @@unique([ownerId, email])
+  /// A person may hold at most one seat anywhere. Without this, two owners could both
+  /// invite the same address and resolution would depend on row order.
+  @@unique([clerkId])
+  @@index([ownerId])
+  @@index([email])
+}
+
 /// Someone who asked for a prospect search while the daily Places ceiling was spent.
 ///
 /// The ceiling has to exist or a launch is a large Google bill, but an outage that returns

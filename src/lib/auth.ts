@@ -19,10 +19,22 @@ export async function getClerkFirstName(clerkId: string | null, fallback = 'ther
 }
 
 export type AuthedUser = {
+  /** The ACCOUNT's id. For someone on a seat this is the owner's, not their own. */
   userId: string
+  /** The signed-in person's Clerk id, which is theirs even when working on a seat. */
   clerkId: string
+  /** The account's email. */
   email: string
   plan: Plan
+  /**
+   * False when this session is working inside someone else's account via a seat.
+   *
+   * Derived rather than stored: getOrCreateUser returns the owner's row, so a session
+   * whose own clerkId differs from the account's is on a seat by definition. Anything that
+   * changes the account itself — billing, seats, deleting it — must check this. Everything
+   * else deliberately does not care, which is what makes the workspace shared.
+   */
+  isOwner: boolean
 }
 
 export class AuthError extends Error {
@@ -69,7 +81,81 @@ function hasLapsed(sub: { status: string; currentPeriodEnd: Date | null } | null
   return !sub.currentPeriodEnd || sub.currentPeriodEnd <= new Date()
 }
 
+/**
+ * Resolves a seat, if this person holds one.
+ *
+ * Two ways in. Already accepted: a row carrying this clerkId. First sign-in after an
+ * invite: a PENDING row matching the Clerk email, which this claims by writing the clerkId
+ * and flipping it ACTIVE. The claim is a conditional updateMany rather than an update, so
+ * two simultaneous first requests cannot both think they accepted it.
+ *
+ * Returns the OWNER's user id. That is the whole mechanism — the caller then loads the
+ * owner's row and every downstream query, quota check and client list is the owner's
+ * without any of them knowing seats exist.
+ */
+async function resolveSeat(clerkId: string): Promise<string | null> {
+  const active = await prisma.teamMember.findUnique({
+    where: { clerkId },
+    select: { ownerId: true, status: true },
+  })
+  if (active?.status === 'ACTIVE') return active.ownerId
+  // A row with this clerkId that is somehow not ACTIVE is a half-finished claim; fall
+  // through and let the email path below finish it.
+
+  const email = await clerkEmail(clerkId)
+  if (!email) return null
+
+  const pending = await prisma.teamMember.findFirst({
+    where: { email, status: 'PENDING', clerkId: null },
+    select: { id: true, ownerId: true },
+  })
+  if (!pending) return null
+
+  const claimed = await prisma.teamMember.updateMany({
+    where: { id: pending.id, status: 'PENDING', clerkId: null },
+    data: { clerkId, status: 'ACTIVE', acceptedAt: new Date() },
+  })
+  // count === 0 means another request claimed it a moment ago, which is fine: the seat is
+  // theirs either way and the next lookup will find it ACTIVE.
+  return claimed.count === 1 ? pending.ownerId : active?.ownerId ?? pending.ownerId
+}
+
+/** The Clerk email for a user id, lowercased. Null when Clerk cannot be reached. */
+async function clerkEmail(clerkId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.clerk.com/v1/users/${clerkId}`, {
+      headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const email = data.email_addresses?.[0]?.email_address
+    return typeof email === 'string' ? email.trim().toLowerCase() : null
+  } catch {
+    return null
+  }
+}
+
 export async function getOrCreateUser(clerkId: string) {
+  // Seats resolve BEFORE the personal lookup, and that ordering is the design.
+  //
+  // An invited colleague may already have their own free account. If the personal lookup
+  // ran first they would sign in, see an empty workspace, and conclude the invite did not
+  // work — so an active membership wins. Their own account is untouched and comes back the
+  // moment the seat is revoked.
+  //
+  // It also has to run before the auto-provision below, or a brand-new invitee would be
+  // handed a fresh FREE account instead of the seat they were invited to.
+  const seatOwnerId = await resolveSeat(clerkId)
+  if (seatOwnerId) {
+    const owner = await prisma.user.findUnique({
+      where: { id: seatOwnerId },
+      include: { subscription: { select: { status: true, currentPeriodEnd: true } } },
+    })
+    // A missing owner should not strand the member in a broken session; fall through to
+    // their own account rather than throwing.
+    if (owner) return owner
+  }
+
   let user = await prisma.user.findUnique({
     where: { clerkId },
     include: { subscription: { select: { status: true, currentPeriodEnd: true } } },
@@ -206,6 +292,9 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
     clerkId,
     email: user.email,
     plan: user.plan,
+    // user.clerkId is the account's; clerkId is whoever is signed in. They differ exactly
+    // when this session is working on a seat.
+    isOwner: user.clerkId === clerkId,
   }
 }
 
@@ -290,6 +379,9 @@ export async function requireToolAccess(tool: string): Promise<AuthedUser> {
     clerkId,
     email: user.email,
     plan: user.plan,
+    // user.clerkId is the account's; clerkId is whoever is signed in. They differ exactly
+    // when this session is working on a seat.
+    isOwner: user.clerkId === clerkId,
   }
 }
 
