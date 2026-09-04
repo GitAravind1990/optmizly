@@ -316,17 +316,22 @@ export function PagePricing() {
            1136px content box — so it silently wrapped to 3 + 1 and left an orphan card on
            its own row. auto-fit also has no way to express "never 3", which is the actual
            requirement: 4, then 2x2, then stacked. */
-        /* Five plans. Three across then 2+1 would orphan a card, so it is 5 / 3 / 2 / 1 and
-           only the widest layout puts them all on one row. */
+        /* Five plans, so some width always shows a remainder — the aim is the least ugly
+           one. Three across gives 3+2, which reads as two rows; two across gives 2+2+1 and
+           leaves a card alone. So the 3-column band is deliberately wide (900–1279px) and
+           2 columns only takes over below that, where three cards would be too narrow to
+           read. Measured: 1024px was landing on 2 columns and orphaning the fifth card. */
         .pricing-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
         @media (max-width: 1279px) { .pricing-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-        @media (max-width: 1139px) { .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 899px)  { .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 639px)  { .pricing-grid { grid-template-columns: minmax(0, 1fr); } }
 
         /* Four across leaves each card ~267px, where 32px of padding either side eats a
            quarter of the width. Roomier again as soon as there are only two columns. */
         .pricing-card { padding: 26px; }
-        @media (max-width: 1139px) { .pricing-card { padding: 32px; } }
+        /* Roomier once there are at most two columns, where cards are wide again. Tied to
+           the same 900px boundary as the grid so padding and column count never disagree. */
+        @media (max-width: 899px) { .pricing-card { padding: 32px; } }
 
       `}</style>
 
