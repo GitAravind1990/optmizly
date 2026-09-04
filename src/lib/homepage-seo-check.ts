@@ -239,8 +239,19 @@ function requestOnce(target: string, deadline: number, opts: GuardedOptions): Pr
  *   - one deadline for the whole operation rather than per hop, so five slow redirects
  *     cannot add up to five timeouts.
  */
-export async function fetchHomepage(url: string): Promise<HomepageFetch | null> {
-  const res = await fetchGuarded(url, { requireHtml: true })
+export async function fetchHomepage(
+  url: string,
+  /**
+   * Overrides the 8s default. A scan fetches its batch in parallel, so the wave costs
+   * whatever its slowest site costs — one unresponsive homepage sets the wall time for
+   * everyone. Measured over the sites a real search returns: an 8s ceiling produced waves
+   * of 4.4–6.7s, a 6s ceiling produced 4.6–4.9s and still reached every site. Below 6s the
+   * waves stop getting shorter and sites start dropping out, so 6s is where the tail is
+   * cheap to cut and 5s is where it is not.
+   */
+  timeoutMs?: number,
+): Promise<HomepageFetch | null> {
+  const res = await fetchGuarded(url, { requireHtml: true, ...(timeoutMs ? { timeoutMs } : {}) })
   return res ? { finalUrl: res.finalUrl, html: res.body, status: res.status } : null
 }
 

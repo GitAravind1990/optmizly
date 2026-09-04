@@ -34,6 +34,20 @@ const FREE_RESULT_COUNT = 6
 const FREE_CONCURRENCY = 6
 
 /**
+ * Per-site fetch ceiling, down from the 8s default.
+ *
+ * This is the lever that actually moves the wall time, which cutting the batch from ten
+ * sites to six did not — measured, that bought about a second. A wave costs whatever its
+ * slowest site costs, so the ceiling *is* the wave. Measured over the sites a real search
+ * returns: 8s produced waves of 4.4–6.7s, 6s produced 4.6–4.9s while still reaching every
+ * site, and 5s began dropping sites without getting faster. 6s is where the tail is cheap
+ * to cut.
+ *
+ * The paid scan keeps 8s: a customer working a list would rather wait than lose a lead.
+ */
+const FREE_FETCH_TIMEOUT_MS = 6_000
+
+/**
  * How many businesses to pull from Places. One page, not the three the paid tool walks.
  *
  * This is the cost lever. The paid scan pages to rank 60 because depth is where the
@@ -115,6 +129,7 @@ export async function POST(req: NextRequest) {
     const { qualified } = await runBatch(ordered.slice(0, FREE_RESULT_COUNT), {
       concurrency: FREE_CONCURRENCY,
       aiSummaries: false,
+      fetchTimeoutMs: FREE_FETCH_TIMEOUT_MS,
     })
 
     return apiSuccess({

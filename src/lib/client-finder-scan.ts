@@ -117,7 +117,12 @@ const SEVERITY_ORDER: Record<SEOFinding['severity'], number> = {
  * PDF becomes WEBSITE_UNAVAILABLE and stays in the list - an agency still wants to know the
  * business exists, and dropping it silently would make the result count look wrong.
  */
-export async function analyzeBusiness(biz: DiscoveredBusiness): Promise<Prospect> {
+export async function analyzeBusiness(
+  biz: DiscoveredBusiness,
+  /** Per-site fetch ceiling. Undefined keeps homepage-seo-check's 8s default, which is what
+   *  the paid scan uses; the free finder passes a shorter one. See RunBatchOptions. */
+  fetchTimeoutMs?: number,
+): Promise<Prospect> {
   const base: Omit<Prospect, 'opportunityScore' | 'opportunityLevel' | 'topIssues' | 'findings' | 'contacts' | 'status' | 'siteReachable' | 'rank'> = {
     id: biz.placeId,
     name: biz.name,
@@ -144,7 +149,7 @@ export async function analyzeBusiness(biz: DiscoveredBusiness): Promise<Prospect
     }
   }
 
-  const page = await fetchHomepage(biz.website)
+  const page = await fetchHomepage(biz.website, fetchTimeoutMs)
   if (!page) {
     return {
       ...base,
@@ -232,6 +237,15 @@ export interface RunBatchOptions {
    * findings already populate it and the model only rewrites them when it runs.
    */
   aiSummaries?: boolean
+  /**
+   * Per-site fetch ceiling. Defaults to homepage-seo-check's 8s.
+   *
+   * A wave costs whatever its slowest site costs, so this is the only lever that actually
+   * moves the wall time — measured, cutting the batch size did not. Over the sites a real
+   * search returns: 8s gave waves of 4.4–6.7s, 6s gave 4.6–4.9s and still reached every
+   * site, 5s started dropping sites without getting faster.
+   */
+  fetchTimeoutMs?: number
 }
 
 export async function runBatch(
@@ -245,7 +259,7 @@ export async function runBatch(
   const concurrency = opts.concurrency ?? CONCURRENCY
   const wantSummaries = opts.aiSummaries ?? true
 
-  const prospects = await pool(businesses, concurrency, analyzeBusiness, (biz, e) => {
+  const prospects = await pool(businesses, concurrency, (biz) => analyzeBusiness(biz, opts.fetchTimeoutMs), (biz, e) => {
     console.error(`[client-finder] ${biz.name} threw during analysis:`, e instanceof Error ? e.message : e)
     return placeholderProspect(biz)
   })
