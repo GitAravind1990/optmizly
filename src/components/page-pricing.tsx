@@ -286,11 +286,11 @@ export function PagePricing() {
       .catch(() => { /* a scarcity claim we cannot verify is one we do not make */ })
   }, [])
 
+  // Wider than the 1200 the prose sections use. Five cards inside 1200 left each one
+  // 210px, where "SEO Client Finder — find local businesses to pitch" wrapped to three
+  // lines. 1360 with a tighter gutter gives ~250px, which is the difference between a
+  // feature reading as a phrase and reading as a column of fragments.
   return (
-    {/* Wider than the 1200 the prose sections use. Five cards inside 1200 left each one
-        210px, where "SEO Client Finder — find local businesses to pitch" wrapped to three
-        lines. 1360 with a tighter gutter gives ~250px, which is the difference between a
-        feature reading as a phrase and reading as a column of fragments. */}
     <section id="pricing" style={{ maxWidth: 1360, margin: '0 auto', padding: 'clamp(64px,8vw,120px) clamp(20px,4vw,32px)' }}>
       {/* Section head */}
       <div style={{ textAlign: 'center', maxWidth: 720, margin: '0 auto' }}>
