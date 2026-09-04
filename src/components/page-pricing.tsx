@@ -167,6 +167,20 @@ const plans = [
   },
 ]
 
+/**
+ * What a year costs against twelve months of the monthly price, as "$98".
+ *
+ * Derived rather than written down, so it cannot contradict the two prices sitting beside
+ * it on the same card — a hard-coded "save 17%" is exactly the claim that survives a
+ * repricing and becomes false.
+ */
+function annualSaving(monthly: string, annual: string): string {
+  const m = Number(monthly.replace(/[^0-9.]/g, ''))
+  const a = Number(annual.replace(/[^0-9.]/g, ''))
+  if (!m || !a) return ''
+  return `$${Math.round(m * 12 - a)}`
+}
+
 function CheckoutButton({ productId, cta, featured, couponEligible, planName, isAnnual }: {
   productId: string
   cta: string
@@ -315,6 +329,48 @@ export function PagePricing() {
         </p>
       </div>
 
+      {/* One switch for the whole table, not one per card.
+          There used to be a toggle inside each plan that had an annual product — four of
+          them once Starter and Agency Plus gained one — all driving the same piece of
+          state. Clicking "Annual" on Starter silently changed every other card, which reads
+          as a bug because the control looks per-plan and behaves globally. It is global, so
+          it is now drawn that way: one control, above the cards, that visibly governs all
+          of them. */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 32, flexWrap: 'wrap' }}>
+        <div role="group" aria-label="Billing period" style={{
+          display: 'inline-flex', gap: 4, padding: 4,
+          background: T.line2, borderRadius: 12, border: `1px solid ${T.line}`,
+        }}>
+          {([['monthly', 'Monthly'], ['annual', 'Annual']] as const).map(([key, label]) => {
+            const active = (key === 'annual') === annualBilling
+            return (
+              <button
+                key={key}
+                onClick={() => setAnnualBilling(key === 'annual')}
+                aria-pressed={active}
+                style={{
+                  padding: '0 20px', height: 38, borderRadius: 9, cursor: 'pointer',
+                  fontFamily: T.sans, fontSize: 14, fontWeight: 600,
+                  background: active ? '#fff' : 'transparent',
+                  color: active ? T.ink : T.muted,
+                  border: active ? `1px solid ${T.line}` : '1px solid transparent',
+                  boxShadow: active ? '0 1px 2px rgba(11,17,32,0.06)' : 'none',
+                }}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+        <span style={{
+          fontFamily: T.sans, fontSize: 13, fontWeight: 600,
+          color: '#0E7C55', background: '#ECFDF5',
+          border: '1px solid #A7F3D0', borderRadius: 999, padding: '5px 12px',
+        }}>
+          Save 17% — 2 months free
+        </span>
+      </div>
+
       <style>{`
         @media (max-width: 639px) {
           .pricing-card-featured { transform: none !important; }
@@ -347,17 +403,17 @@ export function PagePricing() {
            cards. Sized for the worst wrap at five columns and released once the cards are
            wide enough that these strings fit on fewer lines — holding three lines open on a
            350px card would just be a gap. */
-        .pricing-audience       { min-height: 36px; }
-        .pricing-anchor         { min-height: 38px; }
-        .pricing-toggle-spacer  { height: 48px; }
+        .pricing-audience { min-height: 36px; }
+        .pricing-anchor   { min-height: 38px; }
+        /* One line, held open whether or not this plan has an annual price. */
+        .pricing-saving   { min-height: 18px; }
         @media (max-width: 1279px) {
-          .pricing-audience     { min-height: 20px; }
-          .pricing-anchor       { min-height: 38px; }
+          .pricing-audience { min-height: 20px; }
+          .pricing-anchor   { min-height: 38px; }
         }
         @media (max-width: 899px) {
-          .pricing-audience     { min-height: 0; }
-          .pricing-anchor       { min-height: 0; }
-          .pricing-toggle-spacer { height: 0; }
+          .pricing-audience { min-height: 0; }
+          .pricing-anchor   { min-height: 0; }
         }
 
       `}</style>
@@ -459,35 +515,19 @@ export function PagePricing() {
                 </div>
               )}
 
-              {/* Billing switch, Agency only. Hidden entirely when the annual product is not
-                  configured, so a missing env var shows today's page rather than a toggle
-                  that leads to a checkout with no product behind it. */}
-              {/* The space is reserved on every card, not just the two that have a toggle.
-                  Without it Free, Starter and Agency Plus pulled their buttons ~48px higher
-                  than Pro and Agency, which is the difference the eye actually notices. */}
-              {!p.annualProductId && <div className="pricing-toggle-spacer" />}
-              {p.annualProductId && (
-                <div className="pricing-toggle" style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-                  {([['monthly', 'Monthly'], ['annual', 'Annual']] as const).map(([key, label]) => {
-                    const active = (key === 'annual') === annualBilling
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => setAnnualBilling(key === 'annual')}
-                        style={{
-                          flex: 1, height: 34, borderRadius: 10, cursor: 'pointer',
-                          fontFamily: T.sans, fontSize: 13, fontWeight: 600,
-                          background: active ? (p.featured ? 'rgba(255,255,255,0.16)' : '#FFF7ED') : 'transparent',
-                          color: active ? (p.featured ? '#fff' : '#D97706') : (p.featured ? 'rgba(255,255,255,0.6)' : T.muted),
-                          border: `1px solid ${active ? (p.featured ? 'rgba(255,255,255,0.28)' : '#FDE68A') : T.line}`,
-                        }}
-                      >
-                        {label}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+              {/* What choosing annual actually saves, on the card whose price just changed.
+                  The headline "$490 /yr" is a bigger number than "$49 /mo", so without this
+                  the discount reads as a price rise. */}
+              {/* Always rendered, so Free — which has no annual price — does not sit a line
+                  shorter than the rest and pull its button out of the row. */}
+              <div className="pricing-saving" style={{
+                marginBottom: 14, fontFamily: T.sans, fontSize: 12.5, fontWeight: 600,
+                color: p.featured ? T.cyan : '#0E7C55',
+              }}>
+                {annualBilling && p.annualPrice
+                  ? `Save ${annualSaving(p.price, p.annualPrice)} a year · 2 months free`
+                  : ' '}
+              </div>
 
               {/* `tagline` is deliberately not rendered.
                   It said the same thing as `audience` in different words — "For one site you
