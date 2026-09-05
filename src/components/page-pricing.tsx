@@ -164,6 +164,9 @@ const plans = [
     annualProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_ANNUAL_PRODUCT_ID,
     annualPrice: '$990',
     annualPeriod: '/yr',
+    /** Founding Member applies to both agency annual plans. Mirrors
+     *  isCouponEligibleProduct, which is what actually enforces it. */
+    couponEligible: true,
   },
 ]
 
@@ -185,7 +188,7 @@ function CheckoutButton({ productId, cta, featured, couponEligible, planName, is
   productId: string
   cta: string
   featured: boolean
-  /** True only for the Agency annual product - the one plan a code may be used on. */
+  /** True for the two agency annual products, the only ones a code may be used on. */
   couponEligible?: boolean
   planName: string
   isAnnual: boolean
@@ -574,9 +577,14 @@ export function PagePricing() {
                 )}
               </SignedIn>
 
-              {/* Founding Member availability. Shown only where the offer applies - the
-                  Agency card, annual selected - because a scarcity line on a plan the code
+              {/* Founding Member availability. Shown only where the offer applies - the two
+                  agency cards, annual selected - because a scarcity line on a plan the code
                   cannot be used on is just noise.
+
+                  The 20 places are shared across both plans, not 20 each: /api/founding-spots
+                  reads Dodo's redemption count on the discount itself, and there is one
+                  discount. Two cards showing the same number is therefore correct, and both
+                  fall to zero together.
 
                   Sits BELOW the button, not above it. Above, it appeared on one card in one
                   billing mode and pushed that card's CTA ~44px lower than the other four,

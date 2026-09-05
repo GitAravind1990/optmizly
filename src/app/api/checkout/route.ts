@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const code = typeof couponCode === 'string' ? couponCode.trim().toUpperCase().slice(0, 40) : ''
     if (code && !isCouponEligibleProduct(productId)) {
       return apiError({
-        message: 'This code is valid for the Agency annual plan only.',
+        message: 'This code is valid on the Agency and Agency Plus annual plans only.',
         status: 400,
         name: 'ValidationError',
       })
