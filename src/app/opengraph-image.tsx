@@ -30,7 +30,9 @@ export default function OGImage() {
           AI Content Optimizer · Rank Higher · Get Cited by Every AI
         </div>
         <div style={{ display: 'flex', gap: 16, marginTop: 40 }}>
-          {['11 Tools', '8 Score Dims', 'Free to start'].map(t => (
+          {/* 23 is the Agency tool count, the canonical marketing figure — see CLAUDE.md.
+              "8 Score Dims" tracks SCORE_DIMS in lib/export.ts, currently eight. */}
+          {['23 Tools', '8 Score Dims', 'Free to start'].map(t => (
             <div key={t} style={{
               background: 'rgba(255,255,255,0.15)', borderRadius: 12,
               padding: '8px 20px', color: 'white', fontSize: 18, fontWeight: 700,

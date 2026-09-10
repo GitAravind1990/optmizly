@@ -34,6 +34,22 @@ Adding a nav entry means updating the count in: `/login`, `/signup`, `PRO_BENEFI
 `src/components/ui/index.tsx`, `src/components/upgrade-modal.tsx`,
 `src/components/welcome-banner.tsx`, and this file.
 
+**Two of those live outside the app and were missed for months.** `src/app/layout.tsx` carries
+the figure three times — the site-wide `description`, the OpenGraph one and the Twitter card —
+and `src/app/opengraph-image.tsx` renders it into the share image. Both said 17 and 11 while
+every in-app surface said 12 and 23, so the number Google and every social preview showed was
+the stalest one on the site. Nothing in the app reads these, no test covers them, and you never
+see them while using the product, which is exactly why they drifted. Grep the whole repo for
+`tools` next to a number rather than working down this list:
+
+```powershell
+Get-ChildItem src -Recurse -Include *.tsx,*.ts | Select-String -Pattern "\b\d+\s*(AI-powered\s*)?(SEO\s*)?[Tt]ools\b"
+```
+
+Quote **23** in marketing copy — the Agency figure, since it is the platform's size. Per-plan
+copy uses the tier table above, and `8 Score Dims` on the share image tracks `SCORE_DIMS` in
+`src/lib/export.ts`, which is a different number with its own drift risk.
+
 **Gating must never be written as a plan-rank comparison or an equality check.** Starter
 ranks below Pro on price yet unlocks the same tools, so `rank >= rank` locks paying customers
 out. And `userPlan === 'AGENCY'` silently excluded `AGENCY_PLUS` — the most expensive plan on
