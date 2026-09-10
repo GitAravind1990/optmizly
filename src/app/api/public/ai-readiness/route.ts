@@ -86,7 +86,12 @@ export async function POST(req: NextRequest) {
     if (!quota.allowed) {
       throw new AuthError(
         429,
-        `That's ${DAILY_LIMIT} audits today — the free limit. It resets tomorrow, or sign up to keep going.`
+        // Said "or sign up to keep going", which is not true: this audit has no signed-in
+        // version at all, and the cap is per IP whether you have an account or not. Promising
+        // a way past a limit that does not exist is worse than the limit.
+        `That's ${DAILY_LIMIT} audits today — the daily limit, which is the same for everyone. ` +
+        `It resets tomorrow. A free account doesn't raise it, but it does add the Content ` +
+        `Analyzer and On-Page SEO.`
       )
     }
     refundQuota = quota.refund

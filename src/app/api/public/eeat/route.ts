@@ -52,7 +52,11 @@ export async function POST(req: NextRequest) {
     if (!quota.allowed) {
       throw new AuthError(
         429,
-        `That's ${DAILY_LIMIT} analyses today — the free limit. It resets tomorrow, or sign up to keep going.`
+        // "Sign up to keep going" was wrong: a free account gets the Content Analyzer and
+        // On-Page SEO only. E-E-A-T Analysis starts at Starter, so signing up for free
+        // unlocks nothing here. Name the plan that actually carries it.
+        `That's ${DAILY_LIMIT} analyses today — the daily limit for this free tool. ` +
+        `It resets tomorrow. The full E-E-A-T Analysis is included on the paid plans, from $9.`
       )
     }
     refundQuota = quota.refund

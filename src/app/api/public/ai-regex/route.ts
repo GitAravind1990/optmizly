@@ -88,7 +88,11 @@ export async function POST(req: NextRequest) {
       throw new AuthError(503, 'The free tool is unavailable right now. Please try again shortly.')
     }
     if (!quota.allowed) {
-      throw new AuthError(429, `That's ${DAILY_LIMIT} patterns today — the free limit. It resets tomorrow, or sign up to keep going. Editing and re-running a pattern is always free.`)
+      // "Sign up to keep going" was the most wrong of the three: the in-app AI Regex tool is
+      // Agency-only, so a free account unlocks nothing here. Name the plan, or say nothing.
+      throw new AuthError(429, `That's ${DAILY_LIMIT} patterns today — the daily limit for this free tool. ` +
+        `It resets tomorrow. The in-app AI Regex tool is on the Agency plan. ` +
+        `Editing and re-running a pattern you already have is always free.`)
     }
     refundQuota = quota.refund
 
