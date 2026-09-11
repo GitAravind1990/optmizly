@@ -9,6 +9,16 @@ import { cronAuthFailure, recordCronRun } from '@/lib/cron'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+/**
+ * Left on local-time accessors on purpose, unlike the rank-history day keys which moved to
+ * setUTCHours. This runs only from the cron, on Vercel, where the process timezone is UTC and
+ * local and UTC are therefore the same instant — so there is nothing to fix in production.
+ *
+ * If you do convert it, convert all three together — setUTCHours, getUTCDay, setUTCDate.
+ * Mixing local and UTC accessors here is worse than either, and the value is the dedupe key
+ * for the weekly email: get it wrong and someone is mailed twice or skipped, which is exactly
+ * the failure this key exists to prevent.
+ */
 function getMondayKey(date: Date): string {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0)

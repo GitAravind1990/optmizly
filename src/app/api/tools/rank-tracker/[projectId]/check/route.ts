@@ -63,8 +63,11 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ pr
     })
     if (!project || project.userId !== user.userId) throw new AuthError(404, 'Project not found')
 
+    // setUTCHours, not setHours: this is the unique key for a day's rank history, so the day
+    // must mean the same thing wherever the code runs. Identical on Vercel (UTC); off by hours
+    // in local dev or a script, where it quietly reads or writes the wrong day.
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    today.setUTCHours(0, 0, 0, 0)
 
     const alerts: { projectId: string; keyword: string; alertType: string; oldRank: number | null; newRank: number | null; message: string }[] = []
     let skipped = 0

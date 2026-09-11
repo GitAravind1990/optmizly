@@ -86,8 +86,13 @@ export async function POST(req: NextRequest) {
     }
     const coords = lookup.coords
 
+    // setUTCHours, not setHours. These rows are the run's batch boundary and the "one paid
+    // pass per location per day" limit, so the day has to mean the same thing everywhere.
+    // setHours resolves against the process timezone: identical on Vercel, which runs UTC,
+    // but IST midnight (18:30Z the day before) in local dev or a maintenance script — where
+    // it silently matches nothing and makes a healthy run look like it wrote no history.
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    today.setUTCHours(0, 0, 0, 0)
 
     // Today's history rows are the run's progress marker, so the batch boundary is derived
     // from stored state rather than from anything the client sends.
@@ -159,7 +164,25 @@ export async function POST(req: NextRequest) {
           where: { keywordId_checkedDate: { keywordId: kw.id, checkedDate: today } },
           create: { keywordId: kw.id, rank: newRank, checkedDate: today },
           update: { rank: newRank },
-        }).catch(() => { /* skip duplicate */ }),
+        }).catch((err: unknown) => {
+          // This was a bare `.catch(() => {})`, which is now unsafe to keep: today's history
+          // rows are what the batch boundary and the continuation gate read, so a swallowed
+          // failure here does not just lose a data point — it stalls the run with no
+          // explanation, and the symptom is a 409 "no rank check is in progress".
+          //
+          // P2002 is the case the original catch was for: a concurrent run already wrote
+          // today's row. The row exists, which is all this run needed, so stay quiet.
+          const code = (err as { code?: string } | null)?.code
+          if (code === 'P2002') return
+          // Anything else is a real write failure. Logged rather than thrown so one keyword's
+          // hiccup does not fail a batch that otherwise succeeded — the keyword simply keeps
+          // no row, stays pending, and is retried by the next batch. If it keeps failing the
+          // client's no-progress guard ends the walk instead of looping.
+          console.error(
+            `[local-seo] rank history write failed for keyword ${kw.id} ("${kw.keyword}"):`,
+            err instanceof Error ? err.message : err
+          )
+        }),
       ])
 
       return {
