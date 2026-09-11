@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   },
   // Tool counts drift. 23 is the Agency figure and the only one to quote in marketing copy —
   // see the canonical table in CLAUDE.md before changing it.
-  description: 'Rank higher on Google and get cited by ChatGPT, Perplexity, and every AI engine. 23 AI-powered SEO tools for content teams, SEOs, and agencies.',
+  description: 'Rank higher on Google and get cited in AI Overviews, AI Mode, ChatGPT and Perplexity. 23 AI-powered SEO tools for content teams, SEOs, and agencies.',
   keywords: [
     'AI SEO tools', 'content optimizer', 'E-E-A-T analysis', 'AI citations',
     'semantic SEO', 'content gap analysis', 'topical authority', 'SERP audit',
@@ -46,14 +46,14 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Optmizly',
     title: 'Optmizly – AI Content Optimizer',
-    description: 'Rank higher on Google and get cited by ChatGPT & Perplexity. 23 AI-powered SEO tools.',
+    description: 'Rank higher on Google and get cited in AI Overviews, AI Mode, ChatGPT and Perplexity. 23 AI tools.',
     url: '/',
     images: [{ url: '/opengraph-image', width: 1200, height: 628, alt: 'Optmizly – AI Content Optimizer' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Optmizly – AI Content Optimizer',
-    description: 'Rank higher on Google and get cited by ChatGPT & Perplexity. 23 AI-powered SEO tools.',
+    description: 'Rank higher on Google and get cited in AI Overviews, AI Mode, ChatGPT and Perplexity. 23 AI tools.',
     creator: '@Optmizly',
     images: ['/opengraph-image'],
   },

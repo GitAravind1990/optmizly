@@ -354,7 +354,15 @@ export function HomeHero() {
           fontSize: 'clamp(15px, 1.6vw, 17px)', lineHeight: 1.6, color: T.muted,
           maxWidth: 560, margin: '0 auto 36px',
         }}>
-          One platform to rank on Google and get cited by ChatGPT, Gemini, Claude and Perplexity.
+          {/* Engine list changed 2026-09-12 to match where brand mentions actually occur.
+              Ahrefs' AI visibility index tracks ChatGPT, Gemini, Perplexity, Copilot, Grok, AI
+              Overviews and AI Mode — no Claude, which this line used to name. On a reference
+              brand, Google's AI surfaces carried ~89% of raw mentions, and per indexed prompt
+              AI Mode mentioned brands ~24x more often than the chat assistants. Naming AI
+              Overviews and AI Mode first is both more accurate and a better fit for what the
+              product does, since both are built on Google's index where ranking is the lever. */}
+          One platform to rank on Google and get cited in AI Overviews, AI Mode, ChatGPT,
+          Gemini and Perplexity.
         </p>
 
         {/* CTAs. One dominant action — the free audit, which is the only thing here that

@@ -59,7 +59,15 @@ const AI_CRAWLERS: Array<{ token: string; label: string; kind: 'answer' | 'train
   { token: 'perplexitybot', label: 'PerplexityBot', kind: 'answer' },
   { token: 'claudebot', label: 'ClaudeBot (Anthropic)', kind: 'training' },
   { token: 'claude-web', label: 'Claude-Web (live answers)', kind: 'answer' },
-  { token: 'google-extended', label: 'Google-Extended (Gemini / AI Overviews)', kind: 'training' },
+  // NOT AI Overviews, despite what this label used to claim. Google's documentation is
+  // explicit that AI features are part of Search and that "robots.txt directives for Googlebot
+  // is the control" for them, while Google-Extended governs only whether content improves
+  // Gemini apps and the Vertex AI generative APIs. Blocking it does not remove a page from AI
+  // Overviews — the controls for that are nosnippet / max-snippet / data-nosnippet, checked
+  // separately below. The old label sent people to block the wrong thing believing they had
+  // opted out of the highest-volume AI surface there is.
+  // https://developers.google.com/search/docs/appearance/ai-features
+  { token: 'google-extended', label: 'Google-Extended (Gemini apps, Vertex AI training)', kind: 'training' },
   { token: 'ccbot', label: 'CCBot (Common Crawl)', kind: 'training' },
   { token: 'bingbot', label: 'Bingbot (Copilot)', kind: 'answer' },
 ]
@@ -128,6 +136,24 @@ interface AiSignals {
   /** null when robots.txt could not be read at all. */
   robots: RobotsVerdict | null
   llmsTxt: boolean
+  /**
+   * Snippet suppression, which is what actually keeps a page out of AI Overviews and AI Mode.
+   *
+   * Those are Search features: inclusion follows Googlebot, and what they may quote is governed
+   * by nosnippet / max-snippet / data-nosnippet — not by Google-Extended, which only affects
+   * Gemini apps and Vertex AI training. A page can be perfectly crawlable, score well on
+   * everything else here, and still be unquotable because of one meta tag. Ahrefs' own index
+   * puts AI Overviews and AI Mode at the overwhelming majority of brand mentions, so this is
+   * not a footnote.
+   */
+  snippets: {
+    /** `nosnippet` in a robots meta tag or X-Robots-Tag: no text snippet may be shown at all. */
+    noSnippet: boolean
+    /** `max-snippet:0` is equivalent to nosnippet; a small positive cap still starves a quote. */
+    maxSnippet: number | null
+    /** `data-nosnippet` attributes in the body, which suppress specific passages. */
+    dataNoSnippetCount: number
+  }
 }
 
 interface RobotsVerdict {
@@ -294,6 +320,40 @@ function metaContent(html: string, names: string[]): string | null {
   return null
 }
 
+/**
+ * Snippet directives from the robots and googlebot meta tags, plus body `data-nosnippet`.
+ *
+ * Only the meta tags are visible here: `fetchHomepage` returns body, status and content-type but
+ * not response headers, so an `X-Robots-Tag: nosnippet` set at the server is missed. That is
+ * declared in the report's `limits` rather than left to look like a pass.
+ *
+ * `max-snippet:-1` means no limit and is not a restriction. `max-snippet:0` is equivalent to
+ * nosnippet. A small positive value is not scored as a failure but is worth reporting, because
+ * an engine cannot lift a useful answer from forty characters.
+ */
+function parseSnippetDirectives(html: string): AiSignals['snippets'] {
+  const directives: string[] = []
+  for (const m of html.matchAll(/<meta\b[^>]*>/gi)) {
+    const tag = m[0]
+    const name = tag.match(/name=["']([^"']+)["']/i)?.[1]?.toLowerCase().trim()
+    if (name !== 'robots' && name !== 'googlebot') continue
+    const content = tag.match(/content=["']([^"']*)["']/i)?.[1]
+    if (content) directives.push(...content.toLowerCase().split(',').map(s => s.trim()))
+  }
+
+  const maxRaw = directives
+    .map(d => d.match(/^max-snippet\s*:\s*(-?\d+)$/)?.[1])
+    .find(v => v !== undefined)
+  const maxSnippet = maxRaw === undefined ? null : Number(maxRaw)
+
+  return {
+    noSnippet: directives.includes('nosnippet'),
+    // -1 is "no limit", so it is not a cap at all.
+    maxSnippet: maxSnippet === null || maxSnippet < 0 ? null : maxSnippet,
+    dataNoSnippetCount: (html.match(/\bdata-nosnippet\b/gi) ?? []).length,
+  }
+}
+
 function parseAiSignals(html: string, robots: RobotsVerdict | null, llmsTxt: boolean): AiSignals {
   const seen = { types: new Set<string>(), keys: new Set<string>() }
   for (const block of collectJsonLd(html)) walkJsonLd(block, seen)
@@ -337,6 +397,7 @@ function parseAiSignals(html: string, robots: RobotsVerdict | null, llmsTxt: boo
     siteName: metaContent(html, ['og:site_name'])?.slice(0, MAX_ECHOED_CHARS) ?? null,
     robots,
     llmsTxt,
+    snippets: parseSnippetDirectives(html),
   }
 }
 
@@ -437,8 +498,14 @@ export function scoreReadiness(seo: SEOSignals, ai: AiSignals): {
   //    Only `answer` crawlers count against the score. Blocking a training crawler is an
   //    editorial choice, reported in the detail line but never scored as a fault.
   const answerBlocked = ai.robots?.blocked.some(b => b.kind === 'answer') ?? false
+  // nosnippet, or max-snippet:0, means Google may show no text from this page — which is the
+  // whole of being quoted by AI Overviews and AI Mode, the two surfaces that carry most brand
+  // mentions. Treated as its own check because it is orthogonal to crawlability: the page is
+  // fetched, indexed and rankable, and still cannot be quoted.
+  const snippetSuppressed = ai.snippets.noSnippet || ai.snippets.maxSnippet === 0
   const geoChecks = [
     !answerBlocked,
+    !snippetSuppressed,
     ai.authorPresent,
     ai.datePresent,
     ai.sameAsPresent,
@@ -447,11 +514,14 @@ export function scoreReadiness(seo: SEOSignals, ai: AiSignals): {
   // robots.txt unreachable is not the same as robots.txt permissive, so that one check
   // drops out rather than being assumed either way.
   const geoRaw = ai.robots === null ? pct(geoChecks.slice(1)) : pct(geoChecks)
+  // Same reasoning as the answer-crawler cap below, for the same reason: a page Google may not
+  // quote is not GEO-ready however well attributed it is, so the score says so rather than
+  // averaging it away against four signals that only matter once a quote is possible.
   // Being disallowed from live answer crawlers is not one missing signal among five — it
   // is the category failing outright, because everything else in it only matters once an
   // engine can fetch the page. A site with perfect attribution that no answer engine may
   // read is not GEO-ready, so the cap says so rather than averaging it away.
-  const geo = answerBlocked ? Math.min(geoRaw, 35) : geoRaw
+  const geo = (answerBlocked || snippetSuppressed) ? Math.min(geoRaw, 35) : geoRaw
 
   const trainingBlocked = ai.robots?.blocked.filter(b => b.kind === 'training') ?? []
   const answerBlockedList = ai.robots?.blocked.filter(b => b.kind === 'answer') ?? []
@@ -536,7 +606,16 @@ export function scoreReadiness(seo: SEOSignals, ai: AiSignals): {
               (trainingBlocked.length
                 ? `; training crawlers blocked by choice: ${trainingBlocked.map(b => b.label).join(', ')}`
                 : '') +
-              `. ${ai.authorPresent ? 'Author present' : 'No author attribution'}`,
+              `. ${ai.authorPresent ? 'Author present' : 'No author attribution'}` +
+              // Stated in the detail line and not only in the findings, because it is the one
+              // signal here that can be true on an otherwise flawless page.
+              (ai.snippets.noSnippet
+                ? '. nosnippet set — Google may show no text from this page'
+                : ai.snippets.maxSnippet === 0
+                  ? '. max-snippet:0 set — equivalent to nosnippet'
+                  : ai.snippets.maxSnippet !== null
+                    ? `. max-snippet capped at ${ai.snippets.maxSnippet} characters`
+                    : ''),
     },
   ]
 
@@ -577,6 +656,26 @@ function buildActions(seoFindings: SEOFinding[], ai: AiSignals, seo: SEOSignals)
     add('GEO', 'critical', 'Blocked from live AI answers',
       `Your robots.txt disallows ${answerBlocked.map(b => b.label).join(', ')} from the whole site. These fetch pages live to answer questions, so your content cannot appear in those answers.`,
       'If that block was not deliberate, remove those User-agent rules from robots.txt. Blocking training crawlers is a separate decision and does not affect live answers.')
+  }
+
+  // Critical for the same reason the crawler block is: it is not a weak signal, it is the page
+  // being unquotable. And it is the likeliest finding here to surprise someone, because the
+  // page is crawled, indexed and ranking normally — nothing else looks wrong.
+  if (ai.snippets.noSnippet || ai.snippets.maxSnippet === 0) {
+    const which = ai.snippets.noSnippet ? 'nosnippet' : 'max-snippet:0'
+    add('GEO', 'critical', `Snippets suppressed (${which})`,
+      `A robots meta tag on this page sets ${which}, which tells Google it may show no text from the page. AI Overviews and AI Mode are Search features built on what Google may quote, so this keeps the page out of them even though it stays crawlable, indexed and rankable. Note this is the control that governs AI Overviews — Google-Extended does not.`,
+      `Remove ${which} from the robots or googlebot meta tag if you want the page quotable. If it was added to stop a specific passage being lifted, use data-nosnippet on that element instead of suppressing the whole page.`)
+  } else if (ai.snippets.maxSnippet !== null && ai.snippets.maxSnippet < 160) {
+    add('GEO', 'medium', `max-snippet capped at ${ai.snippets.maxSnippet} characters`,
+      `The page limits Google to ${ai.snippets.maxSnippet} characters of snippet. An answer engine has to assemble a quote from that budget, which is short for a useful answer.`,
+      'Raise the cap, or use max-snippet:-1 for no limit, unless the restriction is deliberate.')
+  }
+
+  if (ai.snippets.dataNoSnippetCount > 0 && !ai.snippets.noSnippet) {
+    add('GEO', 'low', `${ai.snippets.dataNoSnippetCount} data-nosnippet ${ai.snippets.dataNoSnippetCount === 1 ? 'element' : 'elements'}`,
+      'Parts of the page are marked data-nosnippet, so Google will not quote those passages. That is often intentional — prices, bylines, boilerplate — and is only a problem if it covers the substance.',
+      'Check that the marked elements are not the answers you want quoted.')
   }
 
   if (ai.robots?.blocksEveryone) {
@@ -670,6 +769,9 @@ export async function auditReadiness(rawUrl: string): Promise<ReadinessReport> {
   const limits = [
     'This audit reads one page — the URL you gave us — not your whole site.',
     'Every check is measured on that page. Nothing here is estimated.',
+    // Declared rather than left silent: a header-only nosnippet would otherwise read as a pass
+    // on the check that decides whether AI Overviews can quote the page at all.
+    'Snippet directives are read from the page\'s meta tags. An X-Robots-Tag sent as an HTTP header is not visible to this audit.',
   ]
   if (robotsTxt === null) {
     limits.push('Your robots.txt could not be read, so AI crawler access was not assessed.')
