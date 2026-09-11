@@ -17,6 +17,50 @@ export const metadata: Metadata = {
   },
 }
 
+/**
+ * One source for the FAQ, used to build the markup *and* rendered on the page below.
+ *
+ * These four questions previously existed only inside the JSON-LD. That is a problem twice
+ * over: Google's structured-data guidelines require FAQPage markup to reflect content visible
+ * on the page, and our own audit scored this page 33/100 on AEO readiness because it counted
+ * one question-style heading — the page selling answer-engine readiness failing its own check.
+ * Rendering from the same constant means the visible copy and the markup cannot drift apart.
+ */
+const FAQ: Array<{ q: string; a: string; points?: string[] }> = [
+  {
+    q: 'What does this audit actually check?',
+    a: 'Six categories, all measured on the page you give us:',
+    points: [
+      'Technical foundation — HTTPS, viewport, canonical',
+      'On-page signals — title, meta description, Open Graph',
+      'Content and extractability — headings, word count present without JavaScript, internal links, alt text',
+      'Structured data — which schema types are found',
+      'AEO readiness — FAQ schema, question-led headings, lists',
+      'GEO readiness — whether AI answer crawlers are allowed in robots.txt, plus author, date and entity signals',
+    ],
+  },
+  {
+    q: 'Is it really free?',
+    a: 'Yes. Five audits per day, no account and no card. You see the complete result — every category score and every recommendation — not a preview with the useful part locked.',
+  },
+  {
+    q: 'What do you do with my URL?',
+    a: 'We fetch the page once, plus your robots.txt and llms.txt if they exist, measure them and return the result. Nothing is stored. There is no account to store it against, and no third party receives the URL — the analysis runs entirely on our own servers with no data vendor and no AI model involved.',
+  },
+  {
+    q: 'Does a low score mean my site is broken?',
+    a: 'No. It means the page is missing signals that AI search systems use. Most sites score in the 60s because they were built for traditional search, where FAQ schema, author attribution and entity links did not matter much. The score is a measure of readiness for a newer set of engines, not a verdict on your site.',
+  },
+  {
+    q: 'How is this different from a normal SEO audit?',
+    a: 'A normal audit asks whether Google can rank the page. This one asks whether an answer engine can quote it, which turns on different things: whether the substance is in the HTML rather than arriving after JavaScript, whether a question on the page has a liftable answer beside it, and whether anything identifies who stands behind the claim. A page can pass a traditional audit cleanly and still be invisible to an engine that writes answers.',
+  },
+  {
+    q: 'Does a good score mean ChatGPT will cite me?',
+    a: 'No, and nothing here claims to measure that. This audit reads your page and reports what an AI crawler would find. Whether an engine then cites you also depends on your authority and on what else exists for that query — neither of which is visible from a single page. Readiness is the part you control; it is necessary, not sufficient.',
+  },
+]
+
 /** Marked up as a tool, matching /tools/eeat. The FAQ answers the objections people
  *  actually arrive with — is this real, is it free, and what are you doing with my URL. */
 const SCHEMA = {
@@ -35,40 +79,17 @@ const SCHEMA = {
     },
     {
       '@type': 'FAQPage',
-      mainEntity: [
-        {
-          '@type': 'Question',
-          name: 'What does this audit actually check?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'Six categories, all measured on the page you give us: technical foundation (HTTPS, viewport, canonical), on-page signals (title, meta description, Open Graph), content and extractability (headings, word count present without JavaScript, internal links, alt text), structured data (schema types found), AEO readiness (FAQ schema, question-led headings, lists) and GEO readiness (whether AI answer crawlers are allowed in robots.txt, plus author, date and entity signals).',
-          },
+      // Built from FAQ above rather than retyped, so the markup always matches what a reader
+      // sees. Where an answer renders as a list, the bullets are folded back into one string:
+      // schema.org Answer text is plain prose, not markup.
+      mainEntity: FAQ.map(({ q, a, points }) => ({
+        '@type': 'Question',
+        name: q,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: points ? `${a} ${points.join('; ')}.` : a,
         },
-        {
-          '@type': 'Question',
-          name: 'Is it really free?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'Yes. Five audits per day, no account and no card. You see the complete result — every category score and every recommendation — not a preview with the useful part locked.',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: 'What do you do with my URL?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'We fetch the page once, plus your robots.txt and llms.txt if they exist, measure them and return the result. Nothing is stored. There is no account to store it against, and no third party receives the URL — the analysis runs entirely on our own servers with no data vendor and no AI model involved.',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: 'Does a low score mean my site is broken?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'No. It means the page is missing signals that AI search systems use. Most sites score in the 60s because they were built for traditional search, where FAQ schema, author attribution and entity links did not matter much. The score is a measure of readiness for a newer set of engines, not a verdict on your site.',
-          },
-        },
-      ],
+      })),
     },
   ],
 }
@@ -149,6 +170,26 @@ export default function AiSearchReadinessPage() {
               <span className="text-slate-500"> — describe a pattern in English, get a working regex for filtering SEO data.</span>
             </li>
           </ul>
+        </div>
+
+        {/* Rendered from the same FAQ constant the JSON-LD is built from. The h2s are the
+            question text verbatim, which is what an answer engine matches against — a heading
+            reading "Pricing" over an answer about pricing gives it nothing to align to. */}
+        <div className="mt-12">
+          <h2 className="text-sm font-bold text-slate-800 mb-4">Questions people ask before running it</h2>
+          <div className="space-y-5">
+            {FAQ.map(({ q, a, points }) => (
+              <div key={q} className="rounded-2xl border border-slate-200 p-6">
+                <h3 className="text-base font-bold text-slate-900 mb-2">{q}</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">{a}</p>
+                {points && (
+                  <ul className="mt-3 space-y-1.5 text-sm text-slate-600 list-disc pl-5">
+                    {points.map(p => <li key={p} className="leading-relaxed">{p}</li>)}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mt-12 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-6 text-center">
