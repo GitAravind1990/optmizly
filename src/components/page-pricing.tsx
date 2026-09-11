@@ -310,6 +310,11 @@ function CheckoutButton({ productId, cta, featured, couponEligible, planName, is
  * h1 and an h2 render identically here.
  */
 export function PagePricing({ headingAs: Heading = 'h2' }: { headingAs?: 'h1' | 'h2' } = {}) {
+  // The two subsection headings below sit one level under the headline, so they have to move
+  // with it rather than being fixed at h3. Promoting the headline alone left /pricing jumping
+  // h1 -> h3, which the readiness audit flags as a heading skip — a smaller fault than the
+  // missing h1 it replaced, but one introduced by the fix for it.
+  const SubHeading = Heading === 'h1' ? 'h2' : 'h3'
   // Only Agency has an annual option, so one flag covers the page. Defaults to monthly so
   // the advertised headline price stays the one people already know.
   const [annualBilling, setAnnualBilling] = useState(false)
@@ -664,13 +669,13 @@ export function PagePricing({ headingAs: Heading = 'h2' }: { headingAs?: 'h1' | 
 
       {/* ── FEATURE COMPARISON TABLE ── */}
       <div style={{ marginTop: 80 }}>
-        <h3 style={{
+        <SubHeading style={{
           fontFamily: T.sans, fontSize: 'clamp(22px, 3vw, 30px)',
           fontWeight: 700, letterSpacing: -1, color: T.ink,
           textAlign: 'center', margin: '0 0 40px',
         }}>
           Compare all features
-        </h3>
+        </SubHeading>
         <div style={{ overflowX: 'auto' }}>
           {/* Raised again with the fifth plan column — six columns at 720 crushed the
               feature labels to two words a line. The wrapper above scrolls horizontally, so
@@ -726,13 +731,13 @@ export function PagePricing({ headingAs: Heading = 'h2' }: { headingAs?: 'h1' | 
 
       {/* ── FAQ ── */}
       <div style={{ marginTop: 80, maxWidth: 720, margin: '80px auto 0' }}>
-        <h3 style={{
+        <SubHeading style={{
           fontFamily: T.sans, fontSize: 'clamp(22px, 3vw, 30px)',
           fontWeight: 700, letterSpacing: -1, color: T.ink,
           textAlign: 'center', margin: '0 0 40px',
         }}>
           Frequently asked questions
-        </h3>
+        </SubHeading>
         <FaqAccordion />
       </div>
     </section>
