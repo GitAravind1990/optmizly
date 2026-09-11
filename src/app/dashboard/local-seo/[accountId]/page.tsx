@@ -76,20 +76,63 @@ export default function LocalSEOAccountPage() {
 
   useEffect(() => { load() }, [load])
 
+  /**
+   * Walks the rank check in batches.
+   *
+   * The route checks a few keywords per request so no single signed-in POST runs long enough
+   * for Clerk to reject it after the work is done. Only the first request charges; the rest
+   * pass `continueRun`, which the server only honours once the paid batch has recorded
+   * history for today.
+   *
+   * The loop stops on no progress, never on `done` alone: a keyword whose lookup keeps failing
+   * writes no history row by design, so it stays pending and `remaining` can never reach zero.
+   */
   async function checkRankings(locationId: string) {
     setCheckingLoc(locationId); setCheckMsg(''); setCheckMsgIsError(false)
     try {
-      const r = await fetch('/api/tools/local-seo/check-rankings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ locationId }),
-      })
-      const d = await r.json()
-      if (d.data) {
-        setCheckMsg(`Updated ${d.data.keywordsChecked} keywords${d.data.skipped > 0 ? ` (${d.data.skipped} couldn't be checked, will retry next time)` : ''}`)
-      } else {
-        setCheckMsg(typeof d.error === 'string' ? d.error : 'Could not check rankings right now.')
-        setCheckMsgIsError(true)
+      let checked = 0
+      let skipped = 0
+      let lastRemaining = Infinity
+      let first = true
+
+      for (;;) {
+        const r = await fetch('/api/tools/local-seo/check-rankings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locationId, ...(first ? {} : { continueRun: true }) }),
+        })
+        const d = await r.json()
+
+        if (!d.data) {
+          // A failure mid-walk still leaves the batches already written, so report the
+          // partial result rather than discarding it.
+          setCheckMsg(
+            checked > 0
+              ? `Checked ${checked} keywords, then stopped: ${typeof d.error === 'string' ? d.error : 'could not continue'}`
+              : (typeof d.error === 'string' ? d.error : 'Could not check rankings right now.')
+          )
+          setCheckMsgIsError(true)
+          break
+        }
+
+        checked += d.data.keywordsChecked ?? 0
+        skipped += d.data.skipped ?? 0
+        first = false
+
+        const remaining: number = d.data.remaining ?? 0
+        setCheckMsg(remaining > 0 ? `Checked ${checked}, ${remaining} to go…` : `Updated ${checked} keywords`)
+
+        if (d.data.done) break
+        // No progress this round means the pending keywords are failing, not waiting.
+        if (remaining >= lastRemaining) {
+          setCheckMsg(`Updated ${checked} keywords (${remaining} couldn't be checked, will retry next time)`)
+          break
+        }
+        lastRemaining = remaining
+      }
+
+      if (!checkMsgIsError && skipped > 0 && checked > 0) {
+        setCheckMsg(`Updated ${checked} keywords (${skipped} couldn't be checked, will retry next time)`)
       }
       await load()
     } finally {

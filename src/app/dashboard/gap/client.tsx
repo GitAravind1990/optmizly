@@ -32,6 +32,28 @@ export function GapClient({ unlocked }: { unlocked: boolean }) {
         </div>
       }
       getBody={(content, summary) => ({ content, summary, keyword: keyword.trim() || undefined })}
+      prepareLabel="Reading the top-ranking pages…"
+      // The SERP lookup and competitor crawl run in their own request, so neither half is a
+      // long signed-in POST. Without a keyword there is nothing to ground, so the extra round
+      // trip is skipped entirely and the run is one fast model call, exactly as before.
+      prepare={async () => {
+        const kw = keyword.trim()
+        if (!kw) return null
+        const r = await fetch('/api/gap/ground', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keyword: kw }),
+        })
+        // A failed grounding must never be worse than not having asked for it, so every
+        // failure falls through ungrounded rather than ending the run: the result then carries
+        // the "Estimated" badge, which is the truth. That covers the quota case too — this
+        // route only refuses on quota that /api/gap is about to refuse as well, and letting
+        // the main request answer means the user gets the upgrade modal rather than a red
+        // banner, which is how every other tool here behaves.
+        if (!r.ok) return null
+        const d = await r.json()
+        return { grounding: d.grounding }
+      }}
       renderResult={(data) => {
         const d = data as {
           summary: string

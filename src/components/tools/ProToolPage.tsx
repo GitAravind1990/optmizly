@@ -16,14 +16,29 @@ interface ProToolPageProps {
   getBody: (content: string, summary: string) => Record<string, unknown>
   renderResult: (data: Record<string, unknown>) => ReactNode
   needsContent?: boolean
+  /**
+   * Optional first request, whose result is merged into the main POST body.
+   *
+   * Exists so a tool whose slow half is a vendor call can pay for that in its own request
+   * instead of holding one long POST open. Clerk's session token expires 61s after minting and
+   * a POST cannot be refreshed, so a single request doing both can be rejected *after* the work
+   * completes — the route never sees that 401, so it cannot refund the unit it charged.
+   *
+   * Return null to skip it. Errors propagate to the same banner as the main request.
+   */
+  prepare?: (content: string, summary: string) => Promise<Record<string, unknown> | null>
+  /** Shown while `prepare` runs, since it can be the longer of the two. */
+  prepareLabel?: string
 }
 
 export function ProToolPage({
   toolId, title, icon, description, plan, unlocked,
-  extraInputs, getBody, renderResult, needsContent = true
+  extraInputs, getBody, renderResult, needsContent = true,
+  prepare, prepareLabel
 }: ProToolPageProps) {
   const { content, analysisResult, toolResults, setToolResult } = useContent()
   const [loading, setLoading] = useState(false)
+  const [stage, setStage] = useState<'prepare' | 'main'>('main')
   const [error, setError] = useState('')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
@@ -34,10 +49,21 @@ export function ProToolPage({
     setLoading(true); setError('')
     try {
       const summary = analysisResult?.summary ?? ''
+
+      // The prepared half first, so each request stays short. Its result is merged into the
+      // body below rather than re-derived server-side — re-deriving would restore the single
+      // long request this split exists to avoid, and would pay the vendor twice.
+      let prepared: Record<string, unknown> | null = null
+      if (prepare) {
+        setStage('prepare')
+        prepared = await prepare(content, summary)
+      }
+
+      setStage('main')
       const r = await fetch(`/api/${toolId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(getBody(content, summary)),
+        body: JSON.stringify({ ...getBody(content, summary), ...(prepared ?? {}) }),
       })
       const d = await r.json()
       if (r.status === 403 || r.status === 429) { setShowUpgradeModal(true); return }
@@ -45,8 +71,8 @@ export function ProToolPage({
       setToolResult(toolId, d)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Tool failed')
-    } finally { setLoading(false) }
-  }, [toolId, content, analysisResult, getBody, needsContent, setToolResult])
+    } finally { setLoading(false); setStage('main') }
+  }, [toolId, content, analysisResult, getBody, needsContent, setToolResult, prepare])
 
   if (!unlocked) return <LockedState tool={title} plan={plan} />
 
@@ -78,7 +104,10 @@ export function ProToolPage({
           </div>
         ) : loading ? (
           <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
-            <Spinner /><span className="text-sm">Analysing…</span>
+            <Spinner />
+            <span className="text-sm">
+              {stage === 'prepare' && prepareLabel ? prepareLabel : 'Analysing…'}
+            </span>
           </div>
         ) : (
           <EmptyState icon={icon} title={`Run ${title}`} desc={`Click "Run ${title}" above to get AI-powered ${title.toLowerCase()} analysis.`} />

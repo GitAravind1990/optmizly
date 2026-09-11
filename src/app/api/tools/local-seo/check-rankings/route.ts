@@ -1,28 +1,65 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api'
-import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
+import { AuthError, requireAuth, requireToolAccess, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
 import { getLocalPackRank, isDataForSEOConfigured, resolveBusinessCoordinates, settledOrNull } from '@/lib/dataforseo'
 import { rankNDaysAgo } from '@/lib/rank-history'
 
 export const runtime = 'nodejs'
-export const maxDuration = 90
+/**
+ * One batch of keywords per request, with the client walking the remainder.
+ *
+ * This was 90 because it fired a live DataForSEO local-pack call for every tracked keyword in
+ * a single POST — around nine for a seeded location, and slow enough in aggregate that the
+ * earlier sequential version blew the function timeout on database round-trips alone. A
+ * signed-in POST that long is a promise the platform may not keep: Clerk's session token
+ * expires 61s after minting, a POST cannot be refreshed through the handshake, and the
+ * rejection can arrive *after* the handler finished — charging a unit for a response that
+ * reads "Not authenticated", which this route never sees and so cannot refund.
+ *
+ * Batched, each request is a coordinate lookup plus at most BATCH parallel rank calls.
+ */
+export const maxDuration = 60
+
+/**
+ * Four is picked to keep one request comfortably inside 60s rather than measured precisely:
+ * the rank calls run in parallel, so wall time tracks the slowest rather than the sum, but
+ * DataForSEO queues them in practice. Lower it if a location with many keywords still runs
+ * long; raising it trades the safety margin this split exists to create.
+ */
+const BATCH = 4
 
 export async function POST(req: NextRequest) {
   // Set once requireAuth has taken the unit, so the catch can hand it back.
   let charged: string | null = null
   let clerkId: string | null = null
   try {
-    // Was getAgencyUser() (tier check only, no quota) — this fires one real
-    // DataForSEO local-pack call per tracked keyword, every time it's run, with no
-    // limit on how often a user can re-check the same location. Belongs behind
-    // monthly-quota enforcement like every other billable analysis.
-    const user = await requireAuth('local-seo')
-    clerkId = user.clerkId
-    charged = user.userId
-    const { locationId } = await req.json()
+    const { locationId, continueRun } = await req.json()
     if (!locationId) throw new AuthError(400, 'locationId required')
+
+    /**
+     * Only the first request of a run charges. Every batch writes rank rows the user keeps,
+     * so billing per batch would charge one click three times for a nine-keyword location.
+     *
+     * A continuation is not trusted on the client's word. It is only accepted when this
+     * location already has rank history recorded *today*, which only the charged first batch
+     * can have created — so the free continuation path cannot be entered without paying for
+     * the run, and once every keyword has today's row there is nothing left for it to do.
+     * That bounds the whole thing to one paid pass per location per day.
+     *
+     * Was getAgencyUser() (tier check only, no quota) — this fires one real DataForSEO
+     * local-pack call per tracked keyword, every time it's run, with no limit on how often a
+     * user can re-check the same location. Belongs behind monthly-quota enforcement like
+     * every other billable analysis.
+     */
+    const wantsContinue = continueRun === true
+    const user = wantsContinue ? await requireToolAccess('local-seo') : await requireAuth('local-seo')
+    clerkId = user.clerkId
+    // No assertQuotaAvailable on the continuation: the first batch's own charge can be the one
+    // that takes the user to their limit, and refusing the rest of a run they just paid for
+    // would strand it half-finished.
+    if (!wantsContinue) charged = user.userId
 
     if (!isDataForSEOConfigured()) {
       throw new AuthError(503, 'Rank checking is temporarily unavailable. Please try again later.')
@@ -52,6 +89,30 @@ export async function POST(req: NextRequest) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
+    // Today's history rows are the run's progress marker, so the batch boundary is derived
+    // from stored state rather than from anything the client sends.
+    const doneToday = new Set(
+      (await prisma.localRankHistory.findMany({
+        where: { keywordId: { in: location.keywords.map(k => k.id) }, checkedDate: today },
+        select: { keywordId: true },
+      })).map(r => r.keywordId)
+    )
+
+    // A continuation is only real if the charged first batch has already run today.
+    if (wantsContinue && doneToday.size === 0) {
+      throw new AuthError(409, 'No rank check is in progress for this location. Start a new check.')
+    }
+
+    const pending = location.keywords.filter(k => !doneToday.has(k.id))
+    const batch = pending.slice(0, BATCH)
+    const remaining = pending.length - batch.length
+
+    if (batch.length === 0) {
+      return apiSuccess({
+        data: { success: true, keywordsChecked: 0, skipped: 0, updates: [], newTasks: 0, remaining: 0, done: true },
+      })
+    }
+
     const updates: { keyword: string; old: number | null; new: number | null }[] = []
     const newTasks: { accountId: string; locationId: string; title: string; category: string; priority: string; description: string }[] = []
     let skipped = 0
@@ -59,7 +120,7 @@ export async function POST(req: NextRequest) {
     // Real per-keyword local-pack lookups run concurrently — each is an independent
     // paid DataForSEO call.
     const results = await Promise.allSettled(
-      location.keywords.map(kw => getLocalPackRank(kw.keyword, coords, location.name, coords.placeId))
+      batch.map(kw => getLocalPackRank(kw.keyword, coords, location.name, coords.placeId))
     )
 
     // The DB writes per keyword (history lookups + rank update + history upsert) used
@@ -67,7 +128,7 @@ export async function POST(req: NextRequest) {
     // was enough round-trips to blow past Vercel's function timeout on its own, on top
     // of the DataForSEO latency. Running all keywords' post-processing concurrently
     // instead cut this from O(keywords × db latency) to roughly one round's worth.
-    const perKeyword = await Promise.all(location.keywords.map(async (kw, i) => {
+    const perKeyword = await Promise.all(batch.map(async (kw, i) => {
       const result = settledOrNull(results[i])
 
       // null = the lookup itself failed (network/auth/parse) — skip this keyword this
@@ -128,10 +189,20 @@ export async function POST(req: NextRequest) {
     return apiSuccess({
       data: {
         success: true,
-        keywordsChecked: location.keywords.length - skipped,
+        keywordsChecked: batch.length - skipped,
         skipped,
         updates,
         newTasks: newTasks.length,
+        // The client walks these. `remaining` is recomputed from stored state each request,
+        // not counted down, so a keyword whose lookup failed stays pending and the next batch
+        // retries it — deliberately, since a failed lookup writes no history row rather than
+        // recording a false drop out of the local pack.
+        //
+        // The consequence is that `remaining` is not guaranteed to reach zero: a keyword
+        // failing every time keeps it pinned. The caller must stop when a batch makes no
+        // progress, which is what the dashboard does — never loop on `done` alone.
+        remaining,
+        done: remaining === 0,
       },
     })
   } catch (e) {

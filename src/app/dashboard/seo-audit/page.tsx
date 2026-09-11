@@ -80,6 +80,9 @@ export default function SeoAuditPage() {
   const [pastedHtml, setPastedHtml] = useState('')
   const [showPaste, setShowPaste] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
+  // True while real Core Web Vitals are still being fetched in their own request, after the
+  // audit itself has rendered. See the PSI call in runAudit.
+  const [psiPending, setPsiPending] = useState(false)
   const [error, setError] = useState('')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
@@ -130,6 +133,27 @@ export default function SeoAuditPage() {
       setExpanded(null)
       setView('result')
       loadAudits()
+
+      // Real Core Web Vitals arrive in a second request. PSI allows itself 45s, which inside
+      // the audit POST above forced a 90s ceiling — long enough for Clerk to reject the
+      // request after the work was done and the unit charged. Fired after the audit is on
+      // screen, so the wait is visible progress rather than a longer blank spinner.
+      setPsiPending(true)
+      try {
+        const p = await fetch('/api/tools/seo-audit/analyze/psi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ auditId: d.data.id }),
+        })
+        const pd = await p.json()
+        // PSI has always been best-effort: if it could not run, the regex-derived CWV checks
+        // stand and the audit is still complete. Never surfaced as an error.
+        if (p.ok && pd.data?.applied) {
+          setCurrent(prev => (prev && prev.id === d.data.id ? { ...prev, ...pd.data } : prev))
+          loadAudits()
+        }
+      } catch { /* best-effort; the audit itself already succeeded */ }
+      finally { setPsiPending(false) }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Audit failed')
     } finally {
@@ -331,6 +355,13 @@ export default function SeoAuditPage() {
             <div className="min-w-0">
               <h1 className="text-base font-bold text-slate-900 truncate">{current.pageTitle || current.url}</h1>
               <div className="text-xs text-slate-400 truncate">{current.url}</div>
+              {/* The audit renders before its real Lighthouse data lands, so say so rather
+                  than let the Core Web Vitals checks silently change under the reader. */}
+              {psiPending && (
+                <div className="text-[11px] text-blue-600 font-medium mt-0.5">
+                  Measuring real Core Web Vitals… the CWV checks below will update.
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
