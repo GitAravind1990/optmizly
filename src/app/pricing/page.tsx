@@ -27,7 +27,8 @@ export default function PricingPage() {
     <div style={{ background: '#fff', minHeight: '100vh', fontFamily: sans }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqJsonLd }} />
       <PageHeader />
-      <PagePricing />
+      {/* This section is the whole page here, so its headline is the page's h1. */}
+      <PagePricing headingAs="h1" />
       {/* After the plans here, rather than before them: a reader on /pricing arrived to
           compare prices, and the free tools are what to offer the ones who decide not to. */}
       <FreeToolsSection />

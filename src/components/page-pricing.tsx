@@ -299,7 +299,17 @@ function CheckoutButton({ productId, cta, featured, couponEligible, planName, is
   )
 }
 
-export function PagePricing() {
+/**
+ * `headingAs` exists because this section is the whole of /pricing but only a slice of the
+ * homepage. On /pricing it was the page's first heading and it was an h2, so the page shipped
+ * with no h1 at all — the strongest single on-page signal of what a page is about, missing from
+ * the page that has to convert. The homepage already has its own h1, so promoting this
+ * unconditionally would give that page two.
+ *
+ * Only the tag changes: every size, weight and margin below is set explicitly in `style`, so an
+ * h1 and an h2 render identically here.
+ */
+export function PagePricing({ headingAs: Heading = 'h2' }: { headingAs?: 'h1' | 'h2' } = {}) {
   // Only Agency has an annual option, so one flag covers the page. Defaults to monthly so
   // the advertised headline price stays the one people already know.
   const [annualBilling, setAnnualBilling] = useState(false)
@@ -327,10 +337,10 @@ export function PagePricing() {
           fontFamily: T.mono, fontSize: 12, fontWeight: 500, letterSpacing: 1,
           textTransform: 'uppercase', marginBottom: 16, color: T.blue,
         }}>Pricing</div>
-        <h2 style={{
+        <Heading style={{
           fontFamily: T.sans, fontSize: 'clamp(30px, 3.8vw, 46px)',
           fontWeight: 600, letterSpacing: -1.8, lineHeight: 1.05, color: T.ink, margin: 0,
-        }}>Start free. Scale as you rank.</h2>
+        }}>Start free. Scale as you rank.</Heading>
         <p style={{
           fontFamily: T.sans, fontSize: 18, lineHeight: 1.55, color: T.body, marginTop: 18,
         }}>
