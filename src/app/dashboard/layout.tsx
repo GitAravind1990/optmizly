@@ -62,7 +62,11 @@ const TOOL_GROUPS = [
       { id: 'optimizer',       label: 'Content Optimizer', href: '/dashboard/optimizer',        minPlan: 'PRO' },
       { id: 'eeat',            label: 'E-E-A-T Analysis',  href: '/dashboard/eeat',             minPlan: 'PRO' },
       { id: 'gap',             label: 'Content Gap',       href: '/dashboard/gap',              minPlan: 'PRO' },
-      { id: 'citation',        label: 'AI Visibility',     href: '/dashboard/citation',         minPlan: 'PRO' },
+      // Renamed from "AI Visibility". That name now belongs to the Agency tool that measures
+    // whether AI answers actually name you; this one writes a plan for getting named, which is
+    // what it always did. Two tools cannot both be called AI Visibility, and the advice tool is
+    // the one whose name was the promise it could not keep.
+    { id: 'citation',        label: 'AI Citation Plan',  href: '/dashboard/citation',         minPlan: 'PRO' },
       { id: 'backlinks',       label: 'Backlinks',         href: '/dashboard/backlinks',        minPlan: 'PRO' },
       { id: 'ranking-engine', label: 'Ranking Engine',    href: '/dashboard/ranking-engine',   minPlan: 'PRO' },
     ],
@@ -81,6 +85,7 @@ const TOOL_GROUPS = [
       { id: 'geogrid',           label: 'Geogrid + Review Velocity', href: '/dashboard/tools/geogrid',   minPlan: 'AGENCY' },
       { id: 'ai-regex',          label: 'AI Regex',             href: '/dashboard/tools/ai-regex',    minPlan: 'AGENCY' },
       { id: 'client-finder',     label: 'SEO Client Finder',    href: '/dashboard/tools/client-finder', minPlan: 'AGENCY' },
+      { id: 'ai-visibility',     label: 'AI Visibility',        href: '/dashboard/tools/ai-visibility', minPlan: 'AGENCY' },
     ],
   },
 ]

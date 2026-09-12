@@ -195,7 +195,7 @@ export default function AiSearchReadinessPage() {
         <div className="mt-12 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-6 text-center">
           <p className="text-sm text-slate-700 font-semibold">
             This audit reads one page. Optmizly is the platform that fixes what it finds —
-            23 tools across SEO, GEO and AEO.
+            24 tools across SEO, GEO and AEO.
           </p>
           <Link
             href="/signup"

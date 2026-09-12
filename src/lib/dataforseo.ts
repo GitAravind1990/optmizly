@@ -192,6 +192,129 @@ export async function getTopSerpResults(
   return { items: topItems, features }
 }
 
+/** One AI answer for one prompt: the text an engine produced, and who it cited. */
+export type AiAnswer = {
+  surface: 'ai_overview' | 'ai_mode'
+  /** Present at all. A prompt that triggers no AI answer is a real, reportable result. */
+  present: boolean
+  /** The fullest text form the response offers, used for mention detection. */
+  text: string
+  /** Distinct domains cited in the answer, in the order the engine listed them. */
+  citedDomains: string[]
+  /** Every cited URL, so a page-level report is possible later without re-fetching. */
+  citedUrls: Array<{ domain: string; url: string; title: string }>
+}
+
+type AiOverviewRef = { domain?: string; url?: string; title?: string }
+type AiOverviewItem = { type?: string; text?: string; markdown?: string; references?: AiOverviewRef[] }
+type AiOverviewElement = {
+  type?: string
+  markdown?: string
+  items?: AiOverviewItem[]
+  references?: AiOverviewRef[]
+}
+type AiSerpResponse = {
+  tasks?: Array<{
+    status_code?: number
+    result?: Array<{ items?: AiOverviewElement[] }>
+  }>
+}
+
+/**
+ * Pulls the AI answer for one prompt off a SERP response.
+ *
+ * Both surfaces return the same element shape — `ai_mode` responses carry items typed
+ * `ai_overview` too — so one extractor serves both. Measured against a live response: the
+ * element has a 3k-character `markdown`, five nested `ai_overview_element` items with their own
+ * `text` and `references`, and a top-level `references` array of
+ * `{ source, domain, url, title, text }`.
+ *
+ * `markdown` is preferred for mention detection because it is the only field containing the
+ * whole answer; concatenating the nested `text` fields lost half of it (1,463 chars against
+ * 3,085) in the measured case.
+ */
+function extractAiAnswer(data: AiSerpResponse | null, surface: AiAnswer['surface']): AiAnswer | null {
+  const task = data?.tasks?.[0]
+  if (!task) return null
+  const empty: AiAnswer = { surface, present: false, text: '', citedDomains: [], citedUrls: [] }
+  if (task.status_code === DFS_NO_RESULTS) return empty
+  if (task.status_code !== 20000) return null
+
+  const el = (task.result?.[0]?.items ?? []).find(i => i.type === 'ai_overview')
+  if (!el) return empty
+
+  const text = el.markdown?.trim()
+    || (el.items ?? []).map(i => i.markdown ?? i.text ?? '').join('\n\n').trim()
+  if (!text) return empty
+
+  // Top-level references first, then any only present on a nested item, de-duplicated by URL.
+  const seen = new Set<string>()
+  const citedUrls: AiAnswer['citedUrls'] = []
+  for (const r of [...(el.references ?? []), ...(el.items ?? []).flatMap(i => i.references ?? [])]) {
+    if (typeof r.url !== 'string' || !r.url || seen.has(r.url)) continue
+    seen.add(r.url)
+    citedUrls.push({
+      domain: normalizeHost(typeof r.domain === 'string' ? r.domain : ''),
+      url: r.url,
+      title: typeof r.title === 'string' ? r.title.slice(0, 300) : '',
+    })
+  }
+
+  return {
+    surface,
+    present: true,
+    text,
+    citedDomains: [...new Set(citedUrls.map(u => u.domain).filter(Boolean))],
+    citedUrls,
+  }
+}
+
+/**
+ * The AI Overview shown on a normal Google SERP for this prompt.
+ *
+ * `load_async_ai_overview` is required: without it the element arrives as a stub with
+ * `asynchronous_ai_overview: true` and no text, which would read as "no AI answer" when there
+ * is one. Measured cost $0.0035 per call.
+ *
+ * Returns null only when the call itself failed, which callers must keep distinct from
+ * `present: false` — "we could not look" and "Google showed no AI answer" are different
+ * findings and only one of them is about the customer's page.
+ */
+export async function getAiOverviewAnswer(
+  prompt: string,
+  targetLocation = 'US'
+): Promise<AiAnswer | null> {
+  const data = await dfsPost<AiSerpResponse>('/v3/serp/google/organic/live/advanced', [
+    {
+      keyword: prompt,
+      location_code: ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US,
+      language_code: ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en',
+      device: 'desktop',
+      depth: 10,
+      load_async_ai_overview: true,
+    },
+  ])
+  return extractAiAnswer(data, 'ai_overview')
+}
+
+/**
+ * Google AI Mode's answer for this prompt. Separate endpoint, same element shape.
+ * Measured cost $0.004 per call.
+ */
+export async function getAiModeAnswer(
+  prompt: string,
+  targetLocation = 'US'
+): Promise<AiAnswer | null> {
+  const data = await dfsPost<AiSerpResponse>('/v3/serp/google/ai_mode/live/advanced', [
+    {
+      keyword: prompt,
+      location_code: ORGANIC_LOCATION_CODES[targetLocation] ?? ORGANIC_LOCATION_CODES.US,
+      language_code: ORGANIC_LANGUAGE_CODES[targetLocation] ?? 'en',
+    },
+  ])
+  return extractAiAnswer(data, 'ai_mode')
+}
+
 /* Removed: getAllInTitleCount, and with it the KGR-style "Opportunity Ratio".
  *
  * It divided a title-match count by search volume, taking the numerator from this

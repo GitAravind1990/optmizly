@@ -59,6 +59,7 @@ model User {
   analysisHistory         AnalysisHistory[]
   searchConsoleConnection SearchConsoleConnection?
   gscQueryRows            GscQueryRow[]            @relation("GscQueryRows")
+  aiVisibilityRuns        AiVisibilityRun[]        @relation("AiVisibilityRuns")
   dailyToolUsage          DailyToolUsage[]         @relation("DailyToolUsage")
   clientFinderSearches    ClientFinderSearch[]
   prospectContacts        ProspectContact[]
@@ -1357,4 +1358,34 @@ model ProspectContact {
 
   @@unique([userId, placeId])
   @@index([userId, updatedAt])
+}
+
+model AiVisibilityRun {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("AiVisibilityRuns", fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Verbatim, so a trend compares like with like: "Optmizly" and "optmizly.com" are not
+  /// the same measurement.
+  brand   String
+  domain  String?
+  /// JSON array of alternate spellings counted as the same brand.
+  aliases String @default("[]")
+
+  /// "search-console" or "keywords" - it changes how much the number means, so the report
+  /// can say which it was rather than implying the stronger source.
+  promptSource String
+  promptCount  Int
+
+  totalMentions  Int
+  totalCitations Int
+  answersFound   Int
+  lookupsFailed  Int @default(0)
+
+  /// Per-prompt outcomes plus the cited-domain tally, as returned to the client.
+  detail String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

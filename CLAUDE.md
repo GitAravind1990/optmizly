@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-AI-powered SaaS platform for content optimization. 23 tools across Free/Pro/Agency tiers.
+AI-powered SaaS platform for content optimization. 24 tools across Free/Pro/Agency tiers.
 
 **A "tool" is one entry in `TOOL_GROUPS`** (`src/app/dashboard/layout.tsx`) — what a user
 can actually click. That is the only definition; don't count `PLAN_TOOLS` keys or
@@ -13,8 +13,8 @@ marketing figures. Counts are cumulative by tier, since each plan sees the tiers
 | Free | 2 | — |
 | Starter | 12 | "all 12 tools" — same set as Pro, at 15 analyses instead of 50 |
 | Pro | 12 | volume over Starter, never "more tools" |
-| Agency | 23 | "all 23 tools" |
-| Agency Plus | 23 | volume, unlimited clients and seats — never "more tools" |
+| Agency | 24 | "all 24 tools" |
+| Agency Plus | 24 | volume, unlimited clients and seats — never "more tools" |
 
 **Starter and Pro see the identical 12 tools and differ only in allowance** (15 vs 50), as of
 2026-09-06. `PLAN_TOOLS.STARTER` is derived from `PLAN_TOOLS.PRO` rather than retyped, the
@@ -34,6 +34,14 @@ Adding a nav entry means updating the count in: `/login`, `/signup`, `PRO_BENEFI
 `src/components/ui/index.tsx`, `src/components/upgrade-modal.tsx`,
 `src/components/welcome-banner.tsx`, and this file.
 
+**Worked example, 2026-09-12: AI Visibility took Agency from 23 to 24.** The grep below
+found eight count sites — `/login`, `/signup`, both free-tool pages, `layout.tsx` (once),
+`opengraph-image.tsx`, `marketing/sections.tsx` — plus the weighted-tool lists in `/terms`
+and `/pricing`, which needed the new 3-credit entry. Starter and Pro were untouched because
+the tool is Agency-only, so the "12 tools" copy did not move. The same change renamed the old
+`citation` tool from "AI Visibility" to "AI Citation Plan": two tools cannot share a name, and
+the advice tool was the one whose name promised measurement it never did.
+
 **Two of those live outside the app and were missed for months.** `src/app/layout.tsx` carries
 the figure three times — the site-wide `description`, the OpenGraph one and the Twitter card —
 and `src/app/opengraph-image.tsx` renders it into the share image. Both said 17 and 11 while
@@ -46,7 +54,8 @@ see them while using the product, which is exactly why they drifted. Grep the wh
 Get-ChildItem src -Recurse -Include *.tsx,*.ts | Select-String -Pattern "\b\d+\s*(AI-powered\s*)?(SEO\s*)?[Tt]ools\b"
 ```
 
-Quote **23** in marketing copy — the Agency figure, since it is the platform's size. Per-plan
+Quote **the Agency figure** in marketing copy, since it is the platform's size — 24 today, and
+the tier table above is the one place to read it from rather than copying a number. Per-plan
 copy uses the tier table above, and `8 Score Dims` on the share image tracks `SCORE_DIMS` in
 `src/lib/export.ts`, which is a different number with its own drift risk.
 

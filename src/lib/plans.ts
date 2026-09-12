@@ -36,7 +36,11 @@ export const PLAN_TOOLS: Record<Plan, string[]> = {
   // researches a month. TOOL_COST_UNITS is what makes access and spend independent.
   STARTER: [],
   PRO: ['analyse', 'onpage', 'eeat', 'citation', 'gap', 'rewrite', 'content-ideas', 'content-optimizer', 'competitor-spy', 'rank-tracker', 'ranking-engine', 'backlinks', 'keyword-tool'],
-  AGENCY: ['analyse', 'onpage', 'client-finder', 'eeat', 'citation', 'gap', 'rewrite', 'serp', 'topical', 'local', 'tracker', 'content-ideas', 'content-optimizer', 'competitor-spy', 'rank-tracker', 'local-seo', 'seo-audit', 'geogrid', 'review-velocity', 'ranking-engine', 'backlinks', 'performance-fixer', 'search-console', 'client-reports', 'keyword-tool', 'ai-regex'],
+  // 'ai-visibility' is Agency-only to start. It is the only tool here that spends on two live
+  // vendor endpoints per prompt, and a run is ~25 prompts, so the per-run cost sits at the top
+  // of the range even at 3 units. Opening it to Pro is a pricing decision to make once real
+  // runs exist, not a default.
+  AGENCY: ['analyse', 'onpage', 'client-finder', 'eeat', 'citation', 'gap', 'rewrite', 'serp', 'topical', 'local', 'tracker', 'content-ideas', 'content-optimizer', 'competitor-spy', 'rank-tracker', 'local-seo', 'seo-audit', 'geogrid', 'review-velocity', 'ranking-engine', 'backlinks', 'performance-fixer', 'search-console', 'client-reports', 'keyword-tool', 'ai-regex', 'ai-visibility'],
   // Filled from AGENCY below rather than retyped. Agency already sees every tool, so this
   // tier cannot add one — it sells volume, unlimited clients and seats. Deriving it means a
   // tool added to Agency reaches Agency Plus automatically, which is the only version of
@@ -157,6 +161,12 @@ export const TOOL_COST_UNITS: Record<string, number> = {
   // supplies a keyword, so a run without one now over-charges by 1. Pricing the
   // possibility is the safe direction to be wrong, and charging by actual API use would
   // mean metering after the fact instead of before.
+  // Two live DataForSEO calls per prompt — AI Overviews at $0.0035 and AI Mode at $0.004,
+  // both measured — across ~25 prompts, so about $0.19 a run. That is what Keyword Research
+  // already costs, which is why it carries the same weight rather than a new one invented for
+  // it. The per-prompt calls happen on unbilled batch requests; this unit is taken once, on
+  // the request that stores the finished run.
+  'ai-visibility': 3,
   'citation': 2,
   'gap': 2,
   'content-ideas': 2,

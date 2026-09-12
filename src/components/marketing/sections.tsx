@@ -339,7 +339,7 @@ export function WorkflowSection() {
 
 // ── 7. FEATURES ───────────────────────────────────────────────────────────────
 
-/** Six capabilities, benefit-first. Not all 23 tools: a list nobody finishes reading
+/** Six capabilities, benefit-first. Not all 24 tools: a list nobody finishes reading
  *  persuades nobody, and the full set is one click away on the pricing page. */
 export function FeaturesSection() {
   const features = [

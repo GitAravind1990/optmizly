@@ -30,9 +30,10 @@ export default function OGImage() {
           AI Content Optimizer · Rank Higher · Get Cited by Every AI
         </div>
         <div style={{ display: 'flex', gap: 16, marginTop: 40 }}>
-          {/* 23 is the Agency tool count, the canonical marketing figure — see CLAUDE.md.
-              "8 Score Dims" tracks SCORE_DIMS in lib/export.ts, currently eight. */}
-          {['23 Tools', '8 Score Dims', 'Free to start'].map(t => (
+          {/* The Agency tool count is the canonical marketing figure — see CLAUDE.md, and
+              change it here whenever TOOL_GROUPS gains an entry. "8 Score Dims" tracks
+              SCORE_DIMS in lib/export.ts, currently eight, which is a separate number. */}
+          {['24 Tools', '8 Score Dims', 'Free to start'].map(t => (
             <div key={t} style={{
               background: 'rgba(255,255,255,0.15)', borderRadius: 12,
               padding: '8px 20px', color: 'white', fontSize: 18, fontWeight: 700,
