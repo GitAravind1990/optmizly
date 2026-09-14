@@ -105,6 +105,8 @@ these in the same commit:
   `drip-day1/3/7`, `weekly-summary`, `cancelled`
 - `/pricing` — plan cards, comparison table, FAQ answers
 - Tool-count copy — upgrade modal, welcome banner, homepage dashboard mockup
+- `PRICING_UPDATED` (`src/components/page-pricing.tsx`) — the date /pricing prints and
+  writes into its `dateModified`. A freshness signal that stops moving is worse than none
 
 Adding a tool that makes real third-party API calls? Give it a weight in
 `TOOL_COST_UNITS` (`src/lib/plans.ts`). Unlisted means 1 unit, which is right for

@@ -358,8 +358,16 @@ function parseAiSignals(html: string, robots: RobotsVerdict | null, llmsTxt: boo
   const seen = { types: new Set<string>(), keys: new Set<string>() }
   for (const block of collectJsonLd(html)) walkJsonLd(block, seen)
 
-  const headings = html.match(/<h[23][^>]*>([\s\S]{0,300}?)<\/h[23]>/gi) ?? []
-  const headingTexts = headings.map(h => visibleText(h)).filter(Boolean)
+  // Back-referenced closing tag and no 300-character cap on the content, both deliberate.
+  // The cap silently dropped any heading carrying more than 300 characters of inner markup,
+  // and a heading with markup inside it is the normal case, not the exotic one: a Tailwind
+  // class string, an inline-styled link, or the W3C's own accordion pattern (`<h3><button>`)
+  // all blow past 300, and the heading then vanished from the count entirely. Our own
+  // /pricing measured zero question-style headings while serving eight. Back-referencing the
+  // level also stops an `<h2>...</h3>` mismatch pairing up across two real headings. This is
+  // the same shape homepage-seo-check.ts has always used for its hierarchy check.
+  const headings = [...html.matchAll(/<h([23])\b[^>]*>([\s\S]*?)<\/h\1>/gi)]
+  const headingTexts = headings.map(m => visibleText(m[2])).filter(Boolean)
   const questionHeadings = headingTexts.filter(
     t => t.trim().endsWith('?') || QUESTION_STARTERS.test(t.trim())
   ).length

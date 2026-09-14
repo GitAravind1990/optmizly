@@ -1,25 +1,29 @@
 import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
 import { PagePricing } from '@/components/page-pricing'
+import { PRICING_FAQ, PRICING_UPDATED } from '@/lib/pricing-faq'
 import { FreeToolsSection } from '@/components/free-tools-section'
 
 const sans = "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
 const muted = '#8A93A3'
 const line2 = '#F0F2F6'
 
+// Built from PRICING_FAQ rather than retyped. The two were separate lists until 2026-09-14
+// and they had drifted on the one answer where drift costs money: the markup priced AI
+// Visibility at three credits, the visible copy at two. There is now one list, and it is the
+// one a reader sees — which is also what Google's structured-data guidelines require.
+//
+// `dateModified` is the same constant the page prints, so the freshness signal and the line
+// under the FAQ can never disagree.
 const faqJsonLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: [
-    { '@type': 'Question', name: 'Is there a free plan?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. The Free plan is free forever, no credit card required. You get 3 analyses per month and full access to content scoring.' } },
-    { '@type': 'Question', name: 'What is the difference between Starter and Pro?', acceptedAnswer: { '@type': 'Answer', text: 'Volume, and nothing else. Starter and Pro unlock the same 12 tools; Starter gives you 15 analyses a month and Pro gives you 50. Because the data-heavy tools cost two or three credits per run, 15 credits is roughly five runs of something like Keyword Research.' } },
-    { '@type': 'Question', name: 'What counts as one analysis?', acceptedAnswer: { '@type': 'Answer', text: 'Each time you submit content or a URL for scoring, it uses one analysis credit. Most tools cost one credit. Tools that pull more live data from third-party providers on your behalf cost more, and each one tells you its cost before you run it. Three credits: Keyword Research, Competitor Spy, Ranking Engine, Geogrid, AI Visibility and the Local SEO suite. Two credits: Backlinks, Rank Tracker, SERP Audit, Review Velocity, Client Reports, AI Citation Plan, Content Gap and Content Planner. Credits reset at the start of each billing month, and the Free plan tools all cost one. SEO Client Finder is the exception: it does not use analysis credits at all, and has its own limit of 5 searches a day.' } },
-    { '@type': 'Question', name: 'Can I cancel anytime?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Cancel from your account settings at any time. You keep full access until the end of your current billing period.' } },
-    { '@type': 'Question', name: 'Can I pay annually?', acceptedAnswer: { '@type': 'Answer', text: 'Every paid plan can be billed monthly or once a year, chosen at checkout: Starter $9 or $90, Pro $19 or $190, Agency $49 or $490, Agency Plus $99 or $990 \u2013 paying yearly costs ten months instead of twelve, so you save about 17%. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full annual price after that.' } },
-    { '@type': 'Question', name: 'Can I try Optmizly before paying?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. The Free plan gives you 2 tools and 3 analyses a month with no card required, for as long as you like. Paid plans are charged when you subscribe – there is no free trial – and you can cancel at any time from your account settings, keeping access until the end of the period you have paid for.' } },
-    { '@type': 'Question', name: 'Do I need API keys or anything installed?', acceptedAnswer: { '@type': 'Answer', text: 'No. Optmizly is fully hosted and all AI analysis is included in your plan. Agency plan users can optionally connect Google Search Console for deeper SEO Audit insights, but no third-party API keys or setup are ever required.' } },
-    { '@type': 'Question', name: 'Can I upgrade or downgrade my plan?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Upgrade instantly from your dashboard settings. Downgrades take effect at the start of your next billing cycle.' } },
-  ],
+  dateModified: PRICING_UPDATED,
+  mainEntity: PRICING_FAQ.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
 })
 
 export default function PricingPage() {

@@ -6,7 +6,7 @@
 // Plan names, prices and tool counts here are part of the drift checklist in CLAUDE.md.
 export const metadata: Metadata = {
   title: 'Pricing – Plans from Free to Agency Plus',
-  description: 'Start free with 3 analyses a month. Starter ($9) unlocks all 12 tools, Pro ($19) triples the volume, and Agency ($49) opens all 23. No card to start.',
+  description: 'Start free with 3 analyses a month. Starter ($9) unlocks all 12 tools, Pro ($19) triples the volume, and Agency ($49) opens all 24. No card to start.',
   alternates: { canonical: '/pricing' },
   openGraph: {
     title: 'Optmizly Pricing – Free to Agency Plus',

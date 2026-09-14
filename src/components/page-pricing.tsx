@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import posthog from 'posthog-js'
 import { SignedIn, SignedOut } from './clerk-provider'
 import { readRef } from '@/lib/referral'
+import { PRICING_FAQ, PRICING_UPDATED } from '@/lib/pricing-faq'
 
 const T = {
   sans: "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
@@ -738,7 +739,20 @@ export function PagePricing({ headingAs: Heading = 'h2' }: { headingAs?: 'h1' | 
         }}>
           Frequently asked questions
         </SubHeading>
-        <FaqAccordion />
+        {/* One level below whatever the section heading resolved to, so /pricing renders
+            h1 -> h2 -> h3 and the homepage h2 -> h3 -> h4. Neither skips. */}
+        <FaqAccordion headingAs={SubHeading === 'h2' ? 'h3' : 'h4'} />
+        <p style={{
+          marginTop: 24, textAlign: 'center',
+          fontFamily: T.sans, fontSize: 13, color: T.muted,
+        }}>
+          Plans and prices last reviewed{' '}
+          <time dateTime={PRICING_UPDATED}>
+            {new Date(`${PRICING_UPDATED}T00:00:00Z`).toLocaleDateString('en-GB', {
+              day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+            })}
+          </time>.
+        </p>
       </div>
     </section>
   )
@@ -786,75 +800,65 @@ const COMPARISON_ROWS: Array<
   { type: 'row', label: 'Support', free: 'Community', starter: 'Email', pro: 'Priority', agency: 'Priority' },
 ]
 
-const FAQS = [
-  {
-    q: 'Is there a free plan?',
-    a: 'Yes. The Free plan is free forever, no credit card required. You get 3 analyses per month and full access to content scoring, so you can see Optmizly\'s value before committing.',
-  },
-  {
-    q: 'What is the difference between Starter and Pro?',
-    a: 'Volume, and nothing else. Starter and Pro unlock the same 12 tools; Starter gives you 15 analyses a month and Pro gives you 50. Because the data-heavy tools cost two or three credits per run, 15 credits is roughly five runs of something like Keyword Research — enough to work on one site, and the point at which most people move up to Pro.',
-  },
-  {
-    q: 'What counts as one analysis?',
-    a: 'Each time you submit content or a URL for scoring, it uses one analysis credit. Most tools cost one credit. Tools that pull more live data from third-party providers on your behalf cost more, and each one tells you its cost before you run it. Three credits: Keyword Research, Competitor Spy, Ranking Engine, Geogrid and the Local SEO suite. Two credits: Backlinks, Rank Tracker, SERP Audit, Review Velocity, Client Reports, AI Visibility, Content Gap and Content Planner. Credits reset at the start of each billing month, and the Free plan\'s tools all cost one. SEO Client Finder is the exception: it does not use analysis credits at all, and has its own limit of 5 searches a day.',
-  },
-  {
-    q: 'Can I cancel anytime?',
-    a: 'Yes. Cancel from your account settings at any time, no hoops, no waiting. You keep full access until the end of your current billing period.',
-  },
-  {
-    q: 'Can I try Optmizly before paying?',
-    a: 'Yes. The Free plan gives you 2 tools and 3 analyses a month with no card required, for as long as you like. Paid plans are charged when you subscribe – there is no free trial – and you can cancel at any time from your account settings, keeping access until the end of the period you have paid for.',
-  },
-  {
-    q: 'Do I need API keys or anything installed?',
-    a: 'No. Optmizly is fully hosted and all AI analysis is included in your plan — you never need an AI provider key or any third-party setup to use it. Agency plan users can optionally connect Google Search Console for deeper SEO Audit insights, but it\'s never required.',
-  },
-  {
-    q: 'Can I pay annually?',
-    a: 'Every paid plan can be billed monthly or once a year, chosen at checkout: Starter $9 or $90, Pro $19 or $190, Agency $49 or $490, Agency Plus $99 or $990 \u2013 paying yearly costs ten months instead of twelve, so you save about 17%. If you have a discount code that applies to the first billing cycle, it covers your first year and the subscription renews at the full annual price after that.',
-  },
-  {
-    q: 'Can I upgrade or downgrade?',
-    a: 'Yes. Upgrade instantly from your dashboard settings. The new limits apply immediately. Downgrades take effect at the start of your next billing cycle.',
-  },
-]
-
-function FaqAccordion() {
+/**
+ * Every question is a real heading, and every answer is in the HTML whether or not it is open.
+ *
+ * Both were scoring faults in our own readiness audit and neither was only a scoring fault.
+ * The questions were `<span>`s inside buttons, so the page selling AEO had zero question-style
+ * headings; the answers were unmounted until clicked, so the FAQPage markup above described
+ * eight answers a crawler could not find one of. Collapsing with CSS keeps them in the markup.
+ */
+function FaqAccordion({ headingAs: QHeading }: { headingAs: 'h3' | 'h4' }) {
   const [open, setOpen] = useState<number | null>(null)
   return (
     <div style={{ border: `1px solid ${T.line}`, borderRadius: 16, overflow: 'hidden' }}>
-      {FAQS.map((faq, i) => (
-        <div key={i} style={{ borderBottom: i < FAQS.length - 1 ? `1px solid ${T.line}` : 'none' }}>
-          <button
-            onClick={() => setOpen(open === i ? null : i)}
+      {PRICING_FAQ.map((faq, i) => (
+        <div key={faq.q} style={{ borderBottom: i < PRICING_FAQ.length - 1 ? `1px solid ${T.line}` : 'none' }}>
+          <QHeading style={{ margin: 0, fontSize: 'inherit', fontWeight: 'inherit' }}>
+            <button
+              onClick={() => setOpen(open === i ? null : i)}
+              aria-expanded={open === i}
+              aria-controls={`pricing-faq-${i}`}
+              style={{
+                width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                gap: 16, padding: '18px 22px', background: 'none', border: 'none', cursor: 'pointer',
+                textAlign: 'left', fontFamily: T.sans, fontSize: 15, fontWeight: 600,
+                color: T.ink, lineHeight: 1.4,
+              }}
+            >
+              <span>{faq.q}</span>
+              {/* Decorative: aria-expanded on the button already announces the state, and a
+                  screen reader reading "plus" after every question is noise. */}
+              <span aria-hidden="true" style={{
+                flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
+                background: open === i ? T.blue : T.line2,
+                color: open === i ? '#fff' : T.muted,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 16, fontWeight: 400, lineHeight: 1, transition: 'background 0.15s',
+              }}>
+                {open === i ? '−' : '+'}
+              </span>
+            </button>
+          </QHeading>
+          {/* 0fr -> 1fr rather than a mount/unmount: the answer stays in the served HTML at
+              every state, which is the whole point of the change. */}
+          <div
+            id={`pricing-faq-${i}`}
             style={{
-              width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              gap: 16, padding: '18px 22px', background: 'none', border: 'none', cursor: 'pointer',
-              textAlign: 'left', fontFamily: T.sans, fontSize: 15, fontWeight: 600,
-              color: T.ink, lineHeight: 1.4,
+              display: 'grid',
+              gridTemplateRows: open === i ? '1fr' : '0fr',
+              transition: 'grid-template-rows 0.2s ease',
             }}
           >
-            <span>{faq.q}</span>
-            <span style={{
-              flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
-              background: open === i ? T.blue : T.line2,
-              color: open === i ? '#fff' : T.muted,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 16, fontWeight: 400, lineHeight: 1, transition: 'background 0.15s',
-            }}>
-              {open === i ? '−' : '+'}
-            </span>
-          </button>
-          {open === i && (
-            <div style={{
-              padding: '0 22px 18px',
-              fontFamily: T.sans, fontSize: 14, color: T.body, lineHeight: 1.65,
-            }}>
-              {faq.a}
+            <div style={{ overflow: 'hidden' }}>
+              <div style={{
+                padding: '0 22px 18px',
+                fontFamily: T.sans, fontSize: 14, color: T.body, lineHeight: 1.65,
+              }}>
+                {faq.a}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       ))}
     </div>
