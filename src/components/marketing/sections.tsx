@@ -783,7 +783,7 @@ export function FaqSection() {
           matched our own audit's question test by starting with a question word. */}
       <style>{`
         .opt-faq-mark::after { content: '+'; }
-        details[open] .opt-faq-mark::after { content: '2'; }
+        details[open] .opt-faq-mark::after { content: '−'; }
       `}</style>
       <SectionHead kicker="Questions" title="The things people ask first." />
       <div style={{ marginTop: 44, border: `1px solid ${T.line}`, borderRadius: 16, overflow: 'hidden' }}>
