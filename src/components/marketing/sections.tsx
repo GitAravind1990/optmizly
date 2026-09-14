@@ -774,6 +774,17 @@ export const HOME_FAQS = [
 export function FaqSection() {
   return (
     <section className="opt-s opt-sy" style={{ maxWidth: 820, margin: '0 auto', padding: '120px 32px' }}>
+      {/* The open/closed glyph is a pseudo-element, not text, so <details> can drive it from
+          its own [open] state. A state hook would work too and would cost this section its
+          whole reason for being a server component -- see the note on <details> below.
+
+          It also keeps the mark out of the DOM, which is the better place for it: the glyph
+          sat inside the question heading, so every heading read "What is GEO? +" and only
+          matched our own audit's question test by starting with a question word. */}
+      <style>{`
+        .opt-faq-mark::after { content: '+'; }
+        details[open] .opt-faq-mark::after { content: '2'; }
+      `}</style>
       <SectionHead kicker="Questions" title="The things people ask first." />
       <div style={{ marginTop: 44, border: `1px solid ${T.line}`, borderRadius: 16, overflow: 'hidden' }}>
         {HOME_FAQS.map((faq, i) => (
@@ -796,12 +807,12 @@ export function FaqSection() {
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
               }}>
                 {faq.q}
-                <span aria-hidden="true" style={{
+                <span aria-hidden="true" className="opt-faq-mark" style={{
                   flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
                   background: T.line2, color: T.muted,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 16, fontWeight: 400, lineHeight: 1,
-                }}>+</span>
+                }} />
               </h3>
             </summary>
             <div style={{
