@@ -19,6 +19,7 @@ import {
   FinalCtaSection,
   HOME_FAQS,
 } from '@/components/marketing/sections'
+import { buildPageGraph, SITE_MODIFIED } from '@/lib/site-schema'
 
 /**
  * Title and description are both kept inside the lengths this site's own readiness audit
@@ -62,67 +63,21 @@ const faqJsonLd = JSON.stringify({
   })),
 })
 
-/**
- * When this site first went live: the repository's initial commit,
- * "Initial commit: Optmizly SaaS platform setup". A fixed historical fact, so a constant
- * rather than something derived at build — deriving it would read the oldest commit a
- * clone happens to contain, and Vercel clones shallowly, so a truncated history would
- * silently publish a wrong founding date.
- */
-const SITE_PUBLISHED = '2026-06-03'
 
 /**
- * Last changed, resolved from git at build time. See resolveLastModified in next.config.js
- * for why it is not a literal and not `new Date()`.
- */
-const SITE_MODIFIED = process.env.SITE_LAST_MODIFIED ?? SITE_PUBLISHED
-
-/**
- * Organization, WebSite and WebPage markup — the entity signals this page spends a whole
- * section telling other people to add. The homepage had FAQPage and nothing else, which its
- * own audit scored 50 for structured data.
+ * The entity signals this page spends a whole section telling other people to add. The
+ * homepage had FAQPage and nothing else, which its own audit scored 50 for structured data.
  *
- * `sameAs` is the part that resolves "Optmizly" to a known entity rather than a word.
- * It lists only profiles that actually exist; add to it as more do.
+ * Organization, WebSite and the dates now come from site-schema.ts, shared with /pricing.
+ * They were written inline here, and the moment a second page needed them that became a
+ * copy waiting to diverge — the same fault as the pricing FAQ, one file over.
  *
- * The dates sit on the WebPage node rather than on Organization, because they describe this
- * page, not the company.
+ * No breadcrumb: a trail whose only stop is the homepage describes nothing, and our own SEO
+ * audit scores BreadcrumbList not-applicable on a homepage for that reason.
  */
-const orgJsonLd = JSON.stringify({
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'Organization',
-      '@id': 'https://optmizly.com/#organization',
-      name: 'Optmizly',
-      url: 'https://optmizly.com',
-      logo: 'https://optmizly.com/logo.png',
-      description:
-        'AI search optimization platform covering SEO, GEO and AEO — auditing, optimizing and monitoring how websites appear in Google and in AI-generated answers.',
-      // The address the Terms and Refund Policy both publish as the support contact, so this
-      // schema field names an inbox that is documented as monitored.
-      email: 'support@Optmizly.com',
-      sameAs: ['https://x.com/optmizly', 'https://linkedin.com/company/optmizly'],
-    },
-    {
-      '@type': 'WebSite',
-      '@id': 'https://optmizly.com/#website',
-      url: 'https://optmizly.com',
-      name: 'Optmizly',
-      publisher: { '@id': 'https://optmizly.com/#organization' },
-    },
-    {
-      '@type': 'WebPage',
-      '@id': 'https://optmizly.com/#webpage',
-      url: 'https://optmizly.com',
-      name: 'Optmizly — Optimize Your Website for Google + AI Search',
-      isPartOf: { '@id': 'https://optmizly.com/#website' },
-      about: { '@id': 'https://optmizly.com/#organization' },
-      datePublished: SITE_PUBLISHED,
-      dateModified: SITE_MODIFIED,
-      inLanguage: 'en',
-    },
-  ],
+const orgJsonLd = buildPageGraph({
+  path: '/',
+  name: 'Optmizly — Optimize Your Website for Google + AI Search',
 })
 
 export default function HomePage() {
