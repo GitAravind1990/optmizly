@@ -282,12 +282,16 @@ export function WorkflowSection() {
           body="Each stage hands its output to the next. The audit tells the optimizer what to fix; the optimizer tells the monitor what to watch."
         />
 
-        <div style={{
+        {/* An <ol>, because that is what this is: five stages in a fixed order, numbered on
+            screen, each feeding the next. It was a grid of divs, so a page describing a
+            sequence contained no list — nothing for an answer engine to lift as steps, and
+            zero lists in our own readiness audit. Styling is unchanged; only the elements are. */}
+        <ol style={{
           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 14, marginTop: 60,
+          gap: 14, listStyle: 'none', margin: '60px 0 0', padding: 0,
         }}>
           {stages.map((s, i) => (
-            <div key={s.step} style={{
+            <li key={s.step} style={{
               position: 'relative', padding: 24, background: '#fff',
               border: `1px solid ${T.line}`, borderRadius: 18,
             }}>
@@ -311,14 +315,14 @@ export function WorkflowSection() {
               <p style={{ fontFamily: T.sans, fontSize: 13.5, lineHeight: 1.55, color: T.body, margin: '0 0 14px' }}>
                 {s.body}
               </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <ul style={{ display: 'flex', flexWrap: 'wrap', gap: 6, listStyle: 'none', margin: 0, padding: 0 }}>
                 {s.tools.map(t => (
-                  <span key={t} style={{
+                  <li key={t} style={{
                     fontFamily: T.sans, fontSize: 11.5, color: T.ink2,
                     padding: '4px 9px', borderRadius: 7, background: T.line2,
-                  }}>{t}</span>
+                  }}>{t}</li>
                 ))}
-              </div>
+              </ul>
               {i < stages.length - 1 && (
                 <div className="opt-step-arrow" style={{
                   position: 'absolute', right: -10, top: 44, zIndex: 2,
@@ -329,9 +333,9 @@ export function WorkflowSection() {
                   <Icon name="arrow" size={11} color={T.blue} />
                 </div>
               )}
-            </div>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   )
@@ -780,18 +784,25 @@ export function FaqSection() {
             borderBottom: i < HOME_FAQS.length - 1 ? `1px solid ${T.line}` : 'none',
             background: '#fff',
           }}>
-            <summary style={{
-              listStyle: 'none', cursor: 'pointer', padding: '18px 22px',
-              fontFamily: T.sans, fontSize: 15.5, fontWeight: 600, color: T.ink,
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
-            }}>
-              <span>{faq.q}</span>
-              <span aria-hidden="true" style={{
-                flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
-                background: T.line2, color: T.muted,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 16, lineHeight: 1,
-              }}>+</span>
+            {/* The question is the heading. It was a <span>, so eight questions counted as
+                zero question-style headings in our own readiness audit and the homepage
+                scored 67 on AEO. A <summary> may contain one element of heading content —
+                which is why the layout lives on the h3 rather than beside it, the way
+                /pricing has to nest it inside a <button>. */}
+            <summary style={{ listStyle: 'none', cursor: 'pointer' }}>
+              <h3 style={{
+                margin: 0, padding: '18px 22px',
+                fontFamily: T.sans, fontSize: 15.5, fontWeight: 600, color: T.ink,
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
+              }}>
+                {faq.q}
+                <span aria-hidden="true" style={{
+                  flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
+                  background: T.line2, color: T.muted,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 16, fontWeight: 400, lineHeight: 1,
+                }}>+</span>
+              </h3>
             </summary>
             <div style={{
               padding: '0 22px 20px', fontFamily: T.sans, fontSize: 14.5,
