@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     default: 'Optmizly – AI Content Optimizer',
     template: '%s | Optmizly',
   },
-  // Tool counts drift. 23 is the Agency figure and the only one to quote in marketing copy —
+  // Tool counts drift. 24 is the Agency figure and the only one to quote in marketing copy —
   // see the canonical table in CLAUDE.md before changing it.
   description: 'Rank higher on Google and get cited in AI Overviews, AI Mode, ChatGPT and Perplexity. 24 AI-powered SEO tools for content teams, SEOs, and agencies.',
   keywords: [

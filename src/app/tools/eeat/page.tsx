@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/page-header'
 import { PublicEeat } from './client'
 
 export const metadata: Metadata = {
-  title: 'Free E-E-A-T Checker — Score Your Content in Seconds | Optmizly',
+  title: 'Free E-E-A-T Checker — Score Your Content in Seconds',
   description:
     'Paste your page and get an E-E-A-T score across Experience, Expertise, Authoritativeness and Trustworthiness, with the specific fixes to make first. Free, no signup.',
   alternates: { canonical: 'https://optmizly.com/tools/eeat' },

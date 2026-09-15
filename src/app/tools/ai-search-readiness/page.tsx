@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
 import { FreeAudit } from '@/components/free-audit'
+import { buildPageGraph, ORG_ID } from '@/lib/site-schema'
 
 export const metadata: Metadata = {
-  title: 'Free AI Search Readiness Audit — Can ChatGPT Read Your Site? | Optmizly',
+  title: 'Free AI Search Readiness Audit — No Signup',
   description:
     'Check whether AI search engines can reach, read and cite your website. Free instant audit across technical SEO, structure, schema, AEO and GEO readiness. No signup.',
   alternates: { canonical: 'https://optmizly.com/tools/ai-search-readiness' },
@@ -61,13 +62,33 @@ const FAQ: Array<{ q: string; a: string; points?: string[] }> = [
   },
 ]
 
-/** Marked up as a tool, matching /tools/eeat. The FAQ answers the objections people
- *  actually arrive with — is this real, is it free, and what are you doing with my URL. */
-const SCHEMA = {
-  '@context': 'https://schema.org',
-  '@graph': [
+/**
+ * When this tool shipped, and when its content last changed. Both are in the markup and
+ * printed on the page, because "no published or modified date" was one of three findings
+ * this page's own audit raised against it — freshness being one of the few things an answer
+ * engine can check cheaply.
+ */
+const TOOL_PUBLISHED = '2026-08-29'
+const TOOL_UPDATED = '2026-09-15'
+
+/**
+ * Marked up as a tool, matching /tools/eeat, on top of the shared site graph.
+ *
+ * The WebApplication node used to carry its own two-field `publisher: Organization` and
+ * nothing else, so this page declared no `sameAs` and no dates — the other two findings.
+ * Organization, WebSite and WebPage now come from site-schema.ts, the same nodes /pricing
+ * and the homepage use, and the stub publisher is a reference to the real entity rather
+ * than a second, thinner copy of it.
+ */
+const SCHEMA_JSON = buildPageGraph({
+  path: '/tools/ai-search-readiness',
+  name: 'Free AI Search Readiness Audit',
+  datePublished: TOOL_PUBLISHED,
+  dateModified: TOOL_UPDATED,
+  extra: [
     {
       '@type': 'WebApplication',
+      '@id': 'https://optmizly.com/tools/ai-search-readiness#app',
       name: 'AI Search Readiness Audit',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Any',
@@ -75,10 +96,11 @@ const SCHEMA = {
       description:
         'Audits a page for AI search readiness across technical SEO, on-page signals, content extractability, structured data, AEO and GEO, and returns prioritized fixes.',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-      publisher: { '@type': 'Organization', name: 'Optmizly', url: 'https://optmizly.com' },
+      publisher: { '@id': ORG_ID },
     },
     {
       '@type': 'FAQPage',
+      '@id': 'https://optmizly.com/tools/ai-search-readiness#faq',
       // Built from FAQ above rather than retyped, so the markup always matches what a reader
       // sees. Where an answer renders as a list, the bullets are folded back into one string:
       // schema.org Answer text is plain prose, not markup.
@@ -92,12 +114,12 @@ const SCHEMA = {
       })),
     },
   ],
-}
+})
 
 export default function AiSearchReadinessPage() {
   return (
     <div className="min-h-screen bg-white">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: SCHEMA_JSON }} />
       <PageHeader />
 
       <div className="mx-auto max-w-4xl px-6 py-14">
@@ -190,6 +212,22 @@ export default function AiSearchReadinessPage() {
               </div>
             ))}
           </div>
+          {/* The same two constants the JSON-LD carries, so the dates a reader sees and the
+              dates an engine reads cannot disagree. */}
+          <p className="mt-6 text-xs text-slate-500">
+            Published{' '}
+            <time dateTime={TOOL_PUBLISHED}>
+              {new Date(`${TOOL_PUBLISHED}T00:00:00Z`).toLocaleDateString('en-GB', {
+                day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+              })}
+            </time>
+            {'. Last updated '}
+            <time dateTime={TOOL_UPDATED}>
+              {new Date(`${TOOL_UPDATED}T00:00:00Z`).toLocaleDateString('en-GB', {
+                day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+              })}
+            </time>.
+          </p>
         </div>
 
         <div className="mt-12 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-6 text-center">

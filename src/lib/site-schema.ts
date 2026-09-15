@@ -68,6 +68,9 @@ export const websiteNode = {
 export function buildPageGraph(opts: {
   path: string
   name: string
+  /** When this page first shipped, where that differs from the site's own founding date.
+   *  A tool published in August is not three months old because the site is. */
+  datePublished?: string
   dateModified?: string
   breadcrumb?: Array<{ name: string; path: string }>
   extra?: Array<Record<string, unknown>>
@@ -83,7 +86,7 @@ export function buildPageGraph(opts: {
       name: opts.name,
       isPartOf: { '@id': SITE_ID },
       about: { '@id': ORG_ID },
-      datePublished: SITE_PUBLISHED,
+      datePublished: opts.datePublished ?? SITE_PUBLISHED,
       dateModified: opts.dateModified ?? SITE_MODIFIED,
       inLanguage: 'en',
     },

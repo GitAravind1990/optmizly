@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/page-header'
 import { PublicAiRegex } from './client'
 
 export const metadata: Metadata = {
-  title: 'Free AI Regex Generator — Describe It in Plain English | Optmizly',
+  title: 'Free AI Regex Generator — Describe It in Plain English',
   description:
     'Describe what you want to match and get a working regex, then run it on your own data instantly. Free, no signup. Built for SEO data: search queries, keywords and URLs.',
   alternates: { canonical: 'https://optmizly.com/tools/ai-regex' },

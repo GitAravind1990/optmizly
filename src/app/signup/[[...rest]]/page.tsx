@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { SignUpForm } from './sign-up-form'
 
 export const metadata: Metadata = {
-  title: 'Sign Up — Start Free | Optmizly',
+  title: 'Sign Up — Start Free',
   robots: { index: false, follow: false },
 }
 

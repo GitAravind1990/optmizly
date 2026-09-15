@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/page-header'
 import { PublicProspectFinder } from './client'
 
 export const metadata: Metadata = {
-  title: 'Find Your Next SEO Client — Free Prospect Finder | Optmizly',
+  title: 'Find Your Next SEO Client — Free Prospect Finder',
   description:
     'Enter an industry and a city and see local businesses whose websites have fixable SEO problems, scored by opportunity. Free, no signup, 3 searches a month.',
   alternates: { canonical: 'https://optmizly.com/tools/find-clients' },
