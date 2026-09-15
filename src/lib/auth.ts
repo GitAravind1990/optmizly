@@ -87,6 +87,14 @@ type PinnedAccount = {
 
 const PINNED_ACCOUNTS: Record<string, PinnedAccount> = {
   'gkm.aravind@gmail.com': { plan: Plan.AGENCY },
+
+  // Beta testers, added 2026-09-15. Agency's full tool set on ten units a month, which is
+  // three runs of a 3-credit tool or ten of anything LLM-only — enough to exercise every
+  // tool without two accounts spending like two agencies. Delete these two lines to end
+  // their access: neither has a subscription row, so both fall straight back to FREE and
+  // there is nothing to clean up in the database.
+  'naresh.roja14@gmail.com': { plan: Plan.AGENCY, monthlyLimit: 10 },
+  'sics.rahul@gmail.com': { plan: Plan.AGENCY, monthlyLimit: 10 },
 }
 
 function pinnedFor(email?: string | null): PinnedAccount | undefined {
