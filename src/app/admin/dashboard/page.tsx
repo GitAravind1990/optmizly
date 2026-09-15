@@ -256,7 +256,7 @@ function UsersTab() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              {['Email', 'Plan', 'Joined', 'Analyses', 'Tokens (in/out)', 'Est. Cost', 'Status'].map(h => (
+              {['Email', 'Plan', 'Credits', 'Joined', 'Analyses', 'Tokens (in/out)', 'Est. Cost', 'Status'].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-semibold text-gray-700">{h}</th>
               ))}
             </tr>
@@ -280,6 +280,33 @@ function UsersTab() {
                     }`}>
                       {user.plan}
                     </span>
+                    {/* A pinned plan is granted by PINNED_ACCOUNTS in auth.ts, not by
+                        billing. User.plan reads AGENCY either way, so without this a beta
+                        tester is indistinguishable from a paying Agency customer. */}
+                    {user.planPinned && (
+                      <span
+                        title="Plan granted in code (PINNED_ACCOUNTS in src/lib/auth.ts), not by a subscription"
+                        className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 align-middle"
+                      >
+                        PINNED
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    <span className={user.creditsUsed >= user.creditsLimit ? 'font-semibold text-red-600' : 'text-gray-700'}>
+                      {user.creditsUsed} / {user.creditsLimit}
+                    </span>
+                    {/* The allowance leaves no trace in the database, so an overridden one
+                        looks exactly like the plan's own. Called out rather than shown as a
+                        bare number a reader would take for Agency's 200. */}
+                    {user.limitOverridden && (
+                      <span
+                        title={`Capped below ${user.plan}'s own allowance by monthlyLimit in PINNED_ACCOUNTS`}
+                        className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800"
+                      >
+                        CAPPED
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{new Date(user.joinedDate).toLocaleDateString()}</td>
                   <td className="px-4 py-3 font-medium">{user.analyses}</td>

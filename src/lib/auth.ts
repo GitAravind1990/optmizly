@@ -93,6 +93,20 @@ function pinnedFor(email?: string | null): PinnedAccount | undefined {
   return email ? PINNED_ACCOUNTS[email.trim().toLowerCase()] : undefined
 }
 
+/**
+ * The pin on an account, if it has one. Exported for the admin user list.
+ *
+ * A pinned account is otherwise indistinguishable from a paying one: `User.plan` is written
+ * to AGENCY either way, and an overridden allowance leaves no trace in the database at all
+ * -- it is a fact about this constant, not about the row. So the one place that exists to
+ * show who has what had no way to know, and a beta tester read as an Agency customer with
+ * 200 analyses. Anything that reports on accounts should ask here rather than infer.
+ */
+export function pinnedAccountFor(email?: string | null): PinnedAccount | undefined {
+  const pinned = pinnedFor(email)
+  return pinned ? { ...pinned } : undefined
+}
+
 export function isAlwaysAgency(email?: string | null): boolean {
   return pinnedFor(email)?.plan === Plan.AGENCY
 }

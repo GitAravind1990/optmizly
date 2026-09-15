@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminAuth';
 import { estimateCostRange, activeRates } from '@/lib/llm-pricing';
+import { monthlyLimitFor, pinnedAccountFor } from '@/lib/auth';
+import { PLAN_LIMITS, getMonthKey } from '@/lib/plans';
 
 export async function GET(req: NextRequest) {
   try {
@@ -45,6 +47,17 @@ export async function GET(req: NextRequest) {
       prisma.user.count({ where }),
     ]);
 
+    // One query for the whole page rather than one per row. The admin dashboard has been
+    // here before: four of its routes ran their queries sequentially and stacked 5.5s of
+    // latency into a hang (session_jul16b). Credits live in the Usage table, keyed by
+    // month, and are not derivable from the columns above.
+    const month = getMonthKey();
+    const usageRows = await prisma.usage.findMany({
+      where: { userId: { in: users.map(u => u.id) }, month },
+      select: { userId: true, count: true },
+    });
+    const usedByUser = new Map(usageRows.map(r => [r.userId, r.count]));
+
     return NextResponse.json({
       users: users.map(u => ({
         id: u.id,
@@ -71,6 +84,19 @@ export async function GET(req: NextRequest) {
           u.totalOutputTokens ?? 0,
           activeRates()
         ).mid,
+        // Credits, not analyses. The `analyses` field above counts ContentOptimization
+        // rows; this is the weighted allowance the user is actually spending, which is the
+        // number that produces a 429 and the only one comparable to the limit beside it.
+        creditsUsed: usedByUser.get(u.id) ?? 0,
+        creditsLimit: monthlyLimitFor(u, u.subscription?.status === 'TRIALING'),
+        // Why this account holds this plan, where that is not billing. `planPinned` means
+        // the plan is granted by PINNED_ACCOUNTS regardless of the subscription table;
+        // `limitOverridden` means the allowance is not the one the plan sells. They are
+        // independent: the founder account is pinned and not overridden.
+        planPinned: !!pinnedAccountFor(u.email),
+        limitOverridden:
+          pinnedAccountFor(u.email)?.monthlyLimit !== undefined &&
+          pinnedAccountFor(u.email)?.monthlyLimit !== PLAN_LIMITS[u.plan],
       })),
       pagination: {
         total,
