@@ -253,6 +253,30 @@ function UsersTab() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
 
+  /**
+   * Sending real mail to real people, so the button arms before it fires.
+   *
+   * An inline two-step rather than window.confirm: a native modal blocks every subsequent
+   * browser event, which makes this page impossible to drive with automation and is the one
+   * thing the repo's browser-automation notes say never to introduce. It also reads better --
+   * the armed state can name the recipients, which a confirm dialog cannot do legibly.
+   */
+  const [invite, setInvite] = useState<'idle' | 'armed' | 'sending'>('idle');
+  const [inviteResult, setInviteResult] = useState<any>(null);
+
+  async function sendInvites() {
+    setInvite('sending');
+    setInviteResult(null);
+    try {
+      const res = await fetch('/api/admin/beta-invite', { method: 'POST' });
+      setInviteResult(await res.json());
+    } catch (e) {
+      setInviteResult({ error: e instanceof Error ? e.message : 'Request failed' });
+    } finally {
+      setInvite('idle');
+    }
+  }
+
   useEffect(() => {
     setLoading(true);
     const controller = new AbortController();
@@ -285,7 +309,74 @@ function UsersTab() {
           ))}
         </select>
         <span className="text-sm text-gray-500">{data.pagination.total} total</span>
+
+        {/* Mails every pinned account carrying a credit cap -- the beta testers. The
+            endpoint decides who that is by reading PINNED_ACCOUNTS and refuses anything
+            else, so this button cannot be pointed at an arbitrary address. */}
+        <div className="ml-auto flex items-center gap-2">
+          {invite === 'idle' && (
+            <button
+              onClick={() => { setInvite('armed'); setInviteResult(null); }}
+              className="px-3 py-2 rounded text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              Send beta access email
+            </button>
+          )}
+          {invite === 'armed' && (
+            <>
+              <span className="text-sm text-amber-800">
+                Email every capped beta account their access details?
+              </span>
+              <button
+                onClick={sendInvites}
+                className="px-3 py-2 rounded text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700"
+              >
+                Send
+              </button>
+              <button
+                onClick={() => setInvite('idle')}
+                className="px-3 py-2 rounded text-sm font-semibold border border-slate-300 text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </>
+          )}
+          {invite === 'sending' && (
+            <span className="text-sm text-slate-500">Sending…</span>
+          )}
+        </div>
       </div>
+
+      {/* Per-address outcome, not a toast. The whole reason the endpoint returns one result
+          per recipient is that "it said it sent" is worth nothing here -- a refused address
+          or a missing API key has to be readable. */}
+      {inviteResult && (
+        <div className={`rounded-lg border p-4 text-sm ${
+          inviteResult.error || inviteResult.failed > 0
+            ? 'bg-red-50 border-red-200'
+            : 'bg-green-50 border-green-200'
+        }`}>
+          {inviteResult.error ? (
+            <div className="text-red-800 font-semibold">{inviteResult.error}</div>
+          ) : (
+            <>
+              <div className="font-semibold text-slate-800 mb-2">
+                {inviteResult.sent} sent
+                {inviteResult.failed > 0 ? `, ${inviteResult.failed} failed` : ''}
+              </div>
+              <ul className="space-y-1">
+                {(inviteResult.results ?? []).map((r: any) => (
+                  <li key={r.email} className={r.sent ? 'text-green-800' : 'text-red-800'}>
+                    {r.sent ? '✓' : '✗'} {r.email}
+                    {r.credits ? ` — ${r.credits} credits` : ''}
+                    {r.reason ? ` — ${r.reason}` : ''}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="bg-white border rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
