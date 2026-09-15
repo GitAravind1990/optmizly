@@ -421,7 +421,14 @@ export default function SettingsPage() {
                   <div className="text-xs font-bold opacity-60 uppercase tracking-wider mb-1">Current Plan</div>
                   <div className="text-4xl font-black">{meta.label}</div>
                   <div className="text-sm opacity-75 mt-1">
-                    {meta.price} · {sub?.status === 'TRIALING' ? `${usage?.limit ?? meta.limit} analyses during trial` : `${meta.limit} analyses / month`}
+                    {/* `usage.limit` first, `meta.limit` only as the fallback before it loads.
+                        PLAN_META carries what the plan *sells*; usage carries what this
+                        account is actually granted, and those can differ — an account can
+                        hold a plan's full tool set on a smaller allowance. Showing the
+                        marketed number beside a progress bar counting against the enforced
+                        one put two different limits on one screen. The TRIALING branch
+                        already preferred usage for this reason; now both do. */}
+                    {meta.price} · {sub?.status === 'TRIALING' ? `${usage?.limit ?? meta.limit} analyses during trial` : `${usage?.limit ?? meta.limit} analyses / month`}
                   </div>
                 </div>
                 {plan !== 'AGENCY' && (

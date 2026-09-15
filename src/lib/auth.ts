@@ -69,10 +69,58 @@ export class AuthError extends Error {
  *
  * Compared lowercased because Clerk preserves whatever case the user typed at sign-up.
  */
-const ALWAYS_AGENCY = new Set(['gkm.aravind@gmail.com'])
+type PinnedAccount = {
+  plan: Plan
+  /**
+   * Monthly allowance, when it should not be the one the plan sells.
+   *
+   * This is what makes "all the tools, not all the spend" expressible. Plan and allowance
+   * are already independent for paying customers — Starter and Pro see the identical 12
+   * tools at 15 and 50 units — and TOOL_COST_UNITS is what keeps them independent. A pinned
+   * account extends the same split one step further: Agency's whole tool surface on a
+   * fraction of Agency's budget.
+   *
+   * Omit it to get the plan's own number, which is what the founder account wants.
+   */
+  monthlyLimit?: number
+}
+
+const PINNED_ACCOUNTS: Record<string, PinnedAccount> = {
+  'gkm.aravind@gmail.com': { plan: Plan.AGENCY },
+}
+
+function pinnedFor(email?: string | null): PinnedAccount | undefined {
+  return email ? PINNED_ACCOUNTS[email.trim().toLowerCase()] : undefined
+}
 
 export function isAlwaysAgency(email?: string | null): boolean {
-  return !!email && ALWAYS_AGENCY.has(email.trim().toLowerCase())
+  return pinnedFor(email)?.plan === Plan.AGENCY
+}
+
+/**
+ * The account's real monthly allowance — the only function allowed to answer that.
+ *
+ * All four places that needed this figure used to compute it themselves, identically, from
+ * PLAN_LIMITS. That was fine while the plan was the only input. It stops being fine the
+ * moment one account's allowance differs from its plan's: three of the four would have gone
+ * on quoting 200 while the fourth enforced less, and a UI that promises an allowance the
+ * route will not grant is the "state the enforced number, not the marketed one" rule in
+ * CLAUDE.md, broken from the inside.
+ *
+ * So the override is read here and nowhere else: requireAuth, assertQuotaAvailable,
+ * getUserUsage and the weekly summary all call this, which is what keeps the sidebar
+ * counter, the warning email, the 429 message and the charge itself in agreement.
+ */
+export function monthlyLimitFor(
+  user: { email: string; plan: Plan },
+  trialing: boolean
+): number {
+  const pinned = pinnedFor(user.email)
+  // The pin wins over TRIAL_LIMITS as well. Nothing creates a TRIALING subscription today,
+  // but if one arrived from Dodo's side it must not silently raise or lower a cap that was
+  // set deliberately here.
+  if (pinned?.monthlyLimit !== undefined) return pinned.monthlyLimit
+  return (trialing ? TRIAL_LIMITS[user.plan] : PLAN_LIMITS[user.plan]) ?? PLAN_LIMITS.FREE
 }
 
 /**
@@ -232,7 +280,7 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
   // Atomically increment first, then check — prevents concurrent requests bypassing quota
   const month = getMonthKey()
   const sub = await prisma.subscription.findUnique({ where: { userId: user.id }, select: { status: true } })
-  const limit = sub?.status === 'TRIALING' ? TRIAL_LIMITS[user.plan] : PLAN_LIMITS[user.plan]
+  const limit = monthlyLimitFor(user, sub?.status === 'TRIALING')
 
   // Tools cost different amounts of the allowance — see TOOL_COST_UNITS for why.
   const cost = toolCost(tool)
@@ -350,7 +398,7 @@ export async function assertQuotaAvailable(user: AuthedUser, tool: string): Prom
     prisma.subscription.findUnique({ where: { userId: user.userId }, select: { status: true } }),
   ])
 
-  const limit = sub?.status === 'TRIALING' ? TRIAL_LIMITS[user.plan] : PLAN_LIMITS[user.plan]
+  const limit = monthlyLimitFor(user, sub?.status === 'TRIALING')
   const cost = toolCost(tool)
   const used = usage?.count ?? 0
 
@@ -408,7 +456,7 @@ export async function getUserUsage() {
 
   const month = getMonthKey()
   const count = user.usage.find(u => u.month === month)?.count ?? 0
-  const limit = user.subscription?.status === 'TRIALING' ? TRIAL_LIMITS[user.plan] : PLAN_LIMITS[user.plan]
+  const limit = monthlyLimitFor(user, user.subscription?.status === 'TRIALING')
 
   return {
     plan: user.plan,
