@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminAuth';
 import { estimateCostRange, activeRates } from '@/lib/llm-pricing';
+import { ALL_PLANS, MONTHLY_PRICE_USD } from '@/lib/plans';
+import type { Plan } from '@prisma/client';
 
 export async function GET(_req: NextRequest) {
   try {
@@ -44,22 +46,26 @@ export async function GET(_req: NextRequest) {
     ]);
 
     // REVENUE METRICS
-    const proCount = subscriptions.filter(s => s.plan === 'PRO').length;
-    const agencyCount = subscriptions.filter(s => s.plan === 'AGENCY').length;
-
-    const mrrByPlan = {
-      free: 0,
-      pro: proCount * 19,
-      agency: agencyCount * 49,
-    };
-    const totalMRR = mrrByPlan.pro + mrrByPlan.agency;
+    //
+    // Over every plan, not the two that used to be listed. An Agency Plus subscriber
+    // contributed $0 to reported MRR and a Starter subscriber the same, so total MRR
+    // understated real revenue by however many of those existed -- invisibly, because the
+    // panel showed two bars that summed correctly to a wrong total.
+    const mrrByPlan = Object.fromEntries(
+      ALL_PLANS.map(plan => [
+        plan,
+        subscriptions.filter(s => s.plan === plan).length * MONTHLY_PRICE_USD[plan],
+      ])
+    ) as Record<Plan, number>;
+    const totalMRR = ALL_PLANS.reduce((sum, plan) => sum + mrrByPlan[plan], 0);
 
     // USER METRICS
-    const usersByPlanMap = {
-      FREE: usersByPlan.find(u => u.plan === 'FREE')?._count || 0,
-      PRO: usersByPlan.find(u => u.plan === 'PRO')?._count || 0,
-      AGENCY: usersByPlan.find(u => u.plan === 'AGENCY')?._count || 0,
-    };
+    //
+    // Same fix: this map named three tiers, so byPlan summed to less than the `total` it is
+    // displayed beside, and nobody on Starter or Agency Plus appeared anywhere.
+    const usersByPlanMap = Object.fromEntries(
+      ALL_PLANS.map(plan => [plan, usersByPlan.find(u => u.plan === plan)?._count ?? 0])
+    ) as Record<Plan, number>;
 
     // FEATURE USAGE
     const toolUsage = { 'Content Optimizer': contentOptimizerCount };

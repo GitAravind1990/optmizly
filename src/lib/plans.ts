@@ -132,6 +132,39 @@ export const SEAT_LIMITS: Record<Plan, number> = {
  * Free-plan tools are all weight 1 on purpose: "3 analyses" must keep meaning three
  * runs, or the plan's public promise changes.
  */
+/**
+ * Every plan, in tier order. The one list to iterate or validate against.
+ *
+ * Hardcoded triples of FREE/PRO/AGENCY were scattered through the admin dashboard and each
+ * one silently dropped Starter and Agency Plus: the plan filter could not select them, the
+ * user distribution undercounted the total it sat beside, and MRR counted neither $9 nor
+ * $99. Derived from the Prisma enum, so a sixth tier is a compile error in every consumer
+ * rather than a row that quietly vanishes from a report.
+ */
+export const ALL_PLANS: Plan[] = ['FREE', 'STARTER', 'PRO', 'AGENCY', 'AGENCY_PLUS']
+
+/**
+ * List price per month, in USD, for code that needs to reason about revenue.
+ *
+ * A `Record<Plan, …>` rather than literals at the call site, because the admin MRR panel
+ * held its own $19 and $49 and had no entry at all for the other two paid tiers. This does
+ * not make the module the authority on pricing — the customer-facing figures are in the
+ * eight places CLAUDE.md lists, and they must still be changed together. It makes the
+ * figures *readable by code*, which is what the reports needed.
+ *
+ * Annual subscribers are counted here at the monthly price. That is an approximation: an
+ * annual plan bills ten months rather than twelve, so a yearly customer's true monthly
+ * contribution is about 17% lower than this. Stated rather than hidden, because the
+ * Subscription row does not record billing frequency and this cannot be fixed by arithmetic.
+ */
+export const MONTHLY_PRICE_USD: Record<Plan, number> = {
+  FREE: 0,
+  STARTER: 9,
+  PRO: 19,
+  AGENCY: 49,
+  AGENCY_PLUS: 99,
+}
+
 export const TOOL_COST_UNITS: Record<string, number> = {
   'keyword-tool': 3,
   'competitor-spy': 3,

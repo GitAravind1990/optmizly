@@ -3,6 +3,33 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
+import { ALL_PLANS, MONTHLY_PRICE_USD } from '@/lib/plans';
+import type { Plan } from '@prisma/client';
+
+/**
+ * Plan colours, one entry per tier.
+ *
+ * `Record<Plan, …>` on purpose, per the gating rule in CLAUDE.md: the ternary chains these
+ * replace fell through to AGENCY's green for anything they did not name, so STARTER and
+ * AGENCY_PLUS rendered as a tier they are not. A sixth tier is now a compile error here
+ * instead of a mislabelled row.
+ */
+const PLAN_BADGE: Record<Plan, string> = {
+  FREE: 'bg-blue-100 text-blue-800',
+  STARTER: 'bg-sky-100 text-sky-800',
+  PRO: 'bg-purple-100 text-purple-800',
+  AGENCY: 'bg-green-100 text-green-800',
+  AGENCY_PLUS: 'bg-emerald-100 text-emerald-900',
+};
+
+const PLAN_DOT: Record<Plan, string> = {
+  FREE: 'bg-blue-500',
+  STARTER: 'bg-sky-600',
+  PRO: 'bg-purple-600',
+  AGENCY: 'bg-green-600',
+  AGENCY_PLUS: 'bg-emerald-700',
+};
+
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -118,21 +145,27 @@ function OverviewTab({ stats }: any) {
         <div className="bg-white border rounded-lg p-6">
           <h3 className="text-lg font-bold mb-4">MRR by Plan</h3>
           <div className="space-y-3">
-            <RevenueBar plan="PRO ($19/mo)" amount={stats.revenue.mrrByPlan.pro} total={stats.revenue.totalMRR || 1} />
-            <RevenueBar plan="AGENCY ($49/mo)" amount={stats.revenue.mrrByPlan.agency} total={stats.revenue.totalMRR || 1} />
+            {/* Every paid tier. Two bars used to be hardcoded here, so Starter and
+                Agency Plus revenue was invisible in a panel that looked complete. */}
+            {ALL_PLANS.filter(pl => MONTHLY_PRICE_USD[pl] > 0).map(pl => (
+              <RevenueBar
+                key={pl}
+                plan={`${pl} ($${MONTHLY_PRICE_USD[pl]}/mo)`}
+                amount={stats.revenue.mrrByPlan[pl] ?? 0}
+                total={stats.revenue.totalMRR || 1}
+              />
+            ))}
           </div>
         </div>
 
         <div className="bg-white border rounded-lg p-6">
           <h3 className="text-lg font-bold mb-4">Users by Plan</h3>
           <div className="space-y-2">
-            {(['FREE', 'PRO', 'AGENCY'] as const).map(plan => (
-              <div key={plan} className="flex justify-between items-center py-2 border-b last:border-0">
-                <span className="font-medium">{plan}</span>
-                <span className={`text-white px-3 py-1 rounded text-sm font-semibold ${
-                  plan === 'FREE' ? 'bg-blue-500' : plan === 'PRO' ? 'bg-purple-600' : 'bg-green-600'
-                }`}>
-                  {stats.users.byPlan[plan]}
+            {ALL_PLANS.map(pl => (
+              <div key={pl} className="flex justify-between items-center py-2 border-b last:border-0">
+                <span className="font-medium">{pl}</span>
+                <span className={`text-white px-3 py-1 rounded text-sm font-semibold ${PLAN_DOT[pl]}`}>
+                  {stats.users.byPlan[pl] ?? 0}
                 </span>
               </div>
             ))}
@@ -245,9 +278,11 @@ function UsersTab() {
           className="p-2 border rounded text-sm"
         >
           <option value="">All Plans</option>
-          <option value="FREE">FREE</option>
-          <option value="PRO">PRO</option>
-          <option value="AGENCY">AGENCY</option>
+          {/* From ALL_PLANS, so a tier cannot be unselectable. Starter and Agency Plus
+              users were unreachable through this control entirely. */}
+          {ALL_PLANS.map(pl => (
+            <option key={pl} value={pl}>{pl}</option>
+          ))}
         </select>
         <span className="text-sm text-gray-500">{data.pagination.total} total</span>
       </div>
@@ -273,11 +308,10 @@ function UsersTab() {
                 <tr key={i} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-800">{user.email}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      user.plan === 'FREE' ? 'bg-blue-100 text-blue-800' :
-                      user.plan === 'PRO' ? 'bg-purple-100 text-purple-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
+                    {/* Record rather than a ternary chain: the chain fell through to
+                        green, painting STARTER and AGENCY_PLUS as AGENCY -- the same two
+                        tiers this filter could not select. */}
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${PLAN_BADGE[user.plan as Plan] ?? PLAN_BADGE.FREE}`}>
                       {user.plan}
                     </span>
                     {/* A pinned plan is granted by PINNED_ACCOUNTS in auth.ts, not by
