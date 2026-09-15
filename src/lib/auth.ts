@@ -69,7 +69,7 @@ export class AuthError extends Error {
  *
  * Compared lowercased because Clerk preserves whatever case the user typed at sign-up.
  */
-type PinnedAccount = {
+export type PinnedAccount = {
   plan: Plan
   /**
    * Monthly allowance, when it should not be the one the plan sells.
@@ -113,6 +113,18 @@ function pinnedFor(email?: string | null): PinnedAccount | undefined {
 export function pinnedAccountFor(email?: string | null): PinnedAccount | undefined {
   const pinned = pinnedFor(email)
   return pinned ? { ...pinned } : undefined
+}
+
+/**
+ * Every pinned account, so a caller can act on the set rather than guess at its members.
+ *
+ * The beta-invite endpoint needs "who are the testers", and the honest answer is "the pinned
+ * accounts carrying a monthlyLimit". Keeping a second list of addresses somewhere else would
+ * be a copy waiting to disagree with this one — which is the failure mode this session has
+ * already fixed twice, in the pricing FAQ and in the admin dashboard's plan lists.
+ */
+export function pinnedAccounts(): Array<{ email: string } & PinnedAccount> {
+  return Object.entries(PINNED_ACCOUNTS).map(([email, pin]) => ({ email, ...pin }))
 }
 
 export function isAlwaysAgency(email?: string | null): boolean {

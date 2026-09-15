@@ -13,6 +13,7 @@ import { BlogSubscribeEmail } from '@/emails/blog-subscribe'
 import { WeeklySummaryEmail } from '@/emails/weekly-summary'
 import { AgencyReportEmail } from '@/emails/agency-report'
 import { ProspectCapacityEmail } from '@/emails/prospect-capacity'
+import { BetaAccessEmail } from '@/emails/beta-access'
 import { captureServerException } from '@/lib/posthog-server'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -35,6 +36,48 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://Optmizly.com'
 async function reportEmailFailure(kind: string, to: string, error: unknown): Promise<void> {
   console.error(`[Email] Failed to send ${kind} to ${to}:`, error)
   await captureServerException(null, error, { emailKind: kind })
+}
+
+// ── Beta access ───────────────────────────────────────────────────────────────
+/**
+ * Tells a pinned beta tester what they have and which address to use.
+ *
+ * Unlike every other sender in this file, this one **returns its outcome instead of
+ * swallowing it**. The others are fired from a request the user is already completing, where
+ * a failed email must not fail the operation. This one is triggered by hand for a named
+ * person, so "it silently did nothing" is the worst possible result — a missing RESEND_API_KEY
+ * would otherwise log a line nobody reads and report success.
+ */
+export async function sendBetaAccessEmail(
+  to: string,
+  monthlyCredits: number
+): Promise<{ sent: boolean; reason?: string }> {
+  if (!resend) return { sent: false, reason: 'RESEND_API_KEY is not set' }
+  try {
+    const replyTo = FROM.replace(/^.*<|>$/g, '')
+    const html = await render(
+      BetaAccessEmail({
+        email: to,
+        monthlyCredits,
+        signupUrl: `${APP_URL}/signup`,
+        replyTo,
+      })
+    )
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to,
+      subject: 'Your Optmizly beta access is ready',
+      html,
+    })
+    // Resend reports a rejected send in the body, not by throwing, so a try/catch alone
+    // would call a refused address a success.
+    if (error) return { sent: false, reason: error.message ?? 'Resend rejected the send' }
+    console.log(`[Email] Beta access sent to ${to}`)
+    return { sent: true }
+  } catch (e) {
+    await reportEmailFailure('beta-access', to, e)
+    return { sent: false, reason: e instanceof Error ? e.message : 'Unknown error' }
+  }
 }
 
 // ── Welcome ───────────────────────────────────────────────────────────────────
