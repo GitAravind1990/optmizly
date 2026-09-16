@@ -2,6 +2,7 @@ import {
   Body, Button, Container, Head, Heading, Html,
   Preview, Section, Text, Tailwind,
 } from '@react-email/components'
+import { isCappedBelowPlan } from '@/lib/plans'
 
 interface LimitReachedEmailProps {
   firstName?: string
@@ -31,6 +32,23 @@ export function LimitReachedEmail({
     : plan === 'AGENCY' ? 'Agency'
     : 'Agency Plus'
 
+  /**
+   * An account capped below its plan's own allowance — a pinned one, which is the only kind
+   * there is. It behaves like the top tier here (reset date, no pitch) for a different
+   * reason: not that there is nothing above it, but that it was granted this plan rather
+   * than billed for it, so selling it the tier above is aimed at the wrong person. The plan
+   * name also comes out of the count, since "all 10 Agency analyses" claims Agency grants
+   * ten.
+   */
+  const capped = isCappedBelowPlan(plan, limit)
+  const noun = capped
+    ? (limit === 1 ? 'credit' : 'credits')
+    : (limit === 1 ? 'analysis' : 'analyses')
+  const unit = capped ? `analysis ${noun}` : `${planLabel} ${noun}`
+  // planLabel is lowercase for Free, and the footer line below starts a sentence with it --
+  // every Free user's limit email has been signing off "free analyses reset on the 1st".
+  const sentenceLabel = planLabel.charAt(0).toUpperCase() + planLabel.slice(1)
+
   // Always the *next* tier up, never the top one. This has now been wrong twice for the
   // same reason — a two-way branch outliving the two-tier world it was written in — so it
   // is a lookup rather than a chain of ternaries.
@@ -54,12 +72,12 @@ export function LimitReachedEmail({
       detail: '500 analyses/month, unlimited client projects, 5 team seats and double the prospect searches.',
     },
   }
-  const nextTier = NEXT[plan]
+  const nextTier = capped ? undefined : NEXT[plan]
 
   return (
     <Html>
       <Head />
-      <Preview>{`You've used all ${limit} ${planLabel} ${limit === 1 ? 'analysis' : 'analyses'} this month`}</Preview>
+      <Preview>{`You've used all ${limit} ${unit} this month`}</Preview>
       <Tailwind>
         <Body className="bg-slate-50 font-sans">
           <Container className="mx-auto py-12 px-4 max-w-xl">
@@ -70,11 +88,13 @@ export function LimitReachedEmail({
 
             <Section className="bg-white rounded-2xl border border-slate-200 p-8 mb-6">
               <Heading className="text-xl font-black text-slate-900 mt-0 mb-2">
-                You've hit your {planLabel} limit
+                {capped ? "You've used this month's credits" : `You've hit your ${planLabel} limit`}
               </Heading>
               <Text className="text-slate-600 text-base leading-relaxed mb-5">
-                Hi {firstName}, you've used all <strong>{limit} {planLabel} {limit === 1 ? 'analysis' : 'analyses'}</strong> for this month.
-                {isTopTier ? ' Your analyses reset on the 1st.' : ' Your analyses reset on the 1st, or upgrade now to keep going.'}
+                Hi {firstName}, you've used all <strong>{limit} {unit}</strong> for this month.
+                {capped ? ' They reset on the 1st. Need more before then? Reply to the email that gave you access.'
+                  : isTopTier ? ' Your analyses reset on the 1st.'
+                  : ' Your analyses reset on the 1st, or upgrade now to keep going.'}
               </Text>
 
               {!isTopTier && nextTier && (
@@ -98,7 +118,7 @@ export function LimitReachedEmail({
               )}
 
               <Text className="text-xs text-slate-400 text-center mt-4 mb-0">
-                {planLabel} analyses reset on the 1st of every month.
+                {capped ? 'Analysis credits' : `${sentenceLabel} analyses`} reset on the 1st of every month.
               </Text>
             </Section>
 

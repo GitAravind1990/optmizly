@@ -8,6 +8,28 @@ export const PLAN_LIMITS: Record<Plan, number> = {
   AGENCY_PLUS: 500,
 }
 
+/**
+ * True when an account's allowance has been set *below* what its own plan grants.
+ *
+ * Every upsell surface here was written assuming a user's limit is their plan's limit, which
+ * stopped being true when PINNED_ACCOUNTS gained `monthlyLimit` — an account can now hold a
+ * plan's tools without the plan's allowance. `PINNED_ACCOUNTS` is the only thing that sets
+ * one (there is no such column on User), so a capped account is by construction someone who
+ * was *given* a plan rather than someone paying for it, and pitching them the tier above is
+ * wrong twice over: they are not a customer, and the numbers do not even agree — an Agency
+ * tester on 10 credits was being told "all 10 analyses used" and "500 a month vs 200 on
+ * Agency" in the same breath.
+ *
+ * Derived from the two numbers rather than passed around as a flag, so it cannot drift out of
+ * step with the limit actually being enforced, and so any future capped account is covered
+ * without revisiting these call sites.
+ */
+export function isCappedBelowPlan(plan: Plan | string, limit: number | null | undefined): boolean {
+  if (typeof limit !== 'number') return false
+  const planLimit = PLAN_LIMITS[plan as Plan]
+  return typeof planLimit === 'number' && limit < planLimit
+}
+
 // Optmizly no longer offers a free trial, so nothing creates a TRIALING
 // subscription today. This cap is kept as a backstop: if one ever arrives from
 // Dodo's side, it must not carry the full paid-tier monthly quota.

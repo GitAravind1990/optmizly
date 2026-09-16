@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { isCappedBelowPlan } from '@/lib/plans'
 
 type PlanCopy = {
   heading: string
@@ -11,6 +12,22 @@ type PlanCopy = {
 }
 
 function copyForPlan(plan: string, limit: number | null): PlanCopy {
+  // An account capped below its own plan's allowance was granted that plan rather than
+  // billed for it, so there is nothing to sell it — and the tier copy below would contradict
+  // itself anyway, quoting the real limit in the body and the plan's notional one in the
+  // benefits. Checked before the plan branches so it wins over all of them.
+  if (isCappedBelowPlan(plan, limit)) {
+    return {
+      heading: "You've used this month's credits",
+      body: `You've used all ${limit} analysis credits on your account this month. They reset on the 1st.`,
+      benefits: [
+        'Your credits reset automatically on the 1st of the month',
+        'Everything you have already run stays saved and open',
+        'Need more before then? Reply to the email that gave you access',
+      ],
+      cta: null,
+    }
+  }
   // Top of the ladder: nothing to offer but the reset date. Agency is no longer this
   // branch — it has Agency Plus above it now.
   if (plan === 'AGENCY_PLUS') {
