@@ -32,7 +32,7 @@ Free-tier upsells point at Starter; Starter upsells sell volume only, never tool
 
 Adding a nav entry means updating the count in: `/login`, `/signup`, `PRO_BENEFITS` in
 `src/components/ui/index.tsx`, `src/components/upgrade-modal.tsx`,
-`src/components/welcome-banner.tsx`, and this file.
+`src/components/welcome-banner.tsx`, `README.md`, and this file.
 
 **Worked example, 2026-09-12: AI Visibility took Agency from 23 to 24.** The grep below
 found eight count sites — `/login`, `/signup`, both free-tool pages, `layout.tsx` (once),
@@ -51,8 +51,14 @@ see them while using the product, which is exactly why they drifted. Grep the wh
 `tools` next to a number rather than working down this list:
 
 ```powershell
-Get-ChildItem src -Recurse -Include *.tsx,*.ts | Select-String -Pattern "\b\d+\s*(AI-powered\s*)?(SEO\s*)?[Tt]ools\b"
+Select-String -Path (git ls-files '*.ts' '*.tsx' '*.md') -Pattern "\b\d+\s*(AI-powered\s*)?(SEO\s*)?[Tt]ools\b"
 ```
+
+It reaches past `src` to markdown, because `README.md` states the Agency figure too — a grep
+that stops at `src` is exactly how the metadata and share-image numbers above sat stale for
+months. Enumerating with `git ls-files` rather than `Get-ChildItem -Recurse` keeps it under a
+second and skips `node_modules` for free; `-Exclude node_modules` does not prune the walk and
+will appear to hang.
 
 Quote **the Agency figure** in marketing copy, since it is the platform's size — 24 today, and
 the tier table above is the one place to read it from rather than copying a number. Per-plan
