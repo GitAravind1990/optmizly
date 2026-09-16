@@ -101,6 +101,24 @@ function pinnedFor(email?: string | null): PinnedAccount | undefined {
   return email ? PINNED_ACCOUNTS[email.trim().toLowerCase()] : undefined
 }
 
+export function normaliseGrantEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+/**
+ * The grant on an address, from the database. Undefined when there is none.
+ *
+ * Async, unlike `pinnedFor`, which is why it is not folded into it: `monthlyLimitFor` and
+ * `isAlwaysAgency` are synchronous and called from the quota path, and making them async
+ * would put a query in front of every charge. The grant is resolved once per request in
+ * `getOrCreateUser` and written to the row instead, so the sync readers keep reading a row.
+ */
+export async function grantFor(email?: string | null) {
+  if (!email) return undefined
+  const grant = await prisma.pinnedGrant.findUnique({ where: { email: normaliseGrantEmail(email) } })
+  return grant ?? undefined
+}
+
 /**
  * The pin on an account, if it has one. Exported for the admin user list.
  *
@@ -146,7 +164,7 @@ export function isAlwaysAgency(email?: string | null): boolean {
  * counter, the warning email, the 429 message and the charge itself in agreement.
  */
 export function monthlyLimitFor(
-  user: { email: string; plan: Plan },
+  user: { email: string; plan: Plan; monthlyLimit?: number | null },
   trialing: boolean
 ): number {
   const pinned = pinnedFor(user.email)
@@ -154,6 +172,10 @@ export function monthlyLimitFor(
   // but if one arrived from Dodo's side it must not silently raise or lower a cap that was
   // set deliberately here.
   if (pinned?.monthlyLimit !== undefined) return pinned.monthlyLimit
+  // Then a grant, as written onto the row by getOrCreateUser. Read from the row rather than
+  // from PinnedGrant so this stays synchronous and so every caller -- the sidebar counter,
+  // the warning email, the 429 message and the charge itself -- reads one number.
+  if (typeof user.monthlyLimit === 'number') return user.monthlyLimit
   return (trialing ? TRIAL_LIMITS[user.plan] : PLAN_LIMITS[user.plan]) ?? PLAN_LIMITS.FREE
 }
 
@@ -225,6 +247,16 @@ async function clerkEmail(clerkId: string): Promise<string | null> {
   }
 }
 
+/**
+ * The subscription fields every path through getOrCreateUser needs, defined once.
+ *
+ * `plan` is here for revocation: when a grant is withdrawn from someone who has since
+ * subscribed, their row must go back to the plan they pay for, and the grant overwrote it.
+ */
+const WITH_SUB = {
+  subscription: { select: { status: true, currentPeriodEnd: true, plan: true } },
+} as const
+
 export async function getOrCreateUser(clerkId: string) {
   // Seats resolve BEFORE the personal lookup, and that ordering is the design.
   //
@@ -239,7 +271,7 @@ export async function getOrCreateUser(clerkId: string) {
   if (seatOwnerId) {
     const owner = await prisma.user.findUnique({
       where: { id: seatOwnerId },
-      include: { subscription: { select: { status: true, currentPeriodEnd: true } } },
+      include: WITH_SUB,
     })
     // A missing owner should not strand the member in a broken session; fall through to
     // their own account rather than throwing.
@@ -248,14 +280,14 @@ export async function getOrCreateUser(clerkId: string) {
 
   let user = await prisma.user.findUnique({
     where: { clerkId },
-    include: { subscription: { select: { status: true, currentPeriodEnd: true } } },
+    include: WITH_SUB,
   })
 
   if (user && user.plan !== Plan.FREE && hasLapsed(user.subscription)) {
     user = await prisma.user.update({
       where: { id: user.id },
       data: { plan: Plan.FREE },
-      include: { subscription: { select: { status: true, currentPeriodEnd: true } } },
+      include: WITH_SUB,
     })
   }
 
@@ -266,9 +298,8 @@ export async function getOrCreateUser(clerkId: string) {
     }).then(r => r.json())
     const email = clerkUser.email_addresses?.[0]?.email_address ?? ''
 
-    const withSub = { subscription: { select: { status: true, currentPeriodEnd: true } } }
     try {
-      user = await prisma.user.create({ data: { clerkId, email, plan: Plan.FREE }, include: withSub })
+      user = await prisma.user.create({ data: { clerkId, email, plan: Plan.FREE }, include: WITH_SUB })
     } catch (e) {
       // A row with this email already exists under a different clerkId — this happens
       // when the same person authenticates through a different Clerk instance (e.g.
@@ -276,22 +307,78 @@ export async function getOrCreateUser(clerkId: string) {
       // Treat it as the same user rather than crashing; never overwrite the existing
       // row's clerkId, or the real account under the original instance would break.
       const isEmailCollision = e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002'
-      user = isEmailCollision ? await prisma.user.findUnique({ where: { email }, include: withSub }) : null
+      user = isEmailCollision ? await prisma.user.findUnique({ where: { email }, include: WITH_SUB }) : null
       if (!user) throw e
     }
   }
 
-  // Applied last, after the lapse downgrade and after account creation, so there is no
-  // path out of this function that returns a pinned account on anything but Agency.
-  // Persisted rather than patched in memory, so admin views and exports agree with it.
-  if (user && isAlwaysAgency(user.email) && user.plan !== Plan.AGENCY) {
-    user = await prisma.user.update({
+  // Applied last, after the lapse downgrade and after account creation, so there is no path
+  // out of this function that returns a granted account on the wrong plan.
+  return user ? applyGrant(user) : user
+}
+
+type UserWithSub = Prisma.UserGetPayload<{ include: typeof WITH_SUB }>
+
+/**
+ * Bring an account's row into line with what it has been granted — including taking a grant
+ * away.
+ *
+ * Persisted rather than patched in memory, so admin views, exports and the quota check all
+ * agree by reading one row. Three cases, in precedence order:
+ *
+ *  1. `PINNED_ACCOUNTS`, the constant. Still the highest authority and deliberately not
+ *     movable into the database: the founder account must not be revocable by a stray click
+ *     or a bad row, and a constant needs no query to be true.
+ *  2. A `PinnedGrant` row — the revocable kind, added and withdrawn from the admin UI.
+ *  3. Neither, on an account marked `grantedAt` — the grant is gone and must be undone.
+ *
+ * Case 3 is the whole reason `grantedAt` exists. A granted plan is written to `User.plan`,
+ * and the only thing that ever takes a plan back is `hasLapsed`, which acts solely on
+ * accounts carrying a CANCELLED or EXPIRED subscription. A grant-only account has no
+ * subscription at all, so deleting the grant would have left the plan standing forever — and
+ * the allowance would have *widened*, not closed, because with no override the limit falls
+ * back to the plan's own. Revoking a 10-credit Agency tester would have handed them 200.
+ */
+async function applyGrant(user: UserWithSub): Promise<UserWithSub> {
+  const pinned = pinnedFor(user.email)
+  const grant = pinned ? undefined : await grantFor(user.email)
+
+  if (pinned || grant) {
+    const plan = pinned ? pinned.plan : grant!.plan
+    const monthlyLimit = (pinned ? pinned.monthlyLimit : grant!.monthlyLimit) ?? null
+    // The constant is not a revocable grant, so it does not set grantedAt: marking the
+    // founder account as granted would arm case 3 against it the moment anything went wrong.
+    const grantedAt = pinned ? user.grantedAt : (user.grantedAt ?? new Date())
+
+    const alreadyCorrect =
+      user.plan === plan &&
+      user.monthlyLimit === monthlyLimit &&
+      user.grantedAt?.getTime() === grantedAt?.getTime()
+    if (alreadyCorrect) return user
+
+    return prisma.user.update({
       where: { id: user.id },
-      data: { plan: Plan.AGENCY },
-      include: { subscription: { select: { status: true, currentPeriodEnd: true } } },
+      data: { plan, monthlyLimit, grantedAt },
+      include: WITH_SUB,
     })
   }
-  return user
+
+  if (!user.grantedAt) return user
+
+  // Revoked. Hand back whatever they actually pay for, which is their subscription's plan
+  // while it still grants access, and FREE otherwise. Never assume FREE outright: a tester
+  // who later subscribed would be downgraded out of a plan they are being charged for.
+  const sub = user.subscription
+  const stillPaid = sub && !hasLapsed(sub)
+  return prisma.user.update({
+    where: { id: user.id },
+    data: {
+      plan: stillPaid ? sub.plan : Plan.FREE,
+      monthlyLimit: null,
+      grantedAt: null,
+    },
+    include: WITH_SUB,
+  })
 }
 
 /**

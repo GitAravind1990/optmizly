@@ -36,6 +36,14 @@ model User {
   totalInputTokens  Int @default(0)
   totalOutputTokens Int @default(0)
 
+  /// The allowance actually enforced, when it is not the plan's own. Written from
+  /// PinnedGrant by getOrCreateUser and read by monthlyLimitFor; null means "use the plan".
+  monthlyLimit Int?
+  /// Set while this account's plan comes from a grant rather than a payment. Revocation
+  /// needs it: nothing else would ever take a granted plan back, since hasLapsed only acts
+  /// on accounts carrying a cancelled or expired subscription.
+  grantedAt    DateTime?
+
   subscription            Subscription?
   usage                   Usage[]
   performanceAudits       PerformanceFixerAudit[]
@@ -54,8 +62,8 @@ model User {
   backlinkAnalyses        BacklinkDomainAnalysis[] @relation("BacklinkDomainAnalyses")
   seoAudits               SeoAudit[]               @relation("SEOAudits")
   drippedEmails           DrippedEmail[]
-  prospectWaitlist        ProspectWaitlist[] @relation("ProspectWaitlist")
-  teamMembers             TeamMember[]       @relation("TeamOwner")
+  prospectWaitlist        ProspectWaitlist[]       @relation("ProspectWaitlist")
+  teamMembers             TeamMember[]             @relation("TeamOwner")
   analysisHistory         AnalysisHistory[]
   searchConsoleConnection SearchConsoleConnection?
   gscQueryRows            GscQueryRow[]            @relation("GscQueryRows")
@@ -268,6 +276,26 @@ model ReportTemplate {
   updatedAt DateTime @updatedAt
 
   @@index([agencyId])
+}
+
+/// An account granted a plan it did not pay for, at an allowance that need not be the
+/// plan's own. The database half of PINNED_ACCOUNTS in src/lib/auth.ts: the constant keeps
+/// the founder account (it cannot be deleted by accident and needs no database to be true)
+/// and still wins; this table holds grants that come and go without a deploy.
+model PinnedGrant {
+  id           String   @id @default(cuid())
+  /// Lowercased before write -- Clerk preserves the case typed at sign-up.
+  email        String   @unique
+  plan         Plan
+  /// Null means the plan's own allowance.
+  monthlyLimit Int?
+  /// Why this person has access. A grant with no reason recorded is one nobody dares revoke.
+  note         String?
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([createdAt])
 }
 
 model Subscription {
@@ -1370,7 +1398,7 @@ model AiVisibilityRun {
   brand   String
   domain  String?
   /// JSON array of alternate spellings counted as the same brand.
-  aliases String @default("[]")
+  aliases String  @default("[]")
 
   /// "search-console" or "keywords" - it changes how much the number means, so the report
   /// can say which it was rather than implying the stronger source.

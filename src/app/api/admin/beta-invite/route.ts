@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminAuth'
-import { pinnedAccountFor, pinnedAccounts } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { grantFor, pinnedAccountFor, pinnedAccounts } from '@/lib/auth'
 import { sendBetaAccessEmail } from '@/lib/email'
 import { PLAN_LIMITS } from '@/lib/plans'
 
@@ -31,16 +32,18 @@ export async function POST(req: NextRequest) {
     // No body is the normal case: mail every capped account.
   }
 
-  const targets = (requested ?? betaEmails()).map(e => e.trim().toLowerCase())
+  const targets = (requested ?? await betaEmails()).map(e => e.trim().toLowerCase())
   if (targets.length === 0) {
     return NextResponse.json({ error: 'No pinned accounts with a credit cap to mail.' }, { status: 400 })
   }
 
   const results = []
   for (const email of targets) {
-    const pin = pinnedAccountFor(email)
+    // A grant counts as access exactly as a constant pin does, so both are mailable. The
+    // check is still "already has access", which is what keeps this from being a relay.
+    const pin = pinnedAccountFor(email) ?? await grantFor(email)
     if (!pin) {
-      results.push({ email, sent: false, reason: 'Not a pinned account — refused.' })
+      results.push({ email, sent: false, reason: 'Not a granted account — refused.' })
       continue
     }
     const credits = pin.monthlyLimit ?? PLAN_LIMITS[pin.plan]
@@ -64,8 +67,13 @@ export async function POST(req: NextRequest) {
  * is the only edit needed and this cannot fall behind it. The founder account is excluded by
  * the same rule that defines the set: it is pinned without a cap.
  */
-function betaEmails(): string[] {
-  return pinnedAccounts()
+async function betaEmails(): Promise<string[]> {
+  const pinned = pinnedAccounts()
     .filter(a => a.monthlyLimit !== undefined)
     .map(a => a.email)
+  // Granted accounts are testers too, and are now the usual way one is added. Capped or
+  // not: unlike the constant -- where the cap is what separates a tester from the founder
+  // account -- every grant is deliberately created, so there is no set to exclude.
+  const granted = await prisma.pinnedGrant.findMany({ select: { email: true } })
+  return Array.from(new Set([...pinned, ...granted.map(g => g.email)]))
 }

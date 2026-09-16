@@ -31,6 +31,8 @@ export async function GET(req: NextRequest) {
           clerkId: true,
           email: true,
           plan: true,
+          monthlyLimit: true,
+          grantedAt: true,
           createdAt: true,
           totalInputTokens: true,
           totalOutputTokens: true,
@@ -95,13 +97,20 @@ export async function GET(req: NextRequest) {
         creditsUsed: usedByUser.get(u.id) ?? 0,
         creditsLimit: monthlyLimitFor(u, u.subscription?.status === 'TRIALING'),
         // Why this account holds this plan, where that is not billing. `planPinned` means
-        // the plan is granted by PINNED_ACCOUNTS regardless of the subscription table;
-        // `limitOverridden` means the allowance is not the one the plan sells. They are
-        // independent: the founder account is pinned and not overridden.
-        planPinned: !!pinnedAccountFor(u.email),
+        // the plan was granted rather than bought -- by PINNED_ACCOUNTS or by a PinnedGrant
+        // row -- and `limitOverridden` means the allowance is not the one the plan sells.
+        // They stay independent: the founder account is pinned and not overridden.
+        //
+        // Both now read the row (`grantedAt`, and the enforced limit) rather than the
+        // constant alone, so a revocable grant shows here exactly like a permanent pin.
+        // Deriving limitOverridden by comparing the enforced number against the plan's own
+        // also means it cannot disagree with the credits column printed beside it.
+        planPinned: !!pinnedAccountFor(u.email) || !!u.grantedAt,
         limitOverridden:
-          pinnedAccountFor(u.email)?.monthlyLimit !== undefined &&
-          pinnedAccountFor(u.email)?.monthlyLimit !== PLAN_LIMITS[u.plan],
+          monthlyLimitFor(u, u.subscription?.status === 'TRIALING') !== PLAN_LIMITS[u.plan],
+        // Which of the two granted it, so the UI can offer Revoke on the revocable kind
+        // and not on the founder account.
+        grantSource: pinnedAccountFor(u.email) ? 'constant' : u.grantedAt ? 'grant' : null,
       })),
       pagination: {
         total,

@@ -56,6 +56,7 @@ export default function AdminDashboard() {
     { id: 'overview', label: 'Overview' },
     { id: 'analytics', label: 'Content Optimizer' },
     { id: 'users', label: 'Users' },
+    { id: 'grants', label: 'Granted Access' },
     { id: 'health', label: 'System Health' },
   ];
 
@@ -110,6 +111,7 @@ export default function AdminDashboard() {
         {activeTab === 'overview' && <OverviewTab stats={stats} />}
         {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'users' && <UsersTab />}
+        {activeTab === 'grants' && <GrantsTab />}
         {activeTab === 'health' && <HealthTab />}
       </div>
     </div>
@@ -646,6 +648,259 @@ function ScheduledJobsPanel({ crons }: { crons: CronRow[] }) {
         A job with nothing to do and a job that stopped firing both send no email. Age is the
         only thing that separates them.
       </p>
+    </div>
+  );
+}
+
+/**
+ * Granted access: who holds a plan they did not pay for, and the controls to change that.
+ *
+ * Two lists on purpose, because they are not the same kind of thing. Grants are rows and are
+ * revocable from here; constant pins live in PINNED_ACCOUNTS and are shown read-only, since
+ * the whole point of keeping the founder account in code is that a click cannot remove it.
+ * Hiding them would instead leave an admin unable to explain why adding a grant for that
+ * address is refused.
+ */
+function GrantsTab() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null);
+
+  const [email, setEmail] = useState('');
+  const [plan, setPlan] = useState<string>('AGENCY');
+  const [monthlyLimit, setMonthlyLimit] = useState('10');
+  const [note, setNote] = useState('');
+
+  async function load() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/pinned-grants');
+      setData(await res.json());
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => { load(); }, []);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/admin/pinned-grants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Blank is sent as null rather than dropped: the endpoint distinguishes "no cap,
+        // use the plan's own allowance" from "field missing".
+        body: JSON.stringify({ email, plan, monthlyLimit: monthlyLimit === '' ? null : monthlyLimit, note }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setMsg({ ok: false, text: body.error ?? 'Failed to save grant.' });
+      } else {
+        setMsg({ ok: true, text: `${body.grant.email}: ${body.grant.plan} at ${body.grant.effectiveLimit} credits. ${body.note}` });
+        setEmail('');
+        setNote('');
+        await load();
+      }
+    } catch (err) {
+      setMsg({ ok: false, text: err instanceof Error ? err.message : 'Request failed' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revoke(addr: string) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/admin/pinned-grants?email=${encodeURIComponent(addr)}`, { method: 'DELETE' });
+      const body = await res.json();
+      setMsg(res.ok
+        ? { ok: true, text: `Revoked ${body.revoked}. ${body.note}` }
+        : { ok: false, text: body.error ?? 'Failed to revoke.' });
+      if (res.ok) await load();
+    } catch (err) {
+      setMsg({ ok: false, text: err instanceof Error ? err.message : 'Request failed' });
+    } finally {
+      setBusy(false);
+      setConfirming(null);
+    }
+  }
+
+  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (!data) return <div className="p-8 text-center text-red-600">Failed to load</div>;
+
+  return (
+    <div className="space-y-6">
+      <form onSubmit={save} className="bg-white border rounded-lg p-4 space-y-3">
+        <h3 className="font-bold">Grant access</h3>
+        <p className="text-sm text-gray-600">
+          Gives an address a plan without a payment. No account needed first &mdash; it applies on
+          their next request, or on first sign-in. Leave credits blank for the plan&apos;s own
+          allowance.
+        </p>
+        <div className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label className="block text-xs font-semibold mb-1">Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="tester@example.com"
+              className="p-2 border rounded text-sm w-64"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">Plan</label>
+            <select value={plan} onChange={e => setPlan(e.target.value)} className="p-2 border rounded text-sm">
+              {ALL_PLANS.map(pl => <option key={pl} value={pl}>{pl}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">Credits/month</label>
+            <input
+              type="number"
+              min={1}
+              value={monthlyLimit}
+              onChange={e => setMonthlyLimit(e.target.value)}
+              placeholder="plan default"
+              className="p-2 border rounded text-sm w-32"
+            />
+          </div>
+          <div className="flex-1 min-w-[12rem]">
+            <label className="block text-xs font-semibold mb-1">Why (shown in this list)</label>
+            <input
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="beta tester, Sept cohort"
+              className="p-2 border rounded text-sm w-full"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={busy}
+            className="px-4 py-2 rounded text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {busy ? 'Saving...' : 'Grant'}
+          </button>
+        </div>
+      </form>
+
+      {msg && (
+        <div className={`border rounded-lg p-3 text-sm ${msg.ok ? 'bg-green-50 border-green-200 text-green-900' : 'bg-red-50 border-red-200 text-red-900'}`}>
+          {msg.text}
+        </div>
+      )}
+
+      <div className="bg-white border rounded-lg overflow-hidden">
+        <h3 className="font-bold p-4 pb-2">Grants ({data.grants.length})</h3>
+        {data.grants.length === 0 ? (
+          <p className="px-4 pb-4 text-sm text-gray-500">No granted accounts.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-left">
+              <tr>
+                <th className="p-3">Email</th>
+                <th className="p-3">Plan</th>
+                <th className="p-3">Credits</th>
+                <th className="p-3">Why</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Granted</th>
+                <th className="p-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.grants.map((g: any) => (
+                <tr key={g.email} className="border-t">
+                  <td className="p-3 font-medium">{g.email}</td>
+                  <td className="p-3">{g.plan}</td>
+                  <td className="p-3">
+                    {g.effectiveLimit}
+                    {g.monthlyLimit === null && <span className="text-gray-400"> (plan default)</span>}
+                  </td>
+                  <td className="p-3 text-gray-600">{g.note ?? <span className="text-gray-400">&mdash;</span>}</td>
+                  <td className="p-3">
+                    {/* Not cosmetic: a grant does nothing until the account exists, so a
+                        tester who has not signed in yet is indistinguishable from one the
+                        grant silently failed for unless this says which. */}
+                    {g.applied
+                      ? <span className="text-green-700">Active</span>
+                      : <span className="text-amber-700" title="Applies on their next request or first sign-in">Awaiting sign-in</span>}
+                  </td>
+                  <td className="p-3 text-gray-500">
+                    {new Date(g.createdAt).toISOString().slice(0, 10)}
+                    <div className="text-xs text-gray-400">{g.createdBy}</div>
+                  </td>
+                  <td className="p-3 text-right">
+                    {/* Arms before it fires, like the invite button. Revoking takes away paid
+                        access, and an inline two-step can name the address, where a native
+                        confirm dialog would also freeze every later browser event. */}
+                    {confirming === g.email ? (
+                      <span className="flex items-center gap-2 justify-end">
+                        <span className="text-amber-800 text-xs">Revoke {g.email}?</span>
+                        <button
+                          onClick={() => revoke(g.email)}
+                          disabled={busy}
+                          className="px-2 py-1 rounded text-xs font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                        >
+                          Revoke
+                        </button>
+                        <button
+                          onClick={() => setConfirming(null)}
+                          className="px-2 py-1 rounded text-xs font-semibold border border-gray-300"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => { setConfirming(g.email); setMsg(null); }}
+                        className="px-2 py-1 rounded text-xs font-semibold border border-gray-300 hover:bg-gray-50"
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="bg-white border rounded-lg overflow-hidden">
+        <h3 className="font-bold p-4 pb-1">Pinned in code ({data.constants.length})</h3>
+        <p className="px-4 pb-3 text-sm text-gray-600">
+          From PINNED_ACCOUNTS in <code>src/lib/auth.ts</code>. These outrank grants and cannot be
+          changed from here &mdash; deliberately, so the founder account cannot be revoked by a
+          click or a bad row. Edit the constant and deploy to change one.
+        </p>
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-left">
+            <tr>
+              <th className="p-3">Email</th>
+              <th className="p-3">Plan</th>
+              <th className="p-3">Credits</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.constants.map((c: any) => (
+              <tr key={c.email} className="border-t">
+                <td className="p-3 font-medium">{c.email}</td>
+                <td className="p-3">{c.plan}</td>
+                <td className="p-3">
+                  {c.effectiveLimit}
+                  {c.monthlyLimit === null && <span className="text-gray-400"> (plan default)</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
