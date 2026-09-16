@@ -1,98 +1,98 @@
-import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { sendWeeklySummaryEmail } from '@/lib/email'
-import { getClerkFirstName, monthlyLimitFor } from '@/lib/auth'
-import { PLAN_LIMITS, TRIAL_LIMITS } from '@/lib/plans'
-import { claimDripEmail } from '@/lib/drip-claim'
-import { cronAuthFailure, recordCronRun } from '@/lib/cron'
-
-export const runtime = 'nodejs'
-export const maxDuration = 60
-
-/**
- * Left on local-time accessors on purpose, unlike the rank-history day keys which moved to
- * setUTCHours. This runs only from the cron, on Vercel, where the process timezone is UTC and
- * local and UTC are therefore the same instant — so there is nothing to fix in production.
- *
- * If you do convert it, convert all three together — setUTCHours, getUTCDay, setUTCDate.
- * Mixing local and UTC accessors here is worse than either, and the value is the dedupe key
- * for the weekly email: get it wrong and someone is mailed twice or skipped, which is exactly
- * the failure this key exists to prevent.
- */
-function getMondayKey(date: Date): string {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)) // rewind to Monday
-  return `weekly_${d.toISOString().split('T')[0]}`
-}
-
-export async function GET(req: NextRequest) {
-  const denied = cronAuthFailure(req)
-  if (denied) return denied
-
-  const started = Date.now()
-  const now = new Date()
-  const weekKey = getMondayKey(now)
-  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const results = { sent: 0, skipped: 0, errors: 0 }
-
-  // Target: users signed up 7+ days ago who haven't received this week's email
-  const users = await prisma.user.findMany({
-    where: {
-      createdAt: { lte: weekAgo },
-      drippedEmails: { none: { emailType: weekKey } },
-    },
-    select: { id: true, clerkId: true, email: true, plan: true },
-  })
-
-  for (const user of users) {
-    try {
-      if (!(await claimDripEmail(user.id, weekKey))) continue
-      const [usageRecord, weekActivity, sub] = await Promise.all([
-        prisma.usage.findUnique({ where: { userId_month: { userId: user.id, month: monthKey } } }),
-        prisma.contentOptimization.findMany({
-          where: { userId: user.id, createdAt: { gte: sevenDaysAgo } },
-          select: { overallScore: true },
-        }),
-        prisma.subscription.findUnique({ where: { userId: user.id }, select: { status: true } }),
-      ])
-
-      const limit = monthlyLimitFor(user, sub?.status === 'TRIALING')
-
-      const monthUsed = usageRecord?.count ?? 0
-      const weekAnalyses = weekActivity.length
-      const bestScore = weekAnalyses > 0
-        ? Math.max(...weekActivity.map(a => a.overallScore))
-        : undefined
-
-      const firstName = await getClerkFirstName(user.clerkId)
-
-      await sendWeeklySummaryEmail(user.email, {
-        firstName,
-        monthUsed,
-        monthLimit: limit,
-        plan: user.plan,
-        weekAnalyses,
-        bestScore,
-      })
-
-      results.sent++
-    } catch {
-      results.errors++
-    }
-  }
-
-  console.log('[Cron/weekly]', { weekKey, ...results })
-
-  // weekKey is recorded too: it is the dedup key the whole job turns on, so a week that
-  // was skipped or computed wrong is visible in the history rather than inferred from a
-  // timestamp.
-  await recordCronRun('weekly', results.errors === 0, Date.now() - started, {
-    weekKey,
-    ...results,
-  })
-
-  return Response.json({ ok: true, weekKey, ...results })
-}
+import { NextRequest } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { sendWeeklySummaryEmail } from '@/lib/email'
+import { getClerkFirstName, monthlyLimitFor } from '@/lib/auth'
+import { PLAN_LIMITS, TRIAL_LIMITS } from '@/lib/plans'
+import { claimDripEmail } from '@/lib/drip-claim'
+import { cronAuthFailure, recordCronRun } from '@/lib/cron'
+
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
+/**
+ * Left on local-time accessors on purpose, unlike the rank-history day keys which moved to
+ * setUTCHours. This runs only from the cron, on Vercel, where the process timezone is UTC and
+ * local and UTC are therefore the same instant — so there is nothing to fix in production.
+ *
+ * If you do convert it, convert all three together — setUTCHours, getUTCDay, setUTCDate.
+ * Mixing local and UTC accessors here is worse than either, and the value is the dedupe key
+ * for the weekly email: get it wrong and someone is mailed twice or skipped, which is exactly
+ * the failure this key exists to prevent.
+ */
+function getMondayKey(date: Date): string {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)) // rewind to Monday
+  return `weekly_${d.toISOString().split('T')[0]}`
+}
+
+export async function GET(req: NextRequest) {
+  const denied = cronAuthFailure(req)
+  if (denied) return denied
+
+  const started = Date.now()
+  const now = new Date()
+  const weekKey = getMondayKey(now)
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const results = { sent: 0, skipped: 0, errors: 0 }
+
+  // Target: users signed up 7+ days ago who haven't received this week's email
+  const users = await prisma.user.findMany({
+    where: {
+      createdAt: { lte: weekAgo },
+      drippedEmails: { none: { emailType: weekKey } },
+    },
+    select: { id: true, clerkId: true, email: true, plan: true },
+  })
+
+  for (const user of users) {
+    try {
+      if (!(await claimDripEmail(user.id, weekKey))) continue
+      const [usageRecord, weekActivity, sub] = await Promise.all([
+        prisma.usage.findUnique({ where: { userId_month: { userId: user.id, month: monthKey } } }),
+        prisma.contentOptimization.findMany({
+          where: { userId: user.id, createdAt: { gte: sevenDaysAgo } },
+          select: { overallScore: true },
+        }),
+        prisma.subscription.findUnique({ where: { userId: user.id }, select: { status: true } }),
+      ])
+
+      const limit = monthlyLimitFor(user, sub?.status === 'TRIALING')
+
+      const monthUsed = usageRecord?.count ?? 0
+      const weekAnalyses = weekActivity.length
+      const bestScore = weekAnalyses > 0
+        ? Math.max(...weekActivity.map(a => a.overallScore))
+        : undefined
+
+      const firstName = await getClerkFirstName(user.clerkId)
+
+      await sendWeeklySummaryEmail(user.email, {
+        firstName,
+        monthUsed,
+        monthLimit: limit,
+        plan: user.plan,
+        weekAnalyses,
+        bestScore,
+      })
+
+      results.sent++
+    } catch {
+      results.errors++
+    }
+  }
+
+  console.log('[Cron/weekly]', { weekKey, ...results })
+
+  // weekKey is recorded too: it is the dedup key the whole job turns on, so a week that
+  // was skipped or computed wrong is visible in the history rather than inferred from a
+  // timestamp.
+  await recordCronRun('weekly', results.errors === 0, Date.now() - started, {
+    weekKey,
+    ...results,
+  })
+
+  return Response.json({ ok: true, weekKey, ...results })
+}
