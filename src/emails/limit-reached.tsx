@@ -93,7 +93,7 @@ export function LimitReachedEmail({
                   href={pricingUrl}
                   className="bg-blue-600 text-white font-bold text-sm px-8 py-3 rounded-xl no-underline block text-center"
                 >
-                  Upgrade Now â†’
+                  Upgrade Now →
                 </Button>
               )}
 
@@ -103,7 +103,7 @@ export function LimitReachedEmail({
             </Section>
 
             <Section className="text-center">
-              <Text className="text-xs text-slate-400 m-0">Optmizly Â· AI-powered content optimization</Text>
+              <Text className="text-xs text-slate-400 m-0">Optmizly · AI-powered content optimization</Text>
             </Section>
 
           </Container>
