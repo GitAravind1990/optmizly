@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
   const targets = (requested ?? await betaEmails()).map(e => e.trim().toLowerCase())
   if (targets.length === 0) {
-    return NextResponse.json({ error: 'No pinned accounts with a credit cap to mail.' }, { status: 400 })
+    return NextResponse.json({ error: 'Everyone with access has already been invited. Use the per-row re-send to mail someone again.' }, { status: 400 })
   }
 
   const results = []
@@ -50,6 +50,12 @@ export async function POST(req: NextRequest) {
     // Sequential rather than Promise.all: two or three recipients, and a per-address
     // result is more useful than a fast one when the whole point is knowing what landed.
     const outcome = await sendBetaAccessEmail(email, credits)
+    // Stamped only on success, and only on a grant -- a constant pin has no row to stamp.
+    // A failed send must leave the row saying "never invited", or the next default run
+    // would skip the person it just failed to reach.
+    if (outcome.sent) {
+      await prisma.pinnedGrant.updateMany({ where: { email }, data: { inviteSentAt: new Date() } })
+    }
     results.push({ email, credits, ...outcome })
   }
 
@@ -71,9 +77,17 @@ async function betaEmails(): Promise<string[]> {
   const pinned = pinnedAccounts()
     .filter(a => a.monthlyLimit !== undefined)
     .map(a => a.email)
-  // Granted accounts are testers too, and are now the usual way one is added. Capped or
-  // not: unlike the constant -- where the cap is what separates a tester from the founder
-  // account -- every grant is deliberately created, so there is no set to exclude.
-  const granted = await prisma.pinnedGrant.findMany({ select: { email: true } })
+  // Grants that have never been invited. Every grant is deliberately created, so unlike the
+  // constant -- where the cap is what separates a tester from the founder account -- there
+  // is no set to exclude except the people already mailed.
+  //
+  // Skipping the already-invited is what makes the button safe to press twice. Before
+  // inviteSentAt existed it had no way to know, so a second press re-mailed everyone, and
+  // adding one tester meant spamming the rest to reach them. To deliberately send again,
+  // POST { emails: [...] }, which is what the per-row re-send does.
+  const granted = await prisma.pinnedGrant.findMany({
+    where: { inviteSentAt: null },
+    select: { email: true },
+  })
   return Array.from(new Set([...pinned, ...granted.map(g => g.email)]))
 }

@@ -283,17 +283,20 @@ model ReportTemplate {
 /// the founder account (it cannot be deleted by accident and needs no database to be true)
 /// and still wins; this table holds grants that come and go without a deploy.
 model PinnedGrant {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   /// Lowercased before write -- Clerk preserves the case typed at sign-up.
-  email        String   @unique
+  email        String    @unique
   plan         Plan
   /// Null means the plan's own allowance.
   monthlyLimit Int?
   /// Why this person has access. A grant with no reason recorded is one nobody dares revoke.
   note         String?
   createdBy    String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  /// When the beta-access email was last sent for this grant. Null means never invited.
+  /// Without it a send leaves no trace and the button can only mail everyone again.
+  inviteSentAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([createdAt])
 }

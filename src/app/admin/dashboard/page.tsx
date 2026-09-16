@@ -784,6 +784,30 @@ function GrantsTab() {
     }
   }
 
+  async function sendInvite(addr: string) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      // The explicit-address form, which sends regardless of inviteSentAt. The no-body form
+      // deliberately skips anyone already invited, so re-sending needs this one.
+      const res = await fetch('/api/admin/beta-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emails: [addr] }),
+      });
+      const body = await res.json();
+      const r = body.results?.[0];
+      setMsg(r?.sent
+        ? { ok: true, text: `Invite sent to ${r.email} (${r.credits} credits).` }
+        : { ok: false, text: `Not sent to ${addr}: ${r?.reason ?? body.error ?? 'unknown error'}` });
+      if (r?.sent) await load();
+    } catch (err) {
+      setMsg({ ok: false, text: err instanceof Error ? err.message : 'Request failed' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function revoke(addr: string) {
     setBusy(true);
     setMsg(null);
@@ -881,6 +905,7 @@ function GrantsTab() {
                 <th className="p-3">Credits</th>
                 <th className="p-3">Why</th>
                 <th className="p-3">Status</th>
+                <th className="p-3">Invited</th>
                 <th className="p-3">Granted</th>
                 <th className="p-3"></th>
               </tr>
@@ -902,6 +927,30 @@ function GrantsTab() {
                     {g.applied
                       ? <span className="text-green-700">Active</span>
                       : <span className="text-amber-700" title="Applies on their next request or first sign-in">Awaiting sign-in</span>}
+                  </td>
+                  <td className="p-3">
+                    {/* The send used to leave no trace at all, so "were these people
+                        invited?" had no answer once the tab was closed. */}
+                    {g.inviteSentAt ? (
+                      <span className="text-gray-600">
+                        {new Date(g.inviteSentAt).toISOString().slice(0, 10)}
+                        <button
+                          onClick={() => sendInvite(g.email)}
+                          disabled={busy}
+                          className="ml-2 text-[11px] text-blue-600 hover:underline disabled:opacity-50"
+                        >
+                          re-send
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => sendInvite(g.email)}
+                        disabled={busy}
+                        className="px-2 py-1 rounded text-[11px] font-semibold border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Send invite
+                      </button>
+                    )}
                   </td>
                   <td className="p-3 text-gray-500">
                     {new Date(g.createdAt).toISOString().slice(0, 10)}
