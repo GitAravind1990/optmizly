@@ -89,8 +89,8 @@ npm install --legacy-peer-deps
 cp .env.example .env.local
 ```
 
-> `.env.example` is currently out of date — it still lists Lemon Squeezy variables from a
-> previous payment provider. Use the list below as the authoritative set.
+`.env.example` lists every variable the code reads, grouped by what breaks without each one,
+and is kept in step with `src` — the summary below is the short version of it.
 
 **Required to boot**
 
