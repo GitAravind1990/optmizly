@@ -32,17 +32,17 @@ Current Issue Fixer (Recurrent Miscarriage example):
 
 New Content Optimizer:
 
-\- âœ… Issue-type-specific surgical fixes
+\- ✅ Issue-type-specific surgical fixes
 
-\- âœ… Issues are ACTUALLY resolved
+\- ✅ Issues are ACTUALLY resolved
 
-\- âœ… Works for ANY business (restaurants, SaaS, fashion, medical, coaching, e-commerce, etc.)
+\- ✅ Works for ANY business (restaurants, SaaS, fashion, medical, coaching, e-commerce, etc.)
 
-\- âœ… Works for ANY content type (blogs, product pages, landing pages, articles, etc.)
+\- ✅ Works for ANY content type (blogs, product pages, landing pages, articles, etc.)
 
-\- âœ… Preserves â‰¥95% of original content
+\- ✅ Preserves ≥95% of original content
 
-\- âœ… Can grow content for better quality
+\- ✅ Can grow content for better quality
 
 
 
@@ -62,13 +62,13 @@ New Content Optimizer:
 
 |------|-----------|--------------|----------|
 
-| \*\*Entities\*\* | Terms used without explanation | Add contextual definition on first mention | Restaurant: "sous vide" â†’ "sous vide (slow cooking in sealed bags)" \\| SaaS: "API" â†’ "API (Application Programming Interface)" |
+| \*\*Entities\*\* | Terms used without explanation | Add contextual definition on first mention | Restaurant: "sous vide" → "sous vide (slow cooking in sealed bags)" \\| SaaS: "API" → "API (Application Programming Interface)" |
 
-| \*\*Citations\*\* | Claims unsourced/unattributed | Add source attribution, statistics, expert reference | Restaurant: "70% customers prefer..." â†’ "70% customers prefer... (2024 survey)" \\| SaaS: "Best practice is..." â†’ "Best practice is... (per industry report)" |
+| \*\*Citations\*\* | Claims unsourced/unattributed | Add source attribution, statistics, expert reference | Restaurant: "70% customers prefer..." → "70% customers prefer... (2024 survey)" \\| SaaS: "Best practice is..." → "Best practice is... (per industry report)" |
 
 | \*\*E-E-A-T\*\* | Author/expertise not shown | Inject author credentials section, expertise signals | Restaurant: Add chef bio \\| SaaS: Add founder credentials \\| Medical: Add doctor credentials |
 
-| \*\*Semantic Richness\*\* | Shallow/vague explanations | Expand terms with context, examples, benefits | Restaurant: "Fresh pasta" â†’ "Fresh pasta, handmade daily using traditional techniques..." \\| SaaS: "Fast platform" â†’ "Fast platform with 99.9% uptime..." |
+| \*\*Semantic Richness\*\* | Shallow/vague explanations | Expand terms with context, examples, benefits | Restaurant: "Fresh pasta" → "Fresh pasta, handmade daily using traditional techniques..." \\| SaaS: "Fast platform" → "Fast platform with 99.9% uptime..." |
 
 | \*\*Technical SEO\*\* | Missing meta/schema/structure | Suggest meta descriptions, schema markup, H1-H3 hierarchy | All: Suggest title tag, meta description, JSON-LD schema |
 
@@ -80,13 +80,13 @@ New Content Optimizer:
 
 Each fixer:
 
-1\. \*\*Analyzes content context\*\* â€” Detects industry/business type from content
+1\. \*\*Analyzes content context\*\* — Detects industry/business type from content
 
-2\. \*\*Calls Claude with context\*\* â€” Generates industry-appropriate fixes
+2\. \*\*Calls Claude with context\*\* — Generates industry-appropriate fixes
 
-3\. \*\*Applies surgical fixes\*\* â€” Only modifies problematic sections, preserves â‰¥95% original
+3\. \*\*Applies surgical fixes\*\* — Only modifies problematic sections, preserves ≥95% original
 
-4\. \*\*Returns metadata\*\* â€” Lists what was fixed and why
+4\. \*\*Returns metadata\*\* — Lists what was fixed and why
 
 
 
@@ -139,17 +139,17 @@ Fix: "Treatment involves surgery. Success rate is high (85-90% per ASRM 2024 gui
 
 /src/lib/fixers/
 
-â”œâ”€â”€ entities.ts       (Claude: context-aware entity definitions)
+├── entities.ts       (Claude: context-aware entity definitions)
 
-â”œâ”€â”€ citations.ts      (Claude: contextual source attribution)
+├── citations.ts      (Claude: contextual source attribution)
 
-â”œâ”€â”€ eeat.ts          (Claude: credibility/expertise injection)
+├── eeat.ts          (Claude: credibility/expertise injection)
 
-â”œâ”€â”€ semantic.ts      (Claude: context expansion)
+├── semantic.ts      (Claude: context expansion)
 
-â”œâ”€â”€ technical.ts     (Claude: SEO meta/schema suggestions)
+├── technical.ts     (Claude: SEO meta/schema suggestions)
 
-â””â”€â”€ index.ts         (export all fixers)
+└── index.ts         (export all fixers)
 
 
 
@@ -167,7 +167,7 @@ Each fixer receives:
 
 Each fixer returns:
 
-\- `fixed\_content`: Improved text (â‰¥95% original)
+\- `fixed\_content`: Improved text (≥95% original)
 
 \- `applied\_fixes`: List of fixes applied
 
@@ -209,13 +209,13 @@ Create `/src/app/dashboard/optimizer/page.tsx`:
 
 
 
-Rewrite `/src/app/api/fixer/route.ts` â†’ `/src/app/api/optimizer/route.ts`:
+Rewrite `/src/app/api/fixer/route.ts` → `/src/app/api/optimizer/route.ts`:
 
 \- Receives: content + issues + selected fix types
 
 \- Loads fixers from `/src/lib/fixers/`
 
-\- Applies fixers in optimal order: entities â†’ citations â†’ eeat â†’ semantic â†’ technical
+\- Applies fixers in optimal order: entities → citations → eeat → semantic → technical
 
 \- Returns: fully optimized content + applied fixes metadata
 
@@ -229,7 +229,7 @@ Rewrite `/src/app/api/fixer/route.ts` â†’ `/src/app/api/optimizer/route.ts`
 
 \- Add to PRO tier tools
 
-\- Add icon: âš¡
+\- Add icon: ⚡
 
 
 
@@ -239,17 +239,17 @@ Rewrite `/src/app/api/fixer/route.ts` â†’ `/src/app/api/optimizer/route.ts`
 
 Test content from:
 
-\- âœ… Restaurant (dining/hospitality)
+\- ✅ Restaurant (dining/hospitality)
 
-\- âœ… SaaS (software/tech)
+\- ✅ SaaS (software/tech)
 
-\- âœ… Medical (healthcare)
+\- ✅ Medical (healthcare)
 
-\- âœ… Fashion (e-commerce/lifestyle)
+\- ✅ Fashion (e-commerce/lifestyle)
 
-\- âœ… Coaching (services)
+\- ✅ Coaching (services)
 
-\- âœ… Real estate (properties)
+\- ✅ Real estate (properties)
 
 
 
@@ -265,7 +265,7 @@ Test content from:
 
 |---------|--------|---------|--------|---------------|-------------------|
 
-| Detects issues | âœ… | âœ… | âœ… | âœ… | âœ… |
+| Detects issues | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 | \*\*Fixes issues\*\* | âŒ | âŒ | âŒ | âŒ | \*\*âœ…\*\* |
 
@@ -273,7 +273,7 @@ Test content from:
 
 | \*\*Surgical (â‰¥95% preserve)\*\* | âŒ | âŒ | âŒ | âŒ | \*\*âœ…\*\* |
 
-| Universal (any industry) | âœ… | âœ… | âœ… | âœ… | âœ… |
+| Universal (any industry) | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 | E-E-A-T aware | âš ï¸ | âš ï¸ | âœ… | âŒ | \*\*âœ…\*\* |
 
@@ -325,7 +325,7 @@ Test content from:
 
 
 
-1\. âœ… Create Content Optimizer plan (THIS FILE)
+1\. ✅ Create Content Optimizer plan (THIS FILE)
 
 2\. â³ \*\*PHASE 1:\*\* Build 5 universal fixers
 
@@ -349,7 +349,7 @@ Test content from:
 
 
 
-\*\*1. Universal â‰  Generic\*\*
+\*\*1. Universal ≠ Generic\*\*
 
 \- Each fixer uses Claude to understand business context
 
@@ -363,7 +363,7 @@ Test content from:
 
 \- Only modify problematic sections
 
-\- Maintain â‰¥95% original word count
+\- Maintain ≥95% original word count
 
 
 
@@ -393,14 +393,14 @@ Test content from:
 
 
 
-\- âœ… Issues are resolved (not just flagged)
+\- ✅ Issues are resolved (not just flagged)
 
-\- âœ… Content maintains â‰¥95% original word count
+\- ✅ Content maintains ≥95% original word count
 
-\- âœ… Works across 10+ industries without modification
+\- ✅ Works across 10+ industries without modification
 
-\- âœ… Users see immediate improvement in content scores
+\- ✅ Users see immediate improvement in content scores
 
-\- âœ… Differentiate Optmizly from competitors
+\- ✅ Differentiate Optmizly from competitors
 
 

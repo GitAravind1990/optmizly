@@ -1,12 +1,12 @@
-﻿# AI-Powered Performance Fixer â€” Complete Architecture (Agency-Exclusive)
+﻿# AI-Powered Performance Fixer — Complete Architecture (Agency-Exclusive)
 
 ## Overview
 A UNIQUE Core Web Vitals tool exclusively for AGENCY plan users ($49/month).
 
 **Combines 3 unique features:**
-- ðŸ¤– **AI-Generated Code Fixes** (Claude generates exact code to copy-paste)
-- ðŸ’° **ROI Calculator** (revenue impact analysis)
-- ðŸ“Š **Industry Benchmarks** (compare against peers)
+- 🤖 **AI-Generated Code Fixes** (Claude generates exact code to copy-paste)
+- 💰 **ROI Calculator** (revenue impact analysis)
+- 📊 **Industry Benchmarks** (compare against peers)
 
 **Access Tier:** AGENCY ONLY
 
@@ -16,8 +16,8 @@ A UNIQUE Core Web Vitals tool exclusively for AGENCY plan users ($49/month).
 
 | Feature | Google PageSpeed | GTmetrix | **Optmizly Agency** |
 |---------|------------------|----------|--------------------------|
-| Performance Score | âœ… | âœ… | âœ… |
-| Generic Tips | âœ… | âœ… | âœ… |
+| Performance Score | ✅ | ✅ | ✅ |
+| Generic Tips | ✅ | ✅ | ✅ |
 | **AI Code Generation** | âŒ | âŒ | âœ… |
 | **ROI Calculator** | âŒ | âŒ | âœ… |
 | **Industry Benchmarks** | âŒ | âŒ | âœ… |
@@ -385,20 +385,20 @@ export default function PerformanceFixerPage() {
     return (
       <div className="max-w-3xl mx-auto p-6">
         <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-12 rounded-lg text-center">
-          <div className="text-6xl mb-4">ðŸ”’</div>
+          <div className="text-6xl mb-4">🔒</div>
           <h1 className="text-3xl font-black mb-4">Agency-Exclusive Tool</h1>
           <p className="text-lg text-gray-700 mb-6">
-            âš¡ AI Performance Fixer is part of our Agency plan
+            ⚡ AI Performance Fixer is part of our Agency plan
           </p>
           
           <div className="bg-white p-6 rounded-lg shadow-sm mb-6 text-left">
             <h2 className="font-bold text-xl mb-4">What You Get:</h2>
             <ul className="space-y-2">
-              <li>âœ… AI-Generated Code Fixes (Claude AI)</li>
-              <li>âœ… ROI Calculator (revenue impact)</li>
-              <li>âœ… Industry Benchmarks</li>
-              <li>âœ… Up to 50 audits/month</li>
-              <li>âœ… White-label reports</li>
+              <li>✅ AI-Generated Code Fixes (Claude AI)</li>
+              <li>✅ ROI Calculator (revenue impact)</li>
+              <li>✅ Industry Benchmarks</li>
+              <li>✅ Up to 50 audits/month</li>
+              <li>✅ White-label reports</li>
             </ul>
           </div>
 
@@ -426,7 +426,7 @@ export default function PerformanceFixerPage() {
     <div className="space-y-8 p-6 max-w-6xl mx-auto">
       <div>
         <h1 className="text-3xl font-black flex items-center gap-3">
-          âš¡ AI Performance Fixer
+          ⚡ AI Performance Fixer
           <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded">AGENCY</span>
         </h1>
         <p className="text-gray-600 mt-2">
@@ -494,7 +494,7 @@ function ResultsDisplay({ result }: any) {
       </div>
 
       <div className="bg-gradient-to-r from-green-50 to-blue-50 border rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">ðŸ’° ROI Calculator</h2>
+        <h2 className="text-xl font-bold mb-4">💰 ROI Calculator</h2>
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <div className="text-2xl font-bold text-red-600">${result.roi.currentRevenueLoss}</div>
@@ -512,7 +512,7 @@ function ResultsDisplay({ result }: any) {
       </div>
 
       <div className="bg-white border rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">ðŸ¤– AI-Generated Code Fixes ({result.fixes.length})</h2>
+        <h2 className="text-xl font-bold mb-4">🤖 AI-Generated Code Fixes ({result.fixes.length})</h2>
         <div className="space-y-4">
           {result.fixes.map((fix: any, idx: number) => (
             <div key={idx} className="border rounded-lg p-4">
@@ -527,7 +527,7 @@ function ResultsDisplay({ result }: any) {
                   <pre className="text-xs bg-gray-100 p-3 rounded overflow-x-auto">{fix.beforeCode}</pre>
                 </div>
                 <div>
-                  <div className="text-xs text-green-600 mb-1 font-semibold">âœ… After:</div>
+                  <div className="text-xs text-green-600 mb-1 font-semibold">✅ After:</div>
                   <pre className="text-xs bg-gray-100 p-3 rounded overflow-x-auto">{fix.afterCode}</pre>
                 </div>
               </div>
@@ -535,7 +535,7 @@ function ResultsDisplay({ result }: any) {
                 onClick={() => navigator.clipboard.writeText(fix.afterCode)}
                 className="mt-3 text-sm border px-3 py-1 rounded hover:bg-gray-50"
               >
-                ðŸ“‹ Copy Fix Code
+                📋 Copy Fix Code
               </button>
             </div>
           ))}
@@ -544,7 +544,7 @@ function ResultsDisplay({ result }: any) {
 
       {result.industryData && (
         <div className="bg-white border rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4">ðŸ“Š Industry Benchmark</h2>
+          <h2 className="text-xl font-bold mb-4">📊 Industry Benchmark</h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <div className="text-3xl font-bold">{result.metrics.overallScore}</div>
@@ -575,9 +575,9 @@ Update `src/app/dashboard/layout.tsx`:
 ```typescript
 // Add to AGENCY_TOOLS array
 {
-  label: 'âš¡ AI Performance Fixer',
+  label: '⚡ AI Performance Fixer',
   href: '/dashboard/performance-fixer',
-  icon: 'âš¡',
+  icon: '⚡',
   description: 'AI-generated code fixes (Agency only)',
   tiers: ['AGENCY'],
   badge: 'Agency Only',
@@ -587,7 +587,7 @@ Update `src/app/dashboard/layout.tsx`:
 For non-Agency users, show with lock icon:
 ```typescript
 {user?.plan !== 'AGENCY' && (
-  <span className="ml-auto text-yellow-500">ðŸ”’</span>
+  <span className="ml-auto text-yellow-500">🔒</span>
 )}
 ```
 
@@ -603,7 +603,7 @@ Update Agency plan in `src/app/pricing/page.tsx`:
   price: 49,
   features: [
     'All Pro features',
-    'âš¡ AI Performance Fixer (EXCLUSIVE)',
+    '⚡ AI Performance Fixer (EXCLUSIVE)',
     'Local SEO Suite',
     'SERP Audit',
     'Topical Authority Mapper',
@@ -664,17 +664,17 @@ git push
 ## 9. TESTING CHECKLIST
 
 ```
-âœ… FREE user sees upgrade prompt with lock screen
-âœ… PRO user sees upgrade prompt with lock screen
-âœ… AGENCY user can access full tool
-âœ… Tool analyzes URL with Google PageSpeed
-âœ… Claude generates AI code fixes (3-5 fixes)
-âœ… ROI calculator shows revenue impact
-âœ… Industry benchmarks display correctly
-âœ… Audits saved to database
-âœ… Quota: 50 audits/month enforced
-âœ… Sidebar shows lock icon for non-Agency
-âœ… Copy button works for code fixes
+✅ FREE user sees upgrade prompt with lock screen
+✅ PRO user sees upgrade prompt with lock screen
+✅ AGENCY user can access full tool
+✅ Tool analyzes URL with Google PageSpeed
+✅ Claude generates AI code fixes (3-5 fixes)
+✅ ROI calculator shows revenue impact
+✅ Industry benchmarks display correctly
+✅ Audits saved to database
+✅ Quota: 50 audits/month enforced
+✅ Sidebar shows lock icon for non-Agency
+✅ Copy button works for code fixes
 ```
 
 ---
@@ -682,28 +682,28 @@ git push
 ## 10. SAMPLE OUTPUT
 
 ```
-ðŸŽ¯ example.com Analysis
+🎯 example.com Analysis
 
 Performance: 45/100 â†’ 88/100 â¬†ï¸ (+43 improvement)
 
 Core Web Vitals:
-- LCP: 4.2s â†’ 1.8s (Score: 35 â†’ 90) âœ…
-- CLS: 0.15 â†’ 0.05 (Score: 40 â†’ 95) âœ…  
-- FID: 150ms â†’ 60ms (Score: 50 â†’ 92) âœ…
+- LCP: 4.2s → 1.8s (Score: 35 → 90) ✅
+- CLS: 0.15 → 0.05 (Score: 40 → 95) ✅  
+- FID: 150ms → 60ms (Score: 50 → 92) ✅
 
-ðŸ’° ROI Impact:
+💰 ROI Impact:
 - Currently losing: $1,200/month
 - Potential revenue: $4,800/month
 - Time to fix: 2 hours
 - Cost: $0
 
-ðŸ¤– AI-Generated Code Fixes:
+🤖 AI-Generated Code Fixes:
 
 Fix 1: Image Optimization (+15 score)
 âŒ Before:
 <img src="hero.jpg">
 
-âœ… After:
+✅ After:
 <picture>
   <source srcset="hero.webp" type="image/webp">
   <img src="hero.jpg" loading="lazy" alt="Hero">
@@ -715,7 +715,7 @@ Fix 2: Layout Stability (+12 score)
 âŒ Before:
 .hero { width: 100%; }
 
-âœ… After:
+✅ After:
 .hero {
   aspect-ratio: 16/9;
   width: 100%;
@@ -726,7 +726,7 @@ Why: Aspect ratio prevents content shifts.
 
 [3 more fixes with code]
 
-ðŸ“Š Industry Comparison (SaaS):
+📊 Industry Comparison (SaaS):
 - Your score: 45/100
 - Industry average: 78/100
 - Top 10%: 95/100
@@ -737,14 +737,14 @@ Why: Aspect ratio prevents content shifts.
 ## 11. UNIQUE VALUE PROPOSITION
 
 **Tagline:**
-*"AI Performance Fixer â€” Agency-exclusive tool that generates copy-paste code fixes + ROI analysis. Save 5+ hours per client audit."*
+*"AI Performance Fixer — Agency-exclusive tool that generates copy-paste code fixes + ROI analysis. Save 5+ hours per client audit."*
 
 **Differentiators:**
-1. âœ… AI-generated code (not just suggestions)
-2. âœ… Business impact (ROI calculations)
-3. âœ… Industry context (peer benchmarks)
-4. âœ… Agency-exclusive (premium positioning)
-5. âœ… One-click implementation (copy-paste ready)
+1. ✅ AI-generated code (not just suggestions)
+2. ✅ Business impact (ROI calculations)
+3. ✅ Industry context (peer benchmarks)
+4. ✅ Agency-exclusive (premium positioning)
+5. ✅ One-click implementation (copy-paste ready)
 
 ---
 
@@ -767,13 +767,13 @@ Why: Aspect ratio prevents content shifts.
 ## 13. FUTURE ENHANCEMENTS (Phase 2)
 
 After launch, add:
-1. âœ¨ Auto-deploy fixes via integrations (Cloudflare, AWS, Vercel)
-2. âœ¨ Team collaboration (assign fixes to developers)
-3. âœ¨ PDF report export with brand customization
-4. âœ¨ Slack/Discord notifications
-5. âœ¨ Automated weekly audits
-6. âœ¨ AI chat: "Why is my LCP slow?"
-7. âœ¨ Bulk URL audits
+1. ✨ Auto-deploy fixes via integrations (Cloudflare, AWS, Vercel)
+2. ✨ Team collaboration (assign fixes to developers)
+3. ✨ PDF report export with brand customization
+4. ✨ Slack/Discord notifications
+5. ✨ Automated weekly audits
+6. ✨ AI chat: "Why is my LCP slow?"
+7. ✨ Bulk URL audits
 
 ---
 

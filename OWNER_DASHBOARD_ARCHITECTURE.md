@@ -1,8 +1,8 @@
-﻿# Owner Dashboard â€” Complete Admin Analytics Platform
+﻿# Owner Dashboard — Complete Admin Analytics Platform
 
 ## Overview
 
-The Owner Dashboard is your **command center** for managing Optmizly. Monitor revenue, user behavior, feature usage, system health, and customer insights â€” all in one place.
+The Owner Dashboard is your **command center** for managing Optmizly. Monitor revenue, user behavior, feature usage, system health, and customer insights — all in one place.
 
 **Access:** `/admin/dashboard` (Admin only - your email)
 
@@ -556,21 +556,21 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center">
-        <h1 className="text-4xl font-black">ðŸŽ¯ Optmizly Owner Dashboard</h1>
+        <h1 className="text-4xl font-black">🎯 Optmizly Owner Dashboard</h1>
         <button 
           onClick={() => location.reload()}
           className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
         >
-          ðŸ”„ Refresh
+          🔄 Refresh
         </button>
       </div>
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2 border-b pb-4">
         {[
-          { id: 'overview', label: 'ðŸ“Š Overview' },
-          { id: 'analytics', label: 'ðŸ“ˆ Content Optimizer' },
-          { id: 'users', label: 'ðŸ‘¥ Users' },
+          { id: 'overview', label: '📊 Overview' },
+          { id: 'analytics', label: '📈 Content Optimizer' },
+          { id: 'users', label: '👥 Users' },
           { id: 'health', label: 'âš™ï¸ System Health' },
         ].map(tab => (
           <button
@@ -632,7 +632,7 @@ function OverviewTab({ stats }: any) {
       {/* Revenue Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white border rounded-lg p-6">
-          <h3 className="text-xl font-bold mb-4">ðŸ’° MRR by Plan</h3>
+          <h3 className="text-xl font-bold mb-4">💰 MRR by Plan</h3>
           <div className="space-y-3">
             <RevenueBar plan="PRO" amount={stats.revenue.mrrByPlan.pro} total={stats.revenue.totalMRR} />
             <RevenueBar plan="AGENCY" amount={stats.revenue.mrrByPlan.agency} total={stats.revenue.totalMRR} />
@@ -640,7 +640,7 @@ function OverviewTab({ stats }: any) {
         </div>
 
         <div className="bg-white border rounded-lg p-6">
-          <h3 className="text-xl font-bold mb-4">ðŸ‘¥ Users by Plan</h3>
+          <h3 className="text-xl font-bold mb-4">👥 Users by Plan</h3>
           <div className="space-y-3">
             <UserBar plan="FREE" count={stats.users.byPlan.FREE} color="blue" />
             <UserBar plan="PRO" count={stats.users.byPlan.PRO} color="purple" />
@@ -651,7 +651,7 @@ function OverviewTab({ stats }: any) {
 
       {/* Quota Usage */}
       <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-xl font-bold mb-4">ðŸ“Š Average Quota Usage</h3>
+        <h3 className="text-xl font-bold mb-4">📊 Average Quota Usage</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <QuotaCard plan="FREE" usage={stats.quotaUsage.FREE} />
           <QuotaCard plan="PRO" usage={stats.quotaUsage.PRO} />
@@ -723,7 +723,7 @@ function AnalyticsTab() {
 
       {/* Score Distribution */}
       <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-xl font-bold mb-4">ðŸ“Š Score Distribution</h3>
+        <h3 className="text-xl font-bold mb-4">📊 Score Distribution</h3>
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center p-4 bg-green-50 rounded">
             <div className="text-3xl font-bold text-green-600">{analytics.scoreDistribution.excellent}</div>
@@ -860,7 +860,7 @@ function HealthTab() {
 
       {/* Costs */}
       <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-xl font-bold mb-4">ðŸ’µ Monthly Costs</h3>
+        <h3 className="text-xl font-bold mb-4">💵 Monthly Costs</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="border rounded p-4">
             <h4 className="font-semibold mb-2">Claude API</h4>
@@ -881,7 +881,7 @@ function HealthTab() {
 
       {/* Database Stats */}
       <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-xl font-bold mb-4">ðŸ“Š Database Size</h3>
+        <h3 className="text-xl font-bold mb-4">📊 Database Size</h3>
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
             <div className="text-3xl font-bold">{health.database.users}</div>
@@ -1027,31 +1027,31 @@ if (user?.email !== ADMIN_EMAIL) {
 ## 6. FEATURES
 
 ### **Overview Tab:**
-âœ… Total MRR (by plan breakdown)
-âœ… Total users (by plan)
-âœ… New users this month
-âœ… Churn rate
-âœ… Average quota usage
+✅ Total MRR (by plan breakdown)
+✅ Total users (by plan)
+✅ New users this month
+✅ Churn rate
+✅ Average quota usage
 
 ### **Content Optimizer Tab:**
-âœ… Total analyses (30 days)
-âœ… Average score
-âœ… By industry breakdown
-âœ… Feature usage (Schema, E-E-A-T)
-âœ… Score distribution (Excellent/Good/Poor)
+✅ Total analyses (30 days)
+✅ Average score
+✅ By industry breakdown
+✅ Feature usage (Schema, E-E-A-T)
+✅ Score distribution (Excellent/Good/Poor)
 
 ### **Users Tab:**
-âœ… View all users with filters
-âœ… Search/filter by plan
-âœ… See user details (email, plan, join date, usage)
-âœ… Quick actions (Email, Upgrade, Refund buttons)
+✅ View all users with filters
+✅ Search/filter by plan
+✅ See user details (email, plan, join date, usage)
+✅ Quick actions (Email, Upgrade, Refund buttons)
 
 ### **System Health Tab:**
-âœ… API performance metrics
-âœ… Claude API cost tracking
-âœ… Google API usage
-âœ… Database size stats
-âœ… Error rates
+✅ API performance metrics
+✅ Claude API cost tracking
+✅ Google API usage
+✅ Database size stats
+✅ Error rates
 
 ---
 
@@ -1102,13 +1102,13 @@ git push
 ## 9. FUTURE ENHANCEMENTS
 
 Phase 2 (not in MVP):
-- ðŸ“Š Historical trends (30/60/90 day charts)
-- ðŸŽ¯ Cohort analysis (retention by signup month)
-- ðŸ’¬ Customer feedback dashboard
-- ðŸ“§ Email campaign tracking
-- ðŸ”” Alerts (churn spike, API errors)
-- ðŸ“± Mobile-responsive improvements
-- ðŸ’¾ Export reports to CSV
+- 📊 Historical trends (30/60/90 day charts)
+- 🎯 Cohort analysis (retention by signup month)
+- 💬 Customer feedback dashboard
+- 📧 Email campaign tracking
+- 🔔 Alerts (churn spike, API errors)
+- 📱 Mobile-responsive improvements
+- 💾 Export reports to CSV
 - ðŸ” Multi-admin support
 
 ---

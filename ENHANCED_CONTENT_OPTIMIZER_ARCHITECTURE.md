@@ -1,4 +1,4 @@
-﻿# Enhanced Content Optimizer â€” Complete Semantic SEO Tool
+﻿# Enhanced Content Optimizer — Complete Semantic SEO Tool
 
 ## Overview
 
@@ -6,9 +6,9 @@ The Enhanced Content Optimizer is **THE** comprehensive Semantic SEO tool that c
 
 ## Marketing Tagline
 
-**"The Only Content Optimizer You Need â€” Complete Semantic SEO in One Click"**
+**"The Only Content Optimizer You Need — Complete Semantic SEO in One Click"**
 
-*"Stop juggling 5 different tools. Get search intent, entities, LSI keywords, schema markup, topic clusters, and AI improvements â€” all in one comprehensive analysis."*
+*"Stop juggling 5 different tools. Get search intent, entities, LSI keywords, schema markup, topic clusters, and AI improvements — all in one comprehensive analysis."*
 
 ---
 
@@ -16,15 +16,15 @@ The Enhanced Content Optimizer is **THE** comprehensive Semantic SEO tool that c
 
 | Concept | Status |
 |---------|--------|
-| Content Optimization | âœ… Already exists - ENHANCED |
-| Search Intent Detection | ðŸ†• NEW |
-| Entity Analysis | ðŸ†• ENHANCED |
-| LSI Keywords | ðŸ†• NEW |
-| Schema Markup Generator | ðŸ†• NEW |
-| Topic Cluster Mapping | ðŸ†• NEW |
-| Topic Coverage Score | ðŸ†• NEW |
-| E-E-A-T Score | âœ… Already exists |
-| AI Rewriting | âœ… Already exists |
+| Content Optimization | ✅ Already exists - ENHANCED |
+| Search Intent Detection | 🆕 NEW |
+| Entity Analysis | 🆕 ENHANCED |
+| LSI Keywords | 🆕 NEW |
+| Schema Markup Generator | 🆕 NEW |
+| Topic Cluster Mapping | 🆕 NEW |
+| Topic Coverage Score | 🆕 NEW |
+| E-E-A-T Score | ✅ Already exists |
+| AI Rewriting | ✅ Already exists |
 
 ---
 
@@ -616,7 +616,7 @@ export default function ContentOptimizerPage() {
     <div className="space-y-6 p-6 max-w-6xl mx-auto">
       <div>
         <h1 className="text-3xl font-black flex items-center gap-3">
-          ðŸš€ Content Optimizer
+          🚀 Content Optimizer
           <span className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full">
             COMPLETE SEMANTIC SEO
           </span>
@@ -677,14 +677,14 @@ export default function ContentOptimizerPage() {
 
 function ResultsDisplay({ result, activeTab, setActiveTab }: any) {
   const tabs = [
-    { id: 'overview', label: 'ðŸ“Š Overview', score: result.overallScore },
-    { id: 'intent', label: 'ðŸŽ¯ Intent', score: result.intent.matchScore },
-    { id: 'entities', label: 'ðŸ”— Entities', score: result.entities.score },
-    { id: 'lsi', label: 'ðŸ“š LSI Keywords', score: result.lsi.score },
-    { id: 'schema', label: 'ðŸ“‹ Schema', score: null },
+    { id: 'overview', label: '📊 Overview', score: result.overallScore },
+    { id: 'intent', label: '🎯 Intent', score: result.intent.matchScore },
+    { id: 'entities', label: '🔗 Entities', score: result.entities.score },
+    { id: 'lsi', label: '📚 LSI Keywords', score: result.lsi.score },
+    { id: 'schema', label: '📋 Schema', score: null },
     { id: 'topics', label: 'ðŸŒ Topics', score: result.topics.score },
     { id: 'eeat', label: 'â­ E-E-A-T', score: result.eeat.overall },
-    { id: 'fixes', label: 'ðŸ”§ AI Fixes', score: null },
+    { id: 'fixes', label: '🔧 AI Fixes', score: null },
   ];
 
   return (
@@ -737,12 +737,12 @@ function ResultsDisplay({ result, activeTab, setActiveTab }: any) {
 function OverviewTab({ result }: any) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <ScoreCard label="ðŸŽ¯ Search Intent" score={result.intent.matchScore} detail={result.intent.intent} />
-      <ScoreCard label="ðŸ”— Entity Score" score={result.entities.score} detail={`${result.entities.entities.length} entities`} />
-      <ScoreCard label="ðŸ“š LSI Keywords" score={result.lsi.score} detail={`${result.lsi.found.length} found, ${result.lsi.missing.length} missing`} />
+      <ScoreCard label="🎯 Search Intent" score={result.intent.matchScore} detail={result.intent.intent} />
+      <ScoreCard label="🔗 Entity Score" score={result.entities.score} detail={`${result.entities.entities.length} entities`} />
+      <ScoreCard label="📚 LSI Keywords" score={result.lsi.score} detail={`${result.lsi.found.length} found, ${result.lsi.missing.length} missing`} />
       <ScoreCard label="ðŸŒ Topic Coverage" score={result.topics.score} detail={`${result.topics.covered.length}/${result.topics.covered.length + result.topics.missing.length}`} />
       <ScoreCard label="â­ E-E-A-T" score={result.eeat.overall} detail="Experience, Expertise, Authority, Trust" />
-      <ScoreCard label="ðŸ“‹ Schema" score={100} detail={`${result.schema.type} recommended`} />
+      <ScoreCard label="📋 Schema" score={100} detail={`${result.schema.type} recommended`} />
     </div>
   );
 }
@@ -761,7 +761,7 @@ function ScoreCard({ label, score, detail }: any) {
 function IntentTab({ data }: any) {
   return (
     <div className="bg-white border rounded-lg p-6">
-      <h3 className="text-xl font-bold mb-4">ðŸŽ¯ Search Intent Analysis</h3>
+      <h3 className="text-xl font-bold mb-4">🎯 Search Intent Analysis</h3>
       <div className="bg-gray-50 p-4 rounded mb-4">
         <div className="text-sm text-gray-600">Detected Intent:</div>
         <div className="text-2xl font-bold capitalize">{data.intent}</div>
@@ -789,11 +789,11 @@ function IntentTab({ data }: any) {
 function EntitiesTab({ data }: any) {
   return (
     <div className="bg-white border rounded-lg p-6">
-      <h3 className="text-xl font-bold mb-4">ðŸ”— Entity Analysis</h3>
+      <h3 className="text-xl font-bold mb-4">🔗 Entity Analysis</h3>
       
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <h4 className="font-semibold mb-2 text-green-700">âœ… Found Entities ({data.entities.length})</h4>
+          <h4 className="font-semibold mb-2 text-green-700">✅ Found Entities ({data.entities.length})</h4>
           <div className="space-y-1">
             {data.entities.map((e: any, i: number) => (
               <div key={i} className={`px-3 py-1 rounded text-sm inline-block mr-2 mb-1 ${
@@ -824,7 +824,7 @@ function EntitiesTab({ data }: any) {
           <ul className="space-y-1">
             {data.relationships.map((r: any, i: number) => (
               <li key={i} className="text-sm">
-                <strong>{r.entity1}</strong> â†’ {r.relationship} â†’ <strong>{r.entity2}</strong>
+                <strong>{r.entity1}</strong> → {r.relationship} → <strong>{r.entity2}</strong>
               </li>
             ))}
           </ul>
@@ -837,11 +837,11 @@ function EntitiesTab({ data }: any) {
 function LsiTab({ data }: any) {
   return (
     <div className="bg-white border rounded-lg p-6">
-      <h3 className="text-xl font-bold mb-4">ðŸ“š LSI Keywords Analysis</h3>
+      <h3 className="text-xl font-bold mb-4">📚 LSI Keywords Analysis</h3>
       
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h4 className="font-semibold mb-2 text-green-700">âœ… Used ({data.found.length})</h4>
+          <h4 className="font-semibold mb-2 text-green-700">✅ Used ({data.found.length})</h4>
           <div className="flex flex-wrap gap-1">
             {data.found.map((k: string, i: number) => (
               <span key={i} className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
@@ -869,7 +869,7 @@ function LsiTab({ data }: any) {
 function SchemaTab({ data }: any) {
   return (
     <div className="bg-white border rounded-lg p-6">
-      <h3 className="text-xl font-bold mb-4">ðŸ“‹ Schema Markup</h3>
+      <h3 className="text-xl font-bold mb-4">📋 Schema Markup</h3>
       <div className="bg-blue-50 p-4 rounded mb-4">
         <div className="font-semibold">Recommended Type: {data.type}</div>
         <div className="text-sm text-gray-600 mt-1">{data.reasoning}</div>
@@ -884,7 +884,7 @@ function SchemaTab({ data }: any) {
           onClick={() => navigator.clipboard.writeText(data.jsonLd)}
           className="mt-2 text-sm bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
         >
-          ðŸ“‹ Copy Schema Code
+          📋 Copy Schema Code
         </button>
       </div>
     </div>
@@ -903,10 +903,10 @@ function TopicsTab({ data }: any) {
       
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h4 className="font-semibold text-green-700">âœ… Covered Subtopics</h4>
+          <h4 className="font-semibold text-green-700">✅ Covered Subtopics</h4>
           <ul className="text-sm space-y-1 mt-2">
             {data.covered.map((c: string, i: number) => (
-              <li key={i}>â€¢ {c}</li>
+              <li key={i}>• {c}</li>
             ))}
           </ul>
         </div>
@@ -915,7 +915,7 @@ function TopicsTab({ data }: any) {
           <h4 className="font-semibold text-red-700">âŒ Missing Subtopics</h4>
           <ul className="text-sm space-y-1 mt-2">
             {data.missing.map((m: any, i: number) => (
-              <li key={i}>â€¢ {m.topic} ({m.importance})</li>
+              <li key={i}>• {m.topic} ({m.importance})</li>
             ))}
           </ul>
         </div>
@@ -923,7 +923,7 @@ function TopicsTab({ data }: any) {
       
       {data.pillarSuggestion && (
         <div className="bg-purple-50 p-4 rounded">
-          <div className="font-semibold">ðŸ’¡ Pillar Page Suggestion:</div>
+          <div className="font-semibold">💡 Pillar Page Suggestion:</div>
           <div className="text-sm">{data.pillarSuggestion}</div>
         </div>
       )}
@@ -933,7 +933,7 @@ function TopicsTab({ data }: any) {
           <h4 className="font-semibold">ðŸŒ Cluster Page Ideas:</h4>
           <ul className="text-sm mt-2 space-y-1">
             {data.clusterSuggestions.map((c: any, i: number) => (
-              <li key={i}>â€¢ {c.title}</li>
+              <li key={i}>• {c.title}</li>
             ))}
           </ul>
         </div>
@@ -947,9 +947,9 @@ function EEATTab({ data }: any) {
     <div className="bg-white border rounded-lg p-6">
       <h3 className="text-xl font-bold mb-4">â­ E-E-A-T Analysis</h3>
       <div className="grid grid-cols-2 gap-4">
-        <ScoreCard label="ðŸŒŸ Experience" score={data.experience} detail={data.details?.experience || ''} />
-        <ScoreCard label="ðŸŽ“ Expertise" score={data.expertise} detail={data.details?.expertise || ''} />
-        <ScoreCard label="ðŸ‘‘ Authority" score={data.authority} detail={data.details?.authority || ''} />
+        <ScoreCard label="🌟 Experience" score={data.experience} detail={data.details?.experience || ''} />
+        <ScoreCard label="🎓 Expertise" score={data.expertise} detail={data.details?.expertise || ''} />
+        <ScoreCard label="👑 Authority" score={data.authority} detail={data.details?.authority || ''} />
         <ScoreCard label="ðŸ›¡ï¸ Trust" score={data.trust} detail={data.details?.trust || ''} />
       </div>
       <div className="mt-4 bg-blue-50 p-4 rounded text-center">
@@ -964,7 +964,7 @@ function FixesTab({ data }: any) {
   return (
     <div className="space-y-4">
       <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-xl font-bold mb-4">ðŸ”§ AI-Powered Improvements</h3>
+        <h3 className="text-xl font-bold mb-4">🔧 AI-Powered Improvements</h3>
         <div className="space-y-3">
           {data.fixes.map((fix: any, i: number) => (
             <div key={i} className="border rounded-lg p-4">
@@ -1072,14 +1072,14 @@ git push
 ## 7. TESTING CHECKLIST
 
 ```
-âœ… Paste content + keyword
-âœ… All 7 analyses run in parallel (Intent, Entity, LSI, Schema, Topics, E-E-A-T, Improvements)
-âœ… Overall score calculates correctly
-âœ… All 8 tabs work (Overview, Intent, Entities, LSI, Schema, Topics, E-E-A-T, Fixes)
-âœ… Schema JSON-LD copy button works
-âœ… Quota limits enforced per plan
-âœ… History saves to database
-âœ… Mobile responsive
+✅ Paste content + keyword
+✅ All 7 analyses run in parallel (Intent, Entity, LSI, Schema, Topics, E-E-A-T, Improvements)
+✅ Overall score calculates correctly
+✅ All 8 tabs work (Overview, Intent, Entities, LSI, Schema, Topics, E-E-A-T, Fixes)
+✅ Schema JSON-LD copy button works
+✅ Quota limits enforced per plan
+✅ History saves to database
+✅ Mobile responsive
 ```
 
 ---
@@ -1087,16 +1087,16 @@ git push
 ## 8. KEY BENEFITS
 
 ### For Users:
-âœ… **One tool, complete analysis** â€” No more switching between tools
-âœ… **Faster workflow** â€” Paste once, get everything
-âœ… **Better insights** â€” See connections between concepts
-âœ… **Copy-paste ready** â€” Schema markup, AI rewrites included
+✅ **One tool, complete analysis** — No more switching between tools
+✅ **Faster workflow** — Paste once, get everything
+✅ **Better insights** — See connections between concepts
+✅ **Copy-paste ready** — Schema markup, AI rewrites included
 
 ### For Business:
-âœ… **Stronger value prop** â€” "Complete Semantic SEO"
-âœ… **Higher conversion** â€” One powerful tool
-âœ… **Better retention** â€” Users use it daily
-âœ… **Easier marketing** â€” Single feature to highlight
+✅ **Stronger value prop** — "Complete Semantic SEO"
+✅ **Higher conversion** — One powerful tool
+✅ **Better retention** — Users use it daily
+✅ **Easier marketing** — Single feature to highlight
 
 ---
 
@@ -1106,17 +1106,17 @@ git push
 **"The Only Content Optimizer You Need"**
 
 ### Sub-headline:
-*"Get search intent, entities, LSI keywords, schema markup, topic clusters, and AI rewrites â€” all in one comprehensive analysis."*
+*"Get search intent, entities, LSI keywords, schema markup, topic clusters, and AI rewrites — all in one comprehensive analysis."*
 
 ### Comparison Table:
 | Feature | Surfer SEO | Frase | **Optmizly** |
 |---------|------------|-------|-------------------|
-| Content Score | âœ… | âœ… | âœ… |
+| Content Score | ✅ | ✅ | ✅ |
 | Search Intent | âŒ | âŒ | âœ… |
-| Entity Analysis | Limited | Limited | âœ… Advanced |
+| Entity Analysis | Limited | Limited | ✅ Advanced |
 | Schema Generator | âŒ | âŒ | âœ… |
 | Topic Clusters | Limited | âŒ | âœ… |
-| AI Rewrites | âœ… | âœ… | âœ… |
+| AI Rewrites | ✅ | ✅ | ✅ |
 | Price | $89/mo | $115/mo | **$19/mo** |
 
 ---
