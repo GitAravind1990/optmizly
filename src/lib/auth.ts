@@ -86,15 +86,18 @@ export type PinnedAccount = {
 }
 
 const PINNED_ACCOUNTS: Record<string, PinnedAccount> = {
+  // The founder account, and deliberately the only entry.
+  //
+  // Everyone else who is given access lives in PinnedGrant, where a grant can be added and
+  // revoked from the admin UI without a deploy. This one stays in code precisely because it
+  // must not be revocable that way: it is the backstop that survives a bad row, a mistaken
+  // click, or an empty table, and it needs no database to be true.
+  //
+  // The two beta testers were here until 2026-09-16 and are now grant rows carrying the same
+  // Agency plan at the same ten credits. Nothing about their access changed -- the rows were
+  // written before these lines came out, and the constant outranks a grant, so the handover
+  // had no moment where neither applied.
   'gkm.aravind@gmail.com': { plan: Plan.AGENCY },
-
-  // Beta testers, added 2026-09-15. Agency's full tool set on ten units a month, which is
-  // three runs of a 3-credit tool or ten of anything LLM-only — enough to exercise every
-  // tool without two accounts spending like two agencies. Delete these two lines to end
-  // their access: neither has a subscription row, so both fall straight back to FREE and
-  // there is nothing to clean up in the database.
-  'naresh.roja14@gmail.com': { plan: Plan.AGENCY, monthlyLimit: 10 },
-  'sics.rahul@gmail.com': { plan: Plan.AGENCY, monthlyLimit: 10 },
 }
 
 function pinnedFor(email?: string | null): PinnedAccount | undefined {

@@ -265,6 +265,31 @@ function UsersTab() {
    */
   const [invite, setInvite] = useState<'idle' | 'armed' | 'sending'>('idle');
   const [inviteResult, setInviteResult] = useState<any>(null);
+  // Removing granted access, armed per row so a stray click cannot revoke anyone.
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [removeMsg, setRemoveMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  // Bumped after a successful removal to refetch the list, so the row's badge and the
+  // credits beside it stop describing access the account no longer has.
+  const [reload, setReload] = useState(0);
+
+  async function removeAccess(email: string) {
+    setBusy(true);
+    setRemoveMsg(null);
+    try {
+      const res = await fetch(`/api/admin/pinned-grants?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+      const body = await res.json();
+      setRemoveMsg(res.ok
+        ? { ok: true, text: `Removed access for ${body.revoked}. ${body.note}` }
+        : { ok: false, text: body.error ?? 'Failed to remove access.' });
+      if (res.ok) setReload(n => n + 1);
+    } catch (e) {
+      setRemoveMsg({ ok: false, text: e instanceof Error ? e.message : 'Request failed' });
+    } finally {
+      setBusy(false);
+      setRemoving(null);
+    }
+  }
 
   async function sendInvites() {
     setInvite('sending');
@@ -289,7 +314,7 @@ function UsersTab() {
       .catch(e => { if (e.name !== 'AbortError') console.error(e); })
       .finally(() => setLoading(false));
     return () => controller.abort();
-  }, [filter]);
+  }, [filter, reload]);
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
   if (!data) return <div className="p-8 text-center text-red-600">Failed to load</div>;
@@ -352,6 +377,12 @@ function UsersTab() {
       {/* Per-address outcome, not a toast. The whole reason the endpoint returns one result
           per recipient is that "it said it sent" is worth nothing here -- a refused address
           or a missing API key has to be readable. */}
+      {removeMsg && (
+        <div className={`rounded-lg border p-3 text-sm ${removeMsg.ok ? 'bg-green-50 border-green-200 text-green-900' : 'bg-red-50 border-red-200 text-red-900'}`}>
+          {removeMsg.text}
+        </div>
+      )}
+
       {inviteResult && (
         <div className={`rounded-lg border p-4 text-sm ${
           inviteResult.error || inviteResult.failed > 0
@@ -384,7 +415,7 @@ function UsersTab() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              {['Email', 'Plan', 'Credits', 'Joined', 'Analyses', 'Tokens (in/out)', 'Est. Cost', 'Status'].map(h => (
+              {['Email', 'Plan', 'Credits', 'Joined', 'Analyses', 'Tokens (in/out)', 'Est. Cost', 'Status', 'Access'].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-semibold text-gray-700">{h}</th>
               ))}
             </tr>
@@ -407,15 +438,18 @@ function UsersTab() {
                     <span className={`px-2 py-1 rounded text-xs font-semibold ${PLAN_BADGE[user.plan as Plan] ?? PLAN_BADGE.FREE}`}>
                       {user.plan}
                     </span>
-                    {/* A pinned plan is granted by PINNED_ACCOUNTS in auth.ts, not by
+                    {/* A granted plan comes from PinnedGrant or from the constant, not from
                         billing. User.plan reads AGENCY either way, so without this a beta
-                        tester is indistinguishable from a paying Agency customer. */}
+                        tester is indistinguishable from a paying Agency customer. The two
+                        sources are labelled apart because only one of them is revocable. */}
                     {user.planPinned && (
                       <span
-                        title="Plan granted in code (PINNED_ACCOUNTS in src/lib/auth.ts), not by a subscription"
+                        title={user.grantSource === 'constant'
+                          ? 'Pinned in code (PINNED_ACCOUNTS in src/lib/auth.ts) - not revocable from here'
+                          : 'Granted access (PinnedGrant), not a subscription'}
                         className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 align-middle"
                       >
-                        PINNED
+                        {user.grantSource === 'constant' ? 'PINNED' : 'GRANTED'}
                       </span>
                     )}
                   </td>
@@ -428,7 +462,7 @@ function UsersTab() {
                         bare number a reader would take for Agency's 200. */}
                     {user.limitOverridden && (
                       <span
-                        title={`Capped below ${user.plan}'s own allowance by monthlyLimit in PINNED_ACCOUNTS`}
+                        title={`Capped below ${user.plan}'s own allowance by the monthlyLimit on their grant`}
                         className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800"
                       >
                         CAPPED
@@ -450,11 +484,49 @@ function UsersTab() {
                       {user.subscription?.status || 'Free'}
                     </span>
                   </td>
-                  {/* An "Upgrade | Cancel" pair sat here with no onClick on either button:
-                      they had never done anything. The endpoint behind them changed plans
-                      in our database without telling DoDo, so wiring them up would have
-                      been worse than leaving them dead — see the note in
-                      /api/admin/health/route.ts. Plan changes go through DoDo. */}
+                  {/* Removing granted access, and only that. An "Upgrade | Cancel" pair sat
+                      here once with no onClick on either button; the endpoint behind them
+                      changed plans in our database without telling DoDo, which is why plan
+                      changes still go through DoDo and are not offered here. Taking back
+                      something we gave away for free is ours to do, and is the one account
+                      action with no billing side to get wrong.
+
+                      Same endpoint as the Grants tab rather than a second one, so there is
+                      one implementation of "revoke" and one place for it to be wrong. */}
+                  <td className="px-4 py-3 text-xs">
+                    {user.grantSource === 'grant' ? (
+                      removing === user.email ? (
+                        <span className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => removeAccess(user.email)}
+                            disabled={busy}
+                            className="px-2 py-1 rounded text-[11px] font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setRemoving(null)}
+                            className="px-2 py-1 rounded text-[11px] font-semibold border border-gray-300"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => { setRemoving(user.email); setRemoveMsg(null); }}
+                          className="px-2 py-1 rounded text-[11px] font-semibold border border-gray-300 hover:bg-gray-50"
+                        >
+                          Remove access
+                        </button>
+                      )
+                    ) : user.grantSource === 'constant' ? (
+                      <span className="text-gray-400" title="Pinned in src/lib/auth.ts - edit the constant and deploy">
+                        pinned in code
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">&mdash;</span>
+                    )}
+                  </td>
                 </tr>
               );
             })}
