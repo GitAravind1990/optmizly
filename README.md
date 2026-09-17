@@ -117,7 +117,8 @@ period: `NEXT_PUBLIC_DODO_{STARTER,PRO,AGENCY,AGENCY_PLUS}_PRODUCT_ID` plus the 
 every cron callable by anyone), `ENCRYPTION_KEY` (Search Console token storage),
 `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`, `UPSTASH_REDIS_REST_URL` /
 `UPSTASH_REDIS_REST_TOKEN`, `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST`,
-`ADMIN_EMAIL`.
+`NEXT_PUBLIC_CLARITY_ID` (Microsoft Clarity; unset = not loaded, and it runs only on accepted
+cookies), `ADMIN_EMAIL`.
 
 ### 3. Set up the database
 

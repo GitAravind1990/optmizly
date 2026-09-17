@@ -41,7 +41,7 @@ function buildCSP(nonce: string): string {
     // 'wasm-unsafe-eval': the vector Map ID's rendering engine (used for AdvancedMarker
     // support in Geogrid) compiles a WebAssembly module — narrower than 'unsafe-eval',
     // it only permits WASM compilation, not arbitrary eval()/Function() of JS strings.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' 'wasm-unsafe-eval'${devEval} https://cdn.clerk.com https://*.clerk.com https://clerk.optmizly.com https://us-assets.i.posthog.com https://maps.googleapis.com https://challenges.cloudflare.com${devClerk}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' 'wasm-unsafe-eval'${devEval} https://cdn.clerk.com https://*.clerk.com https://clerk.optmizly.com https://us-assets.i.posthog.com https://maps.googleapis.com https://challenges.cloudflare.com https://www.clarity.ms https://*.clarity.ms${devClerk}`,
     // fonts.googleapis.com: the PlaceAutocompleteElement widget loads its own Google
     // Sans/Roboto stylesheet for the suggestions dropdown.
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -51,7 +51,15 @@ function buildCSP(nonce: string): string {
     // AutocompletePlaces RPC) is a distinct domain from maps.googleapis.com — both
     // are needed, they aren't interchangeable. www.gstatic.com: the vector map's
     // own style/legend resource fetch (also distinct from maps.gstatic.com below).
-    `connect-src 'self' https://api.clerk.com https://*.clerk.com wss://*.clerk.com https://clerk.optmizly.com wss://clerk.optmizly.com https://us.i.posthog.com https://us-assets.i.posthog.com https://maps.googleapis.com https://places.googleapis.com https://www.gstatic.com https://challenges.cloudflare.com${devClerk}`,
+    `connect-src 'self' https://api.clerk.com https://*.clerk.com wss://*.clerk.com https://clerk.optmizly.com wss://clerk.optmizly.com https://us.i.posthog.com https://us-assets.i.posthog.com https://maps.googleapis.com https://places.googleapis.com https://www.gstatic.com https://challenges.cloudflare.com https://*.clarity.ms${devClerk}`,
+    // clarity.ms appears in BOTH script-src and connect-src, and needs to. 'strict-dynamic'
+    // would cover the tag itself -- it is injected by our own nonced script -- but it does
+    // not extend to connect-src, so the recordings it uploads would be blocked while the
+    // script ran happily, which looks exactly like Clarity being installed and finding
+    // nothing. The host source in script-src also keeps it working on browsers that do not
+    // understand strict-dynamic. The tag is served from www.clarity.ms and it pulls further
+    // assets and beacons from regional *.clarity.ms hosts.
+    //
     // Clerk's bot-protection (Cloudflare Turnstile) renders an invisible challenge iframe from
     // this origin before letting sign-in/sign-up (incl. OAuth) proceed — without it here the
     // iframe is silently blocked and the "Continue with Google" button spins forever.

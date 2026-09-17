@@ -10,18 +10,37 @@ export function CookieBanner() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (!localStorage.getItem('cookie_consent')) setVisible(true)
+    try {
+      if (!localStorage.getItem('cookie_consent')) setVisible(true)
+    } catch {
+      // Storage unavailable: show the banner rather than silently assuming consent.
+      setVisible(true)
+    }
   }, [])
 
-  function accept() {
-    localStorage.setItem('cookie_consent', 'accepted')
+  /**
+   * Records the choice and announces it.
+   *
+   * The event is the half that was missing: this banner wrote `cookie_consent` and nothing
+   * read it, so Accept and Decline did the same thing. Consent-gated tags listen for this so
+   * accepting starts them on the spot -- otherwise the first session after consent, the one
+   * where someone is deciding whether to sign up, is the one never recorded.
+   *
+   * Wrapped because localStorage throws in private mode and on blocked site data, where the
+   * banner must still dismiss rather than trap the visitor behind a dead button.
+   */
+  function choose(value: 'accepted' | 'declined') {
+    try {
+      localStorage.setItem('cookie_consent', value)
+    } catch {
+      // Nothing to persist to; the choice still applies to this page view.
+    }
+    window.dispatchEvent(new Event('cookie-consent-change'))
     setVisible(false)
   }
 
-  function decline() {
-    localStorage.setItem('cookie_consent', 'declined')
-    setVisible(false)
-  }
+  const accept = () => choose('accepted')
+  const decline = () => choose('declined')
 
   if (!visible) return null
 

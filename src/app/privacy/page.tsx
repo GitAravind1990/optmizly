@@ -27,7 +27,7 @@ Free tools used without an account: Some tools can be used without registering, 
   },
   {
     title: '5. Third-Party Services',
-    body: `We share data with the following sub-processors to operate the Service: Clerk (authentication and user management), Supabase/PostgreSQL (database), DoDo Payments (payment processing), Groq (AI analysis – our current AI provider; content you submit is processed under Groq's API terms), Anthropic (alternative AI provider, used when configured, under Anthropic's API terms), Resend (transactional email), Vercel (hosting and edge functions), PostHog (product analytics and error monitoring), DataForSEO and OpenPageRank (keyword, ranking, backlink and domain metrics – we send the keywords, domains and URLs you analyse), and Google (Search Console, PageSpeed Insights and Maps/Places APIs, used to retrieve performance and location data for the sites you analyse or connect). Each service operates under its own privacy policy and data processing agreements. Please review Groq's privacy policy at groq.com and Anthropic's at anthropic.com.`,
+    body: `We share data with the following sub-processors to operate the Service: Clerk (authentication and user management), Supabase/PostgreSQL (database), DoDo Payments (payment processing), Groq (AI analysis – our current AI provider; content you submit is processed under Groq's API terms), Anthropic (alternative AI provider, used when configured, under Anthropic's API terms), Resend (transactional email), Vercel (hosting and edge functions), PostHog (product analytics and error monitoring), Microsoft Clarity (session analytics – records how you interact with our pages, including clicks, scrolling and pointer movement, and replays them so we can see where the product is confusing; it runs only if you accept cookies, and never on visitors who decline), DataForSEO and OpenPageRank (keyword, ranking, backlink and domain metrics – we send the keywords, domains and URLs you analyse), and Google (Search Console, PageSpeed Insights and Maps/Places APIs, used to retrieve performance and location data for the sites you analyse or connect). Each service operates under its own privacy policy and data processing agreements. Please review Groq's privacy policy at groq.com and Anthropic's at anthropic.com.`,
   },
   {
     title: '6. Google User Data (Search Console Integration)',
@@ -53,7 +53,7 @@ Revoking access: you can disconnect at any time from Settings → Integrations, 
   },
   {
     title: '9. Cookies',
-    body: `We use session cookies for authentication, managed by Clerk. These are strictly necessary for the Service to function. We do not use advertising or tracking cookies. You can control cookies through your browser settings, but disabling session cookies will prevent you from logging in.`,
+    body: `We use session cookies for authentication, managed by Clerk. These are strictly necessary for the Service to function and are set whether or not you accept optional cookies. We use no advertising cookies and sell no data. If you accept cookies on the banner, we also set analytics cookies for PostHog and Microsoft Clarity, which measure how the product is used and record page interactions so we can find what is confusing; choosing Decline means these are never loaded. You can change your mind by clearing this site's data in your browser, which removes the stored choice and shows the banner again. You can control cookies through your browser settings, but disabling session cookies will prevent you from logging in.`,
   },
   {
     title: '10. Your Rights',
@@ -84,7 +84,7 @@ export default function PrivacyPage() {
 
       <div className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-4xl font-black mb-2">Privacy Policy</h1>
-        <p className="text-slate-400 text-sm mb-12">Last updated: August 2026</p>
+        <p className="text-slate-400 text-sm mb-12">Last updated: September 2026</p>
 
         {sections.map(s => (
           <section key={s.title} className="mb-10">

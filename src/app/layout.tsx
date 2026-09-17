@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from 'next'
 import { ClerkProviderWrapper } from '@/components/clerk-provider'
+import { Clarity } from '@/components/clarity'
 import { CookieBanner } from '@/components/cookie-banner'
 import { PHProvider } from '@/components/posthog-provider'
 import { PostHogUserIdentity } from '@/components/posthog-user-identity'
@@ -75,6 +76,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const hasPostHog = !!process.env.NEXT_PUBLIC_POSTHOG_KEY
   const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  // Unset means Clarity is simply absent, the same way PostHog is. Session recording should
+  // need a deliberate switch-on, not ship the moment the code merges.
+  const clarityId = process.env.NEXT_PUBLIC_CLARITY_ID
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -91,6 +95,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Suspense>
             {children}
             <CookieBanner />
+            {/* Inside the banner's tree and after it, because it reads the consent the
+                banner writes. Renders nothing until that consent is "accepted". */}
+            {clarityId && <Clarity projectId={clarityId} nonce={nonce} />}
           </ClerkProviderWrapper>
         </PHProvider>
         <Analytics />
