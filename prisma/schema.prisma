@@ -68,6 +68,7 @@ model User {
   searchConsoleConnection SearchConsoleConnection?
   gscQueryRows            GscQueryRow[]            @relation("GscQueryRows")
   aiVisibilityRuns        AiVisibilityRun[]        @relation("AiVisibilityRuns")
+  aiPresenceCompetitors   AiPresenceCompetitor[]   @relation("AiPresenceCompetitors")
   dailyToolUsage          DailyToolUsage[]         @relation("DailyToolUsage")
   clientFinderSearches    ClientFinderSearch[]
   prospectContacts        ProspectContact[]
@@ -276,6 +277,28 @@ model ReportTemplate {
   updatedAt DateTime @updatedAt
 
   @@index([agencyId])
+}
+
+/// A domain the customer has declared to be a competitor, per brand.
+///
+/// The only stored judgement in AI Presence. Everything else is derived at read time from
+/// AiVisibilityRun, because a stored conclusion outlives the evidence behind it; this is an
+/// input rather than a conclusion. An AI answer's cited domains are just its sources, so
+/// calling them all competitors would print inference as observation.
+model AiPresenceCompetitor {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("AiPresenceCompetitors", fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Scoped to the brand: two brands on one account have different rivals.
+  brand            String
+  /// Lowercased bare host, like every other domain in this codebase.
+  competitorDomain String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, brand, competitorDomain])
+  @@index([userId, brand])
 }
 
 /// An account granted a plan it did not pay for, at an allowance that need not be the

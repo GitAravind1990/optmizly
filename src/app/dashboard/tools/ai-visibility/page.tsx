@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { LockedState } from '@/components/ui'
+import AiPresencePanel from './presence'
 
 type SurfaceOutcome = {
   answerPresent: boolean
@@ -50,6 +51,16 @@ export default function AiVisibilityPage() {
   const [running, setRunning] = useState(false)
   const [error, setError] = useState('')
   const [locked, setLocked] = useState(false)
+
+  /**
+   * Two views over the same data, not two tools.
+   *
+   * "Scan" runs prompts and charges credits; "AI Presence" reads what previous scans already
+   * stored and charges nothing. They live together because the second is meaningless without
+   * the first, and splitting them into separate sidebar entries would imply a second thing to
+   * buy when the entitlement is one and the same.
+   */
+  const [tab, setTab] = useState<'scan' | 'presence'>('scan')
 
   const loadPast = useCallback(() => {
     fetch('/api/tools/ai-visibility')
@@ -184,6 +195,29 @@ export default function AiVisibilityPage() {
         </div>
       </div>
 
+      <div className="border-b border-slate-200 bg-white px-6">
+        <div className="max-w-5xl mx-auto flex gap-1">
+          {([['scan', 'Run a scan'], ['presence', 'AI Presence']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`-mb-px border-b-2 px-3 py-2.5 text-xs font-bold transition-colors ${
+                tab === key
+                  ? 'border-blue-600 text-blue-700'
+                  : 'border-transparent text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === 'presence' ? (
+        <div className="p-6 max-w-5xl mx-auto">
+          <AiPresencePanel />
+        </div>
+      ) : (
       <div className="p-6 max-w-5xl mx-auto space-y-5">
         {/* What this measures, stated before the button, because "AI visibility" is a phrase
             other products use for different things. */}
@@ -303,6 +337,7 @@ export default function AiVisibilityPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }

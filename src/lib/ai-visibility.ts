@@ -33,6 +33,18 @@ export type SurfaceOutcome = {
   cited: boolean
   /** Domains the answer cited, so "who got picked instead" is answerable. */
   citedDomains: string[]
+  /**
+   * The exact pages cited, not just their domains.
+   *
+   * `AiAnswer` has carried these since the DataForSEO extractor was written — "so a
+   * page-level report is possible later without re-fetching" — and this function was
+   * throwing them away. A citation gap that can name the competitor's *page* tells you what
+   * to go and read; one that says only "competitor.com" does not.
+   *
+   * Optional because runs stored before this field existed have no URLs, and a report must
+   * be able to say "not captured for this run" rather than imply the answer cited nothing.
+   */
+  citedUrls?: Array<{ domain: string; url: string; title: string }>
 }
 
 /**
@@ -77,14 +89,19 @@ export function countBrandMentions(text: string, brand: string, aliases: string[
 function summarise(answer: AiAnswer | null, brand: string, domain: string | null, aliases: string[]): SurfaceOutcome | null {
   if (answer === null) return null
   if (!answer.present) {
-    return { answerPresent: false, mentions: 0, cited: false, citedDomains: [] }
+    return { answerPresent: false, mentions: 0, cited: false, citedDomains: [], citedUrls: [] }
   }
-  const host = domain ? domain.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').toLowerCase() : null
+  // Lowercased before the prefixes are stripped, not after: `^www\.` is case-sensitive, so
+  // a domain entered as `WWW.Example.com` used to reduce to `www.example.com` and never
+  // match a cited `example.com`. The brand then read as never cited, which is the worst
+  // possible direction for this number to be wrong in.
+  const host = domain ? domain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '') : null
   return {
     answerPresent: true,
     mentions: countBrandMentions(answer.text, brand, aliases),
     cited: host ? answer.citedDomains.includes(host) : false,
     citedDomains: answer.citedDomains,
+    citedUrls: answer.citedUrls,
   }
 }
 
