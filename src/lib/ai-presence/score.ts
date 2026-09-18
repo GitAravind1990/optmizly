@@ -1,5 +1,5 @@
 import {
-  AVAILABLE_COMPONENTS,
+  COMPONENT_HAS_SOURCE,
   MIN_ANSWERS_FOR_SCORE,
   MIN_ANSWERS_FOR_CONFIDENCE,
   SCORE_WEIGHTS,
@@ -92,14 +92,17 @@ export function computePresenceScore(
     },
     discovery: {
       score: null,
-      detail: 'Not connected — needs server or CDN logs',
+      // Not "Not connected": this product uses that phrase for Search Console, which a user
+      // can go and connect. There is no button behind this one and no setting to find. It
+      // would mean reading AI crawler hits out of the customer's own server or CDN logs.
+      detail: 'Not measured — would need AI crawler hits from your server or CDN logs',
     },
   }
 
   // Available means "this component has a data source AND that source produced something".
   // Both halves matter: discovery fails the first, and a brand-new account fails the second.
   const components: ComponentScore[] = (Object.keys(SCORE_WEIGHTS) as ScoreComponent[]).map(key => {
-    const available = AVAILABLE_COMPONENTS.includes(key) && raw[key].score !== null
+    const available = COMPONENT_HAS_SOURCE[key] && raw[key].score !== null
     return {
       key,
       label: LABELS[key],

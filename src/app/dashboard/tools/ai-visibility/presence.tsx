@@ -437,9 +437,9 @@ function ScoreCard({
       {excluded.length > 0 && (
         <p className="mt-3 text-[11px] text-amber-700 bg-amber-50 rounded-xl px-3 py-2">
           {excluded.map(c => c.label).join(', ')} {excluded.length === 1 ? 'has' : 'have'} no data
-          source yet, so {excluded.length === 1 ? 'it is' : 'they are'} excluded and the
-          remaining weights add back up to 100%. A component we cannot measure is never counted
-          as a zero against you.
+          source, so {excluded.length === 1 ? 'it is' : 'they are'} excluded and the remaining
+          weights add back up to 100%. A component we cannot measure is never counted as a zero
+          against you, and there is nothing for you to switch on here.
         </p>
       )}
 

@@ -30,12 +30,15 @@ export type Confidence = 'HIGH' | 'MEDIUM' | 'LOW'
 /**
  * Score component weights.
  *
- * DISCOVERY and REFERRAL are declared but have no data source in the MVP — no log ingestion,
- * no analytics integration. They are kept here rather than deleted so the renormalisation
- * below is visibly doing something, and so adding the source later is a config change rather
- * than a scoring rewrite. A component with no data is *excluded and the rest renormalised*,
- * never counted as zero: scoring an unmeasured thing as nothing punishes the customer for a
- * feature we have not built.
+ * `discovery` has no data source, and it is not one this product can simply switch on. It
+ * would mean counting AI crawler hits against the *customer's own site*, which live in their
+ * server or CDN logs — nothing Optmizly holds or can reach. Treat it as a stated part of the
+ * model rather than as work that is nearly done.
+ *
+ * Keeping it costs nothing arithmetically. A component with no data is *excluded and the rest
+ * renormalised*, never scored as zero, so the four measured weights are divided by 0.90
+ * whether or not `discovery` appears here — deleting it would change no score. Scoring an
+ * unmeasured thing as nothing would punish the customer for a feature that does not exist.
  */
 export const SCORE_WEIGHTS = {
   visibility: 0.30,
@@ -47,13 +50,24 @@ export const SCORE_WEIGHTS = {
 
 export type ScoreComponent = keyof typeof SCORE_WEIGHTS
 
-/** Components the MVP can actually measure. The rest render as "Not connected". */
-export const AVAILABLE_COMPONENTS: ScoreComponent[] = [
-  'visibility',
-  'citation',
-  'authority',
-  'coverage',
-]
+/**
+ * Whether each component has a data source behind it at all.
+ *
+ * A `Record` rather than a list of the measurable ones, so adding a component to
+ * `SCORE_WEIGHTS` without deciding this is a compile error rather than a silent exclusion.
+ * Left as a list, a new component would simply never score and nothing would say so — the
+ * same failure the plan gating in this repo is keyed rather than ranked to avoid.
+ *
+ * Note this is only half of "available": a component also needs its source to have actually
+ * produced something. `score.ts` checks both.
+ */
+export const COMPONENT_HAS_SOURCE: Record<ScoreComponent, boolean> = {
+  visibility: true,
+  citation: true,
+  authority: true,
+  coverage: true,
+  discovery: false,
+}
 
 /**
  * Below this many answered prompts, no score is produced at all.

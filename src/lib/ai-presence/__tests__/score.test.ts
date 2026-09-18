@@ -58,7 +58,26 @@ describe('components with no data', () => {
     const score = computePresenceScore(perfect(10), 'optmizly.com', 1)
     const discovery = score.components.find(c => c.key === 'discovery')
     expect(discovery).toMatchObject({ available: false, score: null, effectiveWeight: 0 })
-    expect(discovery?.detail).toMatch(/not connected/i)
+    expect(discovery?.detail).toMatch(/not measured/i)
+  })
+
+  it('does not tell the user discovery is something they can connect', () => {
+    // This app uses "not connected" for Search Console, which has a real connect flow.
+    // Reusing it here would send people hunting for a button that does not exist.
+    const score = computePresenceScore(perfect(10), 'optmizly.com', 1)
+    const discovery = score.components.find(c => c.key === 'discovery')
+    expect(discovery?.detail).not.toMatch(/not connected/i)
+  })
+
+  it('carries no weight, so stating it in the model costs no score', () => {
+    // The four measured weights are divided by 0.90 whether or not discovery is declared,
+    // which is what makes keeping it in SCORE_WEIGHTS honest rather than a thumb on the scale.
+    const score = computePresenceScore(perfect(10), 'optmizly.com', 1)
+    const measuredWeight = score.components
+      .filter(c => c.available)
+      .reduce((n, c) => n + c.weight, 0)
+    expect(measuredWeight).toBeCloseTo(1 - SCORE_WEIGHTS.discovery)
+    expect(score.totalScore).toBe(100)
   })
 
   it('keeps the effective weights summing to one across what is measurable', () => {
