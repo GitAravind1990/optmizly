@@ -65,6 +65,35 @@ type Overview = {
   empty?: string
 }
 
+/**
+ * `/api/ai-presence/citations`.
+ *
+ * Read from its own endpoint rather than from the overview's copy of the same numbers,
+ * because the endpoint also carries the sentences that qualify them — what "cited" does not
+ * mean, why a share is not a ranking, why an empty page list may mean "not recorded". Those
+ * belong beside the number they describe, on the server, not restated in TSX where the two
+ * can drift apart.
+ */
+type CitationsPayload = {
+  citationCount: number
+  opportunities: number
+  citationRate: number | null
+  citedPages: Array<{ url: string; title: string; count: number }>
+  citedPagesUnavailable: boolean
+  citedPagesNote: string | null
+  authority: {
+    targetCitations: number
+    totalCitations: number
+    share: number | null
+    otherCitedDomains: Array<{ domain: string; count: number }>
+    label: string
+    note: string
+  }
+  empty: string | null
+  noCitations: string | null
+  provenance: { citations: string }
+}
+
 type QueriesPayload = {
   queries: Array<{
     query: string
@@ -126,6 +155,7 @@ export default function AiPresencePanel() {
   const [days, setDays] = useState(30)
 
   const [overview, setOverview] = useState<Overview | null>(null)
+  const [citations, setCitations] = useState<CitationsPayload | null>(null)
   const [queries, setQueries] = useState<QueriesPayload | null>(null)
   const [gaps, setGaps] = useState<GapsPayload | null>(null)
   const [opportunities, setOpportunities] = useState<OpportunitiesPayload | null>(null)
@@ -145,6 +175,7 @@ export default function AiPresencePanel() {
         `/api/ai-presence/queries${qs('&limit=50')}`,
         `/api/ai-presence/gaps${qs()}`,
         `/api/ai-presence/opportunities${qs()}`,
+        `/api/ai-presence/citations${qs()}`,
       ]
       const responses = await Promise.all(paths.map(p => fetch(p)))
       const bodies = await Promise.all(responses.map(r => r.json().catch(() => ({}))))
@@ -155,6 +186,7 @@ export default function AiPresencePanel() {
       setQueries(bodies[1] as QueriesPayload)
       setGaps(bodies[2] as GapsPayload)
       setOpportunities(bodies[3] as OpportunitiesPayload)
+      setCitations(bodies[4] as CitationsPayload)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load AI Presence.')
     } finally {
@@ -285,7 +317,14 @@ export default function AiPresencePanel() {
 
       {overview?.changes && <Changes changes={overview.changes} days={days} />}
 
-      {metrics && <Citations metrics={metrics} domain={scope?.domain ?? null} />}
+      {citations && metrics && (
+        <Citations
+          citations={citations}
+          visibility={metrics.visibility}
+          coverage={metrics.coverage}
+          domain={scope?.domain ?? null}
+        />
+      )}
 
       {gaps && (
         <Competitors
@@ -466,13 +505,17 @@ function Changes({
 }
 
 function Citations({
-  metrics,
+  citations,
+  visibility,
+  coverage,
   domain,
 }: {
-  metrics: NonNullable<Overview['metrics']>
+  citations: CitationsPayload
+  visibility: NonNullable<Overview['metrics']>['visibility']
+  coverage: NonNullable<Overview['metrics']>['coverage']
   domain: string | null
 }) {
-  const { citations, authority, visibility, coverage } = metrics
+  const { authority } = citations
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
@@ -484,6 +527,14 @@ function Citations({
           was trained on it &mdash; neither of which is observable.
         </p>
       </div>
+
+      {/* No answers at all in the period, so there was nothing to be cited in. Said plainly,
+          because 0% against a denominator of zero is not a result. */}
+      {citations.empty && (
+        <p className="text-xs text-slate-500 bg-slate-50 rounded-xl px-3 py-2">
+          {citations.empty}
+        </p>
+      )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Metric
@@ -497,7 +548,9 @@ function Citations({
           hint={`${citations.citationCount} of ${citations.opportunities} AI answers`}
         />
         <Metric
-          label="Share of authority"
+          // The endpoint names this metric, so the page cannot call it something the API does
+          // not. "Share of authority" is a phrase worth keeping identical wherever it appears.
+          label={authority.label}
           value={pct(authority.share)}
           hint={`${authority.targetCitations} of ${authority.totalCitations} citations counted`}
         />
@@ -508,19 +561,23 @@ function Citations({
         />
       </div>
 
-      <p className="text-[11px] text-slate-400">
-        Share of authority is share of the citations inside the answers we measured for this
-        brand, so it moves when the prompt set moves. It is not a search ranking, and the counts
-        are shown beside it so the size of the base is visible.
-      </p>
+      {/* Answers existed and none of them cited the domain. A real, reportable result, and a
+          different statement from having had no opportunities. */}
+      {citations.noCitations && (
+        <p className="text-xs text-amber-700 bg-amber-50 rounded-xl px-3 py-2">
+          {citations.noCitations}
+        </p>
+      )}
+
+      <p className="text-[11px] text-slate-400">{authority.note}</p>
 
       <div>
         <h3 className="text-xs font-bold text-slate-700">Your pages that got cited</h3>
-        {citations.pagesUnavailable ? (
+        {citations.citedPagesUnavailable ? (
           // Distinct from "no pages were cited". An older scan never recorded URLs, and
           // showing an empty list would read as a total failure to be cited.
           <p className="mt-1.5 text-[11px] text-amber-700 bg-amber-50 rounded-xl px-3 py-2">
-            Cited page URLs were not captured for scans in this period. New scans record them.
+            {citations.citedPagesNote}
           </p>
         ) : citations.citedPages.length === 0 ? (
           <p className="mt-1.5 text-[11px] text-slate-400">
@@ -547,17 +604,17 @@ function Citations({
         )}
       </div>
 
-      {authority.topDomains.length > 0 && (
+      {authority.otherCitedDomains.length > 0 && (
         <div>
           <h3 className="text-xs font-bold text-slate-700">Other domains these answers cited</h3>
-          {/* Deliberately not called competitors. An AI answer cites whatever it used, which
-              is routinely Wikipedia or a newspaper. */}
+          {/* The endpoint deliberately does not call these competitors, and neither does this.
+              An AI answer cites whatever it used, which is routinely Wikipedia or a newspaper. */}
           <p className="mt-0.5 text-[11px] text-slate-400">
             Sources these answers drew on, most frequent first. Not competitors until you say
             so.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {authority.topDomains.map(d => (
+            {authority.otherCitedDomains.map(d => (
               <span
                 key={d.domain}
                 className="text-xs px-2.5 py-1 rounded-full border border-slate-200 bg-slate-50 text-slate-700"
@@ -568,6 +625,8 @@ function Citations({
           </div>
         </div>
       )}
+
+      <p className="text-[10px] text-slate-400">{citations.provenance.citations}</p>
     </div>
   )
 }
