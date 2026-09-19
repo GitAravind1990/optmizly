@@ -3,7 +3,7 @@ import { requireAuth, requireToolAccess, refundUsage, AuthError } from '@/lib/au
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
 import { prisma } from '@/lib/prisma'
-import { summariseRun, type PromptOutcome, type SurfaceOutcome } from '@/lib/ai-visibility'
+import { summariseRun, capSurface, type PromptOutcome } from '@/lib/ai-visibility'
 
 export const runtime = 'nodejs'
 /**
@@ -16,33 +16,6 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 const MAX_PROMPTS = 25
-
-/**
- * The outcomes arrive back through the client, so every field is rebuilt rather than trusted.
- *
- * This matters more than the usual input-validation reason: these numbers become a stored
- * report and the baseline for every future trend. A client that inflated its own mention count
- * would not be cheating a limit, it would be corrupting the customer's own history — so the
- * shape is narrowed, the counts are clamped, and anything unrecognised becomes a failed lookup
- * rather than a zero, because those mean different things.
- */
-function capSurface(v: unknown): SurfaceOutcome | null {
-  if (!v || typeof v !== 'object') return null
-  const s = v as Record<string, unknown>
-  if (typeof s.answerPresent !== 'boolean') return null
-  return {
-    answerPresent: s.answerPresent,
-    mentions: typeof s.mentions === 'number' && Number.isFinite(s.mentions)
-      ? Math.max(0, Math.min(500, Math.round(s.mentions)))
-      : 0,
-    cited: s.cited === true,
-    citedDomains: Array.isArray(s.citedDomains)
-      ? (s.citedDomains.filter(d => typeof d === 'string') as string[])
-          .map(d => d.slice(0, 253))
-          .slice(0, 30)
-      : [],
-  }
-}
 
 export async function POST(req: NextRequest) {
   let charged: string | null = null

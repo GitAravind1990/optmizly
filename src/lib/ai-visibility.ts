@@ -72,6 +72,56 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
  * the same brand. Without that, a two-word brand scores zero on the exact text most likely to
  * name it.
  */
+/**
+ * Rebuild one surface outcome from whatever the client posted back.
+ *
+ * Lives here, beside `SurfaceOutcome`, rather than in the store route: it is the inverse of
+ * that type and the two have to be changed together. Kept apart, they drifted — `citedUrls`
+ * was added to the type and to `summarise` and then silently dropped here for every run,
+ * because an *optional* field missing from a rebuilt object is valid TypeScript. Nothing
+ * failed, nothing warned, and the UI simply said the URLs were never captured. Forever.
+ *
+ * Every field is rebuilt rather than trusted. These numbers become a stored report and the
+ * baseline for every future trend, so a client that inflated its own mention count would not
+ * be cheating a limit, it would be corrupting the customer's own history. Unrecognised input
+ * becomes a failed lookup rather than a zero, because those mean different things.
+ */
+export function capSurface(v: unknown): SurfaceOutcome | null {
+  if (!v || typeof v !== 'object') return null
+  const s = v as Record<string, unknown>
+  if (typeof s.answerPresent !== 'boolean') return null
+
+  const out: SurfaceOutcome = {
+    answerPresent: s.answerPresent,
+    mentions: typeof s.mentions === 'number' && Number.isFinite(s.mentions)
+      ? Math.max(0, Math.min(500, Math.round(s.mentions)))
+      : 0,
+    cited: s.cited === true,
+    citedDomains: Array.isArray(s.citedDomains)
+      ? (s.citedDomains.filter(d => typeof d === 'string') as string[])
+          .map(d => d.slice(0, 253))
+          .slice(0, 30)
+      : [],
+  }
+
+  // Set only when the payload actually carried an array. Defaulting to [] would tell every
+  // reader "this run recorded its pages and there were none", which is the one thing the
+  // optional field exists to distinguish it from.
+  if (Array.isArray(s.citedUrls)) {
+    out.citedUrls = s.citedUrls
+      .filter((u): u is Record<string, unknown> => !!u && typeof u === 'object')
+      .filter(u => typeof u.domain === 'string' && typeof u.url === 'string')
+      .map(u => ({
+        domain: (u.domain as string).slice(0, 253),
+        url: (u.url as string).slice(0, 2048),
+        title: typeof u.title === 'string' ? u.title.slice(0, 300) : '',
+      }))
+      .slice(0, 30)
+  }
+
+  return out
+}
+
 export function countBrandMentions(text: string, brand: string, aliases: string[] = []): number {
   const prose = proseOnly(text)
   const names = [brand, ...aliases].map(n => n.trim()).filter(Boolean)
