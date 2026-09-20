@@ -619,7 +619,7 @@ Update Agency plan in `src/app/pricing/page.tsx`:
 ## 7. ENV VARIABLES
 
 ```env
-GOOGLE_API_KEY=AIzaSyBf8J1_qLDWJxblCqneu00beZqNYwH2TbY
+GOOGLE_API_KEY=<your Google API key — read it from the Vercel env, never commit it>
 ANTHROPIC_API_KEY=sk-ant-api03-...
 DATABASE_URL=postgresql://...
 ```
