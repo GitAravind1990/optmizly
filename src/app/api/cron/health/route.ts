@@ -45,7 +45,7 @@ const DFS_LOW_BALANCE_USD = 10
 
 type Check = { name: string; ok: boolean; detail: string; ms: number }
 
-async function withTimeout<T>(label: string, p: Promise<T>, ms = TIMEOUT_MS): Promise<T> {
+async function withTimeout<T>(label: string, p: Promise<T>): Promise<T> {
   // The timer is cleared on the winning path too. Left pending it keeps the event loop
   // busy for a further 12s after the response has already been sent, which on a
   // serverless function means the invocation cannot be frozen when it is actually done.
@@ -55,8 +55,8 @@ async function withTimeout<T>(label: string, p: Promise<T>, ms = TIMEOUT_MS): Pr
       p,
       new Promise<never>((_, reject) => {
         timer = setTimeout(
-          () => reject(new Error(`${label} timed out after ${ms}ms`)),
-          ms
+          () => reject(new Error(`${label} timed out after ${TIMEOUT_MS}ms`)),
+          TIMEOUT_MS
         )
       }),
     ])
@@ -65,10 +65,10 @@ async function withTimeout<T>(label: string, p: Promise<T>, ms = TIMEOUT_MS): Pr
   }
 }
 
-async function run(name: string, fn: () => Promise<string>, timeoutMs?: number): Promise<Check> {
+async function run(name: string, fn: () => Promise<string>): Promise<Check> {
   const started = Date.now()
   try {
-    const detail = await withTimeout(name, fn(), timeoutMs)
+    const detail = await withTimeout(name, fn())
     return { name, ok: true, detail, ms: Date.now() - started }
   } catch (e) {
     return {
@@ -149,25 +149,29 @@ const checkRedis = () =>
   })
 
 /**
- * PageSpeed Insights, with the key deliberately attached.
+ * PageSpeed Insights: that Google still accepts our key.
  *
  * The thing this catches is specific and would otherwise be silent. **PSI accepts requests
  * without a key**, so nothing 401s — but the anonymous quota is shared per-IP and measured
  * 2026-09-20 to be exhausted already: a keyless call returned 429 on the first try. So a
  * missing or rejected key does not degrade Core Web Vitals, it removes them. Both callers
- * treat PSI as optional:
- * `performance-fixer` only sets `key` when one exists, and `fetchPSIMetrics` returns null on
- * any failure so the SEO Audit quietly keeps its heuristic result. That is correct for a
- * user-facing request and is exactly why a revoked or mis-copied key is invisible — the
- * tools keep working slightly worse rather than failing.
+ * treat PSI as optional: `performance-fixer` only sets `key` when one exists, and
+ * `fetchPSIMetrics` returns null on any failure so the SEO Audit quietly keeps its heuristic
+ * result. Correct for a user-facing request, and exactly why a revoked key is invisible.
  *
- * So an unset `GOOGLE_API_KEY` is a failure here rather than a reason to skip the check, and
- * the key is sent rather than omitted: the point is to prove *this credential* is accepted,
- * not that Google is up.
+ * So an unset `GOOGLE_API_KEY` is a failure here rather than a reason to skip the check.
  *
- * Its own timeout, because PSI runs a real Lighthouse audit — `fetchPSIMetrics` allows it
- * 45s. At the shared 12s this check would fail on a healthy key often enough to be ignored,
- * which is worse than not having it. example.com keeps the audit small.
+ * **The url is deliberately invalid.** Google validates the API key at the gateway before the
+ * request reaches PSI, measured 2026-09-20: a rejected key answers "API key not valid" in
+ * 0.5-1.9s whether the url is good or junk, while an accepted key gets far enough to complain
+ * about the url instead. Neither runs Lighthouse.
+ *
+ * Running a real audit was the first design and it was wrong. Four consecutive runs against a
+ * valid key returned 152ms, 7.2s, an HTTP 500 at 38.8s, and a timeout — PSI's audit latency
+ * is its own business and swings by two orders of magnitude. A check that fails on a healthy
+ * credential a quarter of the time is one nobody reads, which is worse than not having it.
+ * This deliberately trades "PSI can complete an audit", which varies by the minute and is not
+ * actionable, for "PSI accepts our key", which is the thing that breaks silently and is.
  */
 const checkPageSpeed = () =>
   run('pagespeed', async () => {
@@ -175,32 +179,23 @@ const checkPageSpeed = () =>
     if (!key) throw new Error('GOOGLE_API_KEY not configured — keyless PSI is 429-limited, so CWV data disappears')
 
     const u = new URL('https://www.googleapis.com/pagespeedonline/v5/runPagespeed')
-    u.searchParams.set('url', 'https://example.com')
-    u.searchParams.set('category', 'performance')
-    u.searchParams.set('strategy', 'desktop')
+    u.searchParams.set('url', 'not-a-url')
     u.searchParams.set('key', key)
 
     const res = await fetch(u.toString(), { cache: 'no-store' })
-    if (!res.ok) {
-      // Google names a bad key in the body; say so rather than reporting a bare 400, because
-      // "key rejected" and "Google is having a bad day" need different responses from us.
-      const body = await res.text().catch(() => '')
-      throw new Error(
-        /API key not valid|API_KEY_INVALID|keyInvalid|expired|PERMISSION_DENIED|blocked/i.test(body)
-          ? `key rejected (HTTP ${res.status})`
-          : `HTTP ${res.status}`
-      )
-    }
+    const body = await res.text().catch(() => '')
 
-    const data = (await res.json()) as {
-      lighthouseResult?: { categories?: { performance?: { score?: number } } }
+    // Name a rejected key rather than reporting a bare 400: "key rejected" and "Google is
+    // having a bad day" call for different responses from us.
+    if (/API key not valid|API_KEY_INVALID|keyInvalid|PERMISSION_DENIED|blocked|disabled/i.test(body)) {
+      throw new Error(`key rejected (HTTP ${res.status})`)
     }
-    const score = data.lighthouseResult?.categories?.performance?.score
-    // A 200 with no Lighthouse result is the same class of lie as the empty LLM completion
-    // above: the credential passed and the thing we need still is not there.
-    if (typeof score !== 'number') throw new Error('key accepted but no lighthouse result returned')
-    return `example.com scored ${Math.round(score * 100)}`
-  }, 40_000)
+    // A keyed request that still hits a quota wall means the key is not being applied, or its
+    // own daily limit is gone — either way CWV data stops, which is what we are watching for.
+    if (res.status === 429) throw new Error('quota exceeded — key not applied, or daily limit reached')
+
+    return `key accepted (HTTP ${res.status} on a deliberately invalid url)`
+  })
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
