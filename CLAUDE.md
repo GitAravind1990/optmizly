@@ -16,6 +16,14 @@ marketing figures. Counts are cumulative by tier, since each plan sees the tiers
 | Agency | 24 | "all 24 tools" |
 | Agency Plus | 24 | volume, unlimited clients and seats — never "more tools" |
 
+**A second view over an existing tool is a tab, not a nav entry, and the count does not move.**
+AI Presence reads what an AI Visibility scan already stored and is gated on the same
+`ai-visibility` entitlement, so it ships as a tab on `/dashboard/tools/ai-visibility` and
+Agency stays at 24. **Reusing an entitlement is the signal**: a surface that needs no new
+`PLAN_TOOLS` key is not a new thing to buy, and giving it a sidebar row would imply it is.
+Adding it to `TOOL_GROUPS` instead would have triggered the whole count sweep below for a
+surface nobody pays extra for.
+
 **Starter and Pro see the identical 12 tools and differ only in allowance** (15 vs 50), as of
 2026-09-06. `PLAN_TOOLS.STARTER` is derived from `PLAN_TOOLS.PRO` rather than retyped, the
 same way `AGENCY_PLUS` derives from `AGENCY`, so a tool added to Pro reaches Starter
@@ -354,6 +362,29 @@ That second shape moves the billing question. Charge on the request that produce
 the user keeps — the final store — so an abandoned run costs nothing, and use
 `assertQuotaAvailable` on the first step so someone already at their limit is refused before
 the work rather than after it.
+
+**When the client carries results back, the rebuilder and the type must live together.** The
+store route cannot trust what the client posts — these numbers become the customer's stored
+history, so every field is rebuilt rather than spread. That rebuilder is the inverse of the
+type, and keeping the two in separate files is how they drift: `capSurface` was never updated
+when `citedUrls` was added to `SurfaceOutcome`, so the field was dropped on every run ever
+stored. **An optional field has no compiler behind it at a rebuild boundary** — omitting one
+from a rebuilt object is valid TypeScript, so tsc, lint, a green build and a live run
+returning 200 on every call all passed. It was only found by running a real scan and reading
+the stored row. `capSurface` now sits in `src/lib/ai-visibility.ts` beside the type it
+rebuilds, with a round-trip test, which is the only guard this shape has.
+
+Two things that made it invisible for the field's whole life, both worth recognising
+elsewhere: the UI's "page not recorded" note was **correct**, so an honest empty state hid a
+broken pipeline and nothing could ever clear it; and `[]` versus absent carried the real
+meaning — "recorded, cited nothing" against "never captured" — so defaulting the missing case
+to `[]` would have asserted the stronger claim on every old run.
+
+**A route that only reads stored results charges nothing** — `requireToolAccess`, never
+`requireAuth`. The run was billed when it happened, and billing again to look at it charges a
+customer for opening a page. Every `/api/ai-presence/*` GET works this way; opening that
+dashboard leaves the monthly counter untouched, which is worth checking against `Usage` rather
+than assuming.
 
 Judge this by measured wall time, not by the limit: a route capped at 90 that really takes
 20s is fine, and one capped at 300 that takes 160s is broken today.
