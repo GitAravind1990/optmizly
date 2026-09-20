@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import type { Plan } from '@prisma/client'
 
-const STEPS = [
+/** The two steps every account starts with, whatever it pays. */
+const FIRST_STEPS = [
   {
     n: 1,
     label: 'Analyse your first page',
@@ -16,22 +18,63 @@ const STEPS = [
     desc: 'Check title tags, headings, meta descriptions and keyword usage.',
     href: '/dashboard/onpage',
   },
-  {
-    n: 3,
+]
+
+/**
+ * The third step, which depends on what the account already has.
+ *
+ * This was one hardcoded line pitching "Unlock all 12 tools from $9" to everybody, so a
+ * paying Agency account — which already has all 24 — was shown an upsell to a cheaper plan
+ * with fewer tools. A `Record<Plan, …>` rather than a lookup with a default, so adding a
+ * tier is a compile error instead of silently inheriting someone else's pitch.
+ *
+ * The tier rules this has to obey: Free upsells point at Starter, not Pro, because Starter
+ * is the cheapest plan that unlocks a Pro-tier tool. Starter and Pro see the identical 12
+ * tools, so a Starter step sells volume and never "more tools". Agency Plus likewise adds no
+ * tools over Agency — it sells clients, seats and volume. Agency Plus is the top plan and
+ * has nothing above it, so it gets a product step instead of a pitch.
+ */
+const LAST_STEP: Record<Plan, { label: string; desc: string; href: string }> = {
+  FREE: {
     label: 'Unlock all 12 tools from $9',
     desc: 'Starter adds rank tracking, E-E-A-T analysis, content gaps, backlinks and more.',
     href: '/pricing',
   },
-]
+  STARTER: {
+    label: 'Run more than 15 analyses a month',
+    desc: 'Pro is the same 12 tools at 50 analyses a month.',
+    href: '/pricing',
+  },
+  PRO: {
+    label: 'Unlock all 24 tools with Agency',
+    desc: 'Agency adds SEO audits, local SEO, client reports, AI Visibility and more.',
+    href: '/pricing',
+  },
+  AGENCY: {
+    label: 'Add unlimited clients and seats',
+    desc: 'Agency Plus is the same 24 tools with unlimited client projects and 5 seats.',
+    href: '/pricing',
+  },
+  AGENCY_PLUS: {
+    label: 'Connect Search Console',
+    desc: 'Grounds Rank Tracker, AI Visibility and content gaps in your own query data.',
+    href: '/dashboard/settings',
+  },
+}
 
-export function WelcomeBanner() {
+export function WelcomeBanner({ plan }: { plan: Plan | null }) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
     if (!localStorage.getItem('optmizly_welcome_v1')) setVisible(true)
   }, [])
 
-  if (!visible) return null
+  // Nothing until the plan is known. A null plan means /api/user has not answered yet or
+  // failed, and guessing costs more than waiting: the guess is a sales pitch, and the wrong
+  // one tells a paying customer to buy something they already have.
+  if (!visible || !plan) return null
+
+  const STEPS = [...FIRST_STEPS, { n: 3, ...LAST_STEP[plan] }]
 
   function dismiss() {
     localStorage.setItem('optmizly_welcome_v1', '1')

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { UserButton } from '@clerk/nextjs'
 import { ContentProvider } from '@/context/ContentContext'
 import { WelcomeBanner } from '@/components/welcome-banner'
+import type { Plan } from '@prisma/client'
 import posthog from 'posthog-js'
 import { toolCost } from '@/lib/plans'
 
@@ -347,7 +348,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Page content */}
           <div className="flex-1 overflow-auto">
-            <WelcomeBanner />
+            <WelcomeBanner plan={plan as Plan | null} />
             {children}
           </div>
 
