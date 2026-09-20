@@ -5,18 +5,22 @@ export interface ArticleSchemaProps {
   title: string
   description: string
   date: string
+  /** Last edit (PostMeta.updated). Falls back to `date` for callers that have no edit
+   *  date — which is what every caller effectively passed before this existed, and why a
+   *  rewritten post still told Google it had not changed since the day it was published. */
+  modified?: string
   author: string
   tags?: string
 }
 
-export function buildArticleJsonLd({ slug, title, description, date, author, tags }: ArticleSchemaProps): string {
+export function buildArticleJsonLd({ slug, title, description, date, modified, author, tags }: ArticleSchemaProps): string {
   return JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: title,
     description,
     datePublished: date,
-    dateModified: date,
+    dateModified: modified ?? date,
     url: `${APP_URL}/blog/${slug}`,
     mainEntityOfPage: { '@type': 'WebPage', '@id': `${APP_URL}/blog/${slug}` },
     author: { '@type': 'Person', name: author, url: APP_URL },

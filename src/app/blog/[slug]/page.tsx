@@ -67,7 +67,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     <div className="min-h-screen bg-white">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: buildArticleJsonLd({ slug, title: post.title, description: post.description, date: post.date, author: post.author, tags: post.tags }) }}
+        dangerouslySetInnerHTML={{ __html: buildArticleJsonLd({ slug, title: post.title, description: post.description, date: post.date, modified: post.updated, author: post.author, tags: post.tags }) }}
       />
       {faqPairs.length > 0 && (
         <script
