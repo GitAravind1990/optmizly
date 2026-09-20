@@ -45,7 +45,7 @@ const DFS_LOW_BALANCE_USD = 10
 
 type Check = { name: string; ok: boolean; detail: string; ms: number }
 
-async function withTimeout<T>(label: string, p: Promise<T>): Promise<T> {
+async function withTimeout<T>(label: string, p: Promise<T>, ms = TIMEOUT_MS): Promise<T> {
   // The timer is cleared on the winning path too. Left pending it keeps the event loop
   // busy for a further 12s after the response has already been sent, which on a
   // serverless function means the invocation cannot be frozen when it is actually done.
@@ -55,8 +55,8 @@ async function withTimeout<T>(label: string, p: Promise<T>): Promise<T> {
       p,
       new Promise<never>((_, reject) => {
         timer = setTimeout(
-          () => reject(new Error(`${label} timed out after ${TIMEOUT_MS}ms`)),
-          TIMEOUT_MS
+          () => reject(new Error(`${label} timed out after ${ms}ms`)),
+          ms
         )
       }),
     ])
@@ -65,10 +65,10 @@ async function withTimeout<T>(label: string, p: Promise<T>): Promise<T> {
   }
 }
 
-async function run(name: string, fn: () => Promise<string>): Promise<Check> {
+async function run(name: string, fn: () => Promise<string>, timeoutMs?: number): Promise<Check> {
   const started = Date.now()
   try {
-    const detail = await withTimeout(name, fn())
+    const detail = await withTimeout(name, fn(), timeoutMs)
     return { name, ok: true, detail, ms: Date.now() - started }
   } catch (e) {
     return {
@@ -148,6 +148,60 @@ const checkRedis = () =>
     return 'reachable'
   })
 
+/**
+ * PageSpeed Insights, with the key deliberately attached.
+ *
+ * The thing this catches is specific and would otherwise be silent. **PSI accepts requests
+ * without a key**, so nothing 401s — but the anonymous quota is shared per-IP and measured
+ * 2026-09-20 to be exhausted already: a keyless call returned 429 on the first try. So a
+ * missing or rejected key does not degrade Core Web Vitals, it removes them. Both callers
+ * treat PSI as optional:
+ * `performance-fixer` only sets `key` when one exists, and `fetchPSIMetrics` returns null on
+ * any failure so the SEO Audit quietly keeps its heuristic result. That is correct for a
+ * user-facing request and is exactly why a revoked or mis-copied key is invisible — the
+ * tools keep working slightly worse rather than failing.
+ *
+ * So an unset `GOOGLE_API_KEY` is a failure here rather than a reason to skip the check, and
+ * the key is sent rather than omitted: the point is to prove *this credential* is accepted,
+ * not that Google is up.
+ *
+ * Its own timeout, because PSI runs a real Lighthouse audit — `fetchPSIMetrics` allows it
+ * 45s. At the shared 12s this check would fail on a healthy key often enough to be ignored,
+ * which is worse than not having it. example.com keeps the audit small.
+ */
+const checkPageSpeed = () =>
+  run('pagespeed', async () => {
+    const key = process.env.GOOGLE_API_KEY
+    if (!key) throw new Error('GOOGLE_API_KEY not configured — keyless PSI is 429-limited, so CWV data disappears')
+
+    const u = new URL('https://www.googleapis.com/pagespeedonline/v5/runPagespeed')
+    u.searchParams.set('url', 'https://example.com')
+    u.searchParams.set('category', 'performance')
+    u.searchParams.set('strategy', 'desktop')
+    u.searchParams.set('key', key)
+
+    const res = await fetch(u.toString(), { cache: 'no-store' })
+    if (!res.ok) {
+      // Google names a bad key in the body; say so rather than reporting a bare 400, because
+      // "key rejected" and "Google is having a bad day" need different responses from us.
+      const body = await res.text().catch(() => '')
+      throw new Error(
+        /API key not valid|API_KEY_INVALID|keyInvalid|expired|PERMISSION_DENIED|blocked/i.test(body)
+          ? `key rejected (HTTP ${res.status})`
+          : `HTTP ${res.status}`
+      )
+    }
+
+    const data = (await res.json()) as {
+      lighthouseResult?: { categories?: { performance?: { score?: number } } }
+    }
+    const score = data.lighthouseResult?.categories?.performance?.score
+    // A 200 with no Lighthouse result is the same class of lie as the empty LLM completion
+    // above: the credential passed and the thing we need still is not there.
+    if (typeof score !== 'number') throw new Error('key accepted but no lighthouse result returned')
+    return `example.com scored ${Math.round(score * 100)}`
+  }, 40_000)
+
 // ─── Route ────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
@@ -157,13 +211,14 @@ export async function GET(req: NextRequest) {
   const started = Date.now()
 
   // Parallel, and each already catches its own failure — one dead provider must not hide
-  // the state of the other four, which is exactly what a sequential run would do.
+  // the state of the other five, which is exactly what a sequential run would do.
   const checks = await Promise.all([
     checkDatabase(),
     checkLLM(),
     checkDataForSEO(),
     checkOpenPageRank(),
     checkRedis(),
+    checkPageSpeed(),
   ])
 
   const failed = checks.filter(c => !c.ok)
