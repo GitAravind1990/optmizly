@@ -5,6 +5,25 @@ import { PRICING_UPDATED } from '@/lib/pricing-faq'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://optmizly.com'
 
 /**
+ * Regenerate hourly instead of freezing at build.
+ *
+ * Next statically generates `sitemap.ts` by default, Prisma access and all, so this file is
+ * rendered once per deploy and served from the build output — a query string does not even
+ * miss the cache. Proof it was doing that: before this file stopped calling `new Date()`,
+ * every static `lastmod` read exactly 2026-09-20T16:45:44.233Z, which is a build timestamp,
+ * not a request one.
+ *
+ * Posts live in the database, so an edit between deploys could not reach the sitemap at all.
+ * That is the bug this file was just fixed for, one layer down: a `lastmod` that cannot move
+ * when the content moves. Measured the same day — correcting three posts' dates left the
+ * sitemap advertising the previous value while the posts' own `dateModified` had already
+ * changed.
+ *
+ * An hour is far below how often Google fetches this, and costs one query per hour.
+ */
+export const revalidate = 3600
+
+/**
  * `lastmod` is stated only where a real edit date exists, and omitted everywhere else.
  *
  * Every static entry here used to carry `new Date()`. Rendered per request, that claims
