@@ -14,8 +14,8 @@ type DomainAnalysis = {
   referringDomains: number
   referringIPs: number
   spamScore: number
-  domainRank: number
-  oprScore: number
+  /** 0-100. Null on analyses stored before 2026-09-23, and when the vendor has no record. */
+  authorityScore: number | null
   newBacklinks14d: number
   lostBacklinks14d: number
   newReferringDomains14d: number
@@ -51,9 +51,11 @@ function fmt(n: number): string {
 
 // ─── Domain Analysis Card ───────────────────────────────────────────────────
 
-function oprColor(score: number) {
-  if (score >= 6) return 'text-green-600'
-  if (score >= 3) return 'text-amber-600'
+/** Bands on the 0-100 authority scale — the old 6/3 thresholds on OpenPageRank's 0-10,
+ *  carried across so a domain keeps the colour it had. */
+function authorityColor(score: number) {
+  if (score >= 60) return 'text-green-600'
+  if (score >= 30) return 'text-amber-600'
   return 'text-slate-500'
 }
 
@@ -75,8 +77,8 @@ function AnalysisCard({ a, onDelete }: { a: DomainAnalysis; onDelete: (id: strin
         </div>
         <div className="text-right">
           <div className="text-xs text-slate-400">Domain Score</div>
-          <div className={`text-2xl font-black ${oprColor(a.oprScore)}`}>
-            {a.oprScore > 0 ? a.oprScore.toFixed(1) : '—'}<span className="text-sm font-normal text-slate-400">/10</span>
+          <div className={`text-2xl font-black ${authorityColor(a.authorityScore ?? 0)}`}>
+            {a.authorityScore != null ? a.authorityScore : '—'}<span className="text-sm font-normal text-slate-400">/100</span>
           </div>
         </div>
       </div>
@@ -85,15 +87,13 @@ function AnalysisCard({ a, onDelete }: { a: DomainAnalysis; onDelete: (id: strin
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-blue-50 rounded-lg p-3 text-center">
           <div className="text-lg font-bold text-blue-700">
-            {a.oprScore > 0 ? a.oprScore.toFixed(2) : '—'}
+            {a.authorityScore != null ? a.authorityScore : '—'}
           </div>
           <div className="text-[10px] text-slate-500">Domain Score</div>
         </div>
         <div className="bg-slate-50 rounded-lg p-3 text-center">
-          <div className="text-lg font-bold text-slate-700">
-            {a.domainRank > 0 ? `#${fmt(a.domainRank)}` : '—'}
-          </div>
-          <div className="text-[10px] text-slate-500">Global Rank</div>
+          <div className="text-lg font-bold text-slate-700">{fmt(a.referringDomains)}</div>
+          <div className="text-[10px] text-slate-500">Referring Domains</div>
         </div>
       </div>
 

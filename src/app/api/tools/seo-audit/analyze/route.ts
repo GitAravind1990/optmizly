@@ -9,7 +9,7 @@ import { aiCheckPromptLines, mergeAICheckVerdicts } from '@/lib/seo-audit/ai-che
 // PSI moved to ./psi — see the note above maxDuration.
 import { crawlSitemapSample } from '@/lib/seo-audit/crawler'
 import { fetchGSCAuditData, applyGSCOverrides } from '@/lib/seo-audit/gsc'
-import { fetchOPRScore } from '@/lib/openpagerank'
+import { getDomainAuthority } from '@/lib/domain-authority'
 import { prisma } from '@/lib/prisma'
 import { captureServerException } from '@/lib/posthog-server'
 
@@ -132,8 +132,7 @@ export async function POST(req: NextRequest) {
     let sitemapXml: string | null = null
     let sitemapUrl: string | null = null
     let sitemapStatus: number | null = null
-    let oprScore: number | null = null
-    let domainRank: number | null = null
+    let authorityScore: number | null = null
     let fetched = true
     let urlKnown = true
     let wpXmlrpcStatus: number | null = null
@@ -185,7 +184,7 @@ export async function POST(req: NextRequest) {
       const [robots, sitemap, opr] = await Promise.all([
         fetchText(`${origin}/robots.txt`),
         fetchText(`${origin}/sitemap.xml`),
-        fetchOPRScore(hostname).catch(() => null),
+        getDomainAuthority(hostname).catch(() => null),
       ])
       robotsTxt = robots && robots.status < 400 ? robots.body : (robots ? '' : null)
       if (sitemap) {
@@ -211,8 +210,10 @@ export async function POST(req: NextRequest) {
         if (sitemapStatus == null) sitemapStatus = 404
       }
       if (opr) {
-        oprScore = opr.page_rank_decimal ?? null
-        domainRank = opr.rank ? parseInt(opr.rank, 10) : null
+        // 0-100 from DataForSEO's backlink rank, null rather than 0 when the vendor has no
+        // record. OpenPageRank's global position rank is gone entirely: this vendor has no
+        // equivalent, and nothing is filled in under that name.
+        authorityScore = opr.known ? opr.score : null
       }
 
       // WordPress-specific technical checks — only fire the extra fetches when the
@@ -240,8 +241,7 @@ export async function POST(req: NextRequest) {
       sitemapXml,
       sitemapStatus,
       redirects: page.redirects,
-      oprScore,
-      domainRank,
+      authorityScore,
       fetched,
       urlKnown,
       wpXmlrpcStatus,
@@ -352,7 +352,7 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
         autoResults: JSON.stringify(autoResults),
         aiResults: JSON.stringify(aiResults),
         checklistState: JSON.stringify({}),
-        backlinkData: JSON.stringify({ oprScore, domainRank }),
+        backlinkData: JSON.stringify({ authorityScore }),
       },
     })
 
@@ -370,7 +370,7 @@ Each issues/fixes array: 2-4 concise, specific items grounded in the actual page
         autoResults,
         aiResults,
         checklistState: {},
-        backlinkData: { oprScore, domainRank },
+        backlinkData: { authorityScore },
         createdAt: audit.createdAt,
       },
     }, 201)

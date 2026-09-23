@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { callLLM } from '@/lib/llm'
-import { fetchOPRScore } from '@/lib/openpagerank'
+import { getDomainAuthority } from '@/lib/domain-authority'
 import { sendHealthAlertEmail } from '@/lib/email'
 import { cronAuthFailure, recordCronRun } from '@/lib/cron'
 
@@ -126,10 +126,24 @@ const checkDataForSEO = () =>
     return `balance $${balance.toFixed(2)}`
   })
 
+/**
+ * Domain authority, now served by DataForSEO rather than OpenPageRank.
+ *
+ * Kept as its own check even though `dataforseo` above already proves the credential works:
+ * this one proves the *bulk_ranks endpoint* answers, and an endpoint can be retired or renamed
+ * while the account stays perfectly healthy. That is exactly how OpenPageRank died on
+ * 2026-09-21 — the credential was fine, the path had moved.
+ *
+ * google.com is the same probe domain the old check used, so the run history stays readable
+ * across the switch. The number changes though: OpenPageRank scored it 6.32 on its 0-10 scale,
+ * DataForSEO scores it ~940 on 0-1000. A step change in this line on 2026-09-23 is the vendor
+ * swap, not a change in google.com.
+ */
 const checkOpenPageRank = () =>
-  run('openpagerank', async () => {
-    const r = await fetchOPRScore('google.com')
-    return `google.com scored ${r.page_rank_decimal}`
+  run('authority', async () => {
+    const a = await getDomainAuthority('google.com')
+    if (!a.known) throw new Error('bulk_ranks returned no rank for google.com')
+    return `google.com rank ${a.rank} (score ${a.score})`
   })
 
 /** Load-bearing since the public AI Regex tool shipped: that endpoint fails closed, so no

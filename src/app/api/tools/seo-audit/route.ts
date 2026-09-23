@@ -45,7 +45,10 @@ export async function GET(req: NextRequest) {
           autoResults: parse<Record<string, { status: CheckStatus; detail: string }>>(a.autoResults, {}),
           aiResults: parse<Record<string, { score: number; issues: string[]; fixes: string[] }>>(a.aiResults, {}),
           checklistState: parse<Record<string, CheckStatus>>(a.checklistState, {}),
-          backlinkData: parse<{ oprScore: number | null; domainRank: number | null }>(a.backlinkData ?? '{}', { oprScore: null, domainRank: null }),
+          // Both shapes are read: rows stored before 2026-09-23 carry `oprScore` (0-10) and
+          // `domainRank`, newer ones carry `authorityScore` (0-100). Old rows keep rendering on
+          // their own basis rather than being silently rescaled into the new one.
+          backlinkData: parse<{ authorityScore?: number | null; oprScore?: number | null; domainRank?: number | null }>(a.backlinkData ?? '{}', { authorityScore: null }),
           createdAt: a.createdAt,
         },
       })

@@ -1,0 +1,22 @@
+-- Domain authority moves from OpenPageRank to DataForSEO's backlink rank.
+--
+-- OpenPageRank's API moved host on 2026-09-21 and the old endpoint began 301ing to a 404,
+-- which took Backlinks domain analysis down with it. The replacement was already arriving in
+-- responses we pay for: `/v3/backlinks/summary/live` carries `rank`, and this tool was already
+-- calling it in the same handler.
+--
+-- A new column rather than reusing the old two, because none of the three means the same
+-- thing. `oprScore` held OpenPageRank's 0-10, `domainRank` its global position rank (which
+-- DataForSEO does not provide at all), and this holds 0-100 derived from a 0-1000 rank. Writing
+-- the new basis into either old column would silently redefine every historical row: the same
+-- domain scored 63 under the old vendor and 94 under the new one, so a chart spanning the
+-- switch would show a 31-point jump that never happened.
+--
+-- Nullable on purpose. NULL means "no authority recorded" — every row written before today,
+-- plus any row where the vendor has no record of the domain. A 0 here would be a measured
+-- verdict, and that distinction is the whole reason this migration adds a column instead of
+-- backfilling one.
+--
+-- No RLS statement: row level security is a table-level setting and "BacklinkDomainAnalysis"
+-- already has it enabled. Adding a column does not change that.
+ALTER TABLE "BacklinkDomainAnalysis" ADD COLUMN "authorityScore" INTEGER;

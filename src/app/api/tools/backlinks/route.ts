@@ -6,14 +6,18 @@ import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, getOrCreateUser, requireAuth, refundUsage } from '@/lib/auth'
 import { canUseTool } from '@/lib/plans'
 import { captureServerException } from '@/lib/posthog-server'
-import { fetchOPRScores } from '@/lib/openpagerank'
+import { getDomainAuthorities } from '@/lib/domain-authority'
 
 function extractDomain(input: string): string {
   return input.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase().split('/')[0]
 }
 
-function daFromOPR(pageRankDecimal: number): string {
-  return pageRankDecimal >= 6 ? 'high' : pageRankDecimal >= 3 ? 'medium' : 'low'
+/** Authority band for a 0-100 score. The thresholds are the old OpenPageRank ones (6 and 3
+ *  on its 0-10 scale) carried across unchanged, so a site keeps the label it had unless its
+ *  authority itself moved. The underlying numbers are not comparable across the 2026-09-23
+ *  vendor switch, but these three buckets are coarse enough to survive it. */
+function daBand(score: number): string {
+  return score >= 60 ? 'high' : score >= 30 ? 'medium' : 'low'
 }
 
 export const runtime = 'nodejs'
@@ -144,19 +148,18 @@ Generate highly specific opportunities. Research real publications in the ${nich
     // fail open and keep the AI's own opportunities unverified rather than discard
     // real suggestions over an infrastructure hiccup.
     try {
-      const oprDomains = opportunities.map(op => extractDomain(op.site_url ?? ''))
-      const oprResults = await fetchOPRScores(oprDomains)
+      const candidateDomains = opportunities.map(op => extractDomain(op.site_url ?? ''))
+      const authorities = await getDomainAuthorities(candidateDomains)
       opportunities = opportunities
-        .filter((op, i) => {
-          const opr = oprResults.get(oprDomains[i])
-          return !!opr && opr.status_code === 200
-        })
+        // An unknown domain is dropped rather than shown with a 0 — the point of this pass is
+        // to keep only suggestions a real vendor can vouch for.
+        .filter((op, i) => authorities.get(candidateDomains[i])?.known === true)
         .map(op => {
-          const opr = oprResults.get(extractDomain(op.site_url ?? ''))!
-          return { ...op, domain_authority: daFromOPR(opr.page_rank_decimal) }
+          const authority = authorities.get(extractDomain(op.site_url ?? ''))!
+          return { ...op, domain_authority: daBand(authority.score) }
         })
-    } catch (oprErr) {
-      console.error('OpenPageRank verification failed, keeping unverified opportunities:', oprErr)
+    } catch (authErr) {
+      console.error('Authority verification failed, keeping unverified opportunities:', authErr)
     }
 
     if (!opportunities.length) {

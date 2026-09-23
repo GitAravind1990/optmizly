@@ -584,6 +584,13 @@ type BacklinksSummaryResponse = {
   }>
 }
 
+type BulkRanksResponse = {
+  tasks?: Array<{
+    status_code?: number
+    result?: Array<{ items?: Array<{ target?: string; rank?: number }> }>
+  }>
+}
+
 export interface BacklinksSummary {
   totalBacklinks: number
   referringDomains: number
@@ -592,6 +599,15 @@ export interface BacklinksSummary {
   brokenBacklinks: number
   dofollowLinks: number
   nofollowLinks: number
+  /**
+   * DataForSEO's backlink rank, 0-1000 — the domain authority signal.
+   *
+   * Arrived in every response from the day this function was written and was dropped on the
+   * floor until 2026-09-23, while six tools called OpenPageRank for the same concept. Three of
+   * them were already making this exact call in the same handler. See `domain-authority.ts`
+   * for why a 0 here means "unknown" rather than "measured zero".
+   */
+  rank: number
 }
 
 /** Real backlink profile summary for a domain — live (synchronous), no polling needed.
@@ -617,7 +633,34 @@ export async function getBacklinksSummary(domain: string): Promise<BacklinksSumm
     brokenBacklinks: result.broken_backlinks ?? 0,
     nofollowLinks,
     dofollowLinks: totalBacklinks - nofollowLinks,
+    rank: result.rank ?? 0,
   }
+}
+
+/**
+ * Backlink rank (0-1000) for many domains in one call.
+ *
+ * `/v3/backlinks/summary/live` accepts exactly one task per request — it answers a batch with
+ * `40000 You can set only one task at a time` for every entry after the first, which is a
+ * success-shaped response containing failures. This endpoint is the batched equivalent, and
+ * measured 2026-09-23 it charged $0.0243 for eight domains: the same as one summary call, so
+ * additional domains in a batch are effectively free.
+ *
+ * Returns raw ranks. The "is a 0 real?" question belongs to `domain-authority.ts`, which is
+ * where every consumer should read this through.
+ */
+export async function getBulkDomainRanks(targets: string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>()
+  if (targets.length === 0) return out
+
+  const data = await dfsPost<BulkRanksResponse>('/v3/backlinks/bulk_ranks/live', [{ targets }])
+  const task = data?.tasks?.[0]
+  if (!task || task.status_code !== 20000) return out
+
+  for (const item of task.result?.[0]?.items ?? []) {
+    if (item.target) out.set(item.target, item.rank ?? 0)
+  }
+  return out
 }
 
 // ─── Traffic estimate ──────────────────────────────────────────────────────────

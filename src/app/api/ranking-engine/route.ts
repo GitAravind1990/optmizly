@@ -5,7 +5,7 @@ import { apiError, apiSuccess } from '@/lib/api'
 import { prisma } from '@/lib/prisma'
 import { captureServerEvent, captureServerException } from '@/lib/posthog-server'
 import { getTopSerpResults, getKeywordMetrics, getSearchIntent, getRelatedKeywords, getBulkReferringDomains } from '@/lib/dataforseo'
-import { fetchOPRScore, fetchOPRScores } from '@/lib/openpagerank'
+import { getDomainAuthority, getDomainAuthorities } from '@/lib/domain-authority'
 import { crawlCompetitorPages } from '@/lib/competitor-crawl'
 import { fetchPSIMetrics } from '@/lib/seo-audit/psi'
 
@@ -73,9 +73,9 @@ function labelForScore(overall: number): string {
   return 'Highly Likely'
 }
 
-// OPR's page_rank_decimal (0-10) scaled to the same 0-100 range used for DA
-// throughout this tool and Competitor Spy — clamped since OPR occasionally returns
-// values slightly outside 0-10 for edge-case domains.
+// Authority arrives already on the 0-100 scale this tool and Competitor Spy render, so the
+// old 0-10 scaling step is gone; see domain-authority.ts for the conversion and for why the
+// numbers are not comparable with anything stored before 2026-09-23.
 function scaleOPR(decimal: number): number {
   return Math.round(Math.min(10, Math.max(0, decimal)) * 10)
 }
@@ -111,15 +111,15 @@ export async function POST(req: NextRequest) {
     const [serpResult, metricsMap, userOpr, intentMap, realRelated] = await Promise.all([
       getTopSerpResults(keyword, targetLocation, 'desktop', 10),
       getKeywordMetrics([keyword], targetLocation),
-      fetchOPRScore(domain).catch(() => null),
+      getDomainAuthority(domain).catch(() => null),
       getSearchIntent([keyword], targetLocation),
       getRelatedKeywords(keyword, targetLocation, 6),
     ])
     const realMetrics = metricsMap.get(keyword)
     const realSerp = serpResult && serpResult.items.length > 0 ? serpResult.items : null
     const realFeatures = serpResult && serpResult.features.length > 0 ? serpResult.features : null
-    const userAuthorityIsReal = !!userOpr && userOpr.status_code === 200 && typeof userOpr.page_rank_decimal === 'number'
-    const realUserDa = userAuthorityIsReal ? scaleOPR(userOpr!.page_rank_decimal) : null
+    const userAuthorityIsReal = userOpr?.known === true
+    const realUserDa = userAuthorityIsReal ? userOpr!.score : null
     const realIntent = intentMap.get(keyword) ?? null
 
     const realDataLines = [
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
         2500,
         'claude-sonnet-4-6'
       ),
-      realSerp ? fetchOPRScores(realSerp.map(r => r.domain)).catch(() => new Map()) : Promise.resolve(new Map()),
+      realSerp ? getDomainAuthorities(realSerp.map(r => r.domain)).catch(() => new Map()) : Promise.resolve(new Map()),
       // Same bulk endpoint, one extra target — the user's own domain rides along
       // with the competitor domains in a single call, so getting a real referring-
       // domain count for the user's site (previously only fetched for competitors)
@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
       const aiTop = Array.isArray(result.competitors?.top) ? result.competitors.top : []
       result.competitors.top = realSerp.map((r, i) => {
         const opr = competitorOprMap.get(r.domain)
-        const realDa = opr && opr.status_code === 200 && typeof opr.page_rank_decimal === 'number' ? scaleOPR(opr.page_rank_decimal) : null
+        const realDa = opr?.known ? opr.score : null
         const realRd = rdMap.get(r.domain)
         const pageStats = competitorPageStats.get(r.url)
         return {
@@ -305,7 +305,7 @@ export async function POST(req: NextRequest) {
         userReferringDomains: userRdIsReal,
         competitorAuthority: !!realSerp && realSerp.some(r => {
           const opr = competitorOprMap.get(r.domain)
-          return opr && opr.status_code === 200
+          return opr?.known === true
         }),
         competitorReferringDomains: !!realSerp && realSerp.some(r => rdMap.has(r.domain)),
         competitorWords: competitorPageStats.size > 0,

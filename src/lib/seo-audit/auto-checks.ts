@@ -27,8 +27,9 @@ export interface AutoCheckContext {
   sitemapXml: string | null
   sitemapStatus: number | null
   redirects: RedirectHop[]
-  oprScore?: number | null
-  domainRank?: number | null
+  /** Domain authority 0-100 (DataForSEO backlink rank). Null when the vendor has no record,
+   *  which must not be scored as a zero. Replaced a 0-10 OpenPageRank score on 2026-09-23. */
+  authorityScore?: number | null
   /** false when HTML was pasted — skips checks that need real response headers/status */
   fetched?: boolean
   /** false when no real URL was provided (pasted HTML with placeholder URL) — skips URL-based checks */
@@ -770,21 +771,22 @@ export function runAutoChecks(ctx: AutoCheckContext): ResultMap {
   }
 
   // ── Backlinks / Domain Authority ──
-  // Only score backlink checks when the OPR lookup actually succeeded — a missing
-  // API key, failed fetch, or pasted-HTML audit must not penalise the site.
-  if (ctx.oprScore != null) {
-    r['backlinks.0.0'] = ctx.oprScore >= 3
-      ? pass(`Domain has established page rank (OPR score: ${ctx.oprScore.toFixed(1)}/10)`)
-      : ctx.oprScore >= 1
-        ? warn(`Domain has low page rank (OPR score: ${ctx.oprScore.toFixed(1)}/10 — target ≥ 3)`)
-        : fail('Domain has no established page rank (OPR score: 0)')
-    r['backlinks.0.1'] = ctx.domainRank != null && ctx.domainRank > 0
-      ? ctx.domainRank < 1_000_000
-        ? pass(`Domain is globally ranked (#${ctx.domainRank.toLocaleString()})`)
-        : ctx.domainRank < 5_000_000
-          ? warn(`Domain rank is outside top 1M (#${ctx.domainRank.toLocaleString()})`)
-          : fail(`Domain rank is very low (#${ctx.domainRank.toLocaleString()})`)
-      : fail('Domain has no global rank (not indexed by OpenPageRank)')
+  // Only scored when the authority lookup actually succeeded — a failed fetch, a domain the
+  // vendor has no record of, or a pasted-HTML audit must not penalise the site.
+  //
+  // Thresholds are the old OpenPageRank ones (3 and 1 on its 0-10) carried onto the 0-100
+  // scale, so a site keeps the verdict it had unless its authority itself moved.
+  //
+  // `backlinks.0.1` used to auto-check global domain rank. Nothing sets it now: that was
+  // OpenPageRank's global position, and DataForSEO provides no equivalent. Left unassessed
+  // rather than repurposed or failed — a `fail` here would read as "we checked and your domain
+  // is not ranked", which would be a claim about the site rather than about our data.
+  if (ctx.authorityScore != null) {
+    r['backlinks.0.0'] = ctx.authorityScore >= 30
+      ? pass(`Domain has established authority (score: ${ctx.authorityScore}/100)`)
+      : ctx.authorityScore >= 10
+        ? warn(`Domain has low authority (score: ${ctx.authorityScore}/100 — target ≥ 30)`)
+        : fail(`Domain has little established authority (score: ${ctx.authorityScore}/100)`)
   }
 
   return r

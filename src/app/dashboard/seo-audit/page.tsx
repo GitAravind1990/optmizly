@@ -28,7 +28,7 @@ type Audit = AuditSummary & {
   autoResults: Record<string, AutoResult>
   aiResults: Record<string, AIResult>
   checklistState: Record<string, CheckStatus>
-  backlinkData?: { oprScore: number | null; domainRank: number | null }
+  backlinkData?: { authorityScore?: number | null; oprScore?: number | null; domainRank?: number | null }
 }
 
 function scoreColor(s: number) {
@@ -508,13 +508,18 @@ export default function SeoAuditPage() {
                       </button>
                     )}
 
-                    {cat.key === 'backlinks' && current.backlinkData?.oprScore != null && (
+                    {/* Audits stored before 2026-09-23 hold a 0-10 score from the previous
+                        vendor; newer ones hold 0-100. Each renders on its own scale rather than
+                        being converted, because the two are not the same measurement. Global
+                        Rank is gone with the vendor that supplied it. */}
+                    {cat.key === 'backlinks' && (current.backlinkData?.authorityScore != null || current.backlinkData?.oprScore != null) && (
                       <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
                         <div className="text-[11px] font-bold uppercase text-slate-500 mb-2">Domain Score</div>
                         <div className="flex gap-4 text-xs text-slate-700">
-                          <span>OPR Score: <strong className="text-slate-900">{current.backlinkData.oprScore.toFixed(1)}/10</strong></span>
-                          {current.backlinkData.domainRank && current.backlinkData.domainRank > 0 && (
-                            <span>Global Rank: <strong className="text-slate-900">#{current.backlinkData.domainRank.toLocaleString()}</strong></span>
+                          {current.backlinkData.authorityScore != null ? (
+                            <span>Authority: <strong className="text-slate-900">{current.backlinkData.authorityScore}/100</strong></span>
+                          ) : (
+                            <span>Authority: <strong className="text-slate-900">{current.backlinkData.oprScore!.toFixed(1)}/10</strong> <span className="text-slate-400">(earlier scale)</span></span>
                           )}
                         </div>
                       </div>

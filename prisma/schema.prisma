@@ -1116,8 +1116,16 @@ model BacklinkDomainAnalysis {
   lostBacklinks14d        Int    @default(0)
   newReferringDomains14d  Int    @default(0)
   lostReferringDomains14d Int    @default(0)
+  /// Legacy, OpenPageRank-derived: `oprScore` was its 0-10 score and `domainRank` its global
+  /// position rank. Both stop being written on 2026-09-23 (new rows carry 0) because the
+  /// replacement vendor provides neither on the same basis. Kept so historical rows stay
+  /// readable on the basis they were recorded under.
   domainRank              Int    @default(0)
   oprScore                Float  @default(0)
+  /// Domain authority 0-100, from DataForSEO's backlink rank. Null when the vendor has no
+  /// record of the domain — distinct from a measured 0, which this source cannot express.
+  /// Null on every row written before 2026-09-23.
+  authorityScore          Int?
 
   // Cached JSON arrays
   topBacklinks        String @db.Text

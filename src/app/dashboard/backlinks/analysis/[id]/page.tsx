@@ -40,7 +40,9 @@ type Analysis = {
   referringDomains: number
   referringIPs: number
   spamScore: number
-  domainRank: number
+  /** 0-100. Null on analyses stored before 2026-09-23, and when the vendor has no record. */
+  authorityScore: number | null
+  /** Legacy 0-10 score from the previous vendor; present only on older rows. */
   oprScore: number
   newBacklinks14d: number
   lostBacklinks14d: number
@@ -115,29 +117,43 @@ export default function BacklinkAnalysisPage({ params }: { params: Promise<{ id:
         {/* ── OVERVIEW TAB ── */}
         {tab === 'Overview' && (
           <>
-            {/* OPR Score hero */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
-                <div className={`text-5xl font-black ${analysis.oprScore >= 6 ? 'text-green-600' : analysis.oprScore >= 3 ? 'text-amber-600' : 'text-slate-500'}`}>
-                  {analysis.oprScore > 0 ? analysis.oprScore.toFixed(2) : '—'}
+            {/* Domain Score hero.
+
+                Rows stored before 2026-09-23 carry a 0-10 score from the previous vendor and
+                render on that scale, labelled as such — the two numbers measure the same idea
+                differently, and converting one into the other would invent precision.
+
+                The second tile was Global Rank, an OpenPageRank global position with no
+                equivalent from the current vendor. Referring domains takes its place: a real
+                measured number already in this row, rather than an empty tile. */}
+            {(() => {
+              const legacy = analysis.authorityScore == null && analysis.oprScore > 0
+              const shown = legacy ? analysis.oprScore : analysis.authorityScore
+              const pct = legacy ? (analysis.oprScore / 10) * 100 : (analysis.authorityScore ?? 0)
+              const band = pct >= 60 ? 'green' : pct >= 30 ? 'amber' : 'slate'
+              return (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
+                    <div className={`text-5xl font-black ${band === 'green' ? 'text-green-600' : band === 'amber' ? 'text-amber-600' : 'text-slate-500'}`}>
+                      {shown != null ? (legacy ? analysis.oprScore.toFixed(2) : shown) : '—'}
+                    </div>
+                    <div className="text-sm font-semibold text-slate-600 mt-1">Domain Score</div>
+                    <div className="text-[10px] text-slate-400">{legacy ? 'Scale of 0–10 (earlier scale)' : 'Scale of 0–100'}</div>
+                    <div className="mt-3 h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${band === 'green' ? 'bg-green-500' : band === 'amber' ? 'bg-amber-500' : 'bg-slate-400'}`}
+                        style={{ width: `${Math.min(pct, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
+                    <div className="text-5xl font-black text-purple-700">{fmt(analysis.referringDomains)}</div>
+                    <div className="text-sm font-semibold text-slate-600 mt-1">Referring Domains</div>
+                    <div className="text-[10px] text-slate-400">unique linking domains</div>
+                  </div>
                 </div>
-                <div className="text-sm font-semibold text-slate-600 mt-1">Domain Score</div>
-                <div className="text-[10px] text-slate-400">Scale of 0–10</div>
-                <div className="mt-3 h-2 rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${analysis.oprScore >= 6 ? 'bg-green-500' : analysis.oprScore >= 3 ? 'bg-amber-500' : 'bg-slate-400'}`}
-                    style={{ width: `${Math.min((analysis.oprScore / 10) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
-                <div className="text-5xl font-black text-purple-700">
-                  {analysis.domainRank > 0 ? `#${fmt(analysis.domainRank)}` : '—'}
-                </div>
-                <div className="text-sm font-semibold text-slate-600 mt-1">Global Rank</div>
-                <div className="text-[10px] text-slate-400">global authority index</div>
-              </div>
-            </div>
+              )
+            })()}
 
             {/* Score interpretation */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">

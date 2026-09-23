@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { callLLM } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
-import { fetchOPRScore } from '@/lib/openpagerank'
+import { authorityFromSummary } from '@/lib/domain-authority'
 import { getBacklinksSummary, getOrganicRank, getTrafficEstimate, isDataForSEOConfigured, settledOrNull } from '@/lib/dataforseo'
 import { captureServerException } from '@/lib/posthog-server'
 
@@ -217,23 +217,23 @@ export async function POST(req: NextRequest) {
       : null
     const topKeywords = rankedEntries.slice(0, 5).map(([keyword, position]) => ({ keyword, position }))
 
-    // Real domain/page authority via OpenPageRank — it only scores at domain
-    // granularity, so both fields get the same value (same approach as Competitor Spy).
-    let domainAuthority: number | null = null
-    try {
-      const opr = await fetchOPRScore(domain)
-      if (opr.status_code === 200 && typeof opr.page_rank_decimal === 'number') {
-        domainAuthority = Math.round(Math.min(10, Math.max(0, opr.page_rank_decimal)) * 10)
-      }
-    } catch { /* leave null — OPR not configured or lookup failed */ }
-    const pageAuthority = domainAuthority
-
-    // Real backlinks + traffic — independent of rank/authority and each other.
+    // Real backlinks + traffic — independent of rank and of each other.
     const [backlinksSummary, trafficCurrent] = await Promise.all([
       getBacklinksSummary(domain),
       getTrafficEstimate(domain),
     ])
     const backlinksTotal = backlinksSummary?.totalBacklinks ?? null
+
+    // Real domain/page authority, read out of the summary already fetched above rather than
+    // from a second vendor. It scores at domain granularity only, so both fields get the same
+    // value (same approach as Competitor Spy).
+    //
+    // Null, never 0, when the vendor has no record: a client report showing "Domain Score 0"
+    // reads as a measured verdict on the client's site, and these reports go to the agency's
+    // customers. `authorityFromRank` resolves that ambiguity; see domain-authority.ts.
+    const authority = authorityFromSummary(domain, backlinksSummary)
+    const domainAuthority = authority.known ? authority.score : null
+    const pageAuthority = domainAuthority
 
     // Month-over-month deltas against this client's own most recent prior report —
     // null (shown as "first report") when there's nothing real to compare against yet.

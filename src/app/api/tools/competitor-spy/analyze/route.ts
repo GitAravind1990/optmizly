@@ -4,7 +4,7 @@ import { callLLM, extractJSON } from '@/lib/llm'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, requireAuth, refundUsage } from '@/lib/auth'
 import { captureServerException } from '@/lib/posthog-server'
-import { fetchOPRScore } from '@/lib/openpagerank'
+import { authorityFromSummary } from '@/lib/domain-authority'
 import { getTrafficEstimate, getBacklinksSummary, getRankedKeywords, getReferringDomains, getTopPagesByTraffic, getDomainIntersectionGaps, settledOrNull } from '@/lib/dataforseo'
 import { parseDataQuality } from '@/lib/competitor-spy-quality'
 
@@ -169,8 +169,7 @@ export async function POST(req: NextRequest) {
     // means "keep the mock estimate," never zero. Gap keywords only run when the user
     // supplied their own domain to compare against — skipped (not even attempted)
     // otherwise rather than calling with a garbage/empty target.
-    const [oprResult, trafficResult, backlinksResult, keywordsResult, referringDomainsResult, topPagesResult, gapsResult, priorResult] = await Promise.allSettled([
-      fetchOPRScore(domainName),
+    const [trafficResult, backlinksResult, keywordsResult, referringDomainsResult, topPagesResult, gapsResult, priorResult] = await Promise.allSettled([
       getTrafficEstimate(domainName),
       getBacklinksSummary(domainName),
       getRankedKeywords(domainName, 20),
@@ -182,18 +181,23 @@ export async function POST(req: NextRequest) {
       prisma.competitorAnalysis.findFirst({ where: { userId: user.userId, domainName }, orderBy: { createdAt: 'desc' } }),
     ])
 
-    // OpenPageRank only scores at domain granularity (0-10), so both Domain and Page
-    // Authority get the same real value rather than inventing a separate "page" score.
-    // The batch endpoint returns 200 for the request itself even when a specific
-    // domain isn't in OPR's index (per-domain status_code 404, page_rank_decimal 0) —
-    // check the per-domain status so an unindexed domain falls back to the estimate
-    // instead of reporting a false, misleadingly-confident "0/100" authority score.
-    const opr = settledOrNull(oprResult)
-    const authorityIsReal = !!opr && opr.status_code === 200 && typeof opr.page_rank_decimal === 'number'
+    // Authority scores at domain granularity only, so Domain and Page Score get the same
+    // real value rather than inventing a separate "page" number.
+    //
+    // This used to be a second vendor call to OpenPageRank. The backlinks summary below was
+    // already being fetched in the same Promise.allSettled and already carried `rank`, so the
+    // authority now comes out of a response we were paying for regardless — one fewer network
+    // call, one fewer credential, same meaning.
+    //
+    // `known` still has to be checked. A rank of 0 cannot be distinguished from "no record",
+    // so an unknown domain must fall back to the estimate instead of rendering a false,
+    // misleadingly-confident "0/100" — the same reason this checked OPR's per-domain status.
+    const summaryForAuthority = settledOrNull(backlinksResult)
+    const authority = authorityFromSummary(domainName, summaryForAuthority)
+    const authorityIsReal = authority.known
     if (authorityIsReal) {
-      const realAuthority = Math.round(Math.min(10, Math.max(0, opr!.page_rank_decimal)) * 10)
-      data.da = realAuthority
-      data.pa = realAuthority
+      data.da = authority.score
+      data.pa = authority.score
       quality.authority = true
     }
 

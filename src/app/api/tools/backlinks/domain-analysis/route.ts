@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { fetchOPRScore } from '@/lib/openpagerank'
+import { authorityFromSummary } from '@/lib/domain-authority'
 import { getBacklinksSummary } from '@/lib/dataforseo'
 import { apiError, apiSuccess } from '@/lib/api'
 import { AuthError, getOrCreateUser, requireAuth, refundUsage } from '@/lib/auth'
@@ -34,7 +34,7 @@ export async function GET() {
       select: {
         id: true, domain: true, backlinksTotal: true, dofollowLinks: true,
         nofollowLinks: true, referringDomains: true, referringIPs: true,
-        spamScore: true, domainRank: true, oprScore: true, newBacklinks14d: true,
+        spamScore: true, domainRank: true, oprScore: true, authorityScore: true, newBacklinks14d: true,
         lostBacklinks14d: true, newReferringDomains14d: true,
         lostReferringDomains14d: true, brokenBacklinks: true, createdAt: true,
       },
@@ -72,16 +72,15 @@ export async function POST(req: NextRequest) {
 
     const domain = cleanDomain(rawDomain.trim())
 
-    let opr
-    try {
-      opr = await fetchOPRScore(domain)
-    } catch (oprErr) {
-      console.error('OpenPageRank lookup failed:', oprErr)
-      throw new AuthError(422, 'Could not retrieve domain authority data right now. Please try again in a few minutes.')
-    }
 
     // Real backlink profile — independent of OPR, never blocks the analysis if it fails.
     const backlinks = await getBacklinksSummary(domain).catch(() => null)
+
+    // Authority comes out of the summary above. It used to be a separate OpenPageRank call
+    // that rethrew as a 422 — the only one of the six authority consumers that turned a vendor
+    // outage into a user-visible error, and so the only one that was visibly broken when that
+    // vendor moved hosts on 2026-09-21. One call now, and no second credential to go stale.
+    const authority = authorityFromSummary(domain, backlinks)
 
     // backlinksTotal/dofollowLinks/nofollowLinks are BigInt columns — a real domain's
     // raw backlink count can exceed Postgres INT4's ~2.1B ceiling (github.com was
@@ -94,8 +93,13 @@ export async function POST(req: NextRequest) {
       data: {
         userId: user.userId,
         domain,
-        oprScore:    opr.page_rank_decimal ?? 0,
-        domainRank:  parseInt(opr.rank ?? '0', 10) || 0,
+        // Legacy columns, left at 0 for new rows. `oprScore` held OpenPageRank's 0-10 and
+        // `domainRank` its global position, neither of which this vendor provides; writing a
+        // differently-scaled number into either would silently redefine every historical row.
+        // `authorityScore` below is the current basis. See domain-authority.ts.
+        oprScore:    0,
+        domainRank:  0,
+        authorityScore: authority.known ? authority.score : null,
         backlinksTotal:   BigInt(Math.round(backlinks?.totalBacklinks ?? 0)),
         dofollowLinks:    BigInt(Math.round(backlinks?.dofollowLinks ?? 0)),
         nofollowLinks:    BigInt(Math.round(backlinks?.nofollowLinks ?? 0)),
