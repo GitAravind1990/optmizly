@@ -108,7 +108,8 @@ and is kept in step with `src` — the summary below is the short version of it.
 period: `NEXT_PUBLIC_DODO_{STARTER,PRO,AGENCY,AGENCY_PLUS}_PRODUCT_ID` plus the matching
 `*_ANNUAL_PRODUCT_ID`.
 
-**SEO data** — `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD`, `OPENPAGERANK_API_KEY`,
+**SEO data** — `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD` (also the source of Domain Score,
+since OpenPageRank was dropped on 2026-09-23),
 `GOOGLE_API_KEY` (PageSpeed Insights), `GOOGLE_PLACES_API_KEY`, `NEXT_PUBLIC_GOOGLE_MAPS_KEY`,
 `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`.
 
