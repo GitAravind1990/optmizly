@@ -183,7 +183,13 @@ export default function AiVisibilityPage() {
     )
   }
 
-  const canRun = brand.trim().length > 1 && !running && (!needSeed || seed.trim().length > 1)
+  // Domain is required: it is what decides the prompts. It was optional while they came from
+  // the signed-in account's own Search Console, which is precisely the bug that fixed.
+  const canRun =
+    brand.trim().length > 1 &&
+    domain.trim().length > 2 &&
+    !running &&
+    (!needSeed || seed.trim().length > 1)
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -253,7 +259,7 @@ export default function AiVisibilityPage() {
             </div>
             <div>
               <label htmlFor="aiv-domain" className="block text-xs font-bold text-slate-700 mb-1.5">
-                Domain <span className="font-normal text-slate-400">&mdash; optional</span>
+                Domain
               </label>
               <input
                 id="aiv-domain"
@@ -263,7 +269,8 @@ export default function AiVisibilityPage() {
                 className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
               />
               <p className="mt-1 text-[11px] text-slate-400">
-                Lets us separate being <em>cited</em> as a source from merely being named.
+                Decides which questions we ask, so they describe this business. Also separates
+                being <em>cited</em> as a source from merely being named.
               </p>
             </div>
           </div>
