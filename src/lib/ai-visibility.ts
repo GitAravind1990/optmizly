@@ -236,3 +236,43 @@ export function summariseRun(outcomes: PromptOutcome[]) {
       .map(([domain, count]) => ({ domain, count })),
   }
 }
+
+/**
+ * Whether a domain is one this account has connected in Search Console.
+ *
+ * The gate on using GSC prompts at all. `promptsFromSearchConsole` is keyed on the signed-in
+ * *user*, so without this check it hands the account's own queries to every scan whatever brand
+ * was typed — which is exactly what happened: a fertility clinic was measured against "backlink
+ * audit" and "how to write meta description", found 46 real AI answers, and was named in none
+ * of them. A true measurement of an irrelevant question, and one that reads as a finding about
+ * the client.
+ *
+ * Matching is on the registered property, both `sc-domain:` and url-prefix forms, and accepts a
+ * `www.` difference because Search Console and a typed domain routinely disagree about it.
+ */
+export async function isConnectedProperty(userId: string, domain: string): Promise<boolean> {
+  if (!domain) return false
+  const conn = await prisma.searchConsoleConnection.findUnique({
+    where: { userId },
+    select: { sitesCache: true },
+  })
+  if (!conn?.sitesCache) return false
+
+  const norm = (s: string) =>
+    s.replace(/^sc-domain:/, '')
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/\/.*$/, '')
+      .trim()
+      .toLowerCase()
+
+  const target = norm(domain)
+  if (!target) return false
+
+  try {
+    const sites = JSON.parse(conn.sitesCache) as Array<{ siteUrl?: string } | string>
+    return sites.some(s => norm(typeof s === 'string' ? s : s.siteUrl ?? '') === target)
+  } catch {
+    return false
+  }
+}

@@ -60,7 +60,13 @@ export async function POST(req: NextRequest) {
     const aliases = Array.isArray(body.aliases)
       ? (body.aliases.filter(a => typeof a === 'string') as string[]).map(a => a.slice(0, 120)).slice(0, 5)
       : []
-    const promptSource = body.promptSource === 'search-console' ? 'search-console' : 'keywords'
+    // Three sources now, and the distinction is the report's own caveat: Search Console is
+    // the site's measured impressions, ranked-keywords is a vendor's view of where it ranks,
+    // and keywords is an expanded topic. Anything unrecognised degrades to the weakest claim.
+    const promptSource =
+      body.promptSource === 'search-console' ? 'search-console'
+      : body.promptSource === 'ranked-keywords' ? 'ranked-keywords'
+      : 'keywords'
 
     const run = await prisma.aiVisibilityRun.create({
       data: {

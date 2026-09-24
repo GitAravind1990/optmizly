@@ -17,7 +17,7 @@ type RunResult = {
   id: string
   brand: string
   domain: string | null
-  promptSource: 'search-console' | 'keywords'
+  promptSource: 'search-console' | 'ranked-keywords' | 'keywords'
   promptsRun: number
   totalMentions: number
   totalCitations: number
@@ -88,7 +88,8 @@ export default function AiVisibilityPage() {
       const promptsRes = await fetch('/api/tools/ai-visibility/prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed: seed.trim() || undefined }),
+        // The domain decides the prompts. Without it the route can only expand a topic.
+        body: JSON.stringify({ seed: seed.trim() || undefined, domain: domain.trim() || undefined }),
       })
       const promptsData = await promptsRes.json()
       if (!promptsRes.ok) {
@@ -224,10 +225,12 @@ export default function AiVisibilityPage() {
         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
           <p className="text-xs text-slate-600 leading-relaxed">
             <span className="font-bold text-slate-800">Every number here is read from a real AI answer.</span>{' '}
-            We ask Google&rsquo;s AI Overviews and AI Mode the questions your site already appears
-            for in Search Console, then count whether the answer names you and which sources it
-            cited instead. Nothing is predicted or modelled. This does not cover ChatGPT,
-            Gemini or Perplexity &mdash; those are a separate surface and not included yet.
+            We ask Google&rsquo;s AI Overviews and AI Mode the questions <em>this business</em>
+            already appears for &mdash; from its Search Console when it is a property you have
+            connected, otherwise from the keywords the domain ranks for &mdash; then count whether
+            the answer names you and which sources it cited instead. Nothing is predicted or
+            modelled. This does not cover ChatGPT, Gemini or Perplexity &mdash; those are a
+            separate surface and not included yet.
           </p>
         </div>
 
@@ -326,7 +329,14 @@ export default function AiVisibilityPage() {
                     <b className="text-slate-800">{p.totalMentions}</b> mentions &middot;{' '}
                     <b className="text-slate-800">{p.totalCitations}</b> cited &middot; {p.promptCount} prompts
                   </span>
-                  {p.promptSource !== 'search-console' && (
+                  {/* Three sources, and only the weakest is a caveat worth an amber badge.
+                      "ranked" is real data about that domain, just not its own Search Console. */}
+                  {p.promptSource === 'ranked-keywords' && (
+                    <span className="text-[10px] font-bold uppercase text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full shrink-0">
+                      ranked
+                    </span>
+                  )}
+                  {p.promptSource !== 'search-console' && p.promptSource !== 'ranked-keywords' && (
                     <span className="text-[10px] font-bold uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full shrink-0">
                       topic
                     </span>
@@ -367,7 +377,11 @@ function Report({ result }: { result: RunResult }) {
         <Stat label="Total mentions" value={result.totalMentions} hint="times an answer named you" />
         <Stat label="Times cited" value={result.totalCitations} hint="answers listing your domain as a source" />
         <Stat label="Prompts checked" value={result.promptsRun}
-          hint={result.promptSource === 'search-console' ? 'from your Search Console queries' : 'from a topic, not your own data'} />
+          hint={
+            result.promptSource === 'search-console' ? 'from this property’s Search Console queries'
+            : result.promptSource === 'ranked-keywords' ? 'from the keywords this domain ranks for'
+            : 'from a topic, not from this domain’s own data'
+          } />
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5">

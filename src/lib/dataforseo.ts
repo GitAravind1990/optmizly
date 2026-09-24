@@ -1127,9 +1127,30 @@ export type RankedKeyword = { keyword: string; position: number; volume: number;
  *  task_post/task_get pattern reviews uses). `totalCount` comes free on the same
  *  response as the `limit`-capped `items`, so this covers both Competitor Spy's
  *  keyword list and its aggregate "Keywords Ranked" count in one call. */
-export async function getRankedKeywords(domain: string, limit = 20): Promise<{ items: RankedKeyword[]; totalCount: number } | null> {
+export async function getRankedKeywords(
+  domain: string,
+  limit = 20,
+  /**
+   * `maxPosition` restricts results to keywords the domain ranks at or above that position.
+   *
+   * Off by default, so Competitor Spy keeps the full high-volume view it was built on. AI
+   * Visibility sets it to 10, because it needs keywords that describe the *business* and raw
+   * volume does not: measured 2026-09-23, semrush.com's highest-volume ranked keywords are
+   * `stripchat`, `ome.tv` and `markkystreams`, which its traffic-analytics pages rank for.
+   * Ordering by best position instead is no better — that surfaces dozens of position-1
+   * rankings for 30-volume junk. Top-10 positions ordered by volume is what actually returns
+   * a recognisable picture of a business.
+   */
+  opts?: { maxPosition?: number }
+): Promise<{ items: RankedKeyword[]; totalCount: number } | null> {
   const data = await dfsPost<RankedKeywordsResponse>('/v3/dataforseo_labs/google/ranked_keywords/live', [
-    { target: domain, location_code: 2840, language_code: 'en', limit, order_by: ['keyword_data.keyword_info.search_volume,desc'] },
+    {
+      target: domain, location_code: 2840, language_code: 'en', limit,
+      order_by: ['keyword_data.keyword_info.search_volume,desc'],
+      ...(opts?.maxPosition
+        ? { filters: [['ranked_serp_element.serp_item.rank_absolute', '<=', opts.maxPosition]] }
+        : {}),
+    },
   ])
   const task = data?.tasks?.[0]
   if (!task || task.status_code !== 20000) return null

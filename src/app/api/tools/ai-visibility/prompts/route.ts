@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server'
 import { requireToolAccess, assertQuotaAvailable, AuthError } from '@/lib/auth'
 import { apiError, apiSuccess } from '@/lib/api'
 import { captureServerException } from '@/lib/posthog-server'
-import { promptsFromSearchConsole } from '@/lib/ai-visibility'
-import { getRelatedKeywords } from '@/lib/dataforseo'
+import { promptsFromSearchConsole, isConnectedProperty } from '@/lib/ai-visibility'
+import { getRelatedKeywords, getRankedKeywords } from '@/lib/dataforseo'
 
 export const runtime = 'nodejs'
 /**
@@ -24,44 +24,80 @@ export async function POST(req: NextRequest) {
     clerkId = user.clerkId
     await assertQuotaAvailable(user, 'ai-visibility')
 
-    const { seed } = (await req.json().catch(() => ({}))) as { seed?: unknown }
+    const body = (await req.json().catch(() => ({}))) as { seed?: unknown; domain?: unknown }
+    const seedTerm = typeof body.seed === 'string' ? body.seed.trim().slice(0, 200) : ''
+    const domain = typeof body.domain === 'string' ? body.domain.trim().slice(0, 253) : ''
 
     /**
-     * Search Console first, because it is the honest source: these are queries the site
-     * genuinely appears for, ranked by impressions rather than clicks. A query with
-     * impressions and no clicks is exactly where an AI answer may be absorbing the traffic,
-     * which is the case this tool exists to find — ranking by clicks would surface the
-     * queries already working.
+     * Prompts describe the business being measured, and nothing else decides them.
+     *
+     * This used to call `promptsFromSearchConsole(user.userId)` unconditionally and return the
+     * moment it found five queries, so the brand and domain in the request were never read.
+     * Every scan got the signed-in account's own Search Console queries. On an SEO tool's own
+     * account that looks plausible for an SEO brand and is nonsense for anything else: Sudha
+     * Fertility Centre was measured against "backlink audit" and scored a clean zero, while
+     * Semrush and Ahrefs scored well on the same prompt list and made the bug invisible.
+     *
+     * It matters most for the customers who have this tool: it is Agency-only, agencies scan
+     * their clients' brands, and an agency's own Search Console is its own site. The broken
+     * path was the entire intended use case.
+     *
+     * Three sources, strongest first, each reported honestly because they are not equally good
+     * evidence about the target.
      */
-    const fromGsc = await promptsFromSearchConsole(user.userId, MAX_PROMPTS)
-    if (fromGsc.length >= 5) {
-      return apiSuccess({
-        data: { prompts: fromGsc, source: 'search-console', promptCount: fromGsc.length },
-      })
+
+    /**
+     * 1. Search Console — only when the domain being scanned is a property this account has
+     *    actually connected. Real impressions for that exact site, ranked by impressions rather
+     *    than clicks: a query with impressions and no clicks is where an AI answer may be
+     *    absorbing the traffic, which is the case this tool exists to find.
+     */
+    if (domain && await isConnectedProperty(user.userId, domain)) {
+      const fromGsc = await promptsFromSearchConsole(user.userId, MAX_PROMPTS)
+      if (fromGsc.length >= 5) {
+        return apiSuccess({
+          data: { prompts: fromGsc, source: 'search-console', promptCount: fromGsc.length },
+        })
+      }
     }
 
     /**
-     * Fallback for a customer with no Search Console connection, or too thin a corpus to be
-     * worth measuring. Reported as a different source rather than silently substituted: a run
-     * built from keyword suggestions is a reasonable proxy, not evidence about this site, and
-     * the report has to be able to say which it was.
-     *
-     * Five is the floor because a three-prompt report reads as broken even when it is correct.
+     * 2. The keywords the target domain actually ranks for. Works for any domain, connected or
+     *    not, which is what makes this tool usable on a client. Weaker than Search Console —
+     *    it is a vendor's view of the SERP rather than the site's own measured impressions —
+     *    so it is reported as its own source.
      */
-    const seedTerm = typeof seed === 'string' ? seed.trim().slice(0, 200) : ''
+    if (domain) {
+      // Top-10 positions only. Raw volume returns what a big domain incidentally ranks for
+      // rather than what it is about; see the note on getRankedKeywords.
+      const ranked = await getRankedKeywords(domain, MAX_PROMPTS, { maxPosition: 10 }).catch(() => null)
+      const prompts = (ranked?.items ?? [])
+        .map(r => r.keyword.trim())
+        .filter((q, i, all) => q.length > 2 && q.length <= 200 && all.indexOf(q) === i)
+        .slice(0, MAX_PROMPTS)
+      if (prompts.length >= 5) {
+        return apiSuccess({ data: { prompts, source: 'ranked-keywords', promptCount: prompts.length } })
+      }
+    }
+
+    /**
+     * 3. A topic the user supplied, expanded. The weakest source: a reasonable proxy, not
+     *    evidence about this site. Five is the floor because a three-prompt report reads as
+     *    broken even when it is correct.
+     */
     if (!seedTerm) {
       throw new AuthError(
         400,
-        fromGsc.length === 0
-          ? 'No Search Console data to build prompts from. Connect Search Console, or give a topic to start from.'
-          : `Only ${fromGsc.length} Search Console queries in the last 90 days — too few to measure. Give a topic to start from instead.`
+        domain
+          ? `Not enough ranking data for ${domain} to build a prompt list. Give a topic to start from instead.`
+          : 'Give a domain, or a topic to start from, so the prompts describe this business.'
       )
     }
 
     const related = await getRelatedKeywords(seedTerm, 'US', MAX_PROMPTS).catch(() => null)
     const prompts = [seedTerm, ...(related ?? []).map(r => r.keyword)]
-      .map(p => p.trim())
-      .filter((p, i, all) => p.length > 2 && all.indexOf(p) === i)
+      .map(q => q.trim())
+      .filter((q, i, all) => q.length > 2 && all.indexOf(q) === i)
       .slice(0, MAX_PROMPTS)
 
     if (prompts.length < 2) {
