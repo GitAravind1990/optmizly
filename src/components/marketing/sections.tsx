@@ -526,9 +526,14 @@ export function SocialProofSection() {
       note: 'Two free, ten more on Pro, twelve more on Agency. Counted from the product, not from a marketing page.',
     },
     {
-      icon: 'shield', stat: '3',
+      icon: 'shield', stat: '4',
       label: 'tools free with no account',
-      note: 'This readiness audit, the E-E-A-T checker and AI Regex. Five runs a day each, no card, nothing stored.',
+      // Must match FreeToolsSection, which lists them a few sections above on this same page
+      // and has listed four since the prospect finder shipped. This said three, so the
+      // homepage contradicted itself. The limits differ too: the first three allow five runs
+      // a day (DAILY_LIMIT in each public route), the prospect finder three searches a month
+      // (FREE_MONTHLY_SEARCHES), so one blanket figure cannot cover them.
+      note: 'This readiness audit, the E-E-A-T checker, AI Regex and the prospect finder. No card, nothing stored — five runs a day each, or three searches a month for the prospect finder.',
     },
     {
       icon: 'eye', stat: '100%',
