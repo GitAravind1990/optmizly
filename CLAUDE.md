@@ -59,8 +59,18 @@ see them while using the product, which is exactly why they drifted. Grep the wh
 `tools` next to a number rather than working down this list:
 
 ```powershell
-Select-String -Path (git ls-files '*.ts' '*.tsx' '*.md') -Pattern "\b\d+\s*(AI-powered\s*)?(SEO\s*)?[Tt]ools\b"
+Select-String -Path (git ls-files '*.ts' '*.tsx' '*.md') -Pattern "\b\d+\s*(\w+[- ])*[Tt]ools\b"
+Select-String -Path (git ls-files '*.ts' '*.tsx') -Pattern "stat:\s*'\d+'"
 ```
+
+The first pattern allows any words between the number and "tools". The original spelled out
+only `AI-powered` and `SEO`, so it did not match **"23 AI tools"** — which is how the homepage's
+`description` and OpenGraph description sat stale from 2026-09-12 until 2026-09-25, on the one
+page most people see. Two patterns because a count does not always sit beside the word:
+`SocialProofSection` renders `stat: '23'` with its label on the next line, and no single-line
+pattern reaches that. **When a number renders somewhere a grep cannot see it, say so at the call
+site** — and check any breakdown under it still sums, since that note read "Two free, ten more
+on Pro, eleven more on Agency" against a stat of 23.
 
 It reaches past `src` to markdown, because `README.md` states the Agency figure too — a grep
 that stops at `src` is exactly how the metadata and share-image numbers above sat stale for

@@ -517,9 +517,13 @@ export function ExistingContentSection() {
 export function SocialProofSection() {
   const facts = [
     {
-      icon: 'layers', stat: '23',
+      icon: 'layers', stat: '24',
       label: 'tools in one platform',
-      note: 'Two free, ten more on Pro, eleven more on Agency. Counted from the product, not from a marketing page.',
+      // The breakdown has to sum to the stat: 2 + 10 + 12. It said "eleven more on Agency"
+      // against a stat of 23 and was missed when AI Visibility took Agency to 24, because
+      // the tool-count grep in CLAUDE.md matches a number next to the word "tools" and this
+      // is a bare string in a data structure.
+      note: 'Two free, ten more on Pro, twelve more on Agency. Counted from the product, not from a marketing page.',
     },
     {
       icon: 'shield', stat: '3',

@@ -34,12 +34,12 @@ export const metadata: Metadata = {
   // mid-sentence rather than up front on purpose: the free audit is the stronger hook, and
   // tool count is the weakest thing this product can lead with.
   description:
-    'SEO + GEO + AEO optimization across 23 AI tools. Run a free AI search readiness audit, no signup needed, and see what an AI crawler sees on your site.',
+    'SEO + GEO + AEO optimization across 24 AI tools. Run a free AI search readiness audit, no signup needed, and see what an AI crawler sees on your site.',
   alternates: { canonical: '/' },
   openGraph: {
     title: 'Optmizly – Optimize Your Website for Google + AI Search',
     description:
-      'SEO + GEO + AEO optimization across 23 AI tools. Free AI search readiness audit, no signup required.',
+      'SEO + GEO + AEO optimization across 24 AI tools. Free AI search readiness audit, no signup required.',
     url: '/',
     images: [{ url: '/opengraph-image', width: 1200, height: 628, alt: 'Optmizly – Optimize Your Website for Google + AI Search' }],
   },
