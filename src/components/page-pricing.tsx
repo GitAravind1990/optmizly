@@ -310,7 +310,22 @@ function CheckoutButton({ productId, cta, featured, couponEligible, planName, is
  * Only the tag changes: every size, weight and margin below is set explicitly in `style`, so an
  * h1 and an h2 render identically here.
  */
-export function PagePricing({ headingAs: Heading = 'h2' }: { headingAs?: 'h1' | 'h2' } = {}) {
+export function PagePricing({
+  headingAs: Heading = 'h2',
+  /**
+   * The FAQ below is billing-specific and belongs to /pricing.
+   *
+   * The homepage embeds this whole component and then renders its own product FAQ
+   * immediately after, so a visitor met two accordions back to back — billing questions
+   * first, which is the wrong order for someone still deciding what the product is. Worse,
+   * only the second one has FAQPage structured data behind it (that lives in the page files,
+   * not here), so the first was invisible to the schema describing the page.
+   *
+   * The two or three billing questions worth asking a first-time visitor now live in
+   * HOME_FAQS, pulled from PRICING_FAQ by reference rather than copied.
+   */
+  showFaq = true,
+}: { headingAs?: 'h1' | 'h2'; showFaq?: boolean } = {}) {
   // The two subsection headings below sit one level under the headline, so they have to move
   // with it rather than being fixed at h3. Promoting the headline alone left /pricing jumping
   // h1 -> h3, which the readiness audit flags as a heading skip — a smaller fault than the
@@ -731,6 +746,7 @@ export function PagePricing({ headingAs: Heading = 'h2' }: { headingAs?: 'h1' | 
       </div>
 
       {/* ── FAQ ── */}
+      {showFaq && (
       <div style={{ marginTop: 80, maxWidth: 720, margin: '80px auto 0' }}>
         <SubHeading style={{
           fontFamily: T.sans, fontSize: 'clamp(22px, 3vw, 30px)',
@@ -754,6 +770,7 @@ export function PagePricing({ headingAs: Heading = 'h2' }: { headingAs?: 'h1' | 
           </time>.
         </p>
       </div>
+      )}
     </section>
   )
 }

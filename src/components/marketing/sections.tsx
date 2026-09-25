@@ -12,6 +12,7 @@
 
 import Link from 'next/link'
 import { T, Icon, SectionHead } from './tokens'
+import { PRICING_FAQ } from '@/lib/pricing-faq'
 import { FreeAudit } from '../free-audit'
 import {
   TESTIMONIALS, CUSTOMER_LOGOS, USAGE_STATS,
@@ -736,6 +737,35 @@ export function FounderSection() {
 
 // ── 11. FAQ ───────────────────────────────────────────────────────────────────
 
+/**
+ * The billing questions worth asking someone who has not decided yet.
+ *
+ * Taken from PRICING_FAQ by reference, not retyped. A homepage copy of these answers is
+ * exactly the drift the pricing page already created twice by keeping a hand-written second
+ * copy of its own FAQ, and these particular answers encode real commitments — what the free
+ * plan grants, what cancelling does — that /terms and /refund-policy also have to agree with.
+ * One source means a correction there reaches the homepage and its FAQPage schema for free.
+ *
+ * Throws at module load, which fails the build rather than silently shipping a homepage with
+ * a question missing, if a question is ever reworded in PRICING_FAQ without updating this list.
+ */
+const HOME_BILLING_FAQ_QUESTIONS = [
+  'Is there a free plan?',
+  'Can I cancel anytime?',
+  'Do I need API keys or anything installed?',
+] as const
+
+const homeBillingFaqs = HOME_BILLING_FAQ_QUESTIONS.map(q => {
+  const found = PRICING_FAQ.find(f => f.q === q)
+  if (!found) {
+    throw new Error(
+      `HOME_BILLING_FAQ_QUESTIONS lists "${q}", which is no longer in PRICING_FAQ. ` +
+      `Update src/components/marketing/sections.tsx to match src/lib/pricing-faq.ts.`
+    )
+  }
+  return found
+})
+
 export const HOME_FAQS = [
   {
     q: 'What is GEO?',
@@ -769,6 +799,8 @@ export const HOME_FAQS = [
     q: 'How does the AI optimization actually work?',
     a: 'Two different mechanisms, deliberately kept apart. The structural checks — crawler access, schema, headings, extractability — are deterministic: we fetch the page and measure it, so the same page always scores the same. The written recommendations and rewrites come from a language model working on those measurements. Where a number comes from a data provider it is shown as live; where it is inferred, it is labelled as an estimate.',
   },
+  // Money questions last: someone still learning what GEO is has not reached them yet.
+  ...homeBillingFaqs,
 ]
 
 export function FaqSection() {

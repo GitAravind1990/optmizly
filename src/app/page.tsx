@@ -127,7 +127,9 @@ export default function HomePage() {
       <FounderSection />
 
       {/* Decision. */}
-      <PagePricing />
+      {/* Its billing FAQ is suppressed here: the questions worth asking a first-time
+          visitor are merged into HOME_FAQS below, so the page has one accordion, not two. */}
+      <PagePricing showFaq={false} />
       <FaqSection />
       <HomeEmailCapture />
       <FinalCtaSection />
