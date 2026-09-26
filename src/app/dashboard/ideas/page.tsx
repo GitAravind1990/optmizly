@@ -287,7 +287,7 @@ function IdeaModal({ idea, onClose, onUpdate }: {
                 ))}
               </div>
               {idea.metricsReal ? (
-                <span className="text-[9px] font-bold uppercase text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">Live DataForSEO Data</span>
+                <span className="text-[9px] font-bold uppercase text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">Live Data</span>
               ) : (
                 <span className="text-[9px] font-bold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full">AI Estimated — no real data for this keyword</span>
               )}

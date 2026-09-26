@@ -502,7 +502,7 @@ function GeogridContent() {
               {gridLoading && (
                 <div className="mt-3">
                   <div className="flex justify-between text-xs text-slate-500 mb-1">
-                    <span>Fetching rank data from DataForSEO…</span>
+                    <span>Fetching live rank data…</span>
                     <span>{Math.round(gridProgress)}%</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">

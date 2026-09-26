@@ -191,7 +191,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-slate-400 w-4">{i + 1}</span>
                     <span className="text-xs text-slate-700 font-medium">{b.domain}</span>
-                    <span className="text-[10px] text-slate-400" title="DataForSEO's own domain-rank score, scaled to 0-100 — a different metric than Moz's Domain Authority">Authority {b.da}</span>
+                    <span className="text-[10px] text-slate-400" title="A domain-rank score from live backlink data, scaled to 0-100 — a different metric than Moz's Domain Authority">Authority {b.da}</span>
                   </div>
                   <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">{b.links} links</span>
                 </div>
