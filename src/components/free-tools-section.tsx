@@ -84,7 +84,9 @@ export function FreeToolsSection() {
 /** Each tool's real limit is on its card. The prospect finder's differs from the rest
  *  because every search buys live Google data; burying that would mean a visitor learns it
  *  only when refused. */
-const FREE_TOOLS = [
+/** Exported so the homepage's "tools free with no account" stat counts this list rather than
+ *  carrying its own number. It said 3 while this held 4, on the same page. */
+export const FREE_TOOLS = [
   {
     href: '/tools/find-clients',
     name: 'Find Your Next SEO Client',

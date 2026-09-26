@@ -9,6 +9,7 @@ import { WelcomeBanner } from '@/components/welcome-banner'
 import type { Plan } from '@prisma/client'
 import posthog from 'posthog-js'
 import { toolCost } from '@/lib/plans'
+import { TOOL_GROUPS, type Tool } from '@/lib/tools'
 
 type UsageData = { plan: string; count: number; limit: number; remaining: number }
 
@@ -45,53 +46,8 @@ function NavIcon({ id }: { id: string }) {
 }
 
 // ─── Tool groups ───────────────────────────────────────────────────────────────
-const TOOL_GROUPS = [
-  {
-    label: 'Free',
-    tools: [
-      { id: 'content-analyzer', label: 'Content Analyzer', href: '/dashboard',                   minPlan: 'FREE'   },
-      { id: 'onpage',           label: 'On-Page SEO',      href: '/dashboard/onpage',            minPlan: 'FREE'   },
-    ],
-  },
-  {
-    label: 'Pro',
-    tools: [
-      { id: 'ideas',           label: 'Content Planner',   href: '/dashboard/ideas',            minPlan: 'PRO' },
-      { id: 'keyword-tool',    label: 'Keyword Research',  href: '/dashboard/keyword-tool',     minPlan: 'PRO' },
-      { id: 'rank-tracker',    label: 'Rank Tracker',      href: '/dashboard/rank-tracker',     minPlan: 'PRO' },
-      { id: 'competitor-spy',  label: 'Competitor Spy',    href: '/dashboard/competitor-spy',   minPlan: 'PRO' },
-      { id: 'optimizer',       label: 'Content Optimizer', href: '/dashboard/optimizer',        minPlan: 'PRO' },
-      { id: 'eeat',            label: 'E-E-A-T Analysis',  href: '/dashboard/eeat',             minPlan: 'PRO' },
-      { id: 'gap',             label: 'Content Gap',       href: '/dashboard/gap',              minPlan: 'PRO' },
-      // Renamed from "AI Visibility". That name now belongs to the Agency tool that measures
-    // whether AI answers actually name you; this one writes a plan for getting named, which is
-    // what it always did. Two tools cannot both be called AI Visibility, and the advice tool is
-    // the one whose name was the promise it could not keep.
-    { id: 'citation',        label: 'AI Citation Plan',  href: '/dashboard/citation',         minPlan: 'PRO' },
-      { id: 'backlinks',       label: 'Backlinks',         href: '/dashboard/backlinks',        minPlan: 'PRO' },
-      { id: 'ranking-engine', label: 'Ranking Engine',    href: '/dashboard/ranking-engine',   minPlan: 'PRO' },
-    ],
-  },
-  {
-    label: 'Agency',
-    tools: [
-      { id: 'seo-audit',         label: 'SEO Audit',            href: '/dashboard/seo-audit',         minPlan: 'AGENCY' },
-      { id: 'local-seo',         label: 'Local SEO Suite',      href: '/dashboard/local-seo',         minPlan: 'AGENCY' },
-      { id: 'serp',              label: 'SERP Audit',           href: '/dashboard/serp',              minPlan: 'AGENCY' },
-      { id: 'topical',           label: 'Topical Authority',    href: '/dashboard/topical',           minPlan: 'AGENCY' },
-      { id: 'local',             label: 'Local SEO',            href: '/dashboard/local',             minPlan: 'AGENCY' },
-      { id: 'tracker',           label: 'Cite Tracker',         href: '/dashboard/tracker',           minPlan: 'AGENCY' },
-      { id: 'performance-fixer', label: 'Performance Fixer',    href: '/dashboard/performance-fixer', minPlan: 'AGENCY' },
-      { id: 'client-reports',    label: 'Client Reports',       href: '/dashboard/agency/clients',    minPlan: 'AGENCY' },
-      { id: 'geogrid',           label: 'Geogrid + Review Velocity', href: '/dashboard/tools/geogrid',   minPlan: 'AGENCY' },
-      { id: 'ai-regex',          label: 'AI Regex',             href: '/dashboard/tools/ai-regex',    minPlan: 'AGENCY' },
-      { id: 'client-finder',     label: 'SEO Client Finder',    href: '/dashboard/tools/client-finder', minPlan: 'AGENCY' },
-      { id: 'ai-visibility',     label: 'AI Visibility',        href: '/dashboard/tools/ai-visibility', minPlan: 'AGENCY' },
-    ],
-  },
-]
 
-type Tool = typeof TOOL_GROUPS[0]['tools'][0]
+
 
 /**
  * Which plans satisfy each gate, named explicitly rather than ranked.

@@ -13,6 +13,8 @@
 import Link from 'next/link'
 import { T, Icon, SectionHead } from './tokens'
 import { PRICING_FAQ } from '@/lib/pricing-faq'
+import { TOOL_COUNT, TOOLS_ADDED_AT } from '@/lib/tools'
+import { FREE_TOOLS } from '@/components/free-tools-section'
 import { FreeAudit } from '../free-audit'
 import {
   TESTIMONIALS, CUSTOMER_LOGOS, USAGE_STATS,
@@ -514,25 +516,33 @@ export function ExistingContentSection() {
  * which is what this section used to say — is a trust claim with nothing behind it, and it
  * costs more than it earns the first time someone asks who.
  */
+/** Small numbers read better as words in prose. Falls back to digits past the range the
+ *  homepage's own counts can reach, so it can never print "undefined". */
+function word(n: number): string {
+  return ['zero','one','two','three','four','five','six','seven','eight','nine','ten',
+          'eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen',
+          'nineteen','twenty'][n] ?? String(n)
+}
+
 export function SocialProofSection() {
   const facts = [
     {
-      icon: 'layers', stat: '24',
+      icon: 'layers', stat: String(TOOL_COUNT),
       label: 'tools in one platform',
-      // The breakdown has to sum to the stat: 2 + 10 + 12. It said "eleven more on Agency"
-      // against a stat of 23 and was missed when AI Visibility took Agency to 24, because
-      // the tool-count grep in CLAUDE.md matches a number next to the word "tools" and this
-      // is a bare string in a data structure.
-      note: 'Two free, ten more on Pro, twelve more on Agency. Counted from the product, not from a marketing page.',
+      // Counted from TOOL_GROUPS, so "counted from the product" is literally true and the
+      // breakdown cannot stop summing to the total above it. Both were typed by hand until
+      // 2026-09-26 and both were wrong for two weeks.
+      note: `${word(TOOLS_ADDED_AT.FREE)} free, ${word(TOOLS_ADDED_AT.PRO)} more on Pro, ${word(TOOLS_ADDED_AT.AGENCY)} more on Agency. Counted from the product, not from a marketing page.`,
     },
     {
-      icon: 'shield', stat: '4',
+      icon: 'shield', stat: String(FREE_TOOLS.length),
       label: 'tools free with no account',
-      // Must match FreeToolsSection, which lists them a few sections above on this same page
-      // and has listed four since the prospect finder shipped. This said three, so the
-      // homepage contradicted itself. The limits differ too: the first three allow five runs
-      // a day (DAILY_LIMIT in each public route), the prospect finder three searches a month
-      // (FREE_MONTHLY_SEARCHES), so one blanket figure cannot cover them.
+      // Counted from the same list FreeToolsSection renders a few sections above. This said
+      // three while that showed four, so the page contradicted itself.
+      //
+      // The limits stay prose: they genuinely differ per tool — five runs a day for three of
+      // them (DAILY_LIMIT in each public route), three searches a month for the prospect
+      // finder (FREE_MONTHLY_SEARCHES) — so there is no single figure to derive.
       note: 'This readiness audit, the E-E-A-T checker, AI Regex and the prospect finder. No card, nothing stored — five runs a day each, or three searches a month for the prospect finder.',
     },
     {
