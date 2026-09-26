@@ -73,12 +73,6 @@ function labelForScore(overall: number): string {
   return 'Highly Likely'
 }
 
-// Authority arrives already on the 0-100 scale this tool and Competitor Spy render, so the
-// old 0-10 scaling step is gone; see domain-authority.ts for the conversion and for why the
-// numbers are not comparable with anything stored before 2026-09-23.
-function scaleOPR(decimal: number): number {
-  return Math.round(Math.min(10, Math.max(0, decimal)) * 10)
-}
 
 // Same log-scale the Gaps tab already uses client-side to turn a raw referring-
 // domain count into a 0-100 score for the competitor-avg bar (client.tsx

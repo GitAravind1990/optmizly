@@ -45,10 +45,6 @@ function NavIcon({ id }: { id: string }) {
   return <span className="flex items-center justify-center flex-shrink-0 w-4">{icons[id] ?? null}</span>
 }
 
-// ─── Tool groups ───────────────────────────────────────────────────────────────
-
-
-
 /**
  * Which plans satisfy each gate, named explicitly rather than ranked.
  *

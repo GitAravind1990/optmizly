@@ -230,7 +230,7 @@ export async function POST(req: NextRequest) {
     //
     // Null, never 0, when the vendor has no record: a client report showing "Domain Score 0"
     // reads as a measured verdict on the client's site, and these reports go to the agency's
-    // customers. `authorityFromRank` resolves that ambiguity; see domain-authority.ts.
+    // customers. `authorityFromSummary` resolves that ambiguity; see domain-authority.ts.
     const authority = authorityFromSummary(domain, backlinksSummary)
     const domainAuthority = authority.known ? authority.score : null
     const pageAuthority = domainAuthority
