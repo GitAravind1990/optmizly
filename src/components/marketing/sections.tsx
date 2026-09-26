@@ -524,6 +524,13 @@ function word(n: number): string {
           'nineteen','twenty'][n] ?? String(n)
 }
 
+/** Same, capitalised, for the start of a sentence. Deriving the number cost the note its
+ *  capital letter on first deploy — it read "two free, ten more on Pro". */
+function sentenceWord(n: number): string {
+  const w = word(n)
+  return w.charAt(0).toUpperCase() + w.slice(1)
+}
+
 export function SocialProofSection() {
   const facts = [
     {
@@ -532,7 +539,7 @@ export function SocialProofSection() {
       // Counted from TOOL_GROUPS, so "counted from the product" is literally true and the
       // breakdown cannot stop summing to the total above it. Both were typed by hand until
       // 2026-09-26 and both were wrong for two weeks.
-      note: `${word(TOOLS_ADDED_AT.FREE)} free, ${word(TOOLS_ADDED_AT.PRO)} more on Pro, ${word(TOOLS_ADDED_AT.AGENCY)} more on Agency. Counted from the product, not from a marketing page.`,
+      note: `${sentenceWord(TOOLS_ADDED_AT.FREE)} free, ${word(TOOLS_ADDED_AT.PRO)} more on Pro, ${word(TOOLS_ADDED_AT.AGENCY)} more on Agency. Counted from the product, not from a marketing page.`,
     },
     {
       icon: 'shield', stat: String(FREE_TOOLS.length),
