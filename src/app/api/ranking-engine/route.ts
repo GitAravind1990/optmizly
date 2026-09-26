@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
       realMetrics?.difficulty != null ? `Real keyword difficulty: ${realMetrics.difficulty}/100` : null,
       realMetrics?.cpc != null ? `Real CPC: $${realMetrics.cpc}` : null,
       realMetrics?.trend ? `Real search trend (last 3 months vs prior 3): ${realMetrics.trend}` : null,
-      realUserDa != null ? `Real authority score (OpenPageRank, 0-100 scale) for ${domain}: ${realUserDa}` : null,
+      realUserDa != null ? `Real authority score (measured domain rank, 0-100 scale) for ${domain}: ${realUserDa}` : null,
       realIntent ? `Real search intent: ${realIntent}` : null,
       realRelated && realRelated.length > 0 ? `Real related keywords (use these exact ones for keyword.related, do not invent different ones): ${realRelated.map(r => `${r.keyword} (vol ${r.volume}, kd ${r.difficulty})`).join('; ')}` : null,
     ].filter(Boolean).join('\n')

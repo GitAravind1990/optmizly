@@ -528,7 +528,7 @@ function GapsTab({ result }: { result: RankingResult }) {
         <h3 className="text-sm font-bold text-slate-800 mb-3">Your Website Scores</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {([
-            [`Domain Score${result.dataQuality?.userAuthority ? ' (OPR)' : ' (Est.)'}`, website.da_score],
+            [`Domain Score${result.dataQuality?.userAuthority ? '' : ' (Est.)'}`, website.da_score],
             [`Backlinks${result.dataQuality?.userReferringDomains ? ' (Live)' : ' (Est.)'}`, website.backlink_score],
             ['Content', website.content_score],
             ['Topical', website.topical_score],

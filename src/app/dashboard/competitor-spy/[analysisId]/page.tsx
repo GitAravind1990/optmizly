@@ -140,8 +140,8 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
             <h2 className="text-sm font-bold text-slate-800 mb-3">Quick Stats</h2>
             {[
               ['Monthly Traffic', analysis.estimatedTraffic.toLocaleString(), !!quality.traffic],
-              ['Domain Score (OPR)', `${analysis.domainAuthority}/100`, !!quality.authority],
-              ['Page Score (OPR)', `${analysis.pageAuthority}/100`, !!quality.authority],
+              ['Domain Score', `${analysis.domainAuthority}/100`, !!quality.authority],
+              ['Page Score', `${analysis.pageAuthority}/100`, !!quality.authority],
               ['Total Backlinks', analysis.backlinksTotal.toLocaleString(), !!quality.backlinks],
               ['New Backlinks (30d)', `+${analysis.backlinksNew}`, !!quality.backlinksNew],
               ['Keywords Ranked', analysis.keywordCount.toLocaleString(), !!quality.keywords],
@@ -149,7 +149,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ ana
               ['Avg Content Length', `${analysis.avgContentLength.toLocaleString()} words`, false],
             ].map(([label, value, isReal]) => (
               <div key={label as string} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
-                <span className="text-xs text-slate-500" title={(label as string).includes('OPR') ? 'OpenPageRank score — a different metric and scale than Moz\'s Domain Authority' : undefined}>{label}</span>
+                <span className="text-xs text-slate-500" title={/^(Domain|Page) Score/.test(label as string) ? "A domain-rank score from live backlink data, a different metric and scale than Moz's Domain Authority" : undefined}>{label}</span>
                 <span className="text-xs font-bold text-slate-800">
                   {value}
                   {!isReal && <span className="ml-1.5 text-[9px] font-semibold text-amber-500 uppercase align-middle">Est.</span>}

@@ -122,6 +122,18 @@ type TrackerResult = {
   reasons_against_citation: string[]; what_would_increase_citation: string
 }
 
+/**
+ * Exports name no vendor.
+ *
+ * Seven lines here did, and two of them credited "DataForSEO/OpenPageRank" after OpenPageRank
+ * was dropped on 2026-09-23 — a downloaded file that attributes a measurement to a provider
+ * the product no longer calls. A file outlives the page that produced it, so a stale credit in
+ * one is worse than in the UI: nothing later corrects it.
+ *
+ * What every one of these lines is actually for is the **(Real) versus (Est.)** distinction,
+ * which is React-only in the UI and has to be restated here or it is lost on download. That
+ * distinction is preserved verbatim; only the supplier's name is gone.
+ */
 export function exportTrackerCSV(data: { overall_citation_score?: number; verdict?: string; results?: TrackerResult[] }) {
   const rows = [
     ['Query', 'Citation Score', 'Verdict', 'Simulated AI Response', 'Reasons For', 'Reasons Against', 'What Would Help'],
@@ -1109,11 +1121,11 @@ export function exportCompetitorSpyCSV(data: CompetitorSpyData) {
   rows.push(['Date', new Date(data.lastAnalyzedAt).toLocaleDateString()])
   rows.push([''])
 
-  rows.push(['KEY METRICS', '(Real) = measured via DataForSEO/OpenPageRank, (Est.) = AI estimate'])
+  rows.push(['KEY METRICS', '(Real) = measured from live vendor data, (Est.) = AI estimate'])
   rows.push(['Metric', 'Value'])
   rows.push([`Estimated Monthly Traffic ${qualityTag(q.traffic)}`, String(data.estimatedTraffic.toLocaleString())])
-  rows.push([`Domain Score (OpenPageRank, not Moz DA) ${qualityTag(q.authority)}`, String(data.domainAuthority)])
-  rows.push([`Page Score (OpenPageRank, not Moz PA) ${qualityTag(q.authority)}`, String(data.pageAuthority)])
+  rows.push([`Domain Score (domain-rank metric, not Moz DA) ${qualityTag(q.authority)}`, String(data.domainAuthority)])
+  rows.push([`Page Score (domain-rank metric, not Moz PA) ${qualityTag(q.authority)}`, String(data.pageAuthority)])
   rows.push([`Total Backlinks ${qualityTag(q.backlinks)}`, String(data.backlinksTotal.toLocaleString())])
   rows.push([`New Backlinks ${qualityTag(q.backlinksNew)}`, String(data.backlinksNew.toLocaleString())])
   rows.push([`Keywords Ranked ${qualityTag(q.keywords)}`, String(data.keywordCount.toLocaleString())])
@@ -1160,7 +1172,7 @@ export function exportCompetitorSpyCSV(data: CompetitorSpyData) {
   rows.push([''])
 
   rows.push([`TOP BACKLINK SOURCES ${qualityTag(q.backlinksDetail)}`])
-  rows.push(['Domain', 'Links', 'Domain Score (DataForSEO rank, not Moz DA)'])
+  rows.push(['Domain', 'Links', 'Domain Score (domain-rank metric, not Moz DA)'])
   data.topBacklinks.forEach(b => {
     rows.push([b.domain, String(b.links), String(b.da)])
   })
@@ -1209,11 +1221,11 @@ export function exportCompetitorSpyPDF(data: CompetitorSpyData) {
     <table style="width:auto;margin-bottom:16px">
       <tr><td style="padding:4px 16px 4px 0"><strong>Threat Level</strong></td><td><span class="badge ${threatColor}">${threatLevel}</span></td></tr>
       <tr><td style="padding:4px 16px 4px 0"><strong>Est. Monthly Traffic ${qualityTag(q.traffic)}</strong></td><td>${data.estimatedTraffic.toLocaleString()}</td></tr>
-      <tr><td style="padding:4px 16px 4px 0"><strong>Domain Score (OpenPageRank) ${qualityTag(q.authority)}</strong></td><td>${data.domainAuthority} <span style="color:#94a3b8;font-size:9px">— not Moz Domain Authority</span></td></tr>
+      <tr><td style="padding:4px 16px 4px 0"><strong>Domain Score ${qualityTag(q.authority)}</strong></td><td>${data.domainAuthority} <span style="color:#94a3b8;font-size:9px">— not Moz Domain Authority</span></td></tr>
       <tr><td style="padding:4px 16px 4px 0"><strong>Backlinks ${qualityTag(q.backlinks)}</strong></td><td>${data.backlinksTotal.toLocaleString()}</td></tr>
       <tr><td style="padding:4px 16px 4px 0"><strong>Keywords Ranked ${qualityTag(q.keywords)}</strong></td><td>${data.keywordCount.toLocaleString()}</td></tr>
     </table>
-    <p class="meta">(Real) = measured via DataForSEO/OpenPageRank. (Est.) = AI estimate, not measured.</p>
+    <p class="meta">(Real) = measured from live vendor data. (Est.) = AI estimate, not measured.</p>
 
     ${data.aiInsights ? `<h2>Competitive Analysis</h2>
     <div style="background:#f8fafc;padding:12px;border-radius:6px;margin-bottom:16px">
@@ -1239,7 +1251,7 @@ export function exportCompetitorSpyPDF(data: CompetitorSpyData) {
 
     <h2>Top Backlink Sources (${data.topBacklinks.length}) ${qualityTag(q.backlinksDetail)}</h2>
     <table><thead><tr><th>Domain</th><th style="width:50px;text-align:right">Links</th><th style="width:110px;text-align:right">Authority*</th></tr></thead><tbody>${backlinkRows}</tbody></table>
-    <p style="font-size:9px;color:#94a3b8;margin-top:2px">*DataForSEO domain-rank score scaled to 0-100 — not Moz Domain Authority.</p>
+    <p style="font-size:9px;color:#94a3b8;margin-top:2px">*Domain-rank score from live backlink data, scaled to 0-100 — not Moz Domain Authority.</p>
 
     <h2>Keyword Gaps - Opportunities (${data.gapKeywords.length}) ${qualityTag(q.gaps)}</h2>
     <table><thead><tr><th>Keyword</th><th style="width:60px;text-align:right">Volume</th><th style="width:60px;text-align:right">Difficulty</th></tr></thead><tbody>${gapRows}</tbody></table>
@@ -1456,7 +1468,7 @@ export function exportContentIdeasCSV(data: ContentIdeasData) {
   rows.push([''])
 
   rows.push(['CONTENT IDEAS'])
-  rows.push(['Note: Search Volume/Difficulty are real DataForSEO data where marked, else AI-estimated. Opportunity, E-E-A-T, and Competitors are always AI-estimated, not measured.'])
+  rows.push(['Note: Search Volume/Difficulty are real measured data where marked, else AI-estimated. Opportunity, E-E-A-T, and Competitors are always AI-estimated, not measured.'])
   rows.push(['Title', 'Primary Keyword', 'Type', 'Status', 'Search Volume', 'Data Source', 'Difficulty', 'Opportunity (AI Est.)', 'Est. Length', 'E-E-A-T (AI Est.)', 'Competitors (AI Est.)', 'Related Keywords', 'Notes'])
 
   data.ideas.forEach(idea => {
@@ -1466,7 +1478,7 @@ export function exportContentIdeasCSV(data: ContentIdeasData) {
       idea.contentType,
       idea.status,
       String(idea.searchVolume),
-      idea.metricsReal ? 'Real (DataForSEO)' : 'AI Estimated',
+      idea.metricsReal ? 'Real (measured)' : 'AI Estimated',
       String(idea.difficulty),
       String(idea.opportunityScore),
       String(idea.estimatedLength) + ' words',
@@ -1571,7 +1583,7 @@ export function exportContentIdeasPDF(data: ContentIdeasData) {
       </tr>`).join('')}</tbody></table>
 
     <h2>All Ideas (${data.ideas.length})</h2>
-    <p class="meta" style="margin:-8px 0 8px">Volume is real DataForSEO data unless marked (est.). Opportunity Score is always AI-estimated, not measured.</p>
+    <p class="meta" style="margin:-8px 0 8px">Volume is real measured data unless marked (est.). Opportunity Score is always AI-estimated, not measured.</p>
     <table><thead><tr><th>Title</th><th>Keyword</th><th>Type</th><th style="width:60px">Status</th><th style="width:70px">Volume</th><th style="width:50px">KD</th><th style="width:60px">Opp. (AI)</th></tr></thead><tbody>${ideaRows}</tbody></table>
 
     <h2>Content Type Breakdown</h2>
