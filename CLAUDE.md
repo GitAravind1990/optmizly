@@ -139,6 +139,15 @@ costs ~$0.20 a run against a $19 plan. Weighted tools must also appear in the
 Terms §3 list, both pricing cards, the "what counts as one analysis" FAQ, and
 they get a `2×`/`3×` badge in the sidebar automatically.
 
+Those lists name tools in prose while the weight is keyed by id, so **check the name
+in each list resolves to the id that carries the weight**. `local` (four LLM-only
+generators, 1 credit) and `local-seo` (multi-location, real rank checks, 3 credits)
+were both titled "Local SEO Suite", so /pricing sold the 1-credit tool under that name
+while Terms and the FAQ attached the 3-credit warning to the same words — and the
+3-credit tool appeared on neither pricing card. Renamed `local-seo` to Multi-Location
+SEO on 2026-09-28. Two nav labels that differ only by a word are the same bug as two
+tools sharing a name.
+
 Three rules learned the hard way:
 
 - **There is no free trial.** Removed 2026-08-25: checkout charges immediately
