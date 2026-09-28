@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { PLAN_TOOLS } from '../plans'
 import { ALL_TOOLS, TOOL_GROUPS, isToolUnlocked } from '../tools'
 
 /**
@@ -61,6 +62,36 @@ describe('tool gating', () => {
     for (const group of TOOL_GROUPS) {
       const expected = group.label === 'Free' ? 'FREE' : group.label === 'Pro' ? 'PRO' : 'AGENCY'
       expect(group.tools.map(t => t.minPlan)).toEqual(group.tools.map(() => expected))
+    }
+  })
+})
+
+/**
+ * The sidebar decides what to show from `minPlan`; the API routes decide what to serve from
+ * PLAN_TOOLS. Nothing connects the two, so a tool can be visible and unlocked in the nav and
+ * still 403 at its own endpoint — a lock the customer cannot see until they click.
+ *
+ * Two ids are deliberately different on each side and have to stay listed here: the sidebar's
+ * `ideas` and `optimizer` are charged as `content-ideas` and `content-optimizer`. That split
+ * already caused a bug once, in TOOL_COST_UNITS, where listing only one of the pair either
+ * billed without showing a cost or showed a cost it never billed.
+ */
+const ENTITLEMENT_KEY: Record<string, string> = {
+  ideas: 'content-ideas',
+  optimizer: 'content-optimizer',
+  'content-analyzer': 'analyse',
+}
+
+describe('nav gating matches plan entitlements', () => {
+  const plans = ['FREE', 'STARTER', 'PRO', 'AGENCY', 'AGENCY_PLUS'] as const
+
+  it.each(ALL_TOOLS.map(t => [t.id, t] as const))('%s is entitled exactly where the nav unlocks it', (_id, tool) => {
+    const key = ENTITLEMENT_KEY[tool.id] ?? tool.id
+    for (const plan of plans) {
+      expect(
+        (PLAN_TOOLS as Record<string, string[]>)[plan].includes(key),
+        `${tool.id} (${key}) on ${plan}`,
+      ).toBe(isToolUnlocked(tool.minPlan, plan))
     }
   })
 })

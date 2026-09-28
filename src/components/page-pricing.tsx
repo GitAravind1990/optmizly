@@ -47,7 +47,11 @@ const plans = [
     color: 'gray',
     featured: false,
     features: [
-      'AI SEO audit (1 project)',
+      // Was "AI SEO audit (1 project)". There is no project anywhere in the product -- the
+      // phrase appeared once, here -- and SEO Audit is the name of an Agency-only tool, so
+      // the free plan's first line promised a tool $49 unlocks. Name what FREE really grants,
+      // which is PLAN_TOOLS.FREE: 'analyse' and 'onpage'.
+      'Content Analyzer & On-Page SEO — both free tools',
       'SEO + GEO + AEO scores',
       '3 analyses / month',
       '8-dimension content score',
@@ -75,7 +79,10 @@ const plans = [
       'Everything in Free, plus:',
       'All 12 tools — the same set as Pro',
       '15 analyses / month (5× the Free plan)',
-      'Analysis history kept',
+      // Not "Analysis history kept": /api/history gates on nothing but a signed-in user, so
+      // free accounts already have it and this sold an upgrade to something they have. The
+      // weighting is the fact a prospect actually needs to read 15 correctly.
+      'Data-heavy tools count as 2–3 analyses',
       'Email support',
     ],
     cta: 'Get Starter',
