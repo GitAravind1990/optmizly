@@ -447,6 +447,14 @@ function levelFor(score: number | null): ReadinessLevel {
   return 'weak'
 }
 
+/**
+ * COPIED, on purpose, into the Chrome extension (`G:\optmizly-chrome-extension`,
+ * `src/score.js`) so a page checked there and here cannot disagree about what a score means.
+ * There is no shared build: the extension has no dependencies and this file reaches into
+ * server-only code. **Change both, or the two products start telling one customer two
+ * different things.** The copy carries the same note, and its tests pin the weights, the
+ * 75/45 thresholds and the GEO cap so a silent divergence fails rather than drifts.
+ */
 export function scoreReadiness(seo: SEOSignals, ai: AiSignals): {
   score: number
   categories: ReadinessCategory[]
