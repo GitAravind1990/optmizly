@@ -10,7 +10,7 @@
  * themselves got what was promised.
  */
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import { T, Icon } from './marketing/tokens'
@@ -95,6 +95,36 @@ export function FreeAudit({ location = 'homepage' }: { location?: string }) {
   const [showAll, setShowAll] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
   const startedRef = useRef(false)
+
+  /**
+   * Prefill from `?url=`, which is how the Chrome extension hands a page over: it has already
+   * read the page in the browser and links here for the checks it cannot make without a
+   * network request — robots.txt, AI crawler access, Search Console.
+   *
+   * Prefilled, never auto-run. A visitor arriving with a URL already in the box still chooses
+   * to spend one of five daily audits, and an audit that fires on page load would spend it
+   * for them — including on a refresh, or a shared link, or a back button.
+   *
+   * Read from `window.location` rather than `useSearchParams`, which would need a Suspense
+   * boundary around this component on the statically rendered pages that embed it.
+   */
+  useEffect(() => {
+    const incoming = new URLSearchParams(window.location.search).get('url')
+    if (!incoming) return
+    // A stranger picks this value. Accept only an http(s) URL, and hand on what URL parsed
+    // rather than the raw string, so nothing else travels with it.
+    try {
+      const parsed = new URL(incoming)
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return
+      setUrl(parsed.toString())
+      posthog.capture('free_audit_prefilled', {
+        location,
+        src: new URLSearchParams(window.location.search).get('src') ?? 'link',
+      })
+    } catch {
+      /* not a URL; leave the field empty */
+    }
+  }, [location])
 
   /** Fired once per visitor per mount, the first time they engage with the field at all.
    *  Separate from submission so the drop-off between the two is visible. */
