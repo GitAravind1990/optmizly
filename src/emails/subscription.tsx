@@ -16,7 +16,9 @@ const PLAN_TOOLS: Record<string, string[]> = {
   // confirmation email lists what they actually just bought rather than the two free tools.
   Starter: ['E-E-A-T Analysis', 'Relevant Backlinks', 'AI Rewrite (with framework)', 'Citation Plan', 'Content Gap', '15 analyses every month'],
   Pro: ['E-E-A-T Analysis', 'Relevant Backlinks', 'AI Rewrite (with framework)', 'Citation Plan', 'Content Gap', 'AI Queries'],
-  Agency: ['Everything in Pro', 'AI Cite Tracker', 'Local SEO Suite (4 tools)', 'SERP Competitor Audit', 'Topical Authority Mapper ★'],
+  Agency: ['Everything in Pro', 'AI Visibility — whether Google’s AI answers name you',
+    'Cite Tracker', 'Local SEO Suite (4 tools)', 'Multi-Location SEO', 'SERP Competitor Audit',
+    'Topical Authority Mapper'],
   'Agency Plus': ['Everything in Agency', 'Unlimited client projects', '5 team seats', '500 analyses every month', '10 prospect searches a day'],
 }
 

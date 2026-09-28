@@ -14,7 +14,9 @@ interface TrialStartedEmailProps {
 
 const PLAN_TOOLS: Record<string, string[]> = {
   Pro: ['E-E-A-T Analysis', 'Relevant Backlinks', 'AI Rewrite (with framework)', 'Citation Plan', 'Content Gap', 'AI Queries'],
-  Agency: ['Everything in Pro', 'AI Cite Tracker', 'Local SEO Suite (4 tools)', 'SERP Competitor Audit', 'Topical Authority Mapper ★'],
+  Agency: ['Everything in Pro', 'AI Visibility — whether Google’s AI answers name you',
+    'Cite Tracker', 'Local SEO Suite (4 tools)', 'Multi-Location SEO', 'SERP Competitor Audit',
+    'Topical Authority Mapper'],
 }
 
 export function TrialStartedEmail({
