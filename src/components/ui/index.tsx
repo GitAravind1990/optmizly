@@ -111,13 +111,16 @@ export function EmptyState({ icon, title, desc, cta }: {
 const PRO_BENEFITS = [
   'All 12 tools unlocked (E-E-A-T, Gap, Keyword Research, Ranking Engine…)',
   '15 analyses a month on Starter, 50 on Pro',
-  'Rank Tracker, Backlinks & AI citation optimiser',
+  'Rank Tracker, Backlinks & AI Citation Plan',
 ]
 
+// Every name here has to be one the customer will find in the sidebar after paying. This
+// list read "Query Tracker, GeoGrid & Local SEO suite": no tool has ever been called Query
+// Tracker, and "Local SEO suite" was the name two different tools were using.
 const AGENCY_BENEFITS = [
   'Everything in Pro, plus multi-client management',
   'White-label PDF reports for each client',
-  'Query Tracker, GeoGrid & Local SEO suite',
+  'AI Visibility, Cite Tracker, Geogrid & the Local SEO Suite',
 ]
 
 export function LockedState({ tool, plan }: { tool: string; plan: 'Pro' | 'Agency' }) {

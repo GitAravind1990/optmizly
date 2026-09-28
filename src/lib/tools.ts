@@ -70,6 +70,32 @@ export const TOOL_GROUPS: ToolGroup[] = [
 ]
 
 /** Every tool, flattened. */
+/**
+ * Which plans satisfy each gate, named explicitly rather than ranked.
+ *
+ * A rank comparison cannot express this: Starter sits below Pro on price and allowance but
+ * unlocks the same tools, so `rank >= rank` would lock a Starter customer out of what they
+ * paid for. Listing the satisfying plans is the only form that stays true.
+ *
+ * It also has to name AGENCY_PLUS everywhere AGENCY appears. A `userPlan === 'AGENCY'`
+ * check here once locked every tool for the most expensive plan on the site.
+ *
+ * Lives beside TOOL_GROUPS rather than in the dashboard layout, so any surface that lists
+ * tools decides inclusion the same way the sidebar does. /dashboard/settings used to answer
+ * "Tools Included in Your Plan" from its own hand-typed list of four.
+ */
+const UNLOCKED_BY: Record<string, ReadonlySet<string>> = {
+  FREE:   new Set(['FREE', 'STARTER', 'PRO', 'AGENCY', 'AGENCY_PLUS']),
+  PRO:    new Set(['STARTER', 'PRO', 'AGENCY', 'AGENCY_PLUS']),
+  AGENCY: new Set(['AGENCY', 'AGENCY_PLUS']),
+}
+
+/** A missing key denies rather than grants, which is the safe direction — but keep the map
+ *  complete: a new tier absent from every set reads as "locked" on every tool. */
+export function isToolUnlocked(minPlan: string, userPlan: string): boolean {
+  return UNLOCKED_BY[minPlan]?.has(userPlan) ?? false
+}
+
 export const ALL_TOOLS: Tool[] = TOOL_GROUPS.flatMap(g => g.tools)
 
 /**

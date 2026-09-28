@@ -60,7 +60,7 @@ function copyForPlan(plan: string, limit: number | null): PlanCopy {
       body: `You've used all ${limit ?? 50} analyses this month. Upgrade to Agency for 4× the volume and the full agency toolkit.`,
       benefits: [
         '200 analyses every month (vs 50 on Pro)',
-        'SEO Audit, Local SEO Suite, SERP & Topical Authority unlocked',
+        'AI Visibility, SEO Audit, SERP & Topical Authority unlocked',
         'Geogrid, Review Velocity & white-label client reports',
       ],
       cta: { label: 'Upgrade to Agency ($49/mo) →', href: '/pricing' },

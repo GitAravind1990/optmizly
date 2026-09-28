@@ -7,6 +7,7 @@ import { UserButton, useUser } from '@clerk/nextjs'
 import { Card, Badge, Button, Spinner, ScoreBar } from '@/components/ui'
 import { TeamSeats } from '@/components/team-seats'
 import { PLAN_LIMITS } from '@/lib/plans'
+import { ALL_TOOLS, isToolUnlocked } from '@/lib/tools'
 import type { Plan } from '@prisma/client'
 
 type GSCStatus = {
@@ -103,14 +104,6 @@ const UPGRADE_NUDGE: Partial<Record<Plan, { title: string; body: string; cta: st
   },
 }
 
-// Starter carries the same 12 tools as Pro and differs only in allowance, so it appears
-// wherever PRO does. Agency Plus sees everything Agency does.
-const ALL_TOOLS = [
-  { label: 'Content Analyzer',  plans: ['FREE','STARTER','PRO','AGENCY','AGENCY_PLUS'] },
-  { label: 'Issues Audit',      plans: ['FREE','STARTER','PRO','AGENCY','AGENCY_PLUS'] },
-  { label: 'Content Optimizer', plans: ['STARTER','PRO','AGENCY','AGENCY_PLUS'] },
-  { label: 'More tools coming soon', plans: ['AGENCY','AGENCY_PLUS'] },
-]
 
 type Tab = 'account' | 'plan' | 'billing' | 'integrations'
 
@@ -156,6 +149,7 @@ export default function SettingsPage() {
 
   // Typed as Plan so PLAN_META below is indexed exhaustively rather than by loose string.
   const plan = (usage?.plan ?? 'FREE') as Plan
+  const unlockedCount = ALL_TOOLS.filter(t => isToolUnlocked(t.minPlan, plan)).length
 
   // `siteUnverifiedUser` grants cannot back Search Analytics reads, so the sync route
   // filters them out server-side. Mirrored here so the picker offers exactly what the
@@ -458,14 +452,22 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {/* Tool access list */}
+            {/* Tool access list — read from TOOL_GROUPS, the canonical list, and gated by the
+                same isToolUnlocked the sidebar uses. It was four hand-typed rows until
+                2026-09-28: "Content Analyzer", "Issues Audit" (a tool by no such name),
+                "Content Optimizer" and "More tools coming soon" — so an Agency customer
+                paying $49 opened this card and read that their plan contained three tools
+                and a promise, with 24 of them in the sidebar behind it. */}
             <Card>
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Tools Included in Your Plan</div>
+              <div className="flex items-baseline justify-between mb-4">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tools Included in Your Plan</div>
+                <div className="text-xs text-slate-400">{unlockedCount} of {ALL_TOOLS.length}</div>
+              </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {ALL_TOOLS.map(t => {
-                  const included = t.plans.includes(plan)
+                  const included = isToolUnlocked(t.minPlan, plan)
                   return (
-                    <div key={t.label} className="flex items-center gap-2">
+                    <div key={t.id} className="flex items-center gap-2">
                       <span className={`text-xs font-black w-4 flex-shrink-0 ${included ? 'text-emerald-500' : 'text-slate-200'}`}>
                         {included ? '✔' : '✗'}
                       </span>

@@ -9,7 +9,7 @@ import { WelcomeBanner } from '@/components/welcome-banner'
 import type { Plan } from '@prisma/client'
 import posthog from 'posthog-js'
 import { toolCost } from '@/lib/plans'
-import { TOOL_GROUPS, type Tool } from '@/lib/tools'
+import { TOOL_GROUPS, isToolUnlocked, type Tool } from '@/lib/tools'
 
 type UsageData = { plan: string; count: number; limit: number; remaining: number }
 
@@ -43,29 +43,6 @@ function NavIcon({ id }: { id: string }) {
     'lock':             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="5.5" width="8" height="5.5" rx="1"/><path d="M4 5.5V4a2 2 0 014 0v1.5"/></svg>,
   }
   return <span className="flex items-center justify-center flex-shrink-0 w-4">{icons[id] ?? null}</span>
-}
-
-/**
- * Which plans satisfy each gate, named explicitly rather than ranked.
- *
- * A rank comparison cannot express this: Starter sits below Pro on price and allowance but
- * unlocks the same tools, so `rank >= rank` would lock a Starter customer out of what they
- * paid for. Listing the satisfying plans is the only form that stays true.
- *
- * This also fixes a live bug. The previous version compared `userPlan === 'AGENCY'`, and
- * 'AGENCY_PLUS' is not equal to 'AGENCY' — so the most expensive plan on the site saw
- * **every tool locked**, Pro-tier ones included. Adding a plan to the enum without revisiting
- * an equality check is how that happened; a missing key here now shows as a locked tool
- * rather than silently granting, which is the safe direction, but keep this list complete.
- */
-const UNLOCKED_BY: Record<string, ReadonlySet<string>> = {
-  FREE:   new Set(['FREE', 'STARTER', 'PRO', 'AGENCY', 'AGENCY_PLUS']),
-  PRO:    new Set(['STARTER', 'PRO', 'AGENCY', 'AGENCY_PLUS']),
-  AGENCY: new Set(['AGENCY', 'AGENCY_PLUS']),
-}
-
-function isUnlocked(minPlan: string, userPlan: string): boolean {
-  return UNLOCKED_BY[minPlan]?.has(userPlan) ?? false
 }
 
 const TIER_BADGE: Record<string, string> = {
@@ -185,7 +162,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {group.tools.map(tool => {
                   // Until the plan loads, treat every tool as unlocked so the sidebar
                   // doesn't flash lock icons on a paid account's tools.
-                  const unlocked = !usage || isUnlocked(tool.minPlan, usage.plan)
+                  const unlocked = !usage || isToolUnlocked(tool.minPlan, usage.plan)
                   const active   = isActive(tool)
                   return (
                     <Link
