@@ -13,7 +13,7 @@ Next.js 15, Clerk, Prisma, Supabase, Groq and DoDo Payments.
 | Auth | Clerk v7 |
 | Database | Supabase (PostgreSQL) + Prisma ORM v5 |
 | AI | Groq in production — see note below |
-| SEO data | DataForSEO, OpenPageRank, Google PageSpeed Insights, Google Places |
+| SEO data | DataForSEO, Google PageSpeed Insights, Google Places |
 | Payments | DoDo Payments |
 | Email | Resend + React Email |
 | Analytics | PostHog, Vercel Analytics |

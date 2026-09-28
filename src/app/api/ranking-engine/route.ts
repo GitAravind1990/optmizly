@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
     // The model's own output (and any fields it invents around them, like per-domain
     // DA estimates) is at least anchored to the keyword's actual current ranking
     // page — not required for the call to proceed if any of them fail.
-    const [serpResult, metricsMap, userOpr, intentMap, realRelated] = await Promise.all([
+    const [serpResult, metricsMap, userAuthority, intentMap, realRelated] = await Promise.all([
       getTopSerpResults(keyword, targetLocation, 'desktop', 10),
       getKeywordMetrics([keyword], targetLocation),
       getDomainAuthority(domain).catch(() => null),
@@ -112,8 +112,8 @@ export async function POST(req: NextRequest) {
     const realMetrics = metricsMap.get(keyword)
     const realSerp = serpResult && serpResult.items.length > 0 ? serpResult.items : null
     const realFeatures = serpResult && serpResult.features.length > 0 ? serpResult.features : null
-    const userAuthorityIsReal = userOpr?.known === true
-    const realUserDa = userAuthorityIsReal ? userOpr!.score : null
+    const userAuthorityIsReal = userAuthority?.known === true
+    const realUserDa = userAuthorityIsReal ? userAuthority!.score : null
     const realIntent = intentMap.get(keyword) ?? null
 
     const realDataLines = [
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
     // take that long) — bounded so a slow PSI run can't dominate this route's total
     // latency; a timeout just means the technical score falls back to the model's
     // estimate, same graceful-degradation pattern as every other real call here.
-    const [raw, competitorOprMap, rdMap, competitorPageStats, psiMetrics] = await Promise.all([
+    const [raw, competitorAuthorityMap, rdMap, competitorPageStats, psiMetrics] = await Promise.all([
       callLLM(
         SYSTEM,
         `Keyword: ${keyword}\nDomain: ${domain}\nCountry: ${country}\nGoal: ${goal}${realDataLines ? `\n\n${realDataLines}` : ''}\n\nEstimate website metrics from the domain URL. Small/new sites: DA 10-25. Established niche sites: DA 30-55. Major brands: DA 70+. ${realSerp ? "DA, referring domains, and word counts for the real competitor domains will be supplied separately where available — estimate only what isn't." : "Generate realistic competitor data for this keyword's niche."}`,
@@ -204,8 +204,8 @@ export async function POST(req: NextRequest) {
     if (realSerp) {
       const aiTop = Array.isArray(result.competitors?.top) ? result.competitors.top : []
       result.competitors.top = realSerp.map((r, i) => {
-        const opr = competitorOprMap.get(r.domain)
-        const realDa = opr?.known ? opr.score : null
+        const authority = competitorAuthorityMap.get(r.domain)
+        const realDa = authority?.known ? authority.score : null
         const realRd = rdMap.get(r.domain)
         const pageStats = competitorPageStats.get(r.url)
         return {
@@ -216,8 +216,8 @@ export async function POST(req: NextRequest) {
           position: r.rank,
           url: r.url,
           da: realDa ?? aiTop[i]?.da ?? result.competitors?.avg_da ?? 40,
-          // Per-row flags since none of OPR / the bulk backlinks lookup / the page
-          // crawl has every domain covered — some rows in the same table are real,
+          // Per-row flags since none of the bulk rank lookup / the bulk backlinks
+          // lookup / the page crawl has every domain covered — some rows in the same table are real,
           // some estimated, not an all-or-nothing column.
           daIsReal: realDa != null,
           rd: realRd ?? aiTop[i]?.rd ?? result.competitors?.avg_rd ?? 100,
@@ -259,8 +259,8 @@ export async function POST(req: NextRequest) {
     if (userRdIsReal && result.website.gaps && typeof result.competitors?.avg_rd === 'number') {
       result.website.gaps.backlinks = userRd! - result.competitors.avg_rd
     }
-    // Same for the authority gap: da_score (real OPR, set above) and avg_da (real
-    // per-competitor OPR, recomputed above) were both already real independently,
+    // Same for the authority gap: da_score (real measured rank, set above) and avg_da
+    // (real per-competitor rank, recomputed above) were both already real independently,
     // but the gap between them was still the model's own unsynced guess — caught live
     // on forbes.com, where da_score(48) - avg_da(37) is really a +11 advantage,
     // while the model's gaps.authority claimed a -10 deficit.
@@ -298,8 +298,8 @@ export async function POST(req: NextRequest) {
         userAuthority: userAuthorityIsReal,
         userReferringDomains: userRdIsReal,
         competitorAuthority: !!realSerp && realSerp.some(r => {
-          const opr = competitorOprMap.get(r.domain)
-          return opr?.known === true
+          const authority = competitorAuthorityMap.get(r.domain)
+          return authority?.known === true
         }),
         competitorReferringDomains: !!realSerp && realSerp.some(r => rdMap.has(r.domain)),
         competitorWords: competitorPageStats.size > 0,

@@ -139,7 +139,7 @@ const checkDataForSEO = () =>
  * DataForSEO scores it ~940 on 0-1000. A step change in this line on 2026-09-23 is the vendor
  * swap, not a change in google.com.
  */
-const checkOpenPageRank = () =>
+const checkAuthority = () =>
   run('authority', async () => {
     const a = await getDomainAuthority('google.com')
     if (!a.known) throw new Error('bulk_ranks returned no rank for google.com')
@@ -225,7 +225,7 @@ export async function GET(req: NextRequest) {
     checkDatabase(),
     checkLLM(),
     checkDataForSEO(),
-    checkOpenPageRank(),
+    checkAuthority(),
     checkRedis(),
     checkPageSpeed(),
   ])
