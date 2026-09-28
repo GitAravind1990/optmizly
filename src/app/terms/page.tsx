@@ -1,5 +1,6 @@
 ﻿import Link from 'next/link'
 import type { Metadata } from 'next'
+import { TERMS_UPDATED, legalDate } from '@/lib/legal'
 import { PageHeader } from '@/components/page-header'
 
 export const metadata: Metadata = { title: 'Terms of Service – Optmizly' }
@@ -70,7 +71,7 @@ export default function TermsPage() {
 
       <div className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-4xl font-black mb-2">Terms of Service</h1>
-        <p className="text-slate-400 text-sm mb-12">Last updated: August 2026</p>
+        <p className="text-slate-400 text-sm mb-12">Last updated: <time dateTime={TERMS_UPDATED}>{legalDate(TERMS_UPDATED)}</time></p>
 
         {sections.map(s => (
           <section key={s.title} className="mb-10">

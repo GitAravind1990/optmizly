@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { REFUND_UPDATED, legalDate } from '@/lib/legal'
 import { PageHeader } from '@/components/page-header'
 
 export const metadata: Metadata = { title: 'Refund Policy – Optmizly' }
@@ -42,7 +43,7 @@ export default function RefundPolicyPage() {
 
       <div className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-4xl font-black mb-2">Refund Policy</h1>
-        <p className="text-slate-400 text-sm mb-4">Last updated: August 2026</p>
+        <p className="text-slate-400 text-sm mb-4">Last updated: <time dateTime={REFUND_UPDATED}>{legalDate(REFUND_UPDATED)}</time></p>
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-6 py-4 mb-12">
           <p className="text-blue-800 font-semibold text-sm">

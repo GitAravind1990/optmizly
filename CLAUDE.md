@@ -131,6 +131,9 @@ these in the same commit:
 - Tool-count copy — upgrade modal, welcome banner, homepage dashboard mockup
 - `PRICING_UPDATED` (`src/components/page-pricing.tsx`) — the date /pricing prints and
   writes into its `dateModified`. A freshness signal that stops moving is worse than none
+- `TERMS_UPDATED` / `PRIVACY_UPDATED` / `REFUND_UPDATED` (`src/lib/legal.ts`) — the "Last
+  updated" dates those three pages print, for the same reason. /terms printed "August 2026"
+  through three September rewrites of its own section 3
 
 Adding a tool that makes real third-party API calls? Give it a weight in
 `TOOL_COST_UNITS` (`src/lib/plans.ts`). Unlisted means 1 unit, which is right for
