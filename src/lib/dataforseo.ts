@@ -423,7 +423,7 @@ export async function getLocalRank(
   return result?.rank ?? null
 }
 
-// Used by Local SEO Suite's rank checker, which auto-creates "investigate ranking
+// Used by Multi-Location SEO's rank checker, which auto-creates "investigate ranking
 // drop" tasks and alerts — needs to tell a real drop apart from a failed API call.
 export async function getLocalPackRank(
   keyword: string,
@@ -464,12 +464,12 @@ export interface BusinessCoordinates {
  * count) by name + city/state, for cases where only a street address is on file (no
  * stored lat/lng) — used both for local-pack rank checks and to seed a new location
  * with real starting stats instead of fabricated ones. US-only for now, matching the
- * Local SEO Suite's location schema (no country field).
+ * Multi-Location SEO's location schema (no country field).
  */
 // DataForSEO's location_name matches Google Ads' geo-target names exactly, which
 // spell out the full state name ("Washington") — a two-letter abbreviation ("WA",
 // what nearly every US address actually uses) is rejected outright as an invalid
-// field, not just a no-match. The Local SEO Suite's State field is free text with
+// field, not just a no-match. Multi-Location SEO's State field is free text with
 // no format hint, so real users overwhelmingly type the abbreviation.
 const US_STATE_NAMES: Record<string, string> = {
   AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',

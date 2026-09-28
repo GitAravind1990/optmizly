@@ -14,7 +14,7 @@
  * Bump it in the same commit as any price, limit or plan change; it is on the checklist in
  * CLAUDE.md for exactly that reason. A date that stops moving is worse than no date.
  */
-export const PRICING_UPDATED = '2026-09-14'
+export const PRICING_UPDATED = '2026-09-28'
 
 /**
  * One source for the pricing FAQ: rendered by the accordion in `page-pricing.tsx` *and*
@@ -41,7 +41,7 @@ export const PRICING_FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: 'What counts as one analysis?',
-    a: 'Each time you submit content or a URL for scoring, it uses one analysis credit. Most tools cost one credit. Tools that pull more live data from third-party providers on your behalf cost more, and each one tells you its cost before you run it. Three credits: Keyword Research, Competitor Spy, Ranking Engine, Geogrid, AI Visibility and the Local SEO suite. Two credits: Backlinks, Rank Tracker, SERP Audit, Review Velocity, Client Reports, AI Citation Plan, Content Gap and Content Planner. Credits reset at the start of each billing month, and the Free plan’s tools all cost one. SEO Client Finder is the exception: it does not use analysis credits at all, and has its own limit of 5 searches a day.',
+    a: 'Each time you submit content or a URL for scoring, it uses one analysis credit. Most tools cost one credit. Tools that pull more live data from third-party providers on your behalf cost more, and each one tells you its cost before you run it. Three credits: Keyword Research, Competitor Spy, Ranking Engine, Geogrid, AI Visibility and Multi-Location SEO. Two credits: Backlinks, Rank Tracker, SERP Audit, Review Velocity, Client Reports, AI Citation Plan, Content Gap and Content Planner. Credits reset at the start of each billing month, and the Free plan’s tools all cost one. SEO Client Finder is the exception: it does not use analysis credits at all, and has its own limit of 5 searches a day.',
   },
   {
     q: 'Can I cancel anytime?',

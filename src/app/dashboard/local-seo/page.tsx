@@ -83,7 +83,7 @@ export default function LocalSEOPage() {
     <div className="flex-1 overflow-y-auto p-6 max-w-5xl mx-auto w-full">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Local SEO Suite</h1>
+          <h1 className="text-xl font-bold text-slate-900">Multi-Location SEO</h1>
           <p className="text-sm text-slate-500 mt-0.5">Manage local SEO for multi-location businesses</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">

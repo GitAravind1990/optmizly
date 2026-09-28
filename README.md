@@ -52,15 +52,15 @@ unlimited client projects and 5 seats over Agency, not more tools.
 Competitor Spy, Content Optimizer, E-E-A-T Analysis, Content Gap, AI Citation Plan, Backlinks,
 Ranking Engine
 
-**Agency / Agency Plus** — the twelve above plus SEO Audit, Local SEO Suite, SERP Audit, Topical
-Authority, Local SEO, Cite Tracker, Performance Fixer, Client Reports, Geogrid + Review Velocity,
-AI Regex, SEO Client Finder, AI Visibility
+**Agency / Agency Plus** — the twelve above plus SEO Audit, Multi-Location SEO, SERP Audit,
+Topical Authority, Local SEO Suite, Cite Tracker, Performance Fixer, Client Reports,
+Geogrid + Review Velocity, AI Regex, SEO Client Finder, AI Visibility
 
 ### Credits, not runs
 
 The monthly allowance is denominated in weighted units, not tool runs. Tools that hit a paid
 vendor cost more than one: `TOOL_COST_UNITS` in `src/lib/plans.ts` charges 3 for Keyword Research,
-Competitor Spy, Geogrid, Local SEO Suite, Ranking Engine and AI Visibility, and 2 for Backlinks,
+Competitor Spy, Geogrid, Multi-Location SEO, Ranking Engine and AI Visibility, and 2 for Backlinks,
 Rank Tracker, SERP Audit, Review Velocity, Client Reports, AI Citation Plan, Content Gap and
 Content Planner. Everything unlisted costs 1, which is right for LLM-only tools and wrong for
 anything calling DataForSEO.

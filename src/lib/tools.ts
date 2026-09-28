@@ -54,10 +54,10 @@ export const TOOL_GROUPS: ToolGroup[] = [
     label: 'Agency',
     tools: [
       { id: 'seo-audit',         label: 'SEO Audit',            href: '/dashboard/seo-audit',         minPlan: 'AGENCY' },
-      { id: 'local-seo',         label: 'Local SEO Suite',      href: '/dashboard/local-seo',         minPlan: 'AGENCY' },
+      { id: 'local-seo',         label: 'Multi-Location SEO',   href: '/dashboard/local-seo',         minPlan: 'AGENCY' },
       { id: 'serp',              label: 'SERP Audit',           href: '/dashboard/serp',              minPlan: 'AGENCY' },
       { id: 'topical',           label: 'Topical Authority',    href: '/dashboard/topical',           minPlan: 'AGENCY' },
-      { id: 'local',             label: 'Local SEO',            href: '/dashboard/local',             minPlan: 'AGENCY' },
+      { id: 'local',             label: 'Local SEO Suite',      href: '/dashboard/local',             minPlan: 'AGENCY' },
       { id: 'tracker',           label: 'Cite Tracker',         href: '/dashboard/tracker',           minPlan: 'AGENCY' },
       { id: 'performance-fixer', label: 'Performance Fixer',    href: '/dashboard/performance-fixer', minPlan: 'AGENCY' },
       { id: 'client-reports',    label: 'Client Reports',       href: '/dashboard/agency/clients',    minPlan: 'AGENCY' },

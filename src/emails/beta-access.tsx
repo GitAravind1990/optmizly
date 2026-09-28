@@ -91,7 +91,7 @@ export function BetaAccessEmail({
               </Text>
               <Text className="text-slate-600 text-sm leading-relaxed m-0 mb-3">
                 <strong>3 credits</strong> — Keyword Research, Competitor Spy, Ranking
-                Engine, Geogrid, AI Visibility and the Local SEO suite. These call live
+                Engine, Geogrid, AI Visibility and Multi-Location SEO. These call live
                 search-data providers, which is what makes them cost more.
               </Text>
               <Text className="text-slate-600 text-sm leading-relaxed m-0">
