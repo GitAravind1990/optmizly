@@ -95,15 +95,16 @@ export function FreeToolsSection() {
             borderRadius: 16, background: T.blueSoft, border: `1px solid ${T.blue}22`,
           }}
         >
-          {/* The same mark as the extension's icon: a white ring on brand blue. Drawn with a
-              radial gradient rather than inset shadows, which give a square hole on a square
-              element and would not match the icon a user sees in their toolbar. */}
-          <span
+          {/* The actual mark, not a drawing of one. This was a CSS ring while the extension
+              shipped a placeholder icon; the extension now packages this same logo, so the
+              card, the toolbar button and the tab icon are one thing. */}
+          <img
+            src="/logo.png"
+            alt=""
             aria-hidden="true"
-            style={{
-              flex: '0 0 auto', width: 34, height: 34, borderRadius: 10,
-              background: `radial-gradient(circle at center, ${T.blue} 0 17%, #fff 18% 32%, ${T.blue} 33%)`,
-            }}
+            width={34}
+            height={34}
+            style={{ flex: '0 0 auto', width: 34, height: 34, objectFit: 'contain' }}
           />
           <span style={{ flex: '1 1 260px', minWidth: 0 }}>
             <span style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
