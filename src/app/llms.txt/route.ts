@@ -73,6 +73,7 @@ ${guides}
 - [Privacy Policy](${APP_URL}/privacy): What data is collected, which sub-processors receive it, and how long it is kept.
 - [Terms of Service](${APP_URL}/terms): Plan limits, billing frequency and cancellation behaviour.
 - [Refund Policy](${APP_URL}/refund-policy): When the card is charged and what access survives a cancellation.
+- [Chrome Extension Privacy Policy](${APP_URL}/extension-privacy): The browser extension collects nothing — no network requests, no storage, no account.
 `
 
   return new Response(body, {

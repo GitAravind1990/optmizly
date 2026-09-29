@@ -98,7 +98,8 @@ export default function PrivacyPage() {
           </section>
         ))}
 
-        <div className="border-t border-slate-200 pt-8 flex gap-6 text-sm text-slate-400">
+        <div className="border-t border-slate-200 pt-8 flex flex-wrap gap-6 text-sm text-slate-400">
+          <Link href="/extension-privacy" className="hover:text-slate-700">Chrome Extension Privacy</Link>
           <Link href="/terms" className="hover:text-slate-700">Terms of Service</Link>
           <Link href="/refund-policy" className="hover:text-slate-700">Refund Policy</Link>
         </div>

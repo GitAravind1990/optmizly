@@ -1,6 +1,7 @@
 ﻿import { MetadataRoute } from 'next'
 import { getAllPosts } from '@/lib/blog'
 import { PRICING_UPDATED } from '@/lib/pricing-faq'
+import { EXTENSION_PRIVACY_UPDATED } from '@/lib/legal'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://optmizly.com'
 
@@ -75,6 +76,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${APP_URL}/about`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${APP_URL}/contact`, changeFrequency: 'yearly', priority: 0.5 },
     { url: `${APP_URL}/privacy`, changeFrequency: 'yearly', priority: 0.3 },
+    // Linked from the Chrome Web Store listing, so it is reachable from outside the site and
+    // worth crawling. It has a real edit date, from the constant the page itself prints.
+    { url: `${APP_URL}/extension-privacy`, lastModified: new Date(`${EXTENSION_PRIVACY_UPDATED}T00:00:00Z`), changeFrequency: 'yearly', priority: 0.3 },
     { url: `${APP_URL}/terms`, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${APP_URL}/refund-policy`, changeFrequency: 'yearly', priority: 0.2 },
   ]

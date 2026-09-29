@@ -17,6 +17,14 @@ export const TERMS_UPDATED = '2026-09-28'
 export const PRIVACY_UPDATED = '2026-09-28'
 export const REFUND_UPDATED = '2026-09-06'
 
+/**
+ * /extension-privacy, which the Chrome Web Store listing links to as the extension's privacy
+ * policy. It describes a different product from PRIVACY_UPDATED above — the extension collects
+ * nothing — so it moves on its own, when the extension changes rather than when the platform
+ * does.
+ */
+export const EXTENSION_PRIVACY_UPDATED = '2026-09-29'
+
 /** "28 September 2026". Fixed to UTC so the rendered day cannot shift with the reader. */
 export function legalDate(iso: string): string {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
