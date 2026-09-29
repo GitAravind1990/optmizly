@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { T } from '@/components/marketing/tokens'
+import { CHROME_EXTENSION_URL, hasChromeExtension } from '@/lib/extension'
 
 /**
  * The four no-account tools, offered as a section.
@@ -77,6 +78,59 @@ export function FreeToolsSection() {
           </Link>
         ))}
       </div>
+
+      {/* The extension sits under the grid rather than in it, for two reasons. It is not a
+          page on this site, so it does not belong in FREE_TOOLS — that array is also the
+          homepage's "tools free with no account" count, and a fifth entry would move a number
+          that means something else. And a fifth card in a two-across grid leaves a dangling
+          one. Absent entirely until the listing exists; see src/lib/extension.ts. */}
+      {hasChromeExtension && (
+        <a
+          href={CHROME_EXTENSION_URL}
+          target="_blank"
+          rel="noopener"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap',
+            textDecoration: 'none', marginTop: 18, padding: '20px 22px',
+            borderRadius: 16, background: T.blueSoft, border: `1px solid ${T.blue}22`,
+          }}
+        >
+          {/* The same mark as the extension's icon: a white ring on brand blue. Drawn with a
+              radial gradient rather than inset shadows, which give a square hole on a square
+              element and would not match the icon a user sees in their toolbar. */}
+          <span
+            aria-hidden="true"
+            style={{
+              flex: '0 0 auto', width: 34, height: 34, borderRadius: 10,
+              background: `radial-gradient(circle at center, ${T.blue} 0 17%, #fff 18% 32%, ${T.blue} 33%)`,
+            }}
+          />
+          <span style={{ flex: '1 1 260px', minWidth: 0 }}>
+            <span style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: T.sans, fontSize: 16, fontWeight: 700, color: T.ink }}>
+                Chrome extension
+              </span>
+              <span style={{
+                fontFamily: T.mono, fontSize: 11, fontWeight: 500, letterSpacing: 0.4,
+                textTransform: 'uppercase', color: T.blue,
+                background: '#fff', borderRadius: 6, padding: '3px 8px', whiteSpace: 'nowrap',
+              }}>
+                Unlimited
+              </span>
+            </span>
+            <span style={{ display: 'block', fontFamily: T.sans, fontSize: 14, lineHeight: 1.55, color: T.body, marginTop: 6 }}>
+              The readiness audit above, on whatever page you are already looking at. Runs in
+              your browser — no account, and nothing leaves it.
+            </span>
+          </span>
+          <span style={{
+            flex: '0 0 auto', fontFamily: T.sans, fontSize: 14, fontWeight: 700,
+            color: '#fff', background: T.blue, borderRadius: 10, padding: '10px 16px',
+          }}>
+            Add to Chrome →
+          </span>
+        </a>
+      )}
     </section>
   )
 }
