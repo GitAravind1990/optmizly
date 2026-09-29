@@ -2,6 +2,7 @@ import {
   Body, Button, Container, Head, Heading, Hr, Html,
   Link, Preview, Section, Text, Tailwind,
 } from '@react-email/components'
+import { CHROME_EXTENSION_URL, hasChromeExtension } from '@/lib/extension'
 
 interface DripDay1Props {
   firstName?: string
@@ -74,6 +75,21 @@ export function DripDay1Email({ firstName = 'there', dashboardUrl }: DripDay1Pro
                 <strong>💡 Best first analysis:</strong> Run it on your most important page: homepage, a key service page, or your best blog post.
               </Text>
             </Section>
+
+            {/* Absent entirely until the Web Store listing exists — see src/lib/extension.ts.
+                A drip email is sent once and sits in an inbox afterwards, so a link that does
+                not resolve cannot be taken back. */}
+            {hasChromeExtension && (
+              <Section className="bg-white rounded-xl border border-slate-200 px-6 py-4 mb-6">
+                <Text className="text-sm text-slate-600 m-0">
+                  <strong className="text-slate-800">Checking a page you did not write?</strong>{' '}
+                  Our{' '}
+                  <Link href={CHROME_EXTENSION_URL} className="text-blue-600">Chrome extension</Link>{' '}
+                  scores whatever page is open, including a competitor's, without spending an
+                  analysis. It runs in your browser and needs no account.
+                </Text>
+              </Section>
+            )}
 
             <Section className="text-center">
               <Text className="text-xs text-slate-400 m-0">Optmizly · AI-powered content optimization</Text>

@@ -2,6 +2,7 @@
   Body, Button, Container, Head, Heading, Hr, Html,
   Link, Preview, Section, Text, Tailwind,
 } from '@react-email/components'
+import { CHROME_EXTENSION_URL, hasChromeExtension } from '@/lib/extension'
 
 interface WelcomeEmailProps {
   firstName?: string
@@ -65,6 +66,20 @@ export function WelcomeEmail({ firstName = 'there', dashboardUrl }: WelcomeEmail
                 <strong>💡 Quick tip:</strong> Paste any article URL into the Fetch & Analyse box, and Optmizly will fetch the content and score it automatically.
               </Text>
             </Section>
+
+            {/* Absent entirely until the Web Store listing exists — see src/lib/extension.ts.
+                An email cannot be corrected once it is sent, so a dead link here outlives the
+                mistake in a way a dead link on the site does not. */}
+            {hasChromeExtension && (
+              <Section className="bg-white rounded-xl border border-slate-200 px-6 py-4 mb-6">
+                <Text className="text-sm text-slate-600 m-0">
+                  <strong className="text-slate-800">Also free:</strong> our{' '}
+                  <Link href={CHROME_EXTENSION_URL} className="text-blue-600">Chrome extension</Link>{' '}
+                  scores whatever page you are already looking at, without opening Optmizly at all.
+                  No account, and it runs entirely in your browser.
+                </Text>
+              </Section>
+            )}
 
             {/* Footer */}
             <Section className="text-center">
