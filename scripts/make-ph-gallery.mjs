@@ -74,11 +74,26 @@ const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, d
 const asData = buf => `data:image/png;base64,${buf.toString('base64')}`
 
 // ── 1. Run a real audit on the homepage and photograph the result ──────────────────────────
+/**
+ * The cookie banner floats over everything and belongs in no screenshot. Clicking it is not
+ * enough: the click can land before the banner mounts, and the first version of this script
+ * shipped a pricing frame with the banner sitting across the plan cards. Wait for it, click
+ * it, then wait for it to go.
+ */
+async function dismissCookies(page) {
+  const decline = page.locator('text=Decline').first()
+  await decline.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {})
+  if (await decline.count()) {
+    await decline.click().catch(() => {})
+    await decline.waitFor({ state: 'detached', timeout: 8000 }).catch(() => {})
+  }
+  await page.waitForTimeout(400)
+}
+
 const home = await ctx.newPage()
 await home.goto(SITE, { waitUntil: 'domcontentloaded', timeout: 60000 })
 await home.waitForTimeout(1500)
-// The cookie banner floats over everything and belongs in no screenshot.
-await home.click('text=Decline').catch(() => {})
+await dismissCookies(home)
 await home.fill('input[placeholder="yourwebsite.com"]', DEMO_URL)
 await home.click('text=Get My Free Score')
 
@@ -89,21 +104,38 @@ await home.click('text=Get My Free Score')
 // script a few times in an afternoon exhausts it, and the page then shows the limit message
 // instead of a report — so say that, rather than sitting in a two-minute timeout that looks
 // like a hang.
+/**
+ * A spent cap must not cost the other frames.
+ *
+ * The audit allows 5 runs a day per IP and each build spends one, so iterating on this script
+ * exhausts it — and the first version then threw, losing the two frames that need no quota.
+ * Now the hero is skipped with an explanation and the rest are built.
+ */
+let capSpent = null
 await Promise.race([
   home.waitForSelector('text=/Technical foundation|Answer readiness|Generative readiness/i', { timeout: 150000 }),
   home.waitForSelector('text=/audits today|daily limit/i', { timeout: 150000 }).then(async () => {
-    const msg = await home.evaluate(() =>
-      [...document.querySelectorAll('p,div')].map(e => e.innerText)
-        .find(t => t && /audits today|daily limit/i.test(t))?.slice(0, 200))
-    throw new Error(
+    // The smallest element carrying the notice. Taking the first match returns a container,
+    // which prints the navigation and tells you nothing.
+    const msg = await home.evaluate(() => {
+      const hits = [...document.querySelectorAll('p,div,span')]
+        .filter(e => /audits today|daily limit/i.test(e.innerText || ''))
+      return hits.sort((a, b) => a.innerText.length - b.innerText.length)[0]?.innerText.trim()
+    })
+    const resetsAt = new Date(Date.UTC(
+      new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + 1))
+    capSpent =
       `The free audit's daily cap is spent for this IP, so there is no report to photograph.\n` +
-      `It resets within 26 hours (the counter is keyed to the UTC day).\n\nThe page said: ${msg}`)
+      `   The page said: ${msg}\n` +
+      `   The counter is keyed to the UTC day, not the local one — a local date rollover is not\n` +
+      `   a reset. It clears at ${resetsAt.toISOString()} (${resetsAt.toLocaleString()} local).`
   }),
 ])
 await home.waitForTimeout(2500)
 
 // Photograph the report itself rather than the viewport, which would show the form above it.
-const box = await home.evaluate(() => {
+// Skipped when the cap is spent: `resultShot` stays null and the hero frame drops out below.
+const box = capSpent ? null : await home.evaluate(() => {
   const found = [...document.querySelectorAll('div,section')].filter(el => {
     const t = el.innerText || ''
     if (!/\/\s*100/.test(t) || !/Technical foundation/i.test(t)) return false
@@ -114,14 +146,13 @@ const box = await home.evaluate(() => {
   const r = el.getBoundingClientRect()
   return { x: Math.round(r.left + scrollX), y: Math.round(r.top + scrollY), width: Math.round(r.width), height: Math.round(r.height) }
 })
-console.log('report block:', JSON.stringify(box))
+if (box) console.log('report block:', JSON.stringify(box))
 // Capped: the gallery window shows the score and the categories, which is the part that sells.
 // fullPage, because the clip is in page coordinates and the report sits far below the fold —
 // a viewport-relative clip there is "outside the resulting image".
-const resultShot = await home.screenshot({
-  fullPage: true,
-  clip: { ...box, height: Math.min(box.height, 880) },
-})
+const resultShot = box
+  ? await home.screenshot({ fullPage: true, clip: { ...box, height: Math.min(box.height, 880) } })
+  : null
 
 // ── 2. Supporting screens ──────────────────────────────────────────────────────────────────
 const freeTools = await ctx.newPage()
@@ -141,7 +172,7 @@ const pricingShot = await pricing.screenshot({ fullPage: false })
 const FRAMES = [
   {
     file: '01-hero.png',
-    shot: asData(resultShot),
+    shot: resultShot && asData(resultShot),
     kicker: 'Free, no account',
     headline: 'Can AI search even quote your page?',
     sub: 'Paste a URL and get the answer before you give an email address. Six weighted categories, a 0-100 score, and a worst-first list of fixes in plain language.',
@@ -163,7 +194,7 @@ const FRAMES = [
   },
 ]
 
-for (const f of FRAMES) {
+for (const f of FRAMES.filter(f => f.shot)) {
   const page = await ctx.newPage()
   await page.setViewportSize({ width: W, height: H })
   await page.setContent(frame(f), { waitUntil: 'networkidle' })
@@ -175,3 +206,7 @@ for (const f of FRAMES) {
 
 await browser.close()
 console.log('\ngallery in', OUT)
+if (capSpent) {
+  console.log('\nSKIPPED 01-hero.png — ' + capSpent)
+  console.log('   Re-run after the reset and it will be written.')
+}
