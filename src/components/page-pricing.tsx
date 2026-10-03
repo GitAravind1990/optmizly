@@ -88,6 +88,9 @@ const plans = [
     cta: 'Get Starter',
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID,
+    /** The launch code applies to monthly Starter. Mirrors isCouponEligibleProduct, which is
+     *  what actually enforces it; the annual Starter product is not eligible. */
+    couponEligible: true,
     annualProductId: process.env.NEXT_PUBLIC_DODO_STARTER_ANNUAL_PRODUCT_ID,
     annualPrice: '$90',
     annualPeriod: '/yr',
@@ -116,6 +119,8 @@ const plans = [
     cta: 'Get Pro',
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID,
+    /** As Starter: the launch code applies to monthly Pro, not to Pro annual. */
+    couponEligible: true,
     annualProductId: process.env.NEXT_PUBLIC_DODO_PRO_ANNUAL_PRODUCT_ID,
     annualPrice: '$190',
     annualPeriod: '/yr',

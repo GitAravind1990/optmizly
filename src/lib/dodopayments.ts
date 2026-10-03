@@ -168,19 +168,39 @@ export function getPlanFromProductId(productId: string): PaidPlanKey | 'FREE' {
 }
 
 /**
- * Whether a product is one a coupon may be applied to: the two agency annual plans.
+ * The products a discount code may be applied to.
  *
- * The single source of truth for the plan restriction, used by the checkout route. Dodo owns
- * the discount arithmetic and is restricted to the same two products; this is the second
- * lock, so a code cannot be forwarded against a monthly or a lower-tier product even if the
- * client asks for it. Both sides must be changed together — Dodo's `restricted_to` and this
- * function — or the two locks disagree and one of them is decorative.
+ * Two offers live here, and they do not overlap:
  *
+ *   - **FOUNDING50** — the two agency annual plans. Twenty places, counted by Dodo.
+ *   - **the launch code** — Starter and Pro monthly, the tiers someone arriving from a free
+ *     audit might actually buy. A code restricted to a $490 annual commitment is no offer at
+ *     all to that visitor.
+ *
+ * This list is the second lock. Dodo owns the discount arithmetic and carries its own
+ * `restricted_to`; this function stops a code being forwarded against a product it was never
+ * meant for, even if the client asks. **Both sides must be changed together** — Dodo's
+ * restriction and this list — or one of the two locks is decorative.
+ *
+ * Note what this does NOT do: it does not say which code applies where. Dodo enforces that per
+ * discount. This is the union of everything any current code may touch, which is the most a
+ * client-driven checkout should be trusted with.
+ */
+const COUPON_ELIGIBLE_KEYS = [
+  'AGENCY_ANNUAL',
+  'AGENCY_PLUS_ANNUAL',
+  'STARTER',
+  'PRO',
+] as const satisfies ReadonlyArray<keyof typeof DODO_PRODUCT_IDS>
+
+/**
  * An unconfigured product yields false rather than true, which is the safe direction: a
- * missing annual product means no coupon, not a coupon that lands anywhere.
+ * missing product id means no coupon, not a coupon that lands anywhere.
  */
 export function isCouponEligibleProduct(productId: string): boolean {
   if (!productId) return false
-  const eligible = [DODO_PRODUCT_IDS.AGENCY_ANNUAL, DODO_PRODUCT_IDS.AGENCY_PLUS_ANNUAL]
-  return eligible.some(id => !!id && id === productId)
+  return COUPON_ELIGIBLE_KEYS.some(key => {
+    const id = DODO_PRODUCT_IDS[key]
+    return !!id && id === productId
+  })
 }
