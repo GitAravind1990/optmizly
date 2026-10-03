@@ -5,6 +5,8 @@ import { HomeHero } from '@/components/home-hero'
 import { PagePricing } from '@/components/page-pricing'
 import { HomeEmailCapture } from '@/components/home-email-capture'
 import { FreeToolsSection } from '@/components/free-tools-section'
+import { FoundingPopup } from '@/components/founding-popup'
+import { SignedOut } from '@/components/clerk-provider'
 import { T } from '@/components/marketing/tokens'
 import {
   ProblemSection,
@@ -113,6 +115,13 @@ export default function HomePage() {
           receptive to three more free things, so the reciprocity block stays in one piece
           instead of being split across the fold. */}
       <FreeToolsSection />
+
+      {/* The only interruption on the page, and it waits: it opens after the free audit has
+          returned a report, or after a long dwell for someone who never ran one. Signed-out
+          only, and it does not render at all unless Dodo says places remain. */}
+      <SignedOut>
+        <FoundingPopup location="homepage" />
+      </SignedOut>
 
       {/* Understanding: what the three letters mean, then how the product joins them up. */}
       <PillarsSection />

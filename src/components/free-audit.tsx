@@ -15,6 +15,7 @@ import Link from 'next/link'
 import posthog from 'posthog-js'
 import { T, Icon } from './marketing/tokens'
 import { savePendingAudit } from '@/lib/pending-audit'
+import { AUDIT_COMPLETE_EVENT } from '@/lib/events'
 
 interface Category {
   id: string
@@ -171,6 +172,10 @@ export function FreeAudit({ location = 'homepage' }: { location?: string }) {
       })
       // Results land below the fold on a phone; without this the page looks unchanged.
       requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+      // Announced rather than called: whoever wants to know a visitor has just been given
+      // something useful can listen, and this component stays unaware of them. The Founding
+      // Member popup uses it so the one ask on the page comes after the giving, not before.
+      window.dispatchEvent(new CustomEvent(AUDIT_COMPLETE_EVENT))
     } catch {
       setError('We could not reach the audit service. Please try again.')
     } finally {
