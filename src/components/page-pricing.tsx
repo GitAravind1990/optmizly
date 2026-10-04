@@ -6,6 +6,7 @@ import posthog from 'posthog-js'
 import { SignedIn, SignedOut } from './clerk-provider'
 import { readRef } from '@/lib/referral'
 import { PRICING_FAQ, PRICING_UPDATED } from '@/lib/pricing-faq'
+import { isCouponEligibleProduct, isFoundingOfferProduct } from '@/lib/dodo-products'
 
 const T = {
   sans: "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
@@ -88,9 +89,6 @@ const plans = [
     cta: 'Get Starter',
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID,
-    /** The launch code applies to monthly Starter. Mirrors isCouponEligibleProduct, which is
-     *  what actually enforces it; the annual Starter product is not eligible. */
-    couponEligible: true,
     annualProductId: process.env.NEXT_PUBLIC_DODO_STARTER_ANNUAL_PRODUCT_ID,
     annualPrice: '$90',
     annualPeriod: '/yr',
@@ -119,8 +117,6 @@ const plans = [
     cta: 'Get Pro',
     signedOutHref: '/signup',
     checkoutProductId: process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID,
-    /** As Starter: the launch code applies to monthly Pro, not to Pro annual. */
-    couponEligible: true,
     annualProductId: process.env.NEXT_PUBLIC_DODO_PRO_ANNUAL_PRODUCT_ID,
     annualPrice: '$190',
     annualPeriod: '/yr',
@@ -156,8 +152,6 @@ const plans = [
     annualProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_ANNUAL_PRODUCT_ID,
     annualPrice: '$490',
     annualPeriod: '/yr',
-    /** Only this plan accepts a discount code. Mirrors isCouponEligibleProduct on the server. */
-    couponEligible: true,
   },
   {
     name: 'Agency Plus',
@@ -182,9 +176,6 @@ const plans = [
     annualProductId: process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_ANNUAL_PRODUCT_ID,
     annualPrice: '$990',
     annualPeriod: '/yr',
-    /** Founding Member applies to both agency annual plans. Mirrors
-     *  isCouponEligibleProduct, which is what actually enforces it. */
-    couponEligible: true,
   },
 ]
 
@@ -610,7 +601,7 @@ export function PagePricing({
                     productId={(isAnnual ? p.annualProductId : p.checkoutProductId)!}
                     cta={p.cta}
                     featured={p.featured ?? false}
-                    couponEligible={isAnnual && p.couponEligible === true}
+                    couponEligible={isCouponEligibleProduct(isAnnual ? p.annualProductId : p.checkoutProductId)}
                     planName={p.name}
                     isAnnual={isAnnual}
                   />
@@ -641,7 +632,7 @@ export function PagePricing({
                   billing mode and pushed that card's CTA ~44px lower than the other four,
                   breaking the row the rest of this layout works to keep. Below, it is still
                   next to the action it qualifies and costs nothing to the alignment. */}
-              {isAnnual && p.couponEligible && spots && (
+              {isFoundingOfferProduct(isAnnual ? p.annualProductId : p.checkoutProductId) && spots && (
                 <div style={{
                   marginTop: 12, padding: '8px 12px', borderRadius: 10,
                   fontFamily: T.sans, fontSize: 13, fontWeight: 600,

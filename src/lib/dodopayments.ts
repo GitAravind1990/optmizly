@@ -1,4 +1,5 @@
 import DodoPayments from 'dodopayments'
+import { DODO_PRODUCT_IDS } from './dodo-products'
 
 if (typeof window !== 'undefined') {
   throw new Error('dodopayments.ts must only be used on the server')
@@ -90,37 +91,19 @@ export const dodo = new Proxy({}, {
 }) as DodoPayments
 
 /**
- * Product ids for whichever mode this deployment runs in.
+ * Product ids for whichever mode this deployment runs in, and which of them take a coupon.
  *
  * Deliberately **not** duplicated into a second set of TEST_ variables. Test and live hold
  * different product ids, but Vercel scopes environment variables per environment, so the
  * Development and Preview scopes carry the test ids under these same names while Production
  * carries the live ones. One name per product, whose value depends on where it runs — the
  * alternative is sixteen variables and a permanent question about which set is authoritative.
+ *
+ * Defined in ./dodo-products and re-exported here, so server code keeps importing from this
+ * module while the pricing page can read the same list without pulling the Dodo SDK into the
+ * browser bundle. One list, two consumers.
  */
-export const DODO_PRODUCT_IDS = {
-  /**
-   * Starter, $9/mo. Empty until the product is created in Dodo — this integration is
-   * live-mode only, so the product has to be made by hand in the dashboard and its id
-   * set as NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID. While it is empty the plan is simply
-   * unbuyable: the pricing card hides its button and getPlanFromProductId cannot match
-   * it, which is the safe direction for a half-configured tier.
-   */
-  STARTER: process.env.NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID || '',
-  /** Agency Plus, $99/mo. Empty until the product exists in Dodo, which makes the plan
-   *  unbuyable rather than half-configured — the safe direction. */
-  AGENCY_PLUS: process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_PRODUCT_ID || '',
-  /** Yearly billing for Agency Plus. Coupon-eligible alongside Agency annual. */
-  AGENCY_PLUS_ANNUAL: process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_ANNUAL_PRODUCT_ID || '',
-  /** Yearly billing for Starter. Not coupon-eligible. */
-  STARTER_ANNUAL: process.env.NEXT_PUBLIC_DODO_STARTER_ANNUAL_PRODUCT_ID || '',
-  PRO: process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID || '',
-  AGENCY: process.env.NEXT_PUBLIC_DODO_AGENCY_PRODUCT_ID || '',
-  /** Yearly billing for the same Agency plan. Empty until the product exists in Dodo. */
-  AGENCY_ANNUAL: process.env.NEXT_PUBLIC_DODO_AGENCY_ANNUAL_PRODUCT_ID || '',
-  /** Yearly billing for the same Pro plan. Empty until the product exists in Dodo. */
-  PRO_ANNUAL: process.env.NEXT_PUBLIC_DODO_PRO_ANNUAL_PRODUCT_ID || '',
-} as const
+export { DODO_PRODUCT_IDS, isCouponEligibleProduct } from './dodo-products'
 
 /**
  * Which plan a product grants. Note what this does NOT consider: the amount paid.
@@ -167,40 +150,3 @@ export function getPlanFromProductId(productId: string): PaidPlanKey | 'FREE' {
   return 'FREE'
 }
 
-/**
- * The products a discount code may be applied to.
- *
- * Two offers live here, and they do not overlap:
- *
- *   - **FOUNDING50** — the two agency annual plans. Twenty places, counted by Dodo.
- *   - **the launch code** — Starter and Pro monthly, the tiers someone arriving from a free
- *     audit might actually buy. A code restricted to a $490 annual commitment is no offer at
- *     all to that visitor.
- *
- * This list is the second lock. Dodo owns the discount arithmetic and carries its own
- * `restricted_to`; this function stops a code being forwarded against a product it was never
- * meant for, even if the client asks. **Both sides must be changed together** — Dodo's
- * restriction and this list — or one of the two locks is decorative.
- *
- * Note what this does NOT do: it does not say which code applies where. Dodo enforces that per
- * discount. This is the union of everything any current code may touch, which is the most a
- * client-driven checkout should be trusted with.
- */
-const COUPON_ELIGIBLE_KEYS = [
-  'AGENCY_ANNUAL',
-  'AGENCY_PLUS_ANNUAL',
-  'STARTER',
-  'PRO',
-] as const satisfies ReadonlyArray<keyof typeof DODO_PRODUCT_IDS>
-
-/**
- * An unconfigured product yields false rather than true, which is the safe direction: a
- * missing product id means no coupon, not a coupon that lands anywhere.
- */
-export function isCouponEligibleProduct(productId: string): boolean {
-  if (!productId) return false
-  return COUPON_ELIGIBLE_KEYS.some(key => {
-    const id = DODO_PRODUCT_IDS[key]
-    return !!id && id === productId
-  })
-}
