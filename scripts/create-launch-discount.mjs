@@ -1,5 +1,5 @@
 /**
- * Creates the launch discount in Dodo: 30% off Starter and Pro monthly, three cycles.
+ * Creates the launch discount in Dodo: 30% off every paid plan, three cycles.
  *
  *   node scripts/create-launch-discount.mjs          # shows what it would do
  *   node scripts/create-launch-discount.mjs --create # actually creates it
@@ -44,24 +44,60 @@ const SPEC = {
   expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
 }
 
+/**
+ * Every paid product, monthly and annual.
+ *
+ * Must stay in step with COUPON_ELIGIBLE_KEYS in src/lib/dodo-products.ts — Dodo's
+ * `restricted_to` and that list are two locks on the same door, and a product in one but not
+ * the other is a plan where the code is either offered and refused, or accepted where it was
+ * never meant to be.
+ */
 const PRODUCTS = {
   'Starter monthly': process.env.NEXT_PUBLIC_DODO_STARTER_PRODUCT_ID,
+  'Starter annual': process.env.NEXT_PUBLIC_DODO_STARTER_ANNUAL_PRODUCT_ID,
   'Pro monthly': process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID,
+  'Pro annual': process.env.NEXT_PUBLIC_DODO_PRO_ANNUAL_PRODUCT_ID,
+  'Agency monthly': process.env.NEXT_PUBLIC_DODO_AGENCY_PRODUCT_ID,
+  'Agency annual': process.env.NEXT_PUBLIC_DODO_AGENCY_ANNUAL_PRODUCT_ID,
+  'Agency Plus monthly': process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_PRODUCT_ID,
+  'Agency Plus annual': process.env.NEXT_PUBLIC_DODO_AGENCY_PLUS_ANNUAL_PRODUCT_ID,
 }
 
-const missing = Object.entries(PRODUCTS).filter(([, id]) => !id).map(([n]) => n)
-if (missing.length) {
-  console.error(`Not configured: ${missing.join(', ')}. Refusing to create a discount restricted to nothing.`)
+// DODO_MODE is the repo's convention, and test mode uses a different key entirely. Getting this
+// wrong on a script that creates chargeable objects would create them in the wrong place.
+const mode = process.env.DODO_MODE === 'test_mode' ? 'test_mode' : 'live_mode'
+const apiKey = mode === 'test_mode' ? process.env.DODO_TEST_API_KEY : process.env.DODO_API_KEY
+if (!apiKey) {
+  console.error(`No API key for ${mode}.`)
   process.exit(1)
 }
-if (!process.env.DODO_API_KEY) {
-  console.error('DODO_API_KEY is not set.')
+const dodo = new DodoPayments({ bearerToken: apiKey, environment: mode })
+
+/**
+ * Product ids come from Dodo, not from .env.local.
+ *
+ * This machine's .env.local carries only two of the eight — the rest live in Vercel — so
+ * building the restriction from env would have silently produced a discount valid on Starter
+ * and Pro and nothing else, which is exactly the bug this offer exists to fix. Asking Dodo for
+ * its own subscription products is both complete and the right definition of "every plan".
+ *
+ * Env ids are still read, as a cross-check: anything configured here that Dodo does not list
+ * is a mismatch worth seeing before creating a discount around it.
+ */
+const listed = []
+for await (const product of dodo.products.list({ archived: false })) {
+  if (product.is_recurring) listed.push(product)
+}
+if (!listed.length) {
+  console.error('Dodo lists no active recurring products. Refusing to create a discount restricted to nothing.')
   process.exit(1)
 }
 
-const restricted_to = Object.values(PRODUCTS)
+const envIds = new Set(Object.values(PRODUCTS).filter(Boolean))
+const restricted_to = listed.map(p => p.product_id)
 
-console.log('Discount to create (live mode):')
+console.log('Discount to create:')
+console.log(`  environment         ${mode}`)
 console.log(`  code                ${SPEC.code}`)
 console.log(`  name                ${SPEC.name}`)
 console.log(`  type                ${SPEC.type}`)
@@ -69,14 +105,15 @@ console.log(`  amount              ${SPEC.amount} basis points = ${SPEC.amount /
 console.log(`  subscription_cycles ${SPEC.subscription_cycles}`)
 console.log(`  usage_limit         ${SPEC.usage_limit}`)
 console.log(`  expires_at          ${SPEC.expires_at}`)
-for (const [label, id] of Object.entries(PRODUCTS)) {
-  console.log(`  restricted_to       ${label} (${id.slice(0, 10)}…)`)
+console.log(`  restricted_to       ${restricted_to.length} recurring products:`)
+for (const p of listed) {
+  const known = envIds.has(p.product_id) ? '' : '   (not in this machine’s .env.local)'
+  console.log(`                      ${(p.name ?? '(unnamed)').padEnd(28)} ${p.product_id}${known}`)
 }
-
-const dodo = new DodoPayments({
-  bearerToken: process.env.DODO_API_KEY,
-  environment: process.env.DODO_ENVIRONMENT === 'test_mode' ? 'test_mode' : 'live_mode',
-})
+const unmatched = [...envIds].filter(id => !restricted_to.includes(id))
+if (unmatched.length) {
+  console.log(`  WARNING             ${unmatched.length} configured id(s) not listed by Dodo: ${unmatched.join(', ')}`)
+}
 
 // A code that already exists must never be created twice.
 try {

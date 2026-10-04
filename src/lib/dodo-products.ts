@@ -33,14 +33,12 @@ export const DODO_PRODUCT_IDS = {
 } as const
 
 /**
- * The products a discount code may be applied to.
+ * The products a discount code may be applied to: every paid plan, monthly and annual.
  *
- * Two offers live here, and they do not overlap:
- *
- *   - **FOUNDING50** — the two agency annual plans. Twenty places, counted by Dodo.
- *   - **the launch code** — Starter and Pro monthly, the tiers someone arriving from a free
- *     audit might actually buy. A code restricted to a $490 annual commitment is no offer at
- *     all to that visitor.
+ * One offer now — PRODUCTHUNT — where there used to be FOUNDING50 restricted to the two annual
+ * agency plans. That restriction made it useless to the people a launch actually reaches: a
+ * visitor who has just run a free audit is not deciding about a $490 annual commitment. It had
+ * zero redemptions when it was retired, so nothing was stranded.
  *
  * This list is the second lock. Dodo owns the discount arithmetic and carries its own
  * `restricted_to`; this stops a code being forwarded against a product it was never meant for,
@@ -57,10 +55,14 @@ export const DODO_PRODUCT_IDS = {
  * field vanished exactly where it was needed and the code could not be typed at all.
  */
 const COUPON_ELIGIBLE_KEYS = [
-  'AGENCY_ANNUAL',
-  'AGENCY_PLUS_ANNUAL',
   'STARTER',
+  'STARTER_ANNUAL',
   'PRO',
+  'PRO_ANNUAL',
+  'AGENCY',
+  'AGENCY_ANNUAL',
+  'AGENCY_PLUS',
+  'AGENCY_PLUS_ANNUAL',
 ] as const satisfies ReadonlyArray<keyof typeof DODO_PRODUCT_IDS>
 
 /**
@@ -76,23 +78,15 @@ export function isCouponEligibleProduct(productId: string | undefined | null): b
 }
 
 /**
- * The two products the Founding Member offer applies to.
+ * Whether the current offer applies to this product — which, for PRODUCTHUNT, is all of them.
  *
- * A narrower question than isCouponEligibleProduct, and the pricing page needs both: *may a
- * code be typed here* is about any current offer, while *should the "N of 20 places left" line
- * appear* is about this offer alone. Conflating them would advertise founding places on the $9
- * plan the moment that plan accepted a different code — which is exactly what the single
- * `couponEligible` flag would have done.
+ * Kept as its own function rather than collapsed into isCouponEligibleProduct, even though the
+ * two lists are identical today. They answer different questions: *may a code be typed here*
+ * and *should this card advertise the offer*. They were the same before FOUNDING50 was retired
+ * and are the same again now; the next offer restricted to one tier separates them, and a
+ * caller that reached for the wrong one would quietly advertise a discount that checkout then
+ * refuses.
  */
-const FOUNDING_OFFER_KEYS = [
-  'AGENCY_ANNUAL',
-  'AGENCY_PLUS_ANNUAL',
-] as const satisfies ReadonlyArray<keyof typeof DODO_PRODUCT_IDS>
-
-export function isFoundingOfferProduct(productId: string | undefined | null): boolean {
-  if (!productId) return false
-  return FOUNDING_OFFER_KEYS.some(key => {
-    const id = DODO_PRODUCT_IDS[key]
-    return !!id && id === productId
-  })
+export function isOfferProduct(productId: string | undefined | null): boolean {
+  return isCouponEligibleProduct(productId)
 }

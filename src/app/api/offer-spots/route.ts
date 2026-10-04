@@ -1,6 +1,6 @@
 import { dodo } from '@/lib/dodopayments'
 import { apiSuccess } from '@/lib/api'
-import { FOUNDING_CODE } from '@/lib/offers'
+import { OFFER_CODE } from '@/lib/offers'
 
 export const runtime = 'nodejs'
 
@@ -29,7 +29,7 @@ export async function GET() {
 
   let body: Record<string, unknown>
   try {
-    const d = await dodo.discounts.retrieveByCode(FOUNDING_CODE)
+    const d = await dodo.discounts.retrieveByCode(OFFER_CODE)
     const used = typeof d.times_used === 'number' ? d.times_used : 0
     const limit = typeof d.usage_limit === 'number' ? d.usage_limit : null
 
@@ -48,7 +48,7 @@ export async function GET() {
     // same: we do not know, so claim nothing.
     const status = (e as { status?: number })?.status
     if (status !== 404) {
-      console.error('[founding-spots] could not read the discount:', (e as Error)?.message ?? e)
+      console.error('[offer-spots] could not read the discount:', (e as Error)?.message ?? e)
     }
     body = { configured: false, used: null, limit: null, remaining: null, soldOut: false }
   }

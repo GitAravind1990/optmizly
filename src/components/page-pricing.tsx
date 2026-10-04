@@ -6,7 +6,7 @@ import posthog from 'posthog-js'
 import { SignedIn, SignedOut } from './clerk-provider'
 import { readRef } from '@/lib/referral'
 import { PRICING_FAQ, PRICING_UPDATED } from '@/lib/pricing-faq'
-import { isCouponEligibleProduct, isFoundingOfferProduct } from '@/lib/dodo-products'
+import { isCouponEligibleProduct, isOfferProduct } from '@/lib/dodo-products'
 
 const T = {
   sans: "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
@@ -340,12 +340,12 @@ export function PagePricing({
   // the advertised headline price stays the one people already know.
   const [annualBilling, setAnnualBilling] = useState(false)
 
-  // Founding-member availability, read from Dodo's own redemption count. Null while it
+  // Launch-offer availability, read from Dodo's own redemption count. Null while it
   // loads, and stays null if the code does not exist - the banner simply never appears
   // rather than showing a placeholder number.
   const [spots, setSpots] = useState<{ remaining: number | null; limit: number | null; soldOut: boolean } | null>(null)
   useEffect(() => {
-    fetch('/api/founding-spots')
+    fetch('/api/offer-spots')
       .then(r => r.json())
       .then(d => { if (d?.configured && typeof d.remaining === 'number') setSpots(d) })
       .catch(() => { /* a scarcity claim we cannot verify is one we do not make */ })
@@ -619,20 +619,21 @@ export function PagePricing({
                 )}
               </SignedIn>
 
-              {/* Founding Member availability. Shown only where the offer applies - the two
-                  agency cards, annual selected - because a scarcity line on a plan the code
-                  cannot be used on is just noise.
+              {/* Launch-offer availability. Shown wherever the code can be used, which is now
+                  every paid plan on either billing period - a scarcity line on a plan the code
+                  cannot be used on would be noise, which is why it is still a predicate rather
+                  than always-on.
 
-                  The 20 places are shared across both plans, not 20 each: /api/founding-spots
-                  reads Dodo's redemption count on the discount itself, and there is one
-                  discount. Two cards showing the same number is therefore correct, and both
-                  fall to zero together.
+                  The places are shared across every card, not N each: /api/offer-spots reads
+                  Dodo's redemption count on the discount itself, and there is one discount.
+                  Every card showing the same number is therefore correct, and they all fall to
+                  zero together.
 
                   Sits BELOW the button, not above it. Above, it appeared on one card in one
                   billing mode and pushed that card's CTA ~44px lower than the other four,
                   breaking the row the rest of this layout works to keep. Below, it is still
                   next to the action it qualifies and costs nothing to the alignment. */}
-              {isFoundingOfferProduct(isAnnual ? p.annualProductId : p.checkoutProductId) && spots && (
+              {isOfferProduct(isAnnual ? p.annualProductId : p.checkoutProductId) && spots && (
                 <div style={{
                   marginTop: 12, padding: '8px 12px', borderRadius: 10,
                   fontFamily: T.sans, fontSize: 13, fontWeight: 600,
@@ -641,8 +642,8 @@ export function PagePricing({
                   border: `1px solid ${p.featured ? 'rgba(255,255,255,0.24)' : '#FDE68A'}`,
                 }}>
                   {spots.soldOut
-                    ? 'Founding Member places are gone'
-                    : `Founding Member: ${spots.remaining} of ${spots.limit} places left`}
+                    ? 'Launch offer: all places taken'
+                    : `Launch offer: ${spots.remaining} of ${spots.limit} places left`}
                 </div>
               )}
 

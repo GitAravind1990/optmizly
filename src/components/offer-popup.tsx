@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * The Founding Member offer, as a modal — shown after someone has had something from us, not
+ * The launch offer, as a modal — shown after someone has had something from us, not
  * on arrival.
  *
  * Five rules it obeys, because a popup is the easiest thing on a site to make hostile:
@@ -13,10 +13,10 @@
  *    better than its competitors.
  * 2. **Signed-out only.** A customer does not need selling to, and a signed-in free user is
  *    better reached by the upgrade surfaces that already know their plan.
- * 3. **It states what the offer actually applies to.** FOUNDING50 is accepted on Agency annual
- *    and Agency Plus annual only — `isCouponEligibleProduct` enforces exactly that — so the
- *    modal says "annual Agency plans" rather than implying a discount on the $9 tier.
- * 4. **It never invents a number.** Places remaining come from /api/founding-spots, which reads
+ * 3. **It states what the offer actually applies to**, and names the code. PRODUCTHUNT is
+ *    accepted on every paid plan, which is what `isCouponEligibleProduct` enforces. A modal
+ *    that advertises a discount without saying what to type is not an offer.
+ * 4. **It never invents a number.** Places remaining come from /api/offer-spots, which reads
  *    Dodo's own redemption count; if that endpoint is unconfigured, errors, or reports the
  *    offer gone, the modal does not render at all. There is no hardcoded "3 left".
  * 5. **Once dismissed, it stays dismissed.** localStorage, and a failure to read it means no
@@ -31,9 +31,11 @@ import Link from 'next/link'
 import posthog from 'posthog-js'
 import { T } from './marketing/tokens'
 import { AUDIT_COMPLETE_EVENT } from '@/lib/events'
-import { FOUNDING_CODE } from '@/lib/offers'
+import { OFFER_CODE } from '@/lib/offers'
 
-const DISMISS_KEY = 'optmizly_founding_popup_dismissed'
+/** Renamed with the offer: a visitor who dismissed the old Founding Member modal has not
+ *  seen this one, and should not be silently opted out of it. */
+const DISMISS_KEY = 'optmizly_offer_popup_dismissed'
 
 /**
  * For visitors who never run an audit. Was 75 seconds, which is longer than most of them stay —
@@ -44,7 +46,7 @@ const FALLBACK_DELAY_MS = 30_000
 
 type Spots = { configured: boolean; remaining: number | null; limit: number | null; soldOut: boolean }
 
-export function FoundingPopup({ location = 'homepage' }: { location?: string }) {
+export function OfferPopup({ location = 'homepage' }: { location?: string }) {
   const [spots, setSpots] = useState<Spots | null>(null)
   const [open, setOpen] = useState(false)
   // Set by the audit event or the dwell timer; independent of whether places are known yet.
@@ -67,13 +69,13 @@ export function FoundingPopup({ location = 'homepage' }: { location?: string }) 
   const close = useCallback((how: string) => {
     setOpen(false)
     try { localStorage.setItem(DISMISS_KEY, String(Date.now())) } catch { /* nothing to do */ }
-    posthog.capture('founding_popup_dismissed', { location, how })
+    posthog.capture('offer_popup_dismissed', { location, how })
   }, [location])
 
   useEffect(() => {
     if (dismissed()) return
     let alive = true
-    fetch('/api/founding-spots')
+    fetch('/api/offer-spots')
       .then(r => r.json())
       .then(j => {
         const data: Spots = j?.data ?? j
@@ -90,7 +92,7 @@ export function FoundingPopup({ location = 'homepage' }: { location?: string }) 
    * The trigger is recorded on mount, not once the places are known.
    *
    * Gating the listener on `spots` loses the event outright when the audit finishes before
-   * /api/founding-spots answers — the listener is not attached yet, the event does not queue,
+   * /api/offer-spots answers — the listener is not attached yet, the event does not queue,
    * and the modal then waits out the whole fallback delay instead of opening.
    * Caught by the behaviour check, which dispatched the event two seconds into a cold dev
    * server and saw nothing. Trigger and eligibility are now independent, and the modal opens
@@ -111,7 +113,7 @@ export function FoundingPopup({ location = 'homepage' }: { location?: string }) 
     if (!triggered || !spots || shownRef.current || dismissed()) return
     shownRef.current = true
     setOpen(true)
-    posthog.capture('founding_popup_shown', { location, remaining: spots.remaining })
+    posthog.capture('offer_popup_shown', { location, remaining: spots.remaining })
   }, [triggered, spots, location])
 
   // Escape closes it, and focus moves to the close button — a modal you cannot leave by
@@ -145,7 +147,7 @@ export function FoundingPopup({ location = 'homepage' }: { location?: string }) 
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="founding-title"
+        aria-labelledby="offer-title"
         style={{
           width: '100%', maxWidth: 460, background: T.bg, borderRadius: 18,
           border: `1px solid ${T.line}`, padding: '28px 26px 24px',
@@ -174,20 +176,20 @@ export function FoundingPopup({ location = 'homepage' }: { location?: string }) 
           {places}
         </div>
 
-        <h2 id="founding-title" style={{
+        <h2 id="offer-title" style={{
           fontSize: 23, lineHeight: 1.2, letterSpacing: -0.6, fontWeight: 700,
           color: T.ink, margin: '0 0 10px',
         }}>
-          Founding Member pricing
+          30% off, on every plan
         </h2>
 
         <p style={{ fontSize: 15, lineHeight: 1.55, color: T.body, margin: '0 0 8px' }}>
-          Twenty places, shared across the two annual Agency plans. They carry the
-          Founding&nbsp;Member rate for as long as the subscription stays active.
+          Our Product&nbsp;Hunt launch offer: <strong>30% off any plan</strong>, monthly or
+          annual, for your first three months.
         </p>
         <p style={{ fontSize: 13.5, lineHeight: 1.55, color: T.body, margin: '0 0 20px' }}>
-          It applies to <strong>annual Agency and Agency&nbsp;Plus</strong> — not the monthly or
-          the smaller plans. The exact terms are on the pricing page, beside the plan.
+          Starter at $6.30 instead of $9, Pro at $13.30 instead of $19. Enter the code at
+          checkout — it is on the pricing page under <em>Have a code?</em>
         </p>
 
         {/* The code itself. A modal that offers a discount and never names it is an
@@ -202,14 +204,14 @@ export function FoundingPopup({ location = 'homepage' }: { location?: string }) 
             flex: 1, fontFamily: T.mono, fontSize: 16, fontWeight: 700,
             letterSpacing: 1.4, color: T.blue,
           }}>
-            {FOUNDING_CODE}
+            {OFFER_CODE}
           </code>
           <button
             onClick={async () => {
               try {
-                await navigator.clipboard.writeText(FOUNDING_CODE)
+                await navigator.clipboard.writeText(OFFER_CODE)
                 setCopied(true)
-                posthog.capture('founding_popup_code_copied', { location })
+                posthog.capture('offer_popup_code_copied', { location })
                 window.setTimeout(() => setCopied(false), 2000)
               } catch {
                 // Clipboard access can be refused outright; the code is on screen either way,
@@ -228,7 +230,7 @@ export function FoundingPopup({ location = 'homepage' }: { location?: string }) 
 
         <Link
           href="/pricing"
-          onClick={() => posthog.capture('founding_popup_cta', { location, remaining: spots.remaining })}
+          onClick={() => posthog.capture('offer_popup_cta', { location, remaining: spots.remaining })}
           style={{
             display: 'block', textAlign: 'center', background: T.blue, color: '#fff',
             fontSize: 15, fontWeight: 700, padding: '12px 16px', borderRadius: 11,
