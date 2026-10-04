@@ -6,7 +6,8 @@
  *
  * Five rules it obeys, because a popup is the easiest thing on a site to make hostile:
  *
- * 1. **It fires after the free audit completes**, or after a long dwell on pages without one.
+ * 1. **It fires after the free audit completes**, or 30 seconds in for someone who never runs
+ *    one.
  *    The section it interrupts promises "no account, no card"; interrupting that promise with
  *    a $490 ask before the visitor has seen a result would undo the one thing this site does
  *    better than its competitors.
@@ -30,11 +31,16 @@ import Link from 'next/link'
 import posthog from 'posthog-js'
 import { T } from './marketing/tokens'
 import { AUDIT_COMPLETE_EVENT } from '@/lib/events'
+import { FOUNDING_CODE } from '@/lib/offers'
 
 const DISMISS_KEY = 'optmizly_founding_popup_dismissed'
 
-/** For pages with no audit on them. Long enough to be past a bounce. */
-const FALLBACK_DELAY_MS = 75_000
+/**
+ * For visitors who never run an audit. Was 75 seconds, which is longer than most of them stay —
+ * a launch audience in particular arrives, looks, and leaves well inside it, so the offer was
+ * reaching almost nobody who did not run a report.
+ */
+const FALLBACK_DELAY_MS = 30_000
 
 type Spots = { configured: boolean; remaining: number | null; limit: number | null; soldOut: boolean }
 
@@ -43,6 +49,7 @@ export function FoundingPopup({ location = 'homepage' }: { location?: string }) 
   const [open, setOpen] = useState(false)
   // Set by the audit event or the dwell timer; independent of whether places are known yet.
   const [triggered, setTriggered] = useState(false)
+  const [copied, setCopied] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
   const shownRef = useRef(false)
 
@@ -84,7 +91,7 @@ export function FoundingPopup({ location = 'homepage' }: { location?: string }) 
    *
    * Gating the listener on `spots` loses the event outright when the audit finishes before
    * /api/founding-spots answers — the listener is not attached yet, the event does not queue,
-   * and the modal then waits 75 seconds for a fallback that the visitor has usually outlived.
+   * and the modal then waits out the whole fallback delay instead of opening.
    * Caught by the behaviour check, which dispatched the event two seconds into a cold dev
    * server and saw nothing. Trigger and eligibility are now independent, and the modal opens
    * when both are true.
@@ -182,6 +189,42 @@ export function FoundingPopup({ location = 'homepage' }: { location?: string }) 
           It applies to <strong>annual Agency and Agency&nbsp;Plus</strong> — not the monthly or
           the smaller plans. The exact terms are on the pricing page, beside the plan.
         </p>
+
+        {/* The code itself. A modal that offers a discount and never names it is an
+            advertisement, not an offer: the field that takes it is on the pricing page behind
+            "Have a code?", and nothing else on the journey tells you what to type. */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18,
+          border: `1px dashed ${T.blue}`, background: T.blueSoft,
+          borderRadius: 12, padding: '10px 12px',
+        }}>
+          <code style={{
+            flex: 1, fontFamily: T.mono, fontSize: 16, fontWeight: 700,
+            letterSpacing: 1.4, color: T.blue,
+          }}>
+            {FOUNDING_CODE}
+          </code>
+          <button
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(FOUNDING_CODE)
+                setCopied(true)
+                posthog.capture('founding_popup_code_copied', { location })
+                window.setTimeout(() => setCopied(false), 2000)
+              } catch {
+                // Clipboard access can be refused outright; the code is on screen either way,
+                // so this stays silent rather than throwing an error at someone mid-offer.
+              }
+            }}
+            style={{
+              flex: '0 0 auto', background: T.blue, color: '#fff', border: 'none',
+              borderRadius: 8, padding: '7px 12px', fontSize: 13, fontWeight: 700,
+              fontFamily: T.sans, cursor: 'pointer',
+            }}
+          >
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
 
         <Link
           href="/pricing"

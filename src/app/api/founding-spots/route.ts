@@ -1,10 +1,10 @@
 import { dodo } from '@/lib/dodopayments'
 import { apiSuccess } from '@/lib/api'
+import { FOUNDING_CODE } from '@/lib/offers'
 
 export const runtime = 'nodejs'
 
-/** The code the Founding Member offer runs on. */
-const FOUNDING_CODE = 'FOUNDING50'
+
 
 /**
  * Dodo counts redemptions itself, on the discount object, so this reads times_used rather
