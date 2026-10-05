@@ -129,12 +129,31 @@ function HeroDashboard() {
       </div>
 
       {/* Content */}
-      <div className="hero-mock-grid" style={{ display: 'grid', gridTemplateColumns: '188px 1fr', minHeight: 460 }}>
+      {/*
+        A real height, not a minimum.
+
+        This was `minHeight: 460`, which the sidebar then overran: the nav lists fifteen tools
+        and the column grew to 547px, while the main panel only ever needs ~340px of cards. The
+        result was a 206px band of empty background inside the window, right of the sidebar —
+        measured, not estimated.
+
+        The sidebar was already built to handle this: its nav carries `overflowY: 'hidden'` and
+        the upgrade button sits outside the scrolling area so it stays pinned. That clip can
+        only engage against a bounded height, so with `minHeight` it never did. A fixed height
+        makes the panel behave like the real dashboard, where the tool list runs past the fold
+        and the upgrade CTA stays put. 460 keeps the AGENCY heading and its locked rows visible,
+        which is the part of the list doing the selling.
+      */}
+      <div className="hero-mock-grid" style={{ display: 'grid', gridTemplateColumns: '188px 1fr', height: 460 }}>
 
         {/* ── Sidebar ── */}
         <div className="hero-mock-sidebar" style={{
           background: '#fff', borderRight: `1px solid ${T.line2}`,
           display: 'flex', flexDirection: 'column',
+          // minHeight: 0 because a grid item defaults to min-height:auto and will happily
+          // overflow its row rather than shrink. Without it the column renders its full 547px
+          // past the bottom of the window and the clip below never happens.
+          minHeight: 0, overflow: 'hidden',
         }}>
           {/* Logo */}
           <div style={{
@@ -157,8 +176,16 @@ function HeroDashboard() {
             <div style={{ fontSize: 8, color: T.muted, marginTop: 2, fontFamily: T.sans }}>26 analyses remaining</div>
           </div>
 
-          {/* Nav */}
-          <div style={{ flex: 1, padding: '4px 6px', overflowY: 'hidden' }}>
+          {/* Nav. The list runs past the bottom and is cut there, as it is in the real
+              dashboard; the upgrade button sits outside this box so it stays pinned.
+
+              The mask fades the last few pixels. A hard edge slicing a row in half reads as a
+              rendering fault; a fade reads as a list that continues, which is what it is. */}
+          <div style={{
+            flex: 1, minHeight: 0, padding: '4px 6px', overflowY: 'hidden',
+            WebkitMaskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%)',
+            maskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%)',
+          }}>
             <div style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: 1, color: '#10B981', padding: '5px 6px 2px', fontFamily: T.sans }}>FREE</div>
             {freeTools.map((label) => (
               <div key={label} style={{
@@ -209,7 +236,7 @@ function HeroDashboard() {
         </div>
 
         {/* ── Main: Content Analyzer Result ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', background: T.bgSoft }}>
+        <div style={{ display: 'flex', flexDirection: 'column', background: T.bgSoft, minHeight: 0 }}>
           {/* Top bar */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -221,7 +248,7 @@ function HeroDashboard() {
           </div>
 
           {/* Result area */}
-          <div style={{ flex: 1, padding: '12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ flex: 1, minHeight: 0, padding: '12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             {/* URL analyzed */}
             <div style={{
@@ -266,13 +293,49 @@ function HeroDashboard() {
               </div>
             </div>
 
-            {/* Suggestions */}
+            {/* AI answer engines.
+                Illustrative, like the score and the bars above it — this is a product mockup,
+                not a report. It earns its place because the hero's promise is Google *and* AI
+                search, and the panel underneath it was showing on-page metrics only. */}
             <div style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px' }}>
+              <div style={{ fontSize: 9.5, fontWeight: 700, color: T.ink, fontFamily: T.sans, marginBottom: 7 }}>
+                Cited by AI answer engines
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {([
+                  ['ChatGPT', true],
+                  ['Perplexity', true],
+                  ['AI Overviews', true],
+                  ['Gemini', false],
+                ] as [string, boolean][]).map(([name, cited]) => (
+                  <div key={name} style={{
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                    border: `1px solid ${cited ? 'rgba(16,185,129,0.35)' : T.line}`,
+                    background: cited ? 'rgba(16,185,129,0.07)' : T.bgSoft,
+                    borderRadius: 6, padding: '5px 4px',
+                    fontSize: 8.5, fontFamily: T.sans, fontWeight: 600,
+                    color: cited ? '#047857' : T.muted,
+                  }}>
+                    <span style={{
+                      width: 5, height: 5, borderRadius: 3, flexShrink: 0,
+                      background: cited ? T.good : T.line2,
+                    }} />
+                    {name}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Suggestions — flex: 1 so this card, not the background, takes up whatever
+                height is left once the cards above it are placed. */}
+            <div style={{ flex: 1, background: '#fff', border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px' }}>
               <div style={{ fontSize: 9.5, fontWeight: 700, color: T.ink, fontFamily: T.sans, marginBottom: 7 }}>Top Recommendations</div>
               {[
                 ['Add 2–3 internal links to boost authority', '#F59E0B'],
                 ['Include FAQ schema for AI answer engines', T.blue],
                 ['Increase word count to 1,800+ words', '#10B981'],
+                ['Answer the query directly in the first paragraph', '#8B5CF6'],
+                ['Add an author byline with credentials', '#F59E0B'],
               ].map(([text, color]) => (
                 <div key={text} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 6 }}>
                   <div style={{ width: 5, height: 5, borderRadius: 2.5, background: color, marginTop: 3, flexShrink: 0 }} />
@@ -314,7 +377,7 @@ export function HomeHero() {
           .hero-text { padding: 56px 20px 0 !important; }
           .hero-mock-wrap { padding: 0 16px !important; }
           .hero-mock-sidebar { display: none !important; }
-          .hero-mock-grid { grid-template-columns: 1fr !important; min-height: unset !important; }
+          .hero-mock-grid { grid-template-columns: 1fr !important; height: auto !important; }
           .opt-trust { flex-direction: column !important; gap: 12px !important; align-items: center !important; }
         }
       `}</style>
