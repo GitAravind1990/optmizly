@@ -123,27 +123,33 @@ async function main() {
     console.log(`CREATE ${p.name.padEnd(34)} $${p.cents / 100}/${p.freq.interval.toLowerCase()}  ${created.body.product_id}`)
   }
 
-  // FOUNDING50, restricted to the two agency annual products exactly as live.
+  // PRODUCTHUNT, restricted to every recurring product, exactly as live.
+  //
+  // This block used to recreate FOUNDING50 — 50%, one cycle, the two agency annual products.
+  // That discount was deleted from live on 2026-10-04 and replaced by a single code covering
+  // every plan, so rebuilding it here would hand anyone testing a coupon that no longer exists
+  // in production and does not behave like the one that does.
   const discounts = await api('/discounts?page_size=50')
   const dList = discounts.body?.items ?? discounts.body?.data ?? discounts.body ?? []
-  if (dList.some(d => d.code === 'FOUNDING50')) {
-    console.log('\nSKIP   FOUNDING50 already exists in test mode')
+  if (dList.some(d => d.code === 'PRODUCTHUNT')) {
+    console.log('\nSKIP   PRODUCTHUNT already exists in test mode')
   } else {
-    const restricted = [ids.AGENCY_ANNUAL, ids.AGENCY_PLUS_ANNUAL].filter(Boolean)
+    const restricted = Object.values(ids).filter(Boolean)
     const d = await api('/discounts', {
       method: 'POST',
       body: JSON.stringify({
-        code: 'FOUNDING50',
+        code: 'PRODUCTHUNT',
+        name: 'Product Hunt launch',
         type: 'percentage',
-        amount: 5000,          // basis points: 5000 = 50%, not 50
-        usage_limit: 20,
-        subscription_cycles: 1,
+        amount: 3000,          // basis points: 3000 = 30%, not 30
+        usage_limit: 100,
+        subscription_cycles: 3,
         restricted_to: restricted,
       }),
     })
     console.log(d.ok
-      ? `\nCREATE FOUNDING50  50% off, 20 uses, restricted to ${restricted.length} product(s)  ${d.body.discount_id}`
-      : `\nFAIL   FOUNDING50  HTTP ${d.status} ${JSON.stringify(d.body).slice(0, 200)}`)
+      ? `\nCREATE PRODUCTHUNT  30% off, 100 uses, 3 cycles, restricted to ${restricted.length} product(s)  ${d.body.discount_id}`
+      : `\nFAIL   PRODUCTHUNT  HTTP ${d.status} ${JSON.stringify(d.body).slice(0, 200)}`)
   }
 
   console.log('\n─────────────────────────────────────────────────────────────')

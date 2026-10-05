@@ -23,9 +23,9 @@ export async function POST(req: NextRequest) {
     // purchase.
     const referrer = sanitizeRef(ref)
 
-    // Plan restriction enforced here, not just in the browser. The client hides the field on
-    // every plan but Agency annual; this is what makes that a rule rather than a suggestion,
-    // since anyone can POST this route directly with any product id they like.
+    // Plan restriction enforced here, not just in the browser. The client shows the field only
+    // where isCouponEligibleProduct allows it; this is what makes that a rule rather than a
+    // suggestion, since anyone can POST this route directly with any product id they like.
     //
     // What is deliberately NOT here: any knowledge of what the code is worth, or which codes
     // exist. Dodo owns the discount and its own redemption limit. Our only job is refusing to
@@ -33,7 +33,9 @@ export async function POST(req: NextRequest) {
     const code = typeof couponCode === 'string' ? couponCode.trim().toUpperCase().slice(0, 40) : ''
     if (code && !isCouponEligibleProduct(productId)) {
       return apiError({
-        message: 'This code is valid on the Agency and Agency Plus annual plans only.',
+        // Says what is wrong without naming which plans qualify: that list changes with every
+        // offer, and a message naming the old one outlived the restriction it described.
+        message: 'That code cannot be used on this plan.',
         status: 400,
         name: 'ValidationError',
       })
