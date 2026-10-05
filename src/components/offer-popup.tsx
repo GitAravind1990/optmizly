@@ -229,7 +229,9 @@ export function OfferPopup({ location = 'homepage' }: { location?: string }) {
         </div>
 
         <Link
-          href="/pricing"
+          /* Carries the code, so the pricing page applies it rather than asking the visitor to
+             remember the word they were just shown. */
+          href={`/pricing?code=${OFFER_CODE}`}
           onClick={() => posthog.capture('offer_popup_cta', { location, remaining: spots.remaining })}
           style={{
             display: 'block', textAlign: 'center', background: T.blue, color: '#fff',

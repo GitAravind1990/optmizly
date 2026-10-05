@@ -1,10 +1,22 @@
 'use client'
 
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { SignUp as ClerkSignUp } from '@clerk/nextjs'
 
 export function SignUpForm() {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+
+  // Mirrors sign-in-form: forceRedirectUrl overrides Clerk's own handling of redirect_url, so
+  // the value has to be carried through by hand or it is silently dropped. Sign-in has done
+  // this since the redirect bug; sign-up had not, so anyone sent here with a destination --
+  // the pricing page they were about to buy from, say -- lost it on the way through.
+  // /auth-redirect validates the path before honouring it.
+  const params = useSearchParams()
+  const requested = params.get('redirect_url')
+  const afterSignUp = requested
+    ? `/auth-redirect?redirect_url=${encodeURIComponent(requested)}`
+    : '/auth-redirect'
 
   if (!publishableKey) {
     return (
@@ -18,7 +30,7 @@ export function SignUpForm() {
 
   return (
     <ClerkSignUp
-      forceRedirectUrl="/auth-redirect"
+      forceRedirectUrl={afterSignUp}
       signInUrl="/login"
       appearance={{
         elements: {

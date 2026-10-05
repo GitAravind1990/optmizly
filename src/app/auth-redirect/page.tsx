@@ -29,10 +29,21 @@ function safeInternalPath(raw: string | undefined): string | null {
   if (!value.startsWith('/')) return null
   if (value.startsWith('//') || value.startsWith('/\\')) return null
 
-  // Only the dashboard is guarded, so it is the only place a bounce can originate.
-  // Anything else is either already reachable signed-out or somewhere we would rather
-  // send people deliberately.
-  if (!value.startsWith('/dashboard')) return null
+  // An allowlist of destinations, not an allowlist of characters: the shape checks above stop
+  // an attacker sending someone off-site, and this stops them being sent anywhere on-site that
+  // we have not thought about.
+  //
+  //   /dashboard — the only guarded area, so the only place a middleware bounce originates.
+  //   /pricing   — a visitor who followed a launch link with a discount code is sent to sign
+  //                up and must come back to the page that holds their code. Landing them on
+  //                the dashboard instead loses the purchase they were two clicks from making.
+  //
+  // Both are pages we would happily send anyone to; neither takes a destructive action on
+  // load. Add to this list only with that test in mind.
+  const allowed = ['/dashboard', '/pricing']
+  if (!allowed.some(prefix => value === prefix || value.startsWith(`${prefix}/`) || value.startsWith(`${prefix}?`))) {
+    return null
+  }
 
   return value
 }

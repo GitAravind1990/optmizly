@@ -7,6 +7,7 @@ import { SignedIn, SignedOut } from './clerk-provider'
 import { readRef } from '@/lib/referral'
 import { PRICING_FAQ, PRICING_UPDATED } from '@/lib/pricing-faq'
 import { isCouponEligibleProduct, isOfferProduct } from '@/lib/dodo-products'
+import { isPlausibleCode, readPendingCode, savePendingCode } from '@/lib/pending-code'
 
 const T = {
   sans: "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
@@ -193,18 +194,33 @@ function annualSaving(monthly: string, annual: string): string {
   return `$${Math.round(m * 12 - a)}`
 }
 
-function CheckoutButton({ productId, cta, featured, couponEligible, planName, isAnnual }: {
+function CheckoutButton({ productId, cta, featured, couponEligible, planName, isAnnual, initialCoupon }: {
   productId: string
   cta: string
   featured: boolean
   /** True for the two agency annual products, the only ones a code may be used on. */
   couponEligible?: boolean
+  /** A code the visitor arrived with, from the URL or from before they signed up. */
+  initialCoupon?: string | null
   planName: string
   isAnnual: boolean
 }) {
   const [loading, setLoading] = useState(false)
-  const [coupon, setCoupon] = useState('')
-  const [showCoupon, setShowCoupon] = useState(false)
+  /**
+   * Prefilled from the code the visitor arrived with, and shown rather than hidden behind the
+   * toggle. Someone who followed a launch link has been promised a discount; making them find
+   * a collapsed "Have a code?" link and retype a word from two pages ago is how that promise
+   * quietly goes unredeemed.
+   */
+  const [coupon, setCoupon] = useState(initialCoupon ?? '')
+  const [showCoupon, setShowCoupon] = useState(!!initialCoupon)
+
+  // The code can arrive after this component mounts: the pricing page reads it in an effect.
+  useEffect(() => {
+    if (!initialCoupon) return
+    setCoupon(prev => prev || initialCoupon)
+    setShowCoupon(true)
+  }, [initialCoupon])
   const [error, setError] = useState('')
 
   async function handleCheckout() {
@@ -339,6 +355,30 @@ export function PagePricing({
   // Only Agency has an annual option, so one flag covers the page. Defaults to monthly so
   // the advertised headline price stays the one people already know.
   const [annualBilling, setAnnualBilling] = useState(false)
+
+  /**
+   * A discount code arriving in the URL — /pricing?code=PRODUCTHUNT — which is how a launch
+   * link, the offer modal and the emails all hand one over.
+   *
+   * Remembered as well as used, because the only field that accepts it lives inside the
+   * signed-in checkout: a visitor who follows that link has to create an account first, and
+   * without this they come back to a page that has forgotten why they were here. Read from
+   * window.location rather than useSearchParams, which would need a Suspense boundary around
+   * this component on the statically rendered pages that embed it.
+   */
+  const [code, setCode] = useState<string | null>(null)
+  useEffect(() => {
+    const incoming = new URLSearchParams(window.location.search).get('code')?.toUpperCase()
+    if (incoming && isPlausibleCode(incoming)) {
+      savePendingCode(incoming)
+      setCode(incoming)
+      posthog.capture('pricing_code_arrived', { code: incoming })
+      return
+    }
+    // Nothing in the URL: pick up whatever a previous visit stored, which is the journey back
+    // from signup.
+    setCode(readPendingCode())
+  }, [])
 
   // Launch-offer availability, read from Dodo's own redemption count. Null while it
   // loads, and stays null if the code does not exist - the banner simply never appears
@@ -568,7 +608,12 @@ export function PagePricing({
               {/* CTA button */}
               <SignedOut>
                 <Link
-                  href={p.signedOutHref}
+                  /* Come back to pricing after signing up, not to the dashboard: the code and
+                     the plan they had chosen are both on this page. /auth-redirect allows
+                     /pricing precisely for this. */
+                  href={code && p.signedOutHref === '/signup'
+                    ? `/signup?redirect_url=${encodeURIComponent(`/pricing?code=${code}`)}`
+                    : p.signedOutHref}
                   onClick={() => posthog.capture('pricing_plan_selected', {
                     plan: p.name.toUpperCase(),
                     billing: isAnnual ? 'annual' : 'monthly',
@@ -602,6 +647,7 @@ export function PagePricing({
                     cta={p.cta}
                     featured={p.featured ?? false}
                     couponEligible={isCouponEligibleProduct(isAnnual ? p.annualProductId : p.checkoutProductId)}
+                    initialCoupon={code}
                     planName={p.name}
                     isAnnual={isAnnual}
                   />
