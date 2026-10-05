@@ -27,6 +27,17 @@ export type AuthedUser = {
   email: string
   plan: Plan
   /**
+   * The account's enforced allowance, or null to use the plan's own.
+   *
+   * Carried on the session because `assertQuotaAvailable` takes an AuthedUser and asks
+   * `monthlyLimitFor` for the cap. Without it that read was `undefined`, the override was
+   * skipped, and the pre-flight check measured against the plan default — so an account
+   * capped below its plan was waved through to start work that `requireAuth` would then
+   * refuse at the real limit. Advisory check or not, it was failing at exactly the accounts
+   * it exists to protect.
+   */
+  monthlyLimit: number | null
+  /**
    * False when this session is working inside someone else's account via a seat.
    *
    * Derived rather than stored: getOrCreateUser returns the owner's row, so a session
@@ -167,7 +178,20 @@ export function isAlwaysAgency(email?: string | null): boolean {
  * counter, the warning email, the 429 message and the charge itself in agreement.
  */
 export function monthlyLimitFor(
-  user: { email: string; plan: Plan; monthlyLimit?: number | null },
+  /**
+   * `monthlyLimit` is REQUIRED, not optional, and that is load-bearing.
+   *
+   * It was `monthlyLimit?: number | null`, so a Prisma `select` that simply left the column
+   * out still typechecked — and then read as `undefined` here, skipped the override, and fell
+   * through to the plan default. The weekly summary cron did exactly that and told three beta
+   * testers pinned to AGENCY at 10 credits that they had 200 analyses left. Nothing failed:
+   * the query was valid, the call was valid, the email sent, and the number was four times
+   * the limit that would actually 429 them.
+   *
+   * Required means a caller that does not select the column is a compile error. Pass
+   * `null` deliberately if a caller genuinely has no override to report.
+   */
+  user: { email: string; plan: Plan; monthlyLimit: number | null },
   trialing: boolean
 ): number {
   const pinned = pinnedFor(user.email)
@@ -472,6 +496,7 @@ export async function requireAuth(tool: string): Promise<AuthedUser> {
     clerkId,
     email: user.email,
     plan: user.plan,
+    monthlyLimit: user.monthlyLimit,
     // user.clerkId is the account's; clerkId is whoever is signed in. They differ exactly
     // when this session is working on a seat.
     isOwner: user.clerkId === clerkId,
@@ -559,6 +584,7 @@ export async function requireToolAccess(tool: string): Promise<AuthedUser> {
     clerkId,
     email: user.email,
     plan: user.plan,
+    monthlyLimit: user.monthlyLimit,
     // user.clerkId is the account's; clerkId is whoever is signed in. They differ exactly
     // when this session is working on a seat.
     isOwner: user.clerkId === clerkId,

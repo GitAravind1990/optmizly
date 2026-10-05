@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendWeeklySummaryEmail } from '@/lib/email'
 import { getClerkFirstName, monthlyLimitFor } from '@/lib/auth'
-import { PLAN_LIMITS, TRIAL_LIMITS } from '@/lib/plans'
 import { claimDripEmail } from '@/lib/drip-claim'
 import { cronAuthFailure, recordCronRun } from '@/lib/cron'
 
@@ -44,7 +43,9 @@ export async function GET(req: NextRequest) {
       createdAt: { lte: weekAgo },
       drippedEmails: { none: { emailType: weekKey } },
     },
-    select: { id: true, clerkId: true, email: true, plan: true },
+    // monthlyLimit is what monthlyLimitFor actually enforces; omitting it here is what made
+    // this email quote the plan default instead of the user's real cap.
+    select: { id: true, clerkId: true, email: true, plan: true, monthlyLimit: true },
   })
 
   for (const user of users) {
