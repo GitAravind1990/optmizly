@@ -67,6 +67,30 @@ const FALLBACK_DELAY_MS: Record<string, number> = {
 /** Anything not named above. */
 const DEFAULT_FALLBACK_DELAY_MS = 15_000
 
+/**
+ * Three outcomes, not two.
+ *
+ * This used to collapse "they dismissed it" and "storage threw" into one boolean, which was
+ * right for deciding whether to render — both mean stay quiet — and wrong for reporting. A
+ * private window or blocked cookies means a visitor who will never be offered anything, on any
+ * visit, and nothing anywhere counted them.
+ *
+ * At module scope because it closes over nothing in the component; inside, every effect that
+ * calls it has to carry it as a dependency for no benefit.
+ */
+function dismissState(): 'dismissed' | 'storage_blocked' | 'available' {
+  try {
+    return localStorage.getItem(DISMISS_KEY) !== null ? 'dismissed' : 'available'
+  } catch {
+    return 'storage_blocked'
+  }
+}
+
+/** Both non-available states mean the same thing at render time: stay quiet. */
+function dismissed(): boolean {
+  return dismissState() !== 'available'
+}
+
 type Spots = {
   configured: boolean
   remaining: number | null
@@ -86,14 +110,24 @@ export function OfferPopup({ location = 'homepage' }: { location?: string }) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const shownRef = useRef(false)
 
-  // Already dismissed, or storage unreadable (private window, blocked cookies): stay quiet.
-  const dismissed = () => {
-    try {
-      return localStorage.getItem(DISMISS_KEY) !== null
-    } catch {
-      return true
-    }
-  }
+  /**
+   * Why the modal did not appear, reported once per page view.
+   *
+   * Without this a low offer_popup_shown count has two readings that want opposite fixes:
+   * nobody stayed fifteen seconds, or the offer was never available to show. The first is a
+   * copy problem, the second is an outage — and an outage here is invisible by construction,
+   * because a modal that does not render looks exactly like a modal nobody reached.
+   *
+   * Deliberately NOT fired for an ordinary dismissal. That is already counted by
+   * offer_popup_dismissed, it is the expected state for every returning visitor, and it would
+   * outnumber the availability reasons badly enough to bury the signal this event exists for.
+   */
+  const suppressedRef = useRef(false)
+  const suppressed = useCallback((reason: string, extra?: Record<string, unknown>) => {
+    if (suppressedRef.current) return
+    suppressedRef.current = true
+    posthog.capture('offer_popup_suppressed', { location, reason, ...extra })
+  }, [location])
 
   // useCallback so the Escape handler can depend on it rather than closing over a stale one.
   // Stale closures in effects have bitten this codebase before.
@@ -104,24 +138,32 @@ export function OfferPopup({ location = 'homepage' }: { location?: string }) {
   }, [location])
 
   useEffect(() => {
-    if (dismissed()) return
+    const state = dismissState()
+    if (state === 'storage_blocked') { suppressed('storage_blocked'); return }
+    if (state === 'dismissed') return
+
     let alive = true
     fetch('/api/offer-spots')
       .then(r => r.json())
       .then(j => {
+        if (!alive) return
         const data: Spots = j?.data ?? j
-        // No offer, no places, or no answer — all three mean no modal.
-        if (!alive || !data?.configured || data.soldOut) return
-        if (data.remaining !== null && data.remaining <= 0) return
+        // No offer, no places, or no answer — all three mean no modal, and each is now
+        // distinguishable afterwards rather than being the same silent return.
+        if (!data?.configured) { suppressed('not_configured'); return }
+        if (data.soldOut || (data.remaining !== null && data.remaining <= 0)) {
+          suppressed('sold_out', { limit: data.limit })
+          return
+        }
         // And no rate means no modal either. Rejected here rather than at render, because the
         // effect below fires offer_popup_shown off `spots` alone — refusing later would log an
         // impression for a modal nobody saw, and skew the one number this surface is judged on.
-        if (typeof data.percentOff !== 'number') return
+        if (typeof data.percentOff !== 'number') { suppressed('no_rate'); return }
         setSpots(data)
       })
-      .catch(() => {})
+      .catch(() => { if (alive) suppressed('fetch_failed') })
     return () => { alive = false }
-  }, [])
+  }, [suppressed])
 
   /**
    * The trigger is recorded on mount, not once the places are known.
