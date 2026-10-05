@@ -456,6 +456,22 @@ export function PagePricing({
         </span>
       </div>
 
+      {/* Currency and tax, stated where the prices are.
+          The plans are priced in USD in Dodo — Starter is 900 USD cents, not 900 of anything
+          else — but Dodo is merchant of record and localises the checkout: an Indian card sees
+          roughly 100 INR to the dollar, well off the market rate, and 18% GST added on top of
+          that. Measured at a real test checkout: a $9 plan presented as ₹900.01 + ₹162 GST.
+          None of that is wrong, and none of it was said anywhere, so the first time a visitor
+          met it was the payment page. */}
+      <p style={{
+        fontFamily: T.sans, fontSize: 13, color: T.muted, textAlign: 'center',
+        maxWidth: 620, margin: '14px auto 0', lineHeight: 1.5,
+      }}>
+        Prices are in US dollars. Local sales tax is added at checkout where your country
+        charges it, and a card in another currency is converted by our payment provider — the
+        checkout page shows the exact amount before you pay.
+      </p>
+
       <style>{`
         @media (max-width: 639px) {
           .pricing-card-featured { transform: none !important; }

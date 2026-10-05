@@ -13,7 +13,7 @@
  *
  * Dates, not month strings, so the day is visible and the value can feed a dateModified.
  */
-export const TERMS_UPDATED = '2026-09-28'
+export const TERMS_UPDATED = '2026-10-05'
 export const PRIVACY_UPDATED = '2026-09-28'
 export const REFUND_UPDATED = '2026-09-06'
 

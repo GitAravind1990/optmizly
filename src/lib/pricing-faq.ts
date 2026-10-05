@@ -14,7 +14,7 @@
  * Bump it in the same commit as any price, limit or plan change; it is on the checklist in
  * CLAUDE.md for exactly that reason. A date that stops moving is worse than no date.
  */
-export const PRICING_UPDATED = '2026-09-28'
+export const PRICING_UPDATED = '2026-10-05'
 
 /**
  * One source for the pricing FAQ: rendered by the accordion in `page-pricing.tsx` *and*
@@ -54,6 +54,10 @@ export const PRICING_FAQ: Array<{ q: string; a: string }> = [
   {
     q: 'Do I need API keys or anything installed?',
     a: 'No. Optmizly is fully hosted and all AI analysis is included in your plan — you never need an AI provider key or any third-party setup to use it. Agency plan users can optionally connect Google Search Console for deeper SEO Audit insights, but it’s never required.',
+  },
+  {
+    q: 'What currency am I charged in, and is tax included?',
+    a: 'Every price on this page is in US dollars. Payments are handled by DoDo Payments as merchant of record, so a card in another currency is converted by them at their own rate, and local sales tax — GST, VAT or the equivalent — is added at checkout where your country charges it. Both are shown on the checkout page before you pay, so the total you confirm is the total you are charged. In India, for example, a $9 plan is presented in rupees with 18% GST on top, which comes to more than a direct conversion of nine dollars.',
   },
   {
     q: 'Can I pay annually?',
