@@ -8,3 +8,14 @@
 
 /** Dispatched on `window` when the free audit finishes and a report is on screen. */
 export const AUDIT_COMPLETE_EVENT = 'optmizly:audit-complete'
+
+/**
+ * Dispatched on `window` when the offer modal's CTA is taken while the visitor is already on
+ * the pricing page.
+ *
+ * Needed because the modal's ordinary CTA is a link to /pricing?code=..., and on /pricing that
+ * is a navigation to the page you are already on: the effect that reads the query string runs
+ * once on mount, so the code would never be picked up. The modal announces the code instead
+ * and the pricing page applies it in place.
+ */
+export const OFFER_APPLIED_EVENT = 'optmizly:offer-applied'

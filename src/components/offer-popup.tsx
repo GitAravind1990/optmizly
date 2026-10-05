@@ -25,16 +25,19 @@
  * 5. **Once dismissed, it stays dismissed.** localStorage, and a failure to read it means no
  *    modal rather than a second one.
  *
- * Deliberately not shown on /pricing, where the same offer is already on the plan cards with
- * its real terms beside it.
+ * Shown on the homepage and on /pricing. It was homepage-only on the reasoning that the plan
+ * cards already carry the offer — but they carry the *places left*, never the rate, so a
+ * visitor comparing plans had no way to learn it is 15% without opening a checkout. On
+ * /pricing the CTA applies the code in place rather than linking to the page it is on.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import { T } from './marketing/tokens'
-import { AUDIT_COMPLETE_EVENT } from '@/lib/events'
+import { AUDIT_COMPLETE_EVENT, OFFER_APPLIED_EVENT } from '@/lib/events'
 import { OFFER_CODE } from '@/lib/offers'
+import { savePendingCode } from '@/lib/pending-code'
 
 /** Renamed with the offer: a visitor who dismissed the old Founding Member modal has not
  *  seen this one, and should not be silently opted out of it. */
@@ -56,6 +59,8 @@ type Spots = {
 }
 
 export function OfferPopup({ location = 'homepage' }: { location?: string }) {
+  /** On /pricing the CTA has to behave differently; see the button below. */
+  const onPricing = location === 'pricing'
   const [spots, setSpots] = useState<Spots | null>(null)
   const [open, setOpen] = useState(false)
   // Set by the audit event or the dwell timer; independent of whether places are known yet.
@@ -211,8 +216,10 @@ export function OfferPopup({ location = 'homepage' }: { location?: string }) {
           annual, for your first three months.
         </p>
         <p style={{ fontSize: 13.5, lineHeight: 1.55, color: T.body, margin: '0 0 20px' }}>
-          Starter at ${example(9)} instead of $9, Pro at ${example(19)} instead of $19. Enter
-          the code at checkout — it is on the pricing page under <em>Have a code?</em>
+          Starter at ${example(9)} instead of $9, Pro at ${example(19)} instead of $19.{' '}
+          {onPricing
+            ? <>Apply it below and it is filled in for you at checkout.</>
+            : <>Enter the code at checkout — it is on the pricing page under <em>Have a code?</em></>}
         </p>
 
         {/* The code itself. A modal that offers a discount and never names it is an
@@ -251,19 +258,40 @@ export function OfferPopup({ location = 'homepage' }: { location?: string }) {
           </button>
         </div>
 
-        <Link
-          /* Carries the code, so the pricing page applies it rather than asking the visitor to
-             remember the word they were just shown. */
-          href={`/pricing?code=${OFFER_CODE}`}
-          onClick={() => posthog.capture('offer_popup_cta', { location, remaining: spots.remaining })}
-          style={{
-            display: 'block', textAlign: 'center', background: T.blue, color: '#fff',
-            fontSize: 15, fontWeight: 700, padding: '12px 16px', borderRadius: 11,
-            textDecoration: 'none',
-          }}
-        >
-          See what it includes →
-        </Link>
+        {onPricing ? (
+          /* Already here. Linking to /pricing?code=... would be a navigation to this same
+             page, and the effect that reads that query string runs once on mount — so the
+             code would be announced and then quietly ignored. Apply it instead. */
+          <button
+            onClick={() => {
+              savePendingCode(OFFER_CODE)
+              window.dispatchEvent(new CustomEvent(OFFER_APPLIED_EVENT, { detail: OFFER_CODE }))
+              posthog.capture('offer_popup_cta', { location, remaining: spots.remaining })
+              close('applied')
+            }}
+            style={{
+              display: 'block', width: '100%', textAlign: 'center', background: T.blue,
+              color: '#fff', border: 'none', fontSize: 15, fontWeight: 700,
+              padding: '12px 16px', borderRadius: 11, fontFamily: T.sans, cursor: 'pointer',
+            }}
+          >
+            Apply it to my plan →
+          </button>
+        ) : (
+          <Link
+            /* Carries the code, so the pricing page applies it rather than asking the visitor
+               to remember the word they were just shown. */
+            href={`/pricing?code=${OFFER_CODE}`}
+            onClick={() => posthog.capture('offer_popup_cta', { location, remaining: spots.remaining })}
+            style={{
+              display: 'block', textAlign: 'center', background: T.blue, color: '#fff',
+              fontSize: 15, fontWeight: 700, padding: '12px 16px', borderRadius: 11,
+              textDecoration: 'none',
+            }}
+          >
+            See what it includes →
+          </Link>
+        )}
 
         <button
           onClick={() => close('no-thanks')}

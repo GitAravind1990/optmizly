@@ -8,6 +8,7 @@ import { readRef } from '@/lib/referral'
 import { PRICING_FAQ, PRICING_UPDATED } from '@/lib/pricing-faq'
 import { isCouponEligibleProduct, isOfferProduct } from '@/lib/dodo-products'
 import { isPlausibleCode, readPendingCode, savePendingCode } from '@/lib/pending-code'
+import { OFFER_APPLIED_EVENT } from '@/lib/events'
 
 const T = {
   sans: "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
@@ -380,10 +381,26 @@ export function PagePricing({
     setCode(readPendingCode())
   }, [])
 
+  /**
+   * The offer modal, when it opens on this page, hands the code over by event rather than by
+   * navigating to the URL we are already on — the effect above runs once on mount and would
+   * never see it. Separate effect so the two paths cannot interfere.
+   */
+  useEffect(() => {
+    const apply = (e: Event) => {
+      const incoming = (e as CustomEvent<string>).detail?.toUpperCase()
+      if (incoming && isPlausibleCode(incoming)) setCode(incoming)
+    }
+    window.addEventListener(OFFER_APPLIED_EVENT, apply)
+    return () => window.removeEventListener(OFFER_APPLIED_EVENT, apply)
+  }, [])
+
   // Launch-offer availability, read from Dodo's own redemption count. Null while it
   // loads, and stays null if the code does not exist - the banner simply never appears
   // rather than showing a placeholder number.
-  const [spots, setSpots] = useState<{ remaining: number | null; limit: number | null; soldOut: boolean } | null>(null)
+  const [spots, setSpots] = useState<{
+    remaining: number | null; limit: number | null; soldOut: boolean; percentOff: number | null
+  } | null>(null)
   useEffect(() => {
     fetch('/api/offer-spots')
       .then(r => r.json())
@@ -703,9 +720,16 @@ export function PagePricing({
                   color: p.featured ? '#fff' : '#B45309',
                   border: `1px solid ${p.featured ? 'rgba(255,255,255,0.24)' : '#FDE68A'}`,
                 }}>
+                  {/* The rate, not just the scarcity. These cards carried "N places left" and
+                      never said what the offer was worth, so the one number a visitor needs to
+                      decide was the one missing. It comes from Dodo via /api/offer-spots, like
+                      the count beside it — never typed in here, because it is the figure that
+                      ends up on their invoice. Omitted entirely if the read did not return it. */}
                   {spots.soldOut
                     ? 'Launch offer: all places taken'
-                    : `Launch offer: ${spots.remaining} of ${spots.limit} places left`}
+                    : spots.percentOff !== null
+                      ? `Launch offer: ${spots.percentOff}% off · ${spots.remaining} of ${spots.limit} places left`
+                      : `Launch offer: ${spots.remaining} of ${spots.limit} places left`}
                 </div>
               )}
 

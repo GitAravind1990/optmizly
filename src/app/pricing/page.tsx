@@ -4,6 +4,8 @@ import { PagePricing } from '@/components/page-pricing'
 import { PRICING_FAQ, PRICING_UPDATED } from '@/lib/pricing-faq'
 import { buildPageGraph } from '@/lib/site-schema'
 import { FreeToolsSection } from '@/components/free-tools-section'
+import { OfferPopup } from '@/components/offer-popup'
+import { SignedOut } from '@/components/clerk-provider'
 
 const sans = "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
 const muted = '#8A93A3'
@@ -47,6 +49,15 @@ export default function PricingPage() {
     <div style={{ background: '#fff', minHeight: '100vh', fontFamily: sans }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: pricingJsonLd }} />
       <PageHeader />
+
+      {/* The launch offer, for signed-out visitors only, 30 seconds in.
+          The plan cards carry the places left and now the rate too, but only once the Dodo
+          read lands and only on the cards the code applies to; this states the whole offer in
+          one place and puts the code itself on screen. Its CTA applies the code here rather
+          than linking to this page. A customer is not shown it — see the modal's own notes. */}
+      <SignedOut>
+        <OfferPopup location="pricing" />
+      </SignedOut>
       {/* Visible because the BreadcrumbList above says it is there. Markup describing a trail
           a reader cannot see is the same fault as an FAQ that only exists in JSON-LD. */}
       <nav aria-label="Breadcrumb" style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 32px 0' }}>
