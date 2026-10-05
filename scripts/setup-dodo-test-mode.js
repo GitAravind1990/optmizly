@@ -141,14 +141,14 @@ async function main() {
         code: 'PRODUCTHUNT',
         name: 'Product Hunt launch',
         type: 'percentage',
-        amount: 1500,          // basis points: 1500 = 15%, not 15
+        amount: 5000,          // basis points: 5000 = 50%, not 50
         usage_limit: 100,
         subscription_cycles: 3,
         restricted_to: restricted,
       }),
     })
     console.log(d.ok
-      ? `\nCREATE PRODUCTHUNT  15% off, 100 uses, 3 cycles, restricted to ${restricted.length} product(s)  ${d.body.discount_id}`
+      ? `\nCREATE PRODUCTHUNT  50% off, 100 uses, 3 cycles, restricted to ${restricted.length} product(s)  ${d.body.discount_id}`
       : `\nFAIL   PRODUCTHUNT  HTTP ${d.status} ${JSON.stringify(d.body).slice(0, 200)}`)
   }
 

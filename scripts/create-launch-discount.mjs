@@ -1,5 +1,5 @@
 /**
- * Makes the launch discount in Dodo match SPEC below: 15% off every paid plan, three cycles.
+ * Makes the launch discount in Dodo match SPEC below: 50% off every paid plan, three cycles.
  *
  *   node scripts/create-launch-discount.mjs          # shows what it would do
  *   node scripts/create-launch-discount.mjs --create # actually creates it
@@ -37,14 +37,16 @@ const SPEC = {
   name: 'Product Hunt launch',
   type: 'percentage',
   /**
-   * Basis points: 1500 = 15%. Dodo's own example is 540 => 5.4%.
+   * Basis points: 5000 = 50%. Dodo's own example is 540 => 5.4%.
    *
-   * Was 30% until purchasing power parity went on. PPP already prices by country, which in the
-   * markets a launch audience skews towards is a far bigger cut than any code: Starter in India
-   * went from about 900 rupees to 270. The code stacks on top of that, so 30% there was taking
-   * a 9 dollar plan down to roughly 2.
+   * 30% -> 15% -> 50%. The middle step was a reaction to purchasing power parity going on:
+   * PPP already prices by country, and the code stacks on top of it, so in the markets a
+   * launch audience skews towards the two compound. Starter in India lists at about 270
+   * rupees under PPP, and 50% takes that to roughly 135 — about $1.50 a month, before Dodo's
+   * per-transaction fee and before this account's real DataForSEO spend on the tools that
+   * plan unlocks. For three cycles, capped at 100 redemptions.
    */
-  amount: 1500,
+  amount: 5000,
   /** Three billing periods, then full price. */
   subscription_cycles: 3,
   usage_limit: 100,

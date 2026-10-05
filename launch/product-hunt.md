@@ -165,9 +165,10 @@ is a real screen and the numbers in them are the ones the product returned.
 
 ## What not to do
 
-- No fake urgency. There *is* a launch discount now — PRODUCTHUNT, 15% off any plan for
-  three billing cycles — and 15% is deliberately small for this reason: it is a thank-you
-  for showing up, not a reason to have waited. Anyone already paying can use it too
+- No fake urgency. There *is* a launch discount — PRODUCTHUNT, 50% off any plan for three
+  billing cycles, 100 redemptions. Anyone already paying can use it too, which is the line
+  that keeps it from undercutting them. Note it stacks on purchasing power parity, so in the
+  markets this audience skews towards the two compound
 - No "trusted by" logos, no invented user counts, no testimonials you do not have
 - No upvote exchanges or launch pods. They are visible, and this audience talks
 - Do not claim the extension exists until it is listed
