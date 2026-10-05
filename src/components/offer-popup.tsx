@@ -44,24 +44,28 @@ import { savePendingCode } from '@/lib/pending-code'
 const DISMISS_KEY = 'optmizly_offer_popup_dismissed'
 
 /**
- * How long to wait before offering, per surface.
+ * How long to wait before offering, per surface. Fifteen seconds everywhere today.
  *
- * Homepage: for visitors who never run an audit. Was 75 seconds, which is longer than most of
- * them stay — a launch audience in particular arrives, looks, and leaves well inside it, so
- * the offer was reaching almost nobody who did not run a report.
+ * It was 75 seconds, then 30, now 15. Each cut was for the same reason: the dwell was longer
+ * than the visit. A launch audience arrives, looks and leaves well inside a minute, so a modal
+ * that waits for a reader who is no longer there is a modal that never opens — the offer was
+ * reaching almost nobody.
  *
- * Pricing: half that. There is no audit on /pricing, so the timer is the only way the modal
- * ever opens, and someone reading plan cards has already decided to find out what it costs —
- * a discount is useful to them straight away rather than an interruption. Thirty seconds is a
- * long time to spend comparing five cards, so it was arriving after the decision.
+ * On the homepage this is only a fallback: the real trigger is the free audit finishing, and
+ * anyone who runs one sees the offer when their report lands, whenever that is. On /pricing
+ * there is no audit, so the timer is the only way it ever opens, and someone reading plan
+ * cards has already decided to find out what it costs.
+ *
+ * Kept per-surface rather than collapsed back to one constant: the two are tuned for different
+ * reasons, and the next change is more likely to move one than both.
  */
 const FALLBACK_DELAY_MS: Record<string, number> = {
-  homepage: 30_000,
+  homepage: 15_000,
   pricing: 15_000,
 }
 
-/** Anything not named above keeps the original dwell. */
-const DEFAULT_FALLBACK_DELAY_MS = 30_000
+/** Anything not named above. */
+const DEFAULT_FALLBACK_DELAY_MS = 15_000
 
 type Spots = {
   configured: boolean
