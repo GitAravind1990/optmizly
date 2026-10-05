@@ -44,11 +44,24 @@ import { savePendingCode } from '@/lib/pending-code'
 const DISMISS_KEY = 'optmizly_offer_popup_dismissed'
 
 /**
- * For visitors who never run an audit. Was 75 seconds, which is longer than most of them stay —
- * a launch audience in particular arrives, looks, and leaves well inside it, so the offer was
- * reaching almost nobody who did not run a report.
+ * How long to wait before offering, per surface.
+ *
+ * Homepage: for visitors who never run an audit. Was 75 seconds, which is longer than most of
+ * them stay — a launch audience in particular arrives, looks, and leaves well inside it, so
+ * the offer was reaching almost nobody who did not run a report.
+ *
+ * Pricing: half that. There is no audit on /pricing, so the timer is the only way the modal
+ * ever opens, and someone reading plan cards has already decided to find out what it costs —
+ * a discount is useful to them straight away rather than an interruption. Thirty seconds is a
+ * long time to spend comparing five cards, so it was arriving after the decision.
  */
-const FALLBACK_DELAY_MS = 30_000
+const FALLBACK_DELAY_MS: Record<string, number> = {
+  homepage: 30_000,
+  pricing: 15_000,
+}
+
+/** Anything not named above keeps the original dwell. */
+const DEFAULT_FALLBACK_DELAY_MS = 30_000
 
 type Spots = {
   configured: boolean
@@ -120,12 +133,12 @@ export function OfferPopup({ location = 'homepage' }: { location?: string }) {
     if (dismissed()) return
     const trigger = () => setTriggered(true)
     window.addEventListener(AUDIT_COMPLETE_EVENT, trigger)
-    const timer = window.setTimeout(trigger, FALLBACK_DELAY_MS)
+    const timer = window.setTimeout(trigger, FALLBACK_DELAY_MS[location] ?? DEFAULT_FALLBACK_DELAY_MS)
     return () => {
       window.removeEventListener(AUDIT_COMPLETE_EVENT, trigger)
       window.clearTimeout(timer)
     }
-  }, [])
+  }, [location])
 
   useEffect(() => {
     if (!triggered || !spots || shownRef.current || dismissed()) return
