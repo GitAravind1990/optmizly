@@ -140,10 +140,14 @@ is a real screen and the numbers in them are the ones the product returned.
       per IP for the audit, E-E-A-T and regex; 3 a month for the prospect finder)
 - [ ] Have the pricing page open in a tab — the first sceptical question is usually "what's the
       catch with the free tier"
+- [ ] Confirm PRODUCTHUNT is live and has places left: `node scripts/create-launch-discount.mjs`
+      prints the redemption count, and /api/offer-spots is what the popup reads
 
 ## On the day
 
 - [ ] Post the first comment immediately, before any promotion
+- [ ] Put the offer in that first comment, as `optmizly.com/pricing?code=PRODUCTHUNT`. The link
+      carries the code through signup and prefills it at checkout, so nobody has to remember it
 - [ ] Answer every comment, including the hostile ones, in your own voice
 - [ ] Share where you already are: LinkedIn, any SEO community you actually participate in. Do
       **not** ask for upvotes — PH penalises it and the audience notices
@@ -161,7 +165,9 @@ is a real screen and the numbers in them are the ones the product returned.
 
 ## What not to do
 
-- No fake urgency, no launch-day discount that undercuts the people who paid last week
+- No fake urgency. There *is* a launch discount now — PRODUCTHUNT, 15% off any plan for
+  three billing cycles — and 15% is deliberately small for this reason: it is a thank-you
+  for showing up, not a reason to have waited. Anyone already paying can use it too
 - No "trusted by" logos, no invented user counts, no testimonials you do not have
 - No upvote exchanges or launch pods. They are visible, and this audience talks
 - Do not claim the extension exists until it is listed

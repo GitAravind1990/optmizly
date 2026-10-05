@@ -16,9 +16,12 @@
  * 3. **It states what the offer actually applies to**, and names the code. PRODUCTHUNT is
  *    accepted on every paid plan, which is what `isCouponEligibleProduct` enforces. A modal
  *    that advertises a discount without saying what to type is not an offer.
- * 4. **It never invents a number.** Places remaining come from /api/offer-spots, which reads
- *    Dodo's own redemption count; if that endpoint is unconfigured, errors, or reports the
- *    offer gone, the modal does not render at all. There is no hardcoded "3 left".
+ * 4. **It never invents a number.** Places remaining *and the discount rate* come from
+ *    /api/offer-spots, which reads Dodo's own discount object; if that endpoint is
+ *    unconfigured, errors, or reports the offer gone, the modal does not render at all. There
+ *    is no hardcoded "3 left" and no hardcoded percentage — the rate was typed in here when
+ *    the offer was 30%, which is one edit away from advertising a price Dodo will not honour.
+ *    Dodo owns the arithmetic; this renders what it returns.
  * 5. **Once dismissed, it stays dismissed.** localStorage, and a failure to read it means no
  *    modal rather than a second one.
  *
@@ -44,7 +47,13 @@ const DISMISS_KEY = 'optmizly_offer_popup_dismissed'
  */
 const FALLBACK_DELAY_MS = 30_000
 
-type Spots = { configured: boolean; remaining: number | null; limit: number | null; soldOut: boolean }
+type Spots = {
+  configured: boolean
+  remaining: number | null
+  limit: number | null
+  soldOut: boolean
+  percentOff: number | null
+}
 
 export function OfferPopup({ location = 'homepage' }: { location?: string }) {
   const [spots, setSpots] = useState<Spots | null>(null)
@@ -82,6 +91,10 @@ export function OfferPopup({ location = 'homepage' }: { location?: string }) {
         // No offer, no places, or no answer — all three mean no modal.
         if (!alive || !data?.configured || data.soldOut) return
         if (data.remaining !== null && data.remaining <= 0) return
+        // And no rate means no modal either. Rejected here rather than at render, because the
+        // effect below fires offer_popup_shown off `spots` alone — refusing later would log an
+        // impression for a modal nobody saw, and skew the one number this surface is judged on.
+        if (typeof data.percentOff !== 'number') return
         setSpots(data)
       })
       .catch(() => {})
@@ -127,12 +140,22 @@ export function OfferPopup({ location = 'homepage' }: { location?: string }) {
   }, [open, close])
 
 
-  if (!open || !spots) return null
+  // percentOff is non-null by the time spots is set; narrowed here for the type system.
+  if (!open || !spots || spots.percentOff === null) return null
 
   const places =
     spots.remaining !== null && spots.limit !== null
       ? `${spots.remaining} of ${spots.limit} places left`
       : 'Limited places'
+
+  /**
+   * The rate Dodo will actually apply. A whole number where it is one, so 15 does not render
+   * as "15.0%" and 7.5 still reads correctly.
+   */
+  const rate = Number.isInteger(spots.percentOff) ? spots.percentOff : spots.percentOff?.toFixed(1)
+
+  /** The worked example, computed from that same rate so the two can never disagree. */
+  const example = (list: number) => (list * (1 - (spots.percentOff ?? 0) / 100)).toFixed(2)
 
   return (
     <div
@@ -180,16 +203,16 @@ export function OfferPopup({ location = 'homepage' }: { location?: string }) {
           fontSize: 23, lineHeight: 1.2, letterSpacing: -0.6, fontWeight: 700,
           color: T.ink, margin: '0 0 10px',
         }}>
-          30% off, on every plan
+          {rate}% off, on every plan
         </h2>
 
         <p style={{ fontSize: 15, lineHeight: 1.55, color: T.body, margin: '0 0 8px' }}>
-          Our Product&nbsp;Hunt launch offer: <strong>30% off any plan</strong>, monthly or
+          Our Product&nbsp;Hunt launch offer: <strong>{rate}% off any plan</strong>, monthly or
           annual, for your first three months.
         </p>
         <p style={{ fontSize: 13.5, lineHeight: 1.55, color: T.body, margin: '0 0 20px' }}>
-          Starter at $6.30 instead of $9, Pro at $13.30 instead of $19. Enter the code at
-          checkout — it is on the pricing page under <em>Have a code?</em>
+          Starter at ${example(9)} instead of $9, Pro at ${example(19)} instead of $19. Enter
+          the code at checkout — it is on the pricing page under <em>Have a code?</em>
         </p>
 
         {/* The code itself. A modal that offers a discount and never names it is an

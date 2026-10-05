@@ -37,6 +37,12 @@ export async function GET() {
       configured: true,
       used,
       limit,
+      // Dodo stores a percentage in basis points - 1500 is 15%, and its own documented example
+      // is 540 => 5.4%. Reported here so the modal can quote the rate the customer will
+      // actually be charged rather than a figure typed into a component: this number ends up
+      // on an invoice, and a stale one is a false price. Null for a fixed-amount discount,
+      // which this offer is not and which the UI must not render as "null% off".
+      percentOff: d.type === 'percentage' && typeof d.amount === 'number' ? d.amount / 100 : null,
       // Null when the discount has no cap - the UI then says nothing rather than inventing
       // a denominator, because "X of ? left" is not a scarcity claim anyone can act on.
       remaining: limit === null ? null : Math.max(0, limit - used),

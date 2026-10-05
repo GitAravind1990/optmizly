@@ -1,5 +1,5 @@
 /**
- * Creates the launch discount in Dodo: 30% off every paid plan, three cycles.
+ * Makes the launch discount in Dodo match SPEC below: 15% off every paid plan, three cycles.
  *
  *   node scripts/create-launch-discount.mjs          # shows what it would do
  *   node scripts/create-launch-discount.mjs --create # actually creates it
@@ -36,8 +36,15 @@ const SPEC = {
   code: 'PRODUCTHUNT',
   name: 'Product Hunt launch',
   type: 'percentage',
-  /** Basis points: 3000 = 30%. Dodo's own example is 540 => 5.4%. */
-  amount: 3000,
+  /**
+   * Basis points: 1500 = 15%. Dodo's own example is 540 => 5.4%.
+   *
+   * Was 30% until purchasing power parity went on. PPP already prices by country, which in the
+   * markets a launch audience skews towards is a far bigger cut than any code: Starter in India
+   * went from about 900 rupees to 270. The code stacks on top of that, so 30% there was taking
+   * a 9 dollar plan down to roughly 2.
+   */
+  amount: 1500,
   /** Three billing periods, then full price. */
   subscription_cycles: 3,
   usage_limit: 100,
@@ -96,7 +103,7 @@ if (!listed.length) {
 const envIds = new Set(Object.values(PRODUCTS).filter(Boolean))
 const restricted_to = listed.map(p => p.product_id)
 
-console.log('Discount to create:')
+console.log('Discount spec:')
 console.log(`  environment         ${mode}`)
 console.log(`  code                ${SPEC.code}`)
 console.log(`  name                ${SPEC.name}`)
@@ -115,15 +122,67 @@ if (unmatched.length) {
   console.log(`  WARNING             ${unmatched.length} configured id(s) not listed by Dodo: ${unmatched.join(', ')}`)
 }
 
-// A code that already exists must never be created twice.
+/**
+ * A code that already exists is reconciled against SPEC, never created twice.
+ *
+ * SPEC above is the source of truth and Dodo holds a copy; changing the offer should be an edit
+ * here plus a run, not a visit to a dashboard that leaves the repo describing a discount nobody
+ * is actually getting. Only the fields SPEC owns are compared, and every difference is printed
+ * before anything is sent.
+ */
+let existing = null
 try {
-  const existing = await dodo.discounts.retrieveByCode(SPEC.code)
-  console.log(`\nAlready exists: ${existing.discount_id}`)
-  console.log(`  ${existing.amount / 100}% · used ${existing.times_used}/${existing.usage_limit ?? '∞'} · expires ${existing.expires_at ?? 'never'}`)
-  console.log('Nothing to do.')
-  process.exit(0)
+  existing = await dodo.discounts.retrieveByCode(SPEC.code)
 } catch {
   // Not found is the expected path on a first run.
+}
+
+if (existing) {
+  const drift = []
+  if (existing.amount !== SPEC.amount) {
+    drift.push(['amount', `${existing.amount / 100}%`, `${SPEC.amount / 100}%`])
+  }
+  if ((existing.subscription_cycles ?? null) !== SPEC.subscription_cycles) {
+    drift.push(['cycles', existing.subscription_cycles ?? 'unlimited', SPEC.subscription_cycles])
+  }
+  if ((existing.usage_limit ?? null) !== SPEC.usage_limit) {
+    drift.push(['usage_limit', existing.usage_limit ?? 'unlimited', SPEC.usage_limit])
+  }
+
+  console.log(`\nExists: ${existing.discount_id}   used ${existing.times_used}/${existing.usage_limit ?? 'unlimited'}`)
+  if (!drift.length) {
+    console.log('Matches the spec. Nothing to do.')
+    process.exit(0)
+  }
+  for (const [field, from, to] of drift) {
+    console.log(`  ${field.padEnd(12)} ${from}  ->  ${to}`)
+  }
+
+  if (!process.argv.includes('--create')) {
+    console.log('\nDry run. Re-run with --create to apply these changes in ' + mode + '.')
+    process.exit(0)
+  }
+
+  // Said out loud because "update a discount" sounds more harmless than it is: this changes
+  // what the next person is charged. Redemptions already made keep their own terms.
+  if (existing.times_used > 0) {
+    console.log(`\nNote: ${existing.times_used} redemption(s) already made keep the terms they were made under.`)
+  }
+
+  await dodo.discounts.update(existing.discount_id, {
+    amount: SPEC.amount,
+    subscription_cycles: SPEC.subscription_cycles,
+    usage_limit: SPEC.usage_limit,
+  })
+
+  // Read it back rather than trusting the write: the figure here is a price.
+  const after = await dodo.discounts.retrieveByCode(SPEC.code)
+  console.log('\nUpdated:')
+  console.log(`  amount       ${after.amount / 100}%`)
+  console.log(`  cycles       ${after.subscription_cycles ?? 'unlimited'}`)
+  console.log(`  usage_limit  ${after.usage_limit ?? 'unlimited'}`)
+  console.log(`  restricted   ${after.restricted_to.length} products`)
+  process.exit(0)
 }
 
 if (!process.argv.includes('--create')) {
