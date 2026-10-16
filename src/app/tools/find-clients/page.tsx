@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
 import { PublicProspectFinder } from './client'
+import { ProductHuntBadge } from '@/components/product-hunt-badge'
 
 export const metadata: Metadata = {
   title: 'Find Your Next SEO Client — Free Prospect Finder',
@@ -128,6 +129,10 @@ export default function PublicProspectFinderPage() {
           {' · '}
           <Link href="/tools/ai-regex" className="font-semibold text-brand-600">AI Regex</Link>
         </p>
+
+        <div className="mt-10 text-center">
+          <ProductHuntBadge />
+        </div>
       </div>
     </div>
   )

@@ -6,6 +6,7 @@ import { buildPageGraph } from '@/lib/site-schema'
 import { FreeToolsSection } from '@/components/free-tools-section'
 import { OfferPopup } from '@/components/offer-popup'
 import { SignedOut } from '@/components/clerk-provider'
+import { ProductHuntBadge } from '@/components/product-hunt-badge'
 
 const sans = "'Switzer', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
 const muted = '#8A93A3'
@@ -82,14 +83,7 @@ export default function PricingPage() {
           flexWrap: 'wrap', gap: 12, fontSize: 13, color: muted, fontFamily: sans,
         }}>
           <div>© 2026 Optmizly, Inc. · Payments processed by Dodo Payments · Cancel anytime</div>
-          {/* Same self-hosted, count-free badge as the homepage footer — see page.tsx. */}
-          <a
-            href="https://www.producthunt.com/products/optmizly?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-optmizly"
-            target="_blank" rel="noopener noreferrer"
-            style={{ display: 'inline-flex' }}
-          >
-            <img src="/product-hunt-badge.svg" alt="Optmizly on Product Hunt" width={200} height={54} />
-          </a>
+          <ProductHuntBadge />
           <div style={{ display: 'flex', gap: 20 }}>
             <Link href="/terms" style={{ color: muted, textDecoration: 'none' }}>Terms</Link>
             <Link href="/privacy" style={{ color: muted, textDecoration: 'none' }}>Privacy</Link>

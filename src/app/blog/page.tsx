@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getAllPosts } from '@/lib/blog'
 import { PageHeader } from '@/components/page-header'
+import { ProductHuntBadge } from '@/components/product-hunt-badge'
 
 export const metadata: Metadata = {
   title: 'Blog — SEO & AI Search Insights',
@@ -113,15 +114,8 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
           <Link href="/privacy" className="hover:text-slate-600">Privacy</Link>
           <Link href="/terms" className="hover:text-slate-600">Terms</Link>
         </div>
-        {/* Same self-hosted, count-free badge as the homepage footer — see src/app/page.tsx. */}
         <div className="mx-auto max-w-3xl px-6 mt-6">
-          <a
-            href="https://www.producthunt.com/products/optmizly?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-optmizly"
-            target="_blank" rel="noopener noreferrer"
-            className="inline-flex"
-          >
-            <img src="/product-hunt-badge.svg" alt="Optmizly on Product Hunt" width={200} height={54} />
-          </a>
+          <ProductHuntBadge />
         </div>
       </footer>
     </div>

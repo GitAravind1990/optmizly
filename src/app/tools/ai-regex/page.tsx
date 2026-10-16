@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
 import { PublicAiRegex } from './client'
+import { ProductHuntBadge } from '@/components/product-hunt-badge'
 
 export const metadata: Metadata = {
   title: 'Free AI Regex Generator — Describe It in Plain English',
@@ -118,6 +119,10 @@ export default function PublicAiRegexPage() {
             See the full platform →
           </Link>
           <p className="mt-2 text-xs text-slate-400">Free plan available, no card required.</p>
+        </div>
+
+        <div className="mt-10 text-center">
+          <ProductHuntBadge />
         </div>
       </div>
     </div>

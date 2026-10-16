@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
 import { PublicEeat } from './client'
+import { ProductHuntBadge } from '@/components/product-hunt-badge'
 
 export const metadata: Metadata = {
   title: 'Free E-E-A-T Checker — Score Your Content in Seconds',
@@ -151,6 +152,10 @@ export default function PublicEeatPage() {
             See the full platform →
           </Link>
           <p className="mt-2 text-xs text-slate-400">Free plan available, no card required.</p>
+        </div>
+
+        <div className="mt-10 text-center">
+          <ProductHuntBadge />
         </div>
       </div>
     </div>

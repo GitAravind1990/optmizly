@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
 import { FreeAudit } from '@/components/free-audit'
 import { buildPageGraph, ORG_ID } from '@/lib/site-schema'
+import { ProductHuntBadge } from '@/components/product-hunt-badge'
 
 export const metadata: Metadata = {
   title: 'Free AI Search Readiness Audit — No Signup',
@@ -242,6 +243,10 @@ export default function AiSearchReadinessPage() {
             See the full platform →
           </Link>
           <p className="mt-2 text-xs text-slate-400">Free plan available, no card required.</p>
+        </div>
+
+        <div className="mt-10 text-center">
+          <ProductHuntBadge />
         </div>
       </div>
     </div>
