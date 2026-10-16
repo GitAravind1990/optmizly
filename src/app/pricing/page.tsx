@@ -82,6 +82,14 @@ export default function PricingPage() {
           flexWrap: 'wrap', gap: 12, fontSize: 13, color: muted, fontFamily: sans,
         }}>
           <div>© 2026 Optmizly, Inc. · Payments processed by Dodo Payments · Cancel anytime</div>
+          {/* Same self-hosted, count-free badge as the homepage footer — see page.tsx. */}
+          <a
+            href="https://www.producthunt.com/products/optmizly?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-optmizly"
+            target="_blank" rel="noopener noreferrer"
+            style={{ display: 'inline-flex' }}
+          >
+            <img src="/product-hunt-badge.svg" alt="Optmizly on Product Hunt" width={200} height={54} />
+          </a>
           <div style={{ display: 'flex', gap: 20 }}>
             <Link href="/terms" style={{ color: muted, textDecoration: 'none' }}>Terms</Link>
             <Link href="/privacy" style={{ color: muted, textDecoration: 'none' }}>Privacy</Link>
