@@ -159,6 +159,15 @@ export default function HomePage() {
                 SEO, GEO and AEO in one platform. Optimize your website for Google and for the
                 AI systems that now answer on its behalf.
               </p>
+              {/* Self-hosted copy of PH's badge with the live upvote counter removed — no
+                  badge variant PH serves omits it, and a low number read as thin traction. */}
+              <a
+                href="https://www.producthunt.com/products/optmizly?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-optmizly"
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-block', marginTop: 20 }}
+              >
+                <img src="/product-hunt-badge.svg" alt="Optmizly on Product Hunt" width={200} height={54} />
+              </a>
             </div>
 
             {/* Link columns */}
