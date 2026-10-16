@@ -45,7 +45,7 @@ function buildCSP(nonce: string): string {
     // fonts.googleapis.com: the PlaceAutocompleteElement widget loads its own Google
     // Sans/Roboto stylesheet for the suggestions dropdown.
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob: https://img.clerk.com https://maps.gstatic.com https://maps.googleapis.com https://*.google.com",
+    "img-src 'self' data: blob: https://img.clerk.com https://maps.gstatic.com https://maps.googleapis.com https://*.google.com https://api.producthunt.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     // places.googleapis.com (Places API "New", used by PlaceAutocompleteElement's
     // AutocompletePlaces RPC) is a distinct domain from maps.googleapis.com — both

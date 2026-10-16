@@ -391,6 +391,23 @@ export function HomeHero() {
         maxWidth: 1100, margin: '0 auto', padding: '96px 32px 0', textAlign: 'center',
         overflow: 'hidden',
       }}>
+        {/* Product Hunt badge, PH's own embed. A plain <img> rather than next/image: the SVG
+            is served live by PH (it shows the current upvote count), so it must not be cached
+            or optimised. Its host is allowed in img-src in middleware.ts; without that the
+            CSP blocks it silently and the link renders as an empty 250x54 box. */}
+        <a
+          href="https://www.producthunt.com/products/optmizly?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-optmizly"
+          target="_blank" rel="noopener noreferrer"
+          style={{ display: 'inline-block', marginBottom: 28 }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt="Optmizly - Check if ChatGPT & AI search recommend your brand | Product Hunt"
+            width={250} height={54}
+            src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1270883&theme=neutral&t=1792115244905"
+          />
+        </a>
+
         {/* Headline. One idea, stated the way the product is positioned: Google AND AI
             search, which is the distinction the whole page is built to make memorable. */}
         <h1 style={{
