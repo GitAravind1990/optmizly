@@ -409,6 +409,22 @@ async function applyGrant(user: UserWithSub): Promise<UserWithSub> {
 }
 
 /**
+ * Run `applyGrant` for an address now, rather than on that user's next request.
+ *
+ * For the admin revoke. Left to `getOrCreateUser` alone, a revoked tester who never came back
+ * kept AGENCY on their row indefinitely, still read as GRANTED in the admin list, and offered
+ * a "Remove access" that could only 404 because the grant row was already gone. Same function,
+ * so there is still one implementation of what revoking does. Null when no account exists.
+ */
+export async function settleGrant(email: string): Promise<UserWithSub | null> {
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: normaliseGrantEmail(email), mode: 'insensitive' } },
+    include: WITH_SUB,
+  })
+  return user ? applyGrant(user) : null
+}
+
+/**
  * Validate auth, check tool access, enforce quota.
  * Call this at the top of every API route that performs a billable analysis.
  */

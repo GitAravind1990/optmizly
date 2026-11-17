@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/adminAuth'
-import { normaliseGrantEmail, pinnedAccountFor, pinnedAccounts } from '@/lib/auth'
+import { normaliseGrantEmail, pinnedAccountFor, pinnedAccounts, settleGrant } from '@/lib/auth'
 import { ALL_PLANS, PLAN_LIMITS } from '@/lib/plans'
 import { Plan } from '@prisma/client'
 
@@ -20,8 +20,8 @@ export const runtime = 'nodejs'
  *  - **The plan must be a real plan and the limit a sane number.** Both arrive from a form.
  *    A bad plan string reaches Prisma as an invalid enum; a negative or absurd limit is a
  *    quota bug that only shows up as a user unable to run anything.
- *  - **Revoking deletes the row and lets getOrCreateUser undo it.** The downgrade is not
- *    done here, because doing it in two places is how the two disagree.
+ *  - **Revoking deletes the row and settles the account through applyGrant at once**, the
+ *    same function getOrCreateUser runs, so there is still one implementation of the downgrade.
  */
 
 /** Grants, newest first, each with the effective allowance spelled out. */
@@ -147,17 +147,21 @@ export async function DELETE(req: NextRequest) {
   }
 
   const existing = await prisma.pinnedGrant.findUnique({ where: { email } })
-  if (!existing) return NextResponse.json({ error: 'No grant for that address.' }, { status: 404 })
+  if (existing) await prisma.pinnedGrant.delete({ where: { email } })
 
-  await prisma.pinnedGrant.delete({ where: { email } })
+  // Settled now, through applyGrant, rather than waiting for the grantee's next request. That
+  // wait left revoked testers who never returned on AGENCY with grantedAt set: still listed as
+  // GRANTED, still offered "Remove access", and the button 404'd because the row was gone.
+  // A missing row is therefore not an error while the account still carries the grant.
+  const user = await settleGrant(email)
+  if (!existing && !user) {
+    return NextResponse.json({ error: 'No grant or account for that address.' }, { status: 404 })
+  }
 
-  // Deliberately not downgrading the user here. getOrCreateUser owns that: it sees an
-  // account marked grantedAt with no grant behind it and puts the plan back -- to the
-  // subscription's plan if they have since started paying, and FREE otherwise. Doing it in
-  // both places is how the two come to disagree, and this one has no view of the
-  // subscription.
   return NextResponse.json({
     revoked: email,
-    note: 'Access ends on their next request, when the account is put back to what it pays for.',
+    note: user
+      ? `Account is now on ${user.plan}.`
+      : 'No account yet, so there is nothing to downgrade.',
   })
 }
