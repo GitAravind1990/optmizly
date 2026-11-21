@@ -92,6 +92,7 @@ const USER_AGENT = 'Mozilla/5.0 (compatible; OptmizlyAudit/1.0; +https://optmizl
 
 /** Paths that hold a client list or case studies, matched against a link's path or its text. */
 const WORK_RE = /case[-_ ]?stud|portfolio|our[-_ ]?work|^\/work\b|\bwork\b|clients|success[-_ ]?stor|results|testimonials/i
+const ARTICLE_PATH = /\/(blog|news|articles?|insights|resources|guides?|learn|podcast|tag|category|author)\//i
 const GUESSED_PATHS = ['/case-studies', '/portfolio', '/clients', '/work', '/our-work', '/results']
 
 /** Commercial modifiers, taken first when choosing which ranked queries to ask about. */
@@ -113,6 +114,10 @@ const NOT_A_CLIENT = new Set([
   'w3.org', 'schema.org', 'gravatar.com', 'yelp.com', 'bbb.org', 'glassdoor.com', 'indeed.com',
   'mailchimp.com', 'list-manage.com', 'zoom.us', 'canva.com', 'elementor.com', 'wpengine.com',
   'godaddy.com', 'bit.ly', 'linktr.ee', 'spotify.com', 'apps.apple.com', 'play.google.com', 'amazon.com',
+  // Found as "clients" on the third batch: a Google review share link, a chat button, and the
+  // vendor of the theme a portfolio page was built with.
+  'share.google', 'messenger.com', 'm.me', 'fb.me', 'fb.com', 'themeholy.com', 'themeforest.net', 'envato.com',
+  'elegantthemes.com', 'astra.com', 'wpastra.com', 'generatepress.com', 'divi.com', 'tawk.to', 'trustindex.io',
 ])
 
 /**
@@ -329,7 +334,9 @@ async function findClient(website, agencyDomain) {
 
   const sameSite = l => registrable(l.host) === agencyDomain
   const listingUrls = [...new Set(homeLinks
-    .filter(l => sameSite(l) && l.path !== '/' && (WORK_RE.test(l.path) || WORK_RE.test(l.text)))
+    // Not articles: a blog post whose title happens to say "results" is not a client list, and
+    // the tools it links to are not clients (seoClarity, from a post on ranking in AI Overviews).
+    .filter(l => sameSite(l) && l.path !== '/' && !ARTICLE_PATH.test(l.path) && (WORK_RE.test(l.path) || WORK_RE.test(l.text)))
     .map(l => l.url))].slice(0, MAX_LISTING_PAGES)
   if (!listingUrls.length) {
     for (const p of GUESSED_PATHS) listingUrls.push(new URL(p, home.url).href)
