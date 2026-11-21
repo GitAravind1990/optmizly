@@ -10,9 +10,16 @@
  *   --max-spend USD  stop before starting an agency that could take the run past this (default 1)
  *   --out DIR        output directory (default outreach/, which is gitignored)
  *   --dry            find each agency's client and stop: no DataForSEO calls, no spend
+ *   --manual-only    run only rows with a ClientDomain; --offset and --limit then count those rows
  *
- * Input: a CSV with "Agency" and "Website" columns, and optionally "Country", which picks the
- * Google market (USA/UK/Australia/Canada...; US when absent). Output, in --out:
+ * Input: a CSV with "Agency" and "Website" columns, and optionally:
+ *   Country        the Google market (USA/UK/Australia/Canada...; US when absent)
+ *   ClientDomain   a client domain you supply. The row skips the client search and uses this
+ *                  domain, after the same live-site check an auto-found client passes; if it
+ *                  fails, the row fails as "manual client unreachable". Everything downstream is
+ *                  unchanged. It must be a real domain -- a name is refused, never looked up.
+ *
+ * Output, in --out:
  *
  *   audits.csv     Agency | Client | Query | Competitor named | Engine | One-line finding
  *   failures.csv   every agency that produced no row, with the stage and the reason, for doing
@@ -150,16 +157,18 @@ const flag = (name, fallback) => {
   const i = args.indexOf(`--${name}`)
   return i >= 0 && args[i + 1] !== undefined ? args[i + 1] : fallback
 }
-const inputPath = args.find((a, i) => !a.startsWith('--') && !(args[i - 1]?.startsWith('--') && args[i - 1] !== '--dry'))
+const BOOLEAN_FLAGS = new Set(['--dry', '--manual-only'])
+const inputPath = args.find((a, i) => !a.startsWith('--') && !(args[i - 1]?.startsWith('--') && !BOOLEAN_FLAGS.has(args[i - 1])))
 const LIMIT = Number(flag('limit', 5))
 const OFFSET = Number(flag('offset', 0))
 const PROMPTS = Math.min(5, Math.max(3, Number(flag('prompts', 5))))
 const MAX_SPEND = Number(flag('max-spend', 1))
 const OUT = resolve(flag('out', join(ROOT, 'outreach')))
 const DRY = args.includes('--dry')
+const MANUAL_ONLY = args.includes('--manual-only')
 
 if (!inputPath) {
-  console.error('Usage: node --env-file=.env.local scripts/outreach-audit.mjs <agencies.csv> [--limit 5] [--offset 0] [--prompts 5] [--max-spend 1] [--out outreach]')
+  console.error('Usage: node --env-file=.env.local scripts/outreach-audit.mjs <agencies.csv> [--limit 5] [--offset 0] [--prompts 5] [--max-spend 1] [--out outreach] [--dry] [--manual-only]')
   process.exit(1)
 }
 if (!isDataForSEOConfigured()) {
@@ -202,11 +211,13 @@ function readAgencies(path) {
   const rows = parseCsv(readFileSync(path, 'utf8').replace(/^﻿/, ''))
   const header = rows.shift()?.map(h => h.trim().toLowerCase()) ?? []
   const ai = header.indexOf('agency'), wi = header.indexOf('website'), ci = header.indexOf('country')
+  const di = header.indexOf('clientdomain')
   if (ai < 0 || wi < 0) throw new Error(`Expected "Agency" and "Website" columns; found: ${header.join(', ')}`)
   return rows.map(r => ({
     agency: (r[ai] ?? '').trim(),
     website: (r[wi] ?? '').trim(),
     market: marketOf(ci >= 0 ? r[ci] : ''),
+    clientDomain: di >= 0 ? (r[di] ?? '').trim() : '',
   }))
 }
 
@@ -325,6 +336,40 @@ function brandOf(html, domain, anchorText) {
 
 // ---------- step 1: find a client ----------
 
+/**
+ * The live-site check every client passes, auto-found or supplied by hand: the homepage answers
+ * with HTML, is not a parked domain, and does not redirect somewhere that is not a client (a
+ * blocked platform, or the agency itself). Returns the client's own domain after redirects and
+ * its brand as the site states it, or the reason it failed.
+ */
+async function liveClient(domain, agencyDomain, anchorText) {
+  let site
+  try { site = await fetchPage(`https://${domain}/`) }
+  catch (e) { return { client: null, reason: `${e.message}${e.cause?.code ? ` (${e.cause.code})` : ''}` } }
+  if (/domain (is )?for sale|parked (free|domain)|buy this domain|this domain may be for sale/i.test(site.html.slice(0, 20000))) {
+    return { client: null, reason: 'parked domain' }
+  }
+  const landed = registrable(new URL(site.url).hostname)
+  if (landed !== domain && (blocked(landed, NOT_A_CLIENT) || landed === agencyDomain)) {
+    return { client: null, reason: `redirects to ${landed}` }
+  }
+  return { client: { domain: landed, ...brandOf(site.html, landed, anchorText) } }
+}
+
+/**
+ * A client domain supplied in the ClientDomain column. Accepted as a bare domain or a URL and
+ * reduced to its registrable domain, the same form an auto-found client takes. Nothing here
+ * looks a domain up from a name: if the value is not shaped like a domain it is refused, never
+ * interpreted.
+ */
+function manualDomain(value) {
+  let host = value.trim().toLowerCase()
+  try { if (/^https?:\/\//.test(host)) host = new URL(host).hostname } catch { return null }
+  host = host.replace(/\/.*$/, '')
+  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)) return null
+  return registrable(host)
+}
+
 async function findClient(website, agencyDomain) {
   const home = await fetchPage(website)
   const homeLinks = linksOf(home)
@@ -387,13 +432,8 @@ async function findClient(website, agencyDomain) {
   // Strongest evidence first; each candidate must be a live site before it is believed.
   const ordered = [...candidates.values()].sort((a, b) => b.strength - a.strength).slice(0, MAX_CLIENT_CANDIDATES)
   for (const c of ordered) {
-    try {
-      const site = await fetchPage(`https://${c.domain}/`)
-      if (/domain (is )?for sale|parked (free|domain)|buy this domain|this domain may be for sale/i.test(site.html.slice(0, 20000))) continue
-      const domain = registrable(new URL(site.url).hostname)
-      if (domain !== c.domain && (blocked(domain, NOT_A_CLIENT) || domain === agencyDomain)) continue
-      return { client: { ...c, domain, ...brandOf(site.html, domain, c.anchor) }, pagesTried }
-    } catch { /* dead link: try the next one */ }
+    const live = await liveClient(c.domain, agencyDomain, c.anchor)
+    if (live.client) return { client: { ...c, ...live.client }, pagesTried }
   }
   return {
     client: null,
@@ -523,21 +563,37 @@ const auditsPath = join(OUT, 'audits.csv')
 const failuresPath = join(OUT, 'failures.csv')
 const detailsPath = join(OUT, 'details.jsonl')
 if (!existsSync(auditsPath)) writeFileSync(auditsPath, csvLine(['Agency', 'Client', 'Query', 'Competitor named', 'Engine', 'One-line finding']))
-if (!existsSync(failuresPath)) writeFileSync(failuresPath, csvLine(['Agency', 'Website', 'Stage', 'Reason', 'Client', 'Logged at']))
+const FAILURE_HEADER = ['Agency', 'Website', 'Stage', 'Reason', 'Client', 'Logged at', 'Client source']
+if (!existsSync(failuresPath)) writeFileSync(failuresPath, csvLine(FAILURE_HEADER))
+else {
+  // Files written before ClientDomain existed lack the last column. Every row in them came from
+  // the automatic search, so they are labelled that rather than left blank.
+  const lines = readFileSync(failuresPath, 'utf8').split(/\r?\n/).filter(Boolean)
+  if (!lines[0].includes('Client source')) {
+    writeFileSync(failuresPath, [csvLine(FAILURE_HEADER).trimEnd(), ...lines.slice(1).map(l => `${l},auto-found`)].join('\n') + '\n')
+  }
+}
 
-const agencies = readAgencies(inputPath).slice(OFFSET, OFFSET + LIMIT)
+const allRows = readAgencies(inputPath)
+const eligible = MANUAL_ONLY ? allRows.filter(a => a.clientDomain) : allRows
+const agencies = eligible.slice(OFFSET, OFFSET + LIMIT)
 const perAgency = COST.rankedKeywords + PROMPTS * COST.perPrompt
-console.log(`${agencies.length} agencies (rows ${OFFSET + 1}-${OFFSET + agencies.length}), ${PROMPTS} queries each.`)
+const manualCount = agencies.filter(a => a.clientDomain).length
+console.log(MANUAL_ONLY
+  ? `${agencies.length} of ${eligible.length} rows with a ClientDomain (${allRows.length} in the file), ${PROMPTS} queries each.`
+  : `${agencies.length} agencies (rows ${OFFSET + 1}-${OFFSET + agencies.length}), ${manualCount} with a ClientDomain, ${PROMPTS} queries each.`)
 console.log(`Estimated ceiling: $${(agencies.length * perAgency).toFixed(3)} ($${perAgency.toFixed(4)}/agency). Spend cap: $${MAX_SPEND.toFixed(2)}.\n`)
 
 const balanceBefore = await dfsBalance()
 let estimatedSpend = 0
 const tally = { audits: 0, failed: 0, noGap: 0 }
+const auditSources = { manual: 0, 'auto-found': 0 }
 
+const sourceOf = a => a.clientDomain ? 'manual' : 'auto-found'
 const fail = (a, stage, reason, client = '', detail = {}) => {
   tally[stage === 'no gap' ? 'noGap' : 'failed']++
-  appendFileSync(failuresPath, csvLine([a.agency, a.website, stage, reason, client, new Date().toISOString()]))
-  appendFileSync(detailsPath, JSON.stringify({ agency: a.agency, website: a.website, market: a.market, status: stage, reason, ...detail }) + '\n')
+  appendFileSync(failuresPath, csvLine([a.agency, a.website, stage, reason, client, new Date().toISOString(), sourceOf(a)]))
+  appendFileSync(detailsPath, JSON.stringify({ agency: a.agency, website: a.website, market: a.market, clientSource: sourceOf(a), status: stage, reason, ...detail }) + '\n')
   console.log(`  ✗ ${stage}: ${reason}`)
 }
 
@@ -545,17 +601,29 @@ for (const [i, a] of agencies.entries()) {
   if (i > 0) await sleep(AGENCY_DELAY_MS)
   console.log(`[${i + 1}/${agencies.length}] ${a.agency || '(no name)'} — ${a.website || '(no website)'} [${a.market}]`)
 
-  if (!a.website) { fail(a, 'input', 'no website in CSV'); continue }
-  const website = /^https?:\/\//i.test(a.website) ? a.website : `https://${a.website}`
-  const agencyDomain = registrable(website)
-  if (!agencyDomain) { fail(a, 'input', `unreadable website "${a.website}"`); continue }
+  // The agency's own site is needed to search it, and only to exclude it from the competitors
+  // once a client is supplied by hand.
+  if (!a.website && !a.clientDomain) { fail(a, 'input', 'no website in CSV'); continue }
+  const website = a.website ? (/^https?:\/\//i.test(a.website) ? a.website : `https://${a.website}`) : ''
+  const agencyDomain = website ? registrable(website) : ''
+  if (website && !agencyDomain) { fail(a, 'input', `unreadable website "${a.website}"`); continue }
 
-  let found
-  try { found = await findClient(website, agencyDomain) }
-  catch (e) { fail(a, 'client', `agency site unreachable: ${e.message}${e.cause?.code ? ` (${e.cause.code})` : ''}`); continue }
-  if (!found.client) { fail(a, 'client', `no client found — ${found.reason}`, '', { pagesTried: found.pagesTried }); continue }
-  const client = found.client
-  console.log(`  client: ${client.brand} (${client.domain}) via ${client.source}${client.aliases.length ? ` [also matches: ${client.aliases.join(', ')}]` : ''}`)
+  let client
+  if (a.clientDomain) {
+    const domain = manualDomain(a.clientDomain)
+    if (!domain) { fail(a, 'input', `ClientDomain "${a.clientDomain}" is not a domain`); continue }
+    if (domain === agencyDomain) { fail(a, 'input', `ClientDomain ${domain} is the agency's own site`, domain); continue }
+    const live = await liveClient(domain, agencyDomain, null)
+    if (!live.client) { fail(a, 'client', `manual client unreachable: ${live.reason}`, domain); continue }
+    client = { ...live.client, source: 'ClientDomain column', anchor: null }
+  } else {
+    let found
+    try { found = await findClient(website, agencyDomain) }
+    catch (e) { fail(a, 'client', `agency site unreachable: ${e.message}${e.cause?.code ? ` (${e.cause.code})` : ''}`); continue }
+    if (!found.client) { fail(a, 'client', `no client found — ${found.reason}`, '', { pagesTried: found.pagesTried }); continue }
+    client = found.client
+  }
+  console.log(`  client (${sourceOf(a)}): ${client.brand} (${client.domain}) via ${client.source}${client.aliases.length ? ` [also matches: ${client.aliases.join(', ')}]` : ''}`)
   if (DRY) continue
 
   if (estimatedSpend + perAgency > MAX_SPEND) {
@@ -580,6 +648,7 @@ for (const [i, a] of agencies.entries()) {
   estimatedSpend += q.picked.length * COST.perPrompt
 
   const detail = {
+    clientSource: sourceOf(a),
     client: { name: client.brand, aliases: client.aliases, domain: client.domain, foundOn: client.source, linkedAs: client.anchor, homepageTitle: client.title },
     queries: q.picked,
     outcomes: outcomes.map(o => Object.fromEntries(Object.entries(o).map(([k, v]) =>
@@ -600,12 +669,13 @@ for (const [i, a] of agencies.entries()) {
   const line = findingLine(client, gap)
   appendFileSync(auditsPath, csvLine([a.agency, `${client.brand} (${client.domain})`, gap.query, gap.competitor, gap.engine, line]))
   appendFileSync(detailsPath, JSON.stringify({ agency: a.agency, website: a.website, market: a.market, status: 'audit', gap, ...detail }) + '\n')
+  auditSources[sourceOf(a)]++
   tally.audits++
   console.log(`  ✓ ${line}`)
 }
 
 const balanceAfter = await dfsBalance()
-console.log(`\nDone: ${tally.audits} audits, ${tally.noGap} with no gap, ${tally.failed} failed.`)
+console.log(`\nDone: ${tally.audits} audits (${auditSources.manual} manual client, ${auditSources['auto-found']} auto-found), ${tally.noGap} with no gap, ${tally.failed} failed.`)
 console.log(`Estimated DataForSEO spend: $${estimatedSpend.toFixed(4)}`)
 if (balanceBefore !== null && balanceAfter !== null) {
   console.log(`Measured from account balance: $${(balanceBefore - balanceAfter).toFixed(4)} ($${balanceBefore.toFixed(2)} → $${balanceAfter.toFixed(2)})`)
