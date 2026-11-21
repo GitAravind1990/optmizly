@@ -11,7 +11,8 @@
  *   --out DIR        output directory (default outreach/, which is gitignored)
  *   --dry            find each agency's client and stop: no DataForSEO calls, no spend
  *
- * Input: a CSV with "Agency" and "Website" columns. Output, in --out:
+ * Input: a CSV with "Agency" and "Website" columns, and optionally "Country", which picks the
+ * Google market (USA/UK/Australia/Canada...; US when absent). Output, in --out:
  *
  *   audits.csv     Agency | Client | Query | Competitor named | Engine | One-line finding
  *   failures.csv   every agency that produced no row, with the stage and the reason, for doing
@@ -120,7 +121,7 @@ const NOT_A_CLIENT = new Set([
  */
 const NOT_A_COMPETITOR = new Set([
   ...NOT_A_CLIENT,
-  'wikipedia.org', 'reddit.com', 'quora.com', 'wikihow.com', 'britannica.com', 'merriam-webster.com',
+  'wikipedia.org', 'reddit.com', 'quora.com', 'stackexchange.com', 'stackoverflow.com', 'wikihow.com', 'britannica.com', 'merriam-webster.com',
   'dictionary.com', 'forbes.com', 'nytimes.com', 'cnn.com', 'bbc.com', 'bbc.co.uk', 'theguardian.com',
   'usnews.com', 'investopedia.com', 'nerdwallet.com', 'healthline.com', 'webmd.com', 'mayoclinic.org',
   'clevelandclinic.org', 'consumerreports.org', 'tripadvisor.com', 'angi.com', 'homeadvisor.com',
@@ -190,10 +191,24 @@ const csvLine = cells => cells.map(csvCell).join(',') + '\n'
 function readAgencies(path) {
   const rows = parseCsv(readFileSync(path, 'utf8').replace(/^﻿/, ''))
   const header = rows.shift()?.map(h => h.trim().toLowerCase()) ?? []
-  const ai = header.indexOf('agency'), wi = header.indexOf('website')
+  const ai = header.indexOf('agency'), wi = header.indexOf('website'), ci = header.indexOf('country')
   if (ai < 0 || wi < 0) throw new Error(`Expected "Agency" and "Website" columns; found: ${header.join(', ')}`)
-  return rows.map(r => ({ agency: (r[ai] ?? '').trim(), website: (r[wi] ?? '').trim() }))
+  return rows.map(r => ({
+    agency: (r[ai] ?? '').trim(),
+    website: (r[wi] ?? '').trim(),
+    market: marketOf(ci >= 0 ? r[ci] : ''),
+  }))
 }
+
+/**
+ * The Google market to measure in, from an optional Country column. An agency's clients are
+ * mostly in its own country, and both the ranked keywords and the AI answers differ by market:
+ * a London client measured on US Google ranks for almost nothing and is compared against US
+ * competitors. Unknown or absent means US, the checker's own default.
+ */
+const MARKETS = { usa: 'US', us: 'US', 'united states': 'US', uk: 'GB', gb: 'GB', 'united kingdom': 'GB', england: 'GB',
+  australia: 'AU', au: 'AU', canada: 'CA', ca: 'CA', india: 'IN', 'new zealand': 'NZ', nz: 'NZ', singapore: 'SG' }
+const marketOf = country => MARKETS[String(country ?? '').trim().toLowerCase()] ?? 'US'
 
 // ---------- domains ----------
 
@@ -323,8 +338,11 @@ async function findClient(website, agencyDomain) {
   }
 
   const pagesTried = []
+  const visited = new Set()
+  const firstVisit = url => { const k = url.replace(/\/$/, ''); if (visited.has(k)) return false; visited.add(k); return true }
   let detailBudget = MAX_DETAIL_PAGES
   for (const listingUrl of listingUrls) {
+    if (!firstVisit(listingUrl)) continue
     let listing
     try { listing = await fetchPage(listingUrl) } catch { continue }
     pagesTried.push(listing.url)
@@ -338,6 +356,7 @@ async function findClient(website, agencyDomain) {
       .filter(l => sameSite(l) && base && l.path.startsWith(base + '/') && l.path.length > base.length + 2)
       .map(l => l.url))]
     for (const d of details) {
+      if (!firstVisit(d)) continue
       if (detailBudget-- <= 0) break
       try {
         const page = await fetchPage(d)
@@ -376,8 +395,8 @@ async function findClient(website, agencyDomain) {
  * The tool's own query source for a domain without Search Console: what it ranks top-10 for.
  * Same call and same parameters as /api/tools/ai-visibility/prompts.
  */
-async function queriesFor(client) {
-  const ranked = await getRankedKeywords(client.domain, 25, { maxPosition: 10 })
+async function queriesFor(client, market) {
+  const ranked = await getRankedKeywords(client.domain, 25, { maxPosition: 10, location: market })
   if (ranked === null) throw new Error('ranked-keywords lookup failed')
   const squash = s => s.toLowerCase().replace(/[^a-z0-9]/g, '')
   const names = [client.brand, ...client.aliases].map(squash).filter(n => n.length >= 3)
@@ -399,7 +418,11 @@ async function queriesFor(client) {
   return { picked: [...commercial, ...rest].slice(0, PROMPTS), rankedTotal: ranked.items.length, brandedDropped: ranked.items.length - unbranded.length }
 }
 
-const STOPWORDS = new Set(['a', 'an', 'the', 'with', 'for', 'of', 'to', 'in', 'on', 'and', 'or', 'how', 'what', 'is', 'are', 'do', 'does', 'my', 'your'])
+// Comparison words too: "pressure vs stress", "pressure versus stress" and "difference between
+// pressure and stress" are one question, and counted as three they made a physics forum look
+// like a competitor that kept winning.
+const STOPWORDS = new Set(['a', 'an', 'the', 'with', 'for', 'of', 'to', 'in', 'on', 'and', 'or', 'how', 'what', 'is', 'are',
+  'do', 'does', 'my', 'your', 'vs', 'versus', 'difference', 'differences', 'between', 'compared', 'comparison'])
 
 /** Words cut to five letters, sorted: "question with multiple answers" == "multi answer questions". */
 const ideaKey = keyword => keyword.toLowerCase().split(/[^a-z0-9]+/)
@@ -408,9 +431,10 @@ const ideaKey = keyword => keyword.toLowerCase().split(/[^a-z0-9]+/)
 // ---------- step 3: the gap ----------
 
 const ENGINE_LABEL = { aiMode: 'Google AI Mode', aiOverview: 'Google AI Overview' }
+const ENGINE_MARKET = { US: '', GB: ' (UK)', AU: ' (AU)', CA: ' (CA)', IN: ' (IN)', NZ: ' (NZ)', SG: ' (SG)' }
 const SUPPORT_HOST = /^(community|help|support|docs|forum|forums|kb|answers|academy|learn|knowledge|teaching-resources)\./
 
-function strongestGap(outcomes, picked, client, agencyDomain) {
+function strongestGap(outcomes, picked, client, agencyDomain, market) {
   const isClient = d => registrable(d) === client.domain
   const gaps = []
   for (const o of outcomes) {
@@ -429,7 +453,7 @@ function strongestGap(outcomes, picked, client, agencyDomain) {
       const competitor = registrable(pick.d)
       const ranked = picked.find(p => p.keyword === o.prompt)
       gaps.push({
-        query: o.prompt, surface, engine: ENGINE_LABEL[surface], competitor, citeIndex: pick.i,
+        query: o.prompt, surface, engine: ENGINE_LABEL[surface] + (ENGINE_MARKET[market] ?? ''), competitor, citeIndex: pick.i,
         supportPage: SUPPORT_HOST.test(pick.d),
         competitorUrl: r.citedUrls?.find(u => registrable(u.domain) === competitor)?.url ?? null,
         clientPosition: ranked?.position ?? null, volume: ranked?.volume ?? 0,
@@ -487,13 +511,13 @@ const tally = { audits: 0, failed: 0, noGap: 0 }
 const fail = (a, stage, reason, client = '', detail = {}) => {
   tally[stage === 'no gap' ? 'noGap' : 'failed']++
   appendFileSync(failuresPath, csvLine([a.agency, a.website, stage, reason, client, new Date().toISOString()]))
-  appendFileSync(detailsPath, JSON.stringify({ agency: a.agency, website: a.website, status: stage, reason, ...detail }) + '\n')
+  appendFileSync(detailsPath, JSON.stringify({ agency: a.agency, website: a.website, market: a.market, status: stage, reason, ...detail }) + '\n')
   console.log(`  ✗ ${stage}: ${reason}`)
 }
 
 for (const [i, a] of agencies.entries()) {
   if (i > 0) await sleep(AGENCY_DELAY_MS)
-  console.log(`[${i + 1}/${agencies.length}] ${a.agency || '(no name)'} — ${a.website || '(no website)'}`)
+  console.log(`[${i + 1}/${agencies.length}] ${a.agency || '(no name)'} — ${a.website || '(no website)'} [${a.market}]`)
 
   if (!a.website) { fail(a, 'input', 'no website in CSV'); continue }
   const website = /^https?:\/\//i.test(a.website) ? a.website : `https://${a.website}`
@@ -502,7 +526,7 @@ for (const [i, a] of agencies.entries()) {
 
   let found
   try { found = await findClient(website, agencyDomain) }
-  catch (e) { fail(a, 'client', `agency site unreachable: ${e.message}`); continue }
+  catch (e) { fail(a, 'client', `agency site unreachable: ${e.message}${e.cause?.code ? ` (${e.cause.code})` : ''}`); continue }
   if (!found.client) { fail(a, 'client', `no client found — ${found.reason}`, '', { pagesTried: found.pagesTried }); continue }
   const client = found.client
   console.log(`  client: ${client.brand} (${client.domain}) via ${client.source}${client.aliases.length ? ` [also matches: ${client.aliases.join(', ')}]` : ''}`)
@@ -515,7 +539,7 @@ for (const [i, a] of agencies.entries()) {
   }
 
   let q
-  try { q = await queriesFor(client) }
+  try { q = await queriesFor(client, a.market) }
   catch (e) { estimatedSpend += COST.rankedKeywords; fail(a, 'queries', e.message, client.domain, { client }); continue }
   estimatedSpend += COST.rankedKeywords
   if (q.picked.length < 3) {
@@ -525,7 +549,7 @@ for (const [i, a] of agencies.entries()) {
   console.log(`  queries: ${q.picked.map(p => p.keyword).join(' | ')}`)
 
   const outcomes = await Promise.all(q.picked.map(p =>
-    runPrompt(p.keyword, client.brand, client.domain, client.aliases)
+    runPrompt(p.keyword, client.brand, client.domain, client.aliases, a.market)
       .catch(() => ({ prompt: p.keyword, aiOverview: null, aiMode: null }))))
   estimatedSpend += q.picked.length * COST.perPrompt
 
@@ -539,7 +563,7 @@ for (const [i, a] of agencies.entries()) {
   const failedLookups = outcomes.reduce((n, o) => n + (o.aiMode === null) + (o.aiOverview === null), 0)
   if (failedLookups === outcomes.length * 2) { fail(a, 'checker', 'every AI lookup failed', client.domain, detail); continue }
 
-  const gap = strongestGap(outcomes, q.picked, client, agencyDomain)
+  const gap = strongestGap(outcomes, q.picked, client, agencyDomain, a.market)
   if (!gap) {
     const answers = outcomes.reduce((n, o) => n + !!o.aiMode?.answerPresent + !!o.aiOverview?.answerPresent, 0)
     const named = outcomes.reduce((n, o) => n + ['aiMode', 'aiOverview'].filter(s => o[s]?.answerPresent && (o[s].mentions > 0 || o[s].cited)).length, 0)
@@ -549,7 +573,7 @@ for (const [i, a] of agencies.entries()) {
 
   const line = findingLine(client, gap)
   appendFileSync(auditsPath, csvLine([a.agency, `${client.brand} (${client.domain})`, gap.query, gap.competitor, gap.engine, line]))
-  appendFileSync(detailsPath, JSON.stringify({ agency: a.agency, website: a.website, status: 'audit', gap, ...detail }) + '\n')
+  appendFileSync(detailsPath, JSON.stringify({ agency: a.agency, website: a.website, market: a.market, status: 'audit', gap, ...detail }) + '\n')
   tally.audits++
   console.log(`  ✓ ${line}`)
 }

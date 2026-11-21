@@ -1141,11 +1141,20 @@ export async function getRankedKeywords(
    * rankings for 30-volume junk. Top-10 positions ordered by volume is what actually returns
    * a recognisable picture of a business.
    */
-  opts?: { maxPosition?: number }
+  opts?: {
+    maxPosition?: number
+    /**
+     * Market, as an ORGANIC_LOCATION_CODES key. US when absent, which every caller in the app
+     * relies on. A UK business barely ranks in US data, so measuring one there returns a
+     * handful of incidental keywords rather than what it is about.
+     */
+    location?: string
+  }
 ): Promise<{ items: RankedKeyword[]; totalCount: number } | null> {
+  const loc = opts?.location && ORGANIC_LOCATION_CODES[opts.location] ? opts.location : 'US'
   const data = await dfsPost<RankedKeywordsResponse>('/v3/dataforseo_labs/google/ranked_keywords/live', [
     {
-      target: domain, location_code: 2840, language_code: 'en', limit,
+      target: domain, location_code: ORGANIC_LOCATION_CODES[loc], language_code: ORGANIC_LANGUAGE_CODES[loc], limit,
       order_by: ['keyword_data.keyword_info.search_volume,desc'],
       ...(opts?.maxPosition
         ? { filters: [['ranked_serp_element.serp_item.rank_absolute', '<=', opts.maxPosition]] }
