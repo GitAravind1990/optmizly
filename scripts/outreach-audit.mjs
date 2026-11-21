@@ -130,6 +130,11 @@ const NOT_A_COMPETITOR = new Set([
   'homedepot.com', 'lowes.com', 'businessinsider.com', 'cnet.com', 'pcmag.com', 'techradar.com',
   'zapier.com', 'stackoverflow.com', 'quizlet.com', 'scribd.com', 'slideshare.net', 'issuu.com',
   'indeed.com', 'ziprecruiter.com', 'expertise.com', 'yelp.ca', 'yelp.co.uk',
+  // UK trades and services directories: where a business is listed, not who it competes with.
+  'checkatrade.com', 'trustatrader.com', 'mybuilder.com', 'ratedpeople.com', 'bark.com', 'yell.com',
+  'which.co.uk', 'freeindex.co.uk', 'thomsonlocal.com', 'scoot.co.uk', 'hotfrog.co.uk', 'cylex-uk.co.uk',
+  'tradesmen.co.uk', 'local.com', 'manta.com', 'porch.com', 'bizapedia.com', 'yellowpages.ca', 'yellowpages.com.au',
+  'truelocal.com.au', 'hipages.com.au', 'oneflare.com.au', 'serviceseeking.com.au', 'homestars.com',
 ])
 const NON_COMMERCIAL_TLD = /\.(gov|edu|mil|int)(\.[a-z]{2})?$|\.(gov|ac|nhs|sch)\.uk$/
 
@@ -275,9 +280,11 @@ function linksOf(page) {
   return out
 }
 
+// The value is read up to its own closing quote, not any quote: `content="Theo's Timber"` was
+// read as "Theo", and the brand was matched and printed as that.
 const metaContent = (html, attr, value) =>
-  html.match(new RegExp(`<meta[^>]+${attr}=["']${value}["'][^>]*content=["']([^"']*)["']`, 'i'))?.[1]
-  ?? html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]*${attr}=["']${value}["']`, 'i'))?.[1]
+  html.match(new RegExp(`<meta[^>]+${attr}=["']${value}["'][^>]*content=(["'])(.*?)\\1`, 'i'))?.[2]
+  ?? html.match(new RegExp(`<meta[^>]+content=(["'])(.*?)\\1[^>]*${attr}=["']${value}["']`, 'i'))?.[2]
 
 /**
  * The client's brand as the client's own site states it, for mention matching.
@@ -306,7 +313,8 @@ function brandOf(html, domain, anchorText) {
     || (best && best[1] > 0 ? best[0] : null)
     || anchor
     || stem.charAt(0).toUpperCase() + stem.slice(1)
-  const aliases = [...new Set([stem, anchor, site && decode(site).trim()].filter(a => a && squash(a) !== squash(brand)))].slice(0, 4)
+  const aliases = [...new Set([stem, anchor, site && decode(site).trim(), brand.replace(/['’]/g, '')]
+    .filter(a => a && a !== brand && (squash(a) !== squash(brand) || /['’]/.test(brand))))].slice(0, 4)
   return { brand: brand.slice(0, 120), aliases, title }
 }
 
@@ -400,9 +408,16 @@ async function queriesFor(client, market) {
   if (ranked === null) throw new Error('ranked-keywords lookup failed')
   const squash = s => s.toLowerCase().replace(/[^a-z0-9]/g, '')
   const names = [client.brand, ...client.aliases].map(squash).filter(n => n.length >= 3)
+  // Branded either way round: "sure seal" is inside "Sure seal Windows" as surely as "acme
+  // plumbing near me" contains "acme plumbing", and a query for the client's own name cannot
+  // show a gap -- only another company with the same name.
+  const branded = kw => { const k = squash(kw); return names.some(n => k.includes(n) || (k.length >= 4 && n.includes(k))) }
   const unbranded = ranked.items
     .filter((r, i, all) => r.keyword.length > 2 && r.keyword.length <= 200 && all.findIndex(x => x.keyword === r.keyword) === i)
-    .filter(r => !names.some(n => squash(r.keyword).includes(n)))
+    .filter(r => !branded(r.keyword))
+    // One-word queries are a brand abbreviation ("w3w") or a head term ("location") that no
+    // business owns, and neither makes a finding anyone would act on.
+    .filter(r => r.keyword.trim().split(/\s+/).length >= 2)
   // One query per idea. Ranked keywords arrive as clusters of variants -- measured on
   // mentimeter.com, the top five were all "multiple answer question(s)" reworded, which asks the
   // engines the same thing five times and counts one answer as a recurring competitor.
@@ -443,9 +458,13 @@ function strongestGap(outcomes, picked, client, agencyDomain, market) {
       // null = the lookup failed. Never read as "not mentioned".
       if (!r || !r.answerPresent) continue
       if (r.mentions > 0 || r.cited || r.citedDomains.some(isClient)) continue
+      // A domain whose name is the query is the answer to a search for that company:
+      // "zeitgeist tours" citing zeitgeisttours.com is not a competitor out-ranking anyone.
+      const q = o.prompt.toLowerCase().replace(/[^a-z0-9]/g, '')
+      const navigational = d => { const st = domainStem(d); return st.length >= 4 && (q.includes(st) || st.includes(q)) }
       const eligible = r.citedDomains
         .map((d, i) => ({ d, i }))
-        .filter(({ d }) => !isClient(d) && registrable(d) !== agencyDomain && !blocked(d, NOT_A_COMPETITOR))
+        .filter(({ d }) => !isClient(d) && registrable(d) !== agencyDomain && !blocked(d, NOT_A_COMPETITOR) && !navigational(d))
       if (!eligible.length) continue
       // A company's main site over its help centre or forum: community.instructure.com
       // answering a how-to is Canvas's documentation, not Canvas out-marketing the client.
